@@ -29,7 +29,7 @@ use Tuleap\Svn\Admin\ImmutableTagController;
 use Tuleap\Svn\Admin\RestoreController;
 use Tuleap\Svn\Explorer\ExplorerController;
 use Tuleap\Svn\Explorer\RepositoryDisplayController;
-use Tuleap\Svn\PerGroup\SVNJSONPermissionsRetriever;
+use Tuleap\Svn\PermissionsPerGroup\SVNJSONPermissionsRetriever;
 use Tuleap\Svn\Repository\Exception\CannotFindRepositoryException;
 use Tuleap\Svn\Repository\RepositoryManager;
 use UGroupManager;
@@ -152,8 +152,10 @@ class SvnRouter {
                     $this->checkUserCanAdministrateARepository($request);
                     $this->admin_controller->deleteRepository($request);
                     break;
-                case "restore":
-                    $this->checkUserCanAdministrateARepository($request);
+                case 'restore':
+                    if(! $request->getCurrentUser()->isSuperUser()) {
+                        throw new UserCannotAdministrateRepositoryException();
+                    }
                     $this->restore_controller->restoreRepository($request);
                     break;
                 case "access-control":
@@ -227,9 +229,8 @@ class SvnRouter {
 
     private function useAViewVcRoadIfRootValid(HTTPRequest $request) {
         if ($request->get('root')) {
-            $repository = $this->repository_manager->getRepositoryFromPublicPath($request->get('root'));
+            $repository = $this->repository_manager->getRepositoryFromPublicPath($request);
 
-            $request->set("group_id", $repository->getProject()->getId());
             $request->set("repo_id", $repository->getId());
 
             $this->display_controller->displayRepository($this->getService($request), $request);

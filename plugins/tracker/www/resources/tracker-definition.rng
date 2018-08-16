@@ -98,7 +98,17 @@
       </attribute>
     </optional>
     <optional>
-      <!-- default is false -->
+      <!-- default is false (deprecated, use notifications_level instead) -->
+      <attribute name="notifications_level">
+        <choice>
+          <value>0</value>
+          <value>1</value>
+          <value>2</value>
+        </choice>
+      </attribute>
+    </optional>
+    <optional>
+      <!-- default is 0 -->
       <attribute name="is_folder">
         <data type="boolean"/>
       </attribute>
@@ -231,6 +241,17 @@
             </zeroOrMore>
           </element>
         </optional>
+      </element>
+    </zeroOrMore>
+    <zeroOrMore>
+      <element name="webhooks">
+        <oneOrMore>
+          <element name="webhook">
+            <attribute name="url">
+              <data type="string"/>
+            </attribute>
+          </element>
+        </oneOrMore>
       </element>
     </zeroOrMore>
     <optional>
@@ -491,7 +512,7 @@
                 </attribute>
               </optional>
               <attribute name="label">
-                <data type="string"/>
+                <ref name="non_empty_string"/>
               </attribute>
               <optional>
                 <attribute name="is_hidden">
@@ -517,15 +538,12 @@
               <attribute name="REF">
                 <data type="IDREF"/>
               </attribute>
-              <attribute name="r">
-                <data type="long"/>
-              </attribute>
-              <attribute name="g">
-                <data type="long"/>
-              </attribute>
-              <attribute name="b">
-                <data type="long"/>
-              </attribute>
+              <choice>
+                <ref name="decorator_legacy_color"/>
+                <attribute name="tlp_color_name">
+                  <data type="string"/>
+                </attribute>
+              </choice>
             </element>
           </zeroOrMore>
         </element>
@@ -545,6 +563,17 @@
         </element>
       </optional>
     </element>
+  </define>
+  <define name="decorator_legacy_color">
+    <attribute name="r">
+      <data type="long"/>
+    </attribute>
+    <attribute name="g">
+      <data type="long"/>
+    </attribute>
+    <attribute name="b">
+      <data type="long"/>
+    </attribute>
   </define>
   <define name="transitionContent">
     <element name="from_id">
@@ -839,6 +868,13 @@
             </attribute>
           </element>
         </zeroOrMore>
+        <optional>
+          <element name="background-color">
+            <attribute name="REF">
+              <data type="IDREF"/>
+            </attribute>
+          </element>
+        </optional>
       </group>
       <group>
         <attribute name="type">
@@ -861,6 +897,25 @@
               </attribute>
             </element>
           </zeroOrMore>
+        </element>
+      </group>
+      <group>
+        <attribute name="type">
+          <value>velocity</value>
+        </attribute>
+        <element name="shortname">
+          <data type="string"/>
+        </element>
+        <element name="label">
+          <data type="string"/>
+        </element>
+        <element name="description">
+          <data type="string"/>
+        </element>
+        <element name="field">
+          <attribute name="REF">
+            <data type="IDREF"/>
+          </attribute>
         </element>
       </group>
     </choice>

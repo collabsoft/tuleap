@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-2018. All Rights Reserved.
  * Copyright 1999-2000 (c) The SourceForge Crew
  *
  * This file is a part of Tuleap.
@@ -44,7 +44,7 @@ require_once('www/forum/forum_utils.php');
 function news_header($params) {
   global $HTML,$group_id,$news_name,$news_id,$Language;
 
-    Tuleap\Instrument\Collect::increment('service.project.news.accessed');
+    \Tuleap\Project\ServiceInstrumentation::increment('news');
 
 	$params['toptab']='news';
 	$params['group']=$group_id;
@@ -149,7 +149,6 @@ function news_show_latest($group_id = '', $limit = 10, $show_projectname = true,
         }
         if (! $news_item_displayed) {
             $return .= '<b>'.$Language->getText('news_utils','no_news_item_found').'</b>';
-            $return .= db_error();
         }
     }
     if ($group_id != $sys_news_group) {
@@ -266,7 +265,7 @@ function news_submit($group_id, $summary, $details, $private_news, $send_news_to
 	$new_id=forum_create_forum($GLOBALS['sys_news_group'],$summary,1,0, '', $need_feedback = false);
     $sql="INSERT INTO news_bytes (group_id,submitted_by,is_approved,date,forum_id,summary,details) 
           VALUES (". db_ei($group_id) .", '". user_getid() ."', ". db_ei($promote_news) .", '".time()."',
-                 '$new_id', '". db_es(util_unconvert_htmlspecialchars($summary)) ."', '". db_es(util_unconvert_htmlspecialchars($details)) ."')";
+                 '$new_id', '". db_es($summary) ."', '". db_es($details) ."')";
     $result=db_query($sql);
     
 	if (!$result) {
@@ -373,16 +372,13 @@ function news_read_permissions($forum_id) {
 
 function news_notify_promotion_request($group_id,$news_bytes_id,$summary,$details) {
     global $Language;
-    
-    $summary = util_unconvert_htmlspecialchars($summary);
-    $details = util_unconvert_htmlspecialchars($details);
 
     $pm = ProjectManager::instance();
     $group = $pm->getProject($group_id);
     // retrieve the user that submit the news
     $user = UserManager::instance()->getCurrentUser();
     
-    $mail = new Mail();
+    $mail = new Codendi_Mail();
     $mail->setFrom($GLOBALS['sys_noreply']);
     $mail->setTo($GLOBALS['sys_email_admin'],true); // Don't invalidate admin email!
     $mail->setSubject($Language->getText('news_utils','news_request', array($GLOBALS['sys_name'])));
@@ -394,7 +390,7 @@ function news_notify_promotion_request($group_id,$news_bytes_id,$summary,$detail
     $body .= $Language->getText('news_utils','news_request_mail_details', array($details)).$GLOBALS['sys_lf'].$GLOBALS['sys_lf'];
     $body .= $Language->getText('news_utils','news_request_mail_approve_link').$GLOBALS['sys_lf'];
     $body .= get_server_url()."/news/admin/?approve=1&id=".$news_bytes_id.$GLOBALS['sys_lf'];
-    $mail->setBody($body);
+    $mail->setBodyText($body);
     
     $is_sent = $mail->send();
     if ($is_sent) {
@@ -410,9 +406,6 @@ function news_send_to_ugroups($ugroups, $summary, $details, $group_id) {
     $project = $pm->getProject($group_id);
     $user    = HTTPRequest::instance()->getCurrentUser();
     $ugroup_manager = new UGroupManager();
-
-    $summary = util_unconvert_htmlspecialchars($summary);
-    $details = util_unconvert_htmlspecialchars($details);
 
     $html_body = '<h1>'. $hp->purify($summary, CODENDI_PURIFIER_BASIC) .'</h1>';
     $html_body .= '<p>'. $hp->purify($details, CODENDI_PURIFIER_BASIC) .'</p>';

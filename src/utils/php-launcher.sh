@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) Enalean, 2011-2016. All Rights Reserved.
+# Copyright (c) Enalean, 2011-2018. All Rights Reserved.
 # Copyright (c) STMicroelectronics, 2005. All Rights Reserved.
 #
 # Originally written by Manuel Vacelet, 2005
@@ -26,7 +26,7 @@ set -e
 
 # PHP path and parameters
 if [ -z "$PHP" ]; then
-    PHP="/opt/rh/rh-php56/root/usr/bin/php"
+    PHP="/opt/remi/php56/root/usr/bin/php"
     if [ ! -x "$PHP" ]; then
         if hash php 2> /dev/null; then
             PHP="php"
@@ -45,10 +45,15 @@ PEAR_PATH="/usr/share/pear"
 # Include path is only defined in php.conf (and not php.ini).
 # It was also reported that 8MB (default memory limit) is not sufficient in some cases.
 if [ -z "$PHP_PARAMS" ]; then
-    PHP_PARAMS="-q -d include_path=/usr/share/php:/usr/share/pear:/usr/share/tuleap/src/www/include:/usr/share/tuleap/src:/usr/share/codendi/src/www/include:/usr/share/codendi/src:/usr/share/jpgraph:. -d memory_limit=256M -d display_errors=On"
+    PHP_PARAMS="-q -d include_path=/usr/share/php:/usr/share/pear:/usr/share/tuleap/src/www/include:/usr/share/tuleap/src:/usr/share/codendi/src/www/include:/usr/share/codendi/src:/usr/share/jpgraph:. -d memory_limit=256M"
+fi
+
+php_display_errors="-d error_reporting=0"
+if [ "$DISPLAY_ERRORS" = true ]; then
+    php_display_errors=""
 fi
 
 # Finally runs php interpretor
 phpscript=$1;
 shift;
-exec "${PHP}" ${PHP_PARAMS} $phpscript "$@"
+exec "${PHP}" ${php_display_errors} ${PHP_PARAMS} $phpscript "$@"

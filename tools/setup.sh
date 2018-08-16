@@ -55,7 +55,7 @@ MV='/bin/mv'
 MYSQL='/usr/bin/mysql'
 MYSQLSHOW='/usr/bin/mysqlshow'
 PERL='/usr/bin/perl'
-PHP='/opt/rh/rh-php56/root/usr/bin/php'
+PHP='/opt/remi/php56/root/usr/bin/php'
 RM='/bin/rm'
 RPM='/bin/rpm'
 SERVICE='/sbin/service'
@@ -83,11 +83,11 @@ then
     ${GREP} -i -q centos ${RH_RELEASE}
     if [ "${?}" -eq 0 ]
     then
-        RH_VERSION=($(${AWK} '{print $1, $3}' ${RH_RELEASE}))
+        RH_FULL_VERSION=($(${AWK} '{print $1, $3}' ${RH_RELEASE}))
     else
-        RH_VERSION=($(${AWK} '{print $1$2, $7}' ${RH_RELEASE}))
+        RH_FULL_VERSION=($(${AWK} '{print $1$2, $7}' ${RH_RELEASE}))
     fi
-    RH_MINOR_VERSION=$(echo ${RH_VERSION[1]: 2:1})
+    RH_VERSION=$(echo ${RH_FULL_VERSION[1]})
 else
     echo -e "\033[31mSorry, Tuleap is running only on RedHat/CentOS.\033[0m"
     exit 1
@@ -952,10 +952,10 @@ done
 # Check release
 #
 RH_UPDATE="3"
-if [ "x$RH_MINOR_VERSION" != x ] && [ "$RH_MINOR_VERSION" -ge "$RH_UPDATE" ]; then
-    echo "Good! You are running ${RH_VERSION[@]}"
+if [ "x$RH_VERSION" != x ] && [ "$(echo -e "$RH_VERSION\n6.$RH_UPDATE" | sort -V | head -n 1)" != "$RH_VERSION" ]; then
+    echo "Good! You are running ${RH_FULL_VERSION[@]}"
 else
-    echo "This machine is not running RedHat Enterprise Linux or CentOS ${RH_RELEASE}.${RH_UPDATE}"
+    echo "This machine is not running RedHat Enterprise Linux or CentOS 6.${RH_UPDATE}"
     echo "You should consider to upgrade your system before going any further (yum upgrade)."
     read -p "Continue? [y|n]: " yn
     if [ "$yn" = "n" ]; then
@@ -1398,7 +1398,7 @@ fi
 
 $MYSQL -u$PROJECT_ADMIN -p$codendiadm_passwd $PROJECT_NAME < /usr/share/forgeupgrade/db/install-mysql.sql
 $INSTALL --group=$PROJECT_ADMIN --owner=$PROJECT_ADMIN --mode=0755 --directory /etc/$PROJECT_NAME/forgeupgrade
-$INSTALL --group=$PROJECT_ADMIN --owner=$PROJECT_ADMIN --mode=0644 $INSTALL_DIR/src/etc/forgeupgrade-config.ini.rhel6.dist /etc/$PROJECT_NAME/forgeupgrade/config.ini
+$INSTALL --group=$PROJECT_ADMIN --owner=$PROJECT_ADMIN --mode=0644 $INSTALL_DIR/src/etc/forgeupgrade-config.ini.dist /etc/$PROJECT_NAME/forgeupgrade/config.ini
 substitute /etc/$PROJECT_NAME/forgeupgrade/config.ini "%project_name%" "$PROJECT_NAME"
 
 ##############################################
@@ -1508,8 +1508,8 @@ $INSTALL_DIR/tools/utils/php56/run.php
 control_service httpd start
 enable_service nginx
 control_service nginx start
-enable_service rh-php56-php-fpm
-control_service rh-php56-php-fpm start
+enable_service php56-php-fpm
+control_service php56-php-fpm start
 
 ##############################################
 # End of installation

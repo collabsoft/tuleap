@@ -1,5 +1,5 @@
 import artifact_modal_module from './tuleap-artifact-modal.js';
-import angular               from 'angular';
+import angular from 'angular';
 import 'angular-mocks';
 
 import BaseModalController from './tuleap-artifact-modal-controller.js';
@@ -14,6 +14,14 @@ import {
     rewire$getFollowupsComments,
     restore as restoreRest
 } from './rest/rest-service.js';
+import {
+    rewire$getAllFileFields,
+    restore as restoreFileDetector
+} from './tuleap-artifact-modal-fields/file-field/file-field-detector.js';
+import {
+    rewire$uploadAllTemporaryFiles,
+    restore as restoreFileUpload
+} from "./tuleap-artifact-modal-fields/file-field/file-uploader.js";
 
 describe("TuleapArtifactModalController", () => {
     let $scope,
@@ -25,12 +33,13 @@ describe("TuleapArtifactModalController", () => {
         TuleapArtifactModalValidateService,
         TuleapArtifactModalFieldDependenciesService,
         TuleapArtifactModalLoading,
-        TuleapArtifactModalFileUploadService,
         mockCallback,
         isInCreationMode,
         getFollowupsComments,
         createArtifact,
-        editArtifact;
+        editArtifact,
+        getAllFileFields,
+        uploadAllTemporaryFiles;
 
     beforeEach(() => {
         angular.mock.module(artifact_modal_module, function($provide) {
@@ -46,12 +55,6 @@ describe("TuleapArtifactModalController", () => {
 
                 return $delegate;
             });
-
-            $provide.decorator('TuleapArtifactModalFileUploadService', function($delegate) {
-                spyOn($delegate, "uploadAllTemporaryFiles");
-
-                return $delegate;
-            });
         });
 
         angular.mock.inject(function(
@@ -61,14 +64,12 @@ describe("TuleapArtifactModalController", () => {
             _$timeout_,
             _TuleapArtifactModalValidateService_,
             _TuleapArtifactModalFieldDependenciesService_,
-            _TuleapArtifactModalLoading_,
-            _TuleapArtifactModalFileUploadService_
+            _TuleapArtifactModalLoading_
         ) {
             $q = _$q_;
             TuleapArtifactModalValidateService          = _TuleapArtifactModalValidateService_;
             TuleapArtifactModalFieldDependenciesService = _TuleapArtifactModalFieldDependenciesService_;
             TuleapArtifactModalLoading                  = _TuleapArtifactModalLoading_;
-            TuleapArtifactModalFileUploadService        = _TuleapArtifactModalFileUploadService_;
 
             tlp_modal = jasmine.createSpyObj('tlp_modal', [
                 'hide'
@@ -93,7 +94,6 @@ describe("TuleapArtifactModalController", () => {
                 TuleapArtifactModalValidateService,
                 TuleapArtifactModalLoading,
                 TuleapArtifactModalFieldDependenciesService,
-                TuleapArtifactModalFileUploadService,
                 displayItemCallback: mockCallback
             };
         });
@@ -112,11 +112,17 @@ describe("TuleapArtifactModalController", () => {
         rewire$createArtifact(createArtifact);
         editArtifact = jasmine.createSpy("editArtifact");
         rewire$editArtifact(editArtifact);
+        getAllFileFields = jasmine.createSpy("getAllFileFields");
+        rewire$getAllFileFields(getAllFileFields);
+        uploadAllTemporaryFiles = jasmine.createSpy("uploadAllTemporaryFiles");
+        rewire$uploadAllTemporaryFiles(uploadAllTemporaryFiles);
     });
 
     afterEach(() => {
         restoreCreationMode();
         restoreRest();
+        restoreFileDetector();
+        restoreFileUpload();
     });
 
     describe("init() -", function() {
@@ -154,39 +160,10 @@ describe("TuleapArtifactModalController", () => {
         });
     });
 
-    describe("isThereAtLeastOneFileField() -", function() {
-        beforeEach(function() {
-            ArtifactModalController = $controller(BaseModalController, controller_params);
-        });
-
-        it("Given that there were two file fields in the model's field values, when I check if there is at least one file field, then it will return true", function() {
-            var values = [
-                { field_id: 95, type: "file" },
-                { field_id: 72, type: "int" },
-                { field_id: 64, type: "file" }
-            ];
-            ArtifactModalController.values = values;
-
-            var result = ArtifactModalController.isThereAtLeastOneFileField();
-
-            expect(result).toBeTruthy();
-        });
-
-        it("Given that there was no file field in the model's field values, when I check if there is at least one file field, then it will return false", function() {
-            var values = [
-                { field_id: 62, type: "int" }
-            ];
-            ArtifactModalController.values = values;
-
-            var result = ArtifactModalController.isThereAtLeastOneFileField();
-
-            expect(result).toBeFalsy();
-        });
-    });
-
     describe("submit() - Given a tracker id, field values, a callback function", () => {
         beforeEach(() => {
             TuleapArtifactModalValidateService.validateArtifactFieldsValues.and.callFake(values => values);
+            getAllFileFields.and.returnValue([]);
         });
 
         it("and no artifact_id, when I submit the modal to Tuleap, then the field values will be validated, the artifact will be created , the modal will be closed and the callback will be called", () => {
@@ -261,7 +238,7 @@ describe("TuleapArtifactModalController", () => {
             };
             var first_upload  = $q.defer();
             var second_upload = $q.defer();
-            TuleapArtifactModalFileUploadService.uploadAllTemporaryFiles.and.callFake(temporary_files => {
+            uploadAllTemporaryFiles.and.callFake(temporary_files => {
                 switch (temporary_files[0].description) {
                     case "one":
                         return first_upload.promise;
@@ -273,6 +250,7 @@ describe("TuleapArtifactModalController", () => {
             editArtifact.and.returnValue(edit_request.promise);
             var values = [first_file_field_value, second_file_field_value];
             ArtifactModalController.values = values;
+            getAllFileFields.and.returnValue(values);
 
             ArtifactModalController.submit();
             first_upload.resolve([47]);
@@ -280,8 +258,8 @@ describe("TuleapArtifactModalController", () => {
             edit_request.resolve({ id: 144 });
             $scope.$apply();
 
-            expect(TuleapArtifactModalFileUploadService.uploadAllTemporaryFiles).toHaveBeenCalledWith(first_field_temporary_files);
-            expect(TuleapArtifactModalFileUploadService.uploadAllTemporaryFiles).toHaveBeenCalledWith(second_field_temporary_files);
+            expect(uploadAllTemporaryFiles).toHaveBeenCalledWith(first_field_temporary_files);
+            expect(uploadAllTemporaryFiles).toHaveBeenCalledWith(second_field_temporary_files);
             expect(first_file_field_value.value).toEqual([66, 47]);
             expect(second_file_field_value.value).toEqual([71]);
         });
@@ -289,6 +267,7 @@ describe("TuleapArtifactModalController", () => {
         it("and given the server responded an error, when I submit the modal to Tuleap, then the modal will not be closed and the callback won't be called", () => {
             editArtifact.and.returnValue($q.reject());
             ArtifactModalController = $controller(BaseModalController, controller_params);
+            ArtifactModalController.values = [];
 
             ArtifactModalController.submit();
             $scope.$apply();

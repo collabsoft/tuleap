@@ -19,11 +19,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Http\Discovery\MessageFactoryDiscovery;
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\MessageFactoryBuilder;
+use Tuleap\Hudson\HudsonJobBuilder;
+
 require_once 'www/include/help.php';
 
 class hudsonViews extends Views {
 
-    function hudsonViews(&$controler, $view=null) {
+    function __construct(&$controler, $view=null) {
         $this->View($controler, $view);
     }
 
@@ -279,43 +284,60 @@ class hudsonViews extends Views {
             }
             echo ' </tr></thead>';
             echo '<tbody>';
-            $cpt = 1;
-            while ($dar->valid()) {
-                $row = $dar->current();
-                $job_id = $row['job_id'];
+            $cpt                                   = 1;
+            $minimal_job_factory                   = new MinimalHudsonJobFactory();
+            $job_builder                           = new HudsonJobBuilder(MessageFactoryBuilder::build(), HttpClientFactory::createClient());
+            $minimal_hudson_jobs                   = [];
+            $hudson_jobs_complementary_information = [];
 
+            foreach ($dar as $row) {
+                $job_id = $row['job_id'];
+                try {
+                    $minimal_hudson_jobs[$job_id]                   = $minimal_job_factory->getMinimalHudsonJob($row['job_url'], $row['name']);
+                    $hudson_jobs_complementary_information[$job_id] = [
+                        'name'            => $row['name'],
+                        'use_svn_trigger' => $row['use_svn_trigger'],
+                        'use_cvs_trigger' => $row['use_cvs_trigger']
+                    ];
+                } catch (HudsonJobURLMalformedException $ex) {
+                    // Managed when a new job is added
+                }
+            }
+
+            $hudson_jobs_with_exception = $job_builder->getHudsonJobsWithException($minimal_hudson_jobs);
+
+            foreach ($hudson_jobs_with_exception as $job_id => $hudson_job_with_exception) {
                 echo ' <tr>';
 
                 try {
-                    $http_client = new Http_Client();
-                    $job         = new HudsonJob($row['job_url'], $http_client);
+                    $job = $hudson_job_with_exception->getHudsonJob();
 
                     echo '<td>';
                     echo '<img src="'.$purifier->purify($job->getStatusIcon()).'" alt="'.$purifier->purify($job->getStatus()).'" title="'.$purifier->purify($job->getStatus()).'" /> ';
-                    echo '<a href="'.$purifier->purify($job->getUrl()).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','show_job', array($row['name']))).'">'.$purifier->purify($row['name']).'</a>';
+                    echo '<a href="'.$purifier->purify($job->getUrl()).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','show_job', array($job->getName()))).'">'.$purifier->purify($job->getName()).'</a>';
                     echo '</td>';
-                    if ($job->getLastSuccessfulBuildNumber() != '') {
-                        echo '  <td><a href="'.$purifier->purify($job->getLastSuccessfulBuildUrl()).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','show_build', array($job->getLastSuccessfulBuildNumber(), $row['name']))).'">'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','build').' #'.$job->getLastSuccessfulBuildNumber()).'</a></td>';
+                    if ($job->getLastSuccessfulBuildNumber() !== 0) {
+                        echo '  <td><a href="'.$purifier->purify($job->getLastSuccessfulBuildUrl()).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','show_build', array($job->getLastSuccessfulBuildNumber(), $job->getName()))).'">'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','build').' #'.$job->getLastSuccessfulBuildNumber()).'</a></td>';
                     } else {
                         echo '  <td>&nbsp;</td>';
                     }
-                    if ($job->getLastFailedBuildNumber() != '') {
-                        echo '  <td><a href="'.$purifier->purify($job->getLastFailedBuildUrl()).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','show_build', array($job->getLastFailedBuildNumber(), $row['name']))).'">'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','build').' #'.$job->getLastFailedBuildNumber()).'</a></td>';
+                    if ($job->getLastFailedBuildNumber() !== 0) {
+                        echo '  <td><a href="'.$purifier->purify($job->getLastFailedBuildUrl()).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','show_build', array($job->getLastFailedBuildNumber(), $job->getName()))).'">'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','build').' #'.$job->getLastFailedBuildNumber()).'</a></td>';
                     } else {
                         echo '  <td>&nbsp;</td>';
                     }
-                    echo '  <td align="center"><a href="'.$purifier->purify($job->getUrl()).'/rssAll"><img src="'.$this->getControler()->getIconsPath().'rss_feed.png" alt="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','rss_feed', array($row['name']))).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','rss_feed', array($row['name']))).'"></a></td>';
+                    echo '  <td align="center"><a href="'.$purifier->purify($job->getUrl()).'/rssAll"><img src="'.hudsonPlugin::ICONS_PATH.'rss_feed.png" alt="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','rss_feed', array($job->getName()))).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','rss_feed', array($job->getName()))).'"></a></td>';
 
                     if ($project->usesSVN()) {
-                        if ($row['use_svn_trigger'] == 1) {
-                            echo '  <td align="center"><img src="'.$purifier->purify($this->getControler()->getIconsPath()).'server_lightning.png" alt="'.$GLOBALS['Language']->getText('plugin_hudson','alt_svn_trigger').'" title="'.$GLOBALS['Language']->getText('plugin_hudson','alt_svn_trigger').'"></td>';
+                        if ($hudson_jobs_complementary_information[$job_id]['use_svn_trigger'] == 1) {
+                            echo '  <td align="center"><img src="'.$purifier->purify(hudsonPlugin::ICONS_PATH).'server_lightning.png" alt="'.$GLOBALS['Language']->getText('plugin_hudson','alt_svn_trigger').'" title="'.$GLOBALS['Language']->getText('plugin_hudson','alt_svn_trigger').'"></td>';
                         } else {
                             echo '  <td>&nbsp;</td>';
                         }
                     }
                     if ($project->usesCVS()) {
-                        if ($row['use_cvs_trigger'] == 1) {
-                            echo '  <td align="center"><img src="'.$purifier->purify($this->getControler()->getIconsPath()).'server_lightning.png" alt="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','alt_cvs_trigger')).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','alt_cvs_trigger')).'"></td>';
+                        if ($hudson_jobs_complementary_information[$job_id]['use_cvs_trigger'] == 1) {
+                            echo '  <td align="center"><img src="'.$purifier->purify(hudsonPlugin::ICONS_PATH).'server_lightning.png" alt="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','alt_cvs_trigger')).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson','alt_cvs_trigger')).'"></td>';
                         } else {
                             echo '  <td>&nbsp;</td>';
                         }
@@ -323,14 +345,14 @@ class hudsonViews extends Views {
                     if (!empty($services)) {
                         foreach ($services as $service) {
                             if (isset($service['used'][$job_id]) && $service['used'][$job_id] == true) {
-                                echo '  <td align="center"><img src="'.$purifier->purify($this->getControler()->getIconsPath()).'server_lightning.png" alt="'.$purifier->purify($service['title']).'" title="'.$purifier->purify($service['title']).'"></td>';
+                                echo '  <td align="center"><img src="'.$purifier->purify(hudsonPlugin::ICONS_PATH).'server_lightning.png" alt="'.$purifier->purify($service['title']).'" title="'.$purifier->purify($service['title']).'"></td>';
                             } else {
                                 echo '  <td>&nbsp;</td>';
                             }
                         }
                     }
                 } catch (Exception $e) {
-                    echo '  <td><img src="'.$purifier->purify($this->getControler()->getIconsPath()).'link_error.png" alt="'.$purifier->purify($e->getMessage()).'" title="'.$purifier->purify($e->getMessage()).'" /></td>';
+                    echo '  <td><img src="'.$purifier->purify(hudsonPlugin::ICONS_PATH).'link_error.png" alt="'.$purifier->purify($e->getMessage()).'" title="'.$purifier->purify($e->getMessage()).'" /></td>';
                     $nb_columns = 2;
                     if ($project->usesSVN()) { $nb_columns++; }
                     if ($project->usesCVS()) { $nb_columns++; }
@@ -352,7 +374,7 @@ class hudsonViews extends Views {
                     // delete job
                     echo '   <span class="job_action">';
                     echo '    <a href="?action=delete_job&group_id='.$group_id.'&job_id='.$job_id.'" onclick="return confirm(';
-                    echo "'" . $purifier->purify($GLOBALS['Language']->getText('plugin_hudson','delete_job_confirmation', array($row['name'], $project->getUnixName()))) . "'";
+                    echo "'" . $purifier->purify($GLOBALS['Language']->getText('plugin_hudson','delete_job_confirmation', array($hudson_jobs_complementary_information[$job_id]['name'], $project->getUnixName()))) . "'";
                     echo ');">'.$GLOBALS['HTML']->getimage('ic/cross.png',
                                                             array('alt' => $GLOBALS['Language']->getText('plugin_hudson','delete_job'),
                                                                   'title' => $GLOBALS['Language']->getText('plugin_hudson','delete_job'))).'</a>';
@@ -362,7 +384,6 @@ class hudsonViews extends Views {
 
                 echo ' </tr>';
 
-                $dar->next();
                 $cpt++;
             }
             echo '</table>';

@@ -18,11 +18,17 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Agiledashboard\FormElement\BurnupCacheGenerator;
+use Tuleap\AgileDashboard\AdminController;
+use Tuleap\AgileDashboard\BaseController;
+use Tuleap\AgileDashboard\BreadCrumbDropdown\AdministrationCrumbBuilder;
+use Tuleap\AgileDashboard\BreadCrumbDropdown\AgileDashboardCrumbBuilder;
+use Tuleap\AgileDashboard\FormElement\BurnupCacheGenerator;
 use Tuleap\AgileDashboard\FormElement\FormElementController;
+use Tuleap\AgileDashboard\Kanban\BreadCrumbBuilder;
+use Tuleap\AgileDashboard\Kanban\ShowKanbanController;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneDao;
-use Tuleap\AgileDashboard\PerGroup\AgileDashboardJSONPermissionsRetriever;
+use Tuleap\AgileDashboard\PermissionsPerGroup\AgileDashboardJSONPermissionsRetriever;
 use Tuleap\AgileDashboard\Planning\ScrumPlanningFilter;
 
 require_once 'common/plugin/Plugin.class.php';
@@ -35,8 +41,8 @@ require_once 'common/plugin/Plugin.class.php';
  *
  * TODO: Layout management should be extracted and moved to controllers or views.
  */
-class AgileDashboardRouter {
-
+class AgileDashboardRouter
+{
     /**
      * @var Plugin
      */
@@ -100,6 +106,14 @@ class AgileDashboardRouter {
      * @var AgileDashboardJSONPermissionsRetriever
      */
     private $permissions_retriever;
+    /**
+     * @var AgileDashboardCrumbBuilder
+     */
+    private $service_crumb_builder;
+    /**
+     * @var AdministrationCrumbBuilder
+     */
+    private $admin_crumb_builder;
 
     public function __construct(
         Plugin $plugin,
@@ -115,7 +129,9 @@ class AgileDashboardRouter {
         AgileDashboard_HierarchyChecker $hierarchy_checker,
         ScrumForMonoMilestoneChecker $scrum_mono_milestone_checker,
         ScrumPlanningFilter $planning_filter,
-        AgileDashboardJSONPermissionsRetriever $permissions_retriever
+        AgileDashboardJSONPermissionsRetriever $permissions_retriever,
+        AgileDashboardCrumbBuilder $service_crumb_builder,
+        AdministrationCrumbBuilder $admin_crumb_builder
     ) {
         $this->plugin                       = $plugin;
         $this->milestone_factory            = $milestone_factory;
@@ -131,6 +147,8 @@ class AgileDashboardRouter {
         $this->scrum_mono_milestone_checker = $scrum_mono_milestone_checker;
         $this->planning_filter              = $planning_filter;
         $this->permissions_retriever        = $permissions_retriever;
+        $this->service_crumb_builder        = $service_crumb_builder;
+        $this->admin_crumb_builder          = $admin_crumb_builder;
     }
 
     /**
@@ -194,7 +212,7 @@ class AgileDashboardRouter {
                 $this->executeAction($agile_dashboard_xml_controller, 'export');
                 break;
             case 'import':
-                if ($request->get('home-ease-onboarding')) {
+                if (! IS_SCRIPT) {
                     $this->executeAction($agile_dashboard_xml_controller, 'importOnlyAgileDashboard');
                 } else {
                     $this->executeAction($agile_dashboard_xml_controller, 'importProject');
@@ -215,7 +233,18 @@ class AgileDashboardRouter {
                     'body_class'                 => array('agiledashboard_kanban'),
                     Layout::INCLUDE_FAT_COMBINED => false,
                 );
-                $this->renderAction($this->buildController($request), 'showKanban', $request, array(), $header_options);
+
+                $plugin_path = $this->plugin->getPluginPath();
+
+                $controller = new ShowKanbanController(
+                    $request,
+                    $this->kanban_factory,
+                    TrackerFactory::instance(),
+                    new AgileDashboard_PermissionsManager(),
+                    $this->service_crumb_builder,
+                    new BreadCrumbBuilder($plugin_path)
+                );
+                $this->renderAction($controller, 'showKanban', $request, array(), $header_options);
                 break;
             case 'burnup-cache-generate':
                 $this->buildFormElementController()->forceBurnupCacheGeneration($request);
@@ -294,14 +323,17 @@ class AgileDashboardRouter {
     /**
      * Renders the top banner + navigation for all Agile Dashboard pages.
      *
-     * @param MVC2_Controller $controller The controller instance
+     * @param BaseController  $controller The controller instance
      * @param Codendi_Request $request    The request
      * @param string          $title      The page title
+     * @param array           $header_options
      */
-    private function displayHeader(MVC2_Controller $controller,
-                                   Codendi_Request $request,
-                                                   $title,
-                                             array $header_options = array()) {
+    private function displayHeader(
+        BaseController $controller,
+        Codendi_Request $request,
+        $title,
+        array $header_options = []
+    ) {
         $service = $this->getService($request);
         if (! $service) {
             exit_error(
@@ -313,18 +345,7 @@ class AgileDashboardRouter {
             );
         }
 
-        $toolbar     = array();
-        $breadcrumbs = $controller->getBreadcrumbs($this->plugin->getPluginPath());
-        if ($this->userIsAdmin($request)) {
-            $toolbar[] = array(
-                'title' => $GLOBALS['Language']->getText('global', 'Admin'),
-                'url'   => AGILEDASHBOARD_BASE_URL .'/?'. http_build_query(array(
-                    'group_id' => $request->get('group_id'),
-                    'action'   => 'admin',
-                ))
-            );
-        }
-        $service->displayHeader($title, $breadcrumbs->getCrumbs(), $toolbar, $header_options);
+        $service->displayHeader($title, $controller->getBreadcrumbs(), [], $header_options);
     }
 
     private function userIsAdmin(Codendi_Request $request) {
@@ -347,7 +368,8 @@ class AgileDashboardRouter {
      *
      * @return Planning_Controller
      */
-    protected function buildPlanningController(Codendi_Request $request) {
+    protected function buildPlanningController(Codendi_Request $request)
+    {
         return new Planning_Controller(
             $request,
             $this->planning_factory,
@@ -364,21 +386,25 @@ class AgileDashboardRouter {
             $this->scrum_mono_milestone_checker,
             $this->planning_filter,
             TrackerFactory::instance(),
-            Tracker_FormElementFactory::instance()
+            Tracker_FormElementFactory::instance(),
+            $this->service_crumb_builder,
+            $this->admin_crumb_builder
         );
     }
 
-    protected function buildController(Codendi_Request $request) {
-        return new AgileDashboard_Controller(
+    protected function buildController(Codendi_Request $request)
+    {
+        return new AdminController(
             $request,
             $this->planning_factory,
             $this->kanban_manager,
             $this->kanban_factory,
             $this->config_manager,
             TrackerFactory::instance(),
-            new AgileDashboard_PermissionsManager(),
-            new ScrumForMonoMilestoneChecker( new ScrumForMonoMilestoneDao(), $this->planning_factory),
-            EventManager::instance()
+            new ScrumForMonoMilestoneChecker(new ScrumForMonoMilestoneDao(), $this->planning_factory),
+            EventManager::instance(),
+            $this->service_crumb_builder,
+            $this->admin_crumb_builder
         );
     }
 
@@ -472,26 +498,20 @@ class AgileDashboardRouter {
             );
         }
 
-        $toolbar     = array();
-        if ($this->userIsAdmin($request)) {
-            $toolbar[] = array(
-                'title' => $GLOBALS['Language']->getText('global', 'Admin'),
-                'url'   => AGILEDASHBOARD_BASE_URL .'/?'. http_build_query(array(
-                    'group_id' => $request->get('group_id'),
-                    'action'   => 'admin',
-                ))
-            );
-        }
-
-        $no_breadcrumbs = new BreadCrumb_NoCrumb();
         $controller     = $this->milestone_controller_factory->getVirtualTopMilestoneController($request);
         $header_options = array_merge(
             array('body_class' => array('agiledashboard_planning')),
             $controller->getHeaderOptions()
         );
+        $breadcrumbs = $controller->getBreadcrumbs();
 
         $top_planning_rendered = $this->executeAction($controller, 'showTop', array());
-        $service->displayHeader($this->getHeaderTitle($request, 'showTop'), $no_breadcrumbs, $toolbar, $header_options);
+        $service->displayHeader(
+            $this->getHeaderTitle($request, 'showTop'),
+            $breadcrumbs,
+            [],
+            $header_options
+        );
         echo $top_planning_rendered;
         $this->displayFooter($request);
     }

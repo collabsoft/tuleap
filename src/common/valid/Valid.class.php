@@ -62,7 +62,7 @@ class Valid {
     /**
      * Constructor
      */
-    function Valid($key = null) {
+    function __construct($key = null) {
         $this->key = $key;
         $this->errors = array();
         $this->rules = array();
@@ -89,8 +89,8 @@ class Valid {
      * @param Rule   Reference on rule.
      * @param String Error message.
      */
-    function addRule(&$rule, $message=false) {
-        $this->rules[] =& $rule;
+    function addRule($rule, $message=false) {
+        $this->rules[]  = $rule;
         $this->errors[] = $message;
     }
 

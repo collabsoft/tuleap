@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,7 @@
 
 namespace Tuleap\Project\Admin\DescriptionFields;
 
-use Tuleap\Layout\PaginationPresenter;
+use Tuleap\Admin\ProjectCreationNavBarPresenter;
 
 class FieldsListPresenter
 {
@@ -40,11 +40,18 @@ class FieldsListPresenter
     public $rank_header;
     public $rank_tooltip;
     public $no_description_fields;
+    /**
+     * @var \CSRFSynchronizerToken
+     */
+    public $csrf_token;
 
     public function __construct(
+        ProjectCreationNavBarPresenter $navbar,
         $title,
-        array $description_fields
+        array $description_fields,
+        \CSRFSynchronizerToken $csrf_token
     ) {
+        $this->navbar             = $navbar;
         $this->title              = $title;
         $this->description_fields = $description_fields;
 
@@ -81,5 +88,7 @@ class FieldsListPresenter
         $this->delete_modal_content                     = $GLOBALS['Language']->getText('admin_desc_fields', 'delete_modal_content');
         $this->delete_modal_cancel                      = $GLOBALS['Language']->getText('admin_desc_fields', 'delete_modal_cancel');
         $this->delete_modal_submit                      = $GLOBALS['Language']->getText('admin_desc_fields', 'delete_modal_submit');
+
+        $this->csrf_token = $csrf_token;
     }
 }

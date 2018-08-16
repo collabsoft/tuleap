@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,17 +27,17 @@ use \Tuleap\PullRequest\FileUniDiff;
 use \Tuleap\PullRequest\FileNullDiff;
 use \Tuleap\PullRequest\UniDiffLine;
 
-require_once 'bootstrap.php';
+require_once __DIR__ . '/../bootstrap.php';
 
-class InlineCommentUpdaterTest extends TuleapTestCase
+class WhenSourceChangesTest extends TuleapTestCase
 {
-    public function __construct()
+    public function setUp()
     {
+        parent::setUp();
+
         $this->updater = new InlineCommentUpdater();
     }
-}
 
-class WhenSourceChangesTest extends InlineCommentUpdaterTest {
     public function itShouldBeObsoleteIfLineWasAddedAndLineIsDeleted()
     {
         $comments = array(new InlineComment(1, 1, 1, 1, 'file.txt', 1, 'commentaire', false));

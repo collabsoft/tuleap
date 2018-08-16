@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2011 - 2017. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,11 +20,12 @@
  */
 
 use Tuleap\Git\AccessRightsPresenterOptionsBuilder;
-use Tuleap\Git\Permissions\FineGrainedRetriever;
-use Tuleap\Git\Permissions\FineGrainedPermissionFactory;
-use Tuleap\Git\Permissions\DefaultFineGrainedPermissionFactory;
-use Tuleap\Git\Permissions\FineGrainedRepresentationBuilder;
+use Tuleap\Git\GitViews\Header\HeaderRenderer;
 use Tuleap\Git\History\GitPhpAccessLogger;
+use Tuleap\Git\Permissions\DefaultFineGrainedPermissionFactory;
+use Tuleap\Git\Permissions\FineGrainedPermissionFactory;
+use Tuleap\Git\Permissions\FineGrainedRepresentationBuilder;
+use Tuleap\Git\Permissions\FineGrainedRetriever;
 use Tuleap\Git\Permissions\RegexpFineGrainedRetriever;
 
 require_once 'www/project/admin/permissions.php';
@@ -33,9 +34,6 @@ require_once 'www/project/admin/permissions.php';
  * GitViews
  */
 class GitViews extends PluginViews {
-
-    const DEFAULT_SETTINGS_PANE_ACCESS_CONTROL = 'access_control';
-    const DEFAULT_SETTINGS_PANE_MIRRORING      = 'mirroring';
 
     /** @var Project */
     private $project;
@@ -80,6 +78,14 @@ class GitViews extends PluginViews {
      * @var Git_RemoteServer_GerritServerFactory
      */
     private $gerrit_server_factory;
+    /**
+     * @var HeaderRenderer
+     */
+    private $header_renderer;
+    /**
+     * @var EventManager
+     */
+    private $event_manager;
 
     public function __construct(
         $controller,
@@ -92,10 +98,11 @@ class GitViews extends PluginViews {
         FineGrainedRepresentationBuilder $fine_grained_builder,
         GitPhpAccessLogger $access_loger,
         RegexpFineGrainedRetriever $regexp_retriever,
-        Git_RemoteServer_GerritServerFactory $gerrit_server_factory
+        Git_RemoteServer_GerritServerFactory $gerrit_server_factory,
+        HeaderRenderer $header_renderer
     ) {
         parent::__construct($controller);
-        $this->groupId                                 = (int)$this->request->get('group_id');
+        $this->groupId                                 = (int) $this->request->get('group_id');
         $this->project                                 = ProjectManager::instance()->getProject($this->groupId);
         $this->projectName                             = $this->project->getUnixName();
         $this->userName                                = $this->user->getName();
@@ -110,31 +117,13 @@ class GitViews extends PluginViews {
         $this->access_loger                            = $access_loger;
         $this->regexp_retriever                        = $regexp_retriever;
         $this->gerrit_server_factory                   = $gerrit_server_factory;
+        $this->event_manager                           = EventManager::instance();
+        $this->header_renderer                         = $header_renderer;
     }
 
-    public function header() {
-        $title = $GLOBALS['Language']->getText('plugin_git','title');
-
-        $this->getToolbar();
-
-        $GLOBALS['HTML']->header(array(
-            'title'      => $title,
-            'group'      => $this->groupId,
-            'toptab'     => 'plugin_git',
-            'body_class' => $this->getAdditionalBodyClasses()
-        ));
-    }
-
-    private function getAdditionalBodyClasses() {
-        $classes = array();
-        $params  = array(
-            'request' => $this->request,
-            'classes' => &$classes
-        );
-
-        EventManager::instance()->processEvent(GIT_ADDITIONAL_BODY_CLASSES, $params);
-
-        return $classes;
+    public function header()
+    {
+        $this->header_renderer->renderDefaultHeader($this->request, $this->user, $this->project);
     }
 
     public function footer() {
@@ -145,101 +134,20 @@ class GitViews extends PluginViews {
         return $GLOBALS['Language']->getText('plugin_git', $key, $params);
     }
 
-    protected function getToolbar() {
-        $GLOBALS['HTML']->addToolbarItem($this->linkTo($this->getText('bread_crumb_home'), '/plugins/git/?group_id='.$this->groupId));
-        $GLOBALS['HTML']->addToolbarItem($this->linkTo($this->getText('fork_repositories'), '/plugins/git/?group_id='.$this->groupId .'&action=fork_repositories'));
-        $GLOBALS['HTML']->addToolbarItem($this->linkTo($this->getText('bread_crumb_help'), 'javascript:help_window(\'/doc/'.$this->user->getShortLocale().'/user-guide/git.html\')'));
-
-        if ($this->git_permissions_manager->userIsGitAdmin($this->user, $this->project)) {
-            $GLOBALS['HTML']->addToolbarItem($this->linkTo($this->getText('bread_crumb_admin'), '/plugins/git/?group_id='.$this->groupId .'&action=admin'));
-        }
-    }
-
-    /**
-     * HELP VIEW
-     */
-    public function help($topic, $params=array()) {
-        if ( empty($topic) ) {
-            return false;
-        }
-        $display = 'block';
-        if ( !empty($params['display']) ) {
-            $display = $params['display'];
-        }
-        switch( $topic ) {
-                case 'init':
-             ?>
-<div id="help_init" class="alert alert-info" style="display:<?php echo $display?>">
-    <h3><?php echo $this->getText('help_reference_title'); ?></h3>
-    <p>
-                       <?php
-                       echo '<ul>'.$this->getText('help_init_reference').'</ul>';
-                       ?>
-    </p>
-    </div>
-                    <?php
-                    break;
-                    case 'create':
-                        ?>
-                        <div id="help_create" class="alert alert-info" style="display:<?php echo $display?>">
-                            <h3><?php echo $this->getText('help_create_reference_title'); ?></h3>
-                        <?php
-                        echo '<ul>'.$this->getText('help_create_reference').'</ul>';
-                        ?>
-                        </div>
-                        <?php
-                        break;
-                    case 'tree':
-                        ?>
-                        <div id="help_tree" class="alert alert-info" style="display:<?php echo $display?>">
-                        <?php
-                        echo '<ul>'.$this->getText('help_tree').'</ul>';
-                        ?>
-                        </div>
-                        <?php
-                        break;
-                    case 'fork':
-                        ?>
-                        <div id="help_fork" class="alert alert-info" style="display:<?php echo $display?>">
-                        <?php
-                        echo '<ul>'.$this->getText('help_fork').'</ul>';
-                        ?>
-                        </div>
-                        <?php
-                        break;
-                default:
-                    break;
-            }
-        }
-
-    /**
-     * REPO VIEW
-     */
-    public function view() {
-        $params     = $this->getData();
-        $repository = $params['repository'];
-        $request    = $this->controller->getRequest();
-
-        $index_view = new GitViews_ShowRepo(
-            $repository,
-            $this->controller,
-            $this->url_manager,
-            $this->controller->getRequest(),
-            $params['driver_factory'],
-            $params['gerrit_usermanager'],
-            $params['gerrit_servers'],
-            $this->mirror_data_mapper,
-            $this->access_loger
-        );
-        $index_view->display();
-    }
-
     /**
      * REPOSITORY MANAGEMENT VIEW
      */
-    public function repoManagement() {
+    public function repoManagement()
+    {
         $params = $this->getData();
         $repository   = $params['repository'];
+
+        $this->header_renderer->renderRepositorySettingsHeader(
+            $this->request,
+            $this->user,
+            $this->project,
+            $repository
+        );
 
         echo '<h1>'. $repository->getHTMLLink($this->url_manager) .' - '. $GLOBALS['Language']->getText('global', 'Settings') .'</h1>';
         $repo_management_view = new GitViews_RepoManagement(
@@ -255,39 +163,12 @@ class GitViews extends PluginViews {
             $this->fine_grained_builder,
             $this->default_fine_grained_permission_factory,
             $this->git_permissions_manager,
-            $this->regexp_retriever
+            $this->regexp_retriever,
+            $this->event_manager
         );
         $repo_management_view->display();
-    }
 
-    /**
-     * FORK VIEW
-     */
-    public function fork() {
-        $params = $this->getData();
-        $repository   = $params['repository'];
-        $repoId       = $repository->getId();
-        $initialized  = $repository->isInitialized();
-
-        echo "<h1>". $repository->getHTMLLink($this->url_manager) ."</h1>";
-        ?>
-        <form id="repoAction" name="repoAction" method="POST" action="/plugins/git/?group_id=<?php echo $this->groupId?>">
-        <input type="hidden" id="action" name="action" value="edit" />
-        <input type="hidden" id="repo_id" name="repo_id" value="<?php echo $repoId?>" />
-        <?php
-        if ( $initialized && $this->getController()->isAPermittedAction('clone') ) :
-        ?>
-            <p id="plugin_git_fork_form">
-                <input type="hidden" id="parent_id" name="parent_id" value="<?php echo $repoId?>">
-                <label for="repo_name"><?php echo $this->getText('admin_fork_creation_input_name');
-        ?>:     </label>
-                <input type="text" id="repo_name" name="repo_name" value="" /><input type="submit" class="btn btn-default" name="clone" value="<?php echo $this->getText('admin_fork_creation_submit');?>" />
-                <a href="#" onclick="$('help_fork').toggle();"> [?]</a>
-            </p>
-        </form>
-        <?php
-        endif;
-        $this->help('fork', array('display'=>'none'));
+        $this->footer();
     }
 
     /**
@@ -335,37 +216,6 @@ class GitViews extends PluginViews {
         if ( $this->getController()->isAPermittedAction('add') ) {
             $this->_createForm();
         }
-    }
-
-    /**
-     * CREATE REF FORM
-     */
-    protected function _createForm() {
-        $user = UserManager::instance()->getCurrentUser();
-        ?>
-<h2><?php echo $this->getText('admin_reference_creation_title');
-        ?> <a href="#" onclick="$('help_create').toggle();$('help_init').toggle()"><i class="icon-question-sign"></i></a></h2>
-<form id="addRepository" action="/plugins/git/?group_id=<?php echo $this->groupId ?>" method="POST" class="form-inline">
-    <input type="hidden" id="action" name="action" value="add" />
-
-    <label for="repo_name"><?= $this->getText('admin_reference_creation_input_name'); ?></label>
-    <input id="repo_name" name="repo_name" class="" type="text" value=""/>
-
-    <input type="submit" id="repo_add" name="repo_add" value="<?php echo $this->getText('admin_reference_creation_submit')?>" class="btn btn-primary">
-</form>
-        <?php
-        $this->help('create', array('display'=>'none')) ;
-        $this->help('init', array('display'=>'none')) ;
-    }
-
-    /**
-     * @todo several cases ssh, http ...
-     * @param <type> $repositoryName
-     * @return <type>
-     */
-    protected function _getRepositoryUrl($repositoryName) {
-        $serverName  = $_SERVER['SERVER_NAME'];
-        return  $this->userName.'@'.$serverName.':/gitroot/'.$this->projectName.'/'.$repositoryName.'.git';
     }
 
     protected function forkRepositories() {
@@ -436,9 +286,8 @@ class GitViews extends PluginViews {
         echo '<br />';
     }
 
-    protected function adminGitAdminsView($are_mirrors_defined) {
-        $params = $this->getData();
-
+    protected function adminGitAdminsView($are_mirrors_defined)
+    {
         $presenter = new GitPresenters_AdminGitAdminsPresenter(
             $this->groupId,
             $are_mirrors_defined,
@@ -448,10 +297,13 @@ class GitViews extends PluginViews {
 
         $renderer = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR).'/templates');
 
+        $this->header_renderer->renderServiceAdministrationHeader($this->request, $this->user, $this->project);
         echo $renderer->renderToString('admin', $presenter);
+        $this->footer();
     }
 
-    protected function adminGerritTemplatesView($are_mirrors_defined) {
+    protected function adminGerritTemplatesView($are_mirrors_defined)
+    {
         $params = $this->getData();
 
         $repository_list       = (isset($params['repository_list'])) ? $params['repository_list'] : array();
@@ -469,12 +321,13 @@ class GitViews extends PluginViews {
 
         $renderer = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR).'/templates');
 
+        $this->header_renderer->renderServiceAdministrationHeader($this->request, $this->user, $this->project);
         echo $renderer->renderToString('admin', $presenter);
+        $this->footer();
     }
 
-    protected function adminMassUpdateSelectRepositoriesView() {
-        $params = $this->getData();
-
+    protected function adminMassUpdateSelectRepositoriesView()
+    {
         $repository_list = $this->getGitRepositoryFactory()->getAllRepositories($this->project);
         $presenter       = new GitPresenters_AdminMassUpdateSelectRepositoriesPresenter(
             $this->generateMassUpdateCSRF(),
@@ -484,10 +337,13 @@ class GitViews extends PluginViews {
 
         $renderer = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR).'/templates');
 
+        $this->header_renderer->renderServiceAdministrationHeader($this->request, $this->user, $this->project);
         echo $renderer->renderToString('admin', $presenter);
+        $this->footer();
     }
 
-    protected function adminMassUpdateView() {
+    protected function adminMassUpdateView()
+    {
         $params = $this->getData();
 
         $repositories = $params['repositories'];
@@ -505,7 +361,9 @@ class GitViews extends PluginViews {
 
         $renderer = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR).'/templates');
 
+        $this->header_renderer->renderServiceAdministrationHeader($this->request, $this->user, $this->project);
         echo $renderer->renderToString('admin', $presenter);
+        $this->footer();
     }
 
     private function buildListOfMirroredRepositoriesPresenters(
@@ -633,165 +491,4 @@ class GitViews extends PluginViews {
         }
         return $html;
     }
-
-    /**
-     * TREE SUBVIEW
-     */
-    protected function _tree($params=array()) {
-        if ( empty($params) ) {
-            $params = $this->getData();
-        }
-        if (!empty($params['repository_list']) || (isset($params['repositories_owners']) && $params['repositories_owners']->rowCount() > 0)) {
-            echo '<h1>'.$this->getText('tree_title_available_repo').' <a href="#" onclick="$(\'help_tree\').toggle();"><i class="icon-question-sign"></i></a></h1>';
-            if (isset($params['repositories_owners']) && $params['repositories_owners']->rowCount() > 0) {
-                $purifier   = Codendi_HTMLPurifier::instance();
-                $current_id = null;
-                if (!empty($params['user'])) {
-                    $current_id = (int)$params['user'];
-                }
-                $select = '<select name="user" onchange="this.form.submit()">';
-                $uh = UserHelper::instance();
-                $selected = 'selected="selected"';
-                $select .= '<option value="" '. ($current_id ? '' : $selected) .'>'. $this->getText('tree_title_available_repo') .'</option>';
-                foreach ($params['repositories_owners'] as $owner) {
-                    $select .= '<option value="'. (int)$owner['repository_creation_user_id'] .'" '.
-                        ($owner['repository_creation_user_id'] == $current_id ? $selected : '') .'>'.
-                        $purifier->purify($uh->getDisplayName($owner['user_name'], $owner['realname'])) .
-                        '</option>';
-                }
-                $select .= '</select>';
-                echo '<form action="" class="form-tree" method="GET">';
-                echo '<input type="hidden" name="action" value="index" />';
-                echo '<input type="hidden" name="group_id" value="'. (int)$this->groupId .'" />';
-                echo $select;
-                echo '<noscript><input type="submit" value="'. $GLOBALS['Language']->getText('global', 'btn_submit') .'" /></noscript>';
-                echo '</form>';
-            }
-            $this->help('tree', array('display' => 'none'));
-
-
-            $lastPushes = array();
-            $dao = new Git_LogDao();
-            foreach ($params['repository_list'] as $repository) {
-                $id  = $repository['repository_id'];
-                $dar = $dao->searchLastPushForRepository($id);
-                if ($dar && !$dar->isError() && $dar->rowCount() == 1) {
-                    $lastPushes[$id] = $dar->getRow();
-                }
-            }
-            $strategy = new GitViewsRepositoriesTraversalStrategy_Tree($lastPushes, $this->url_manager);
-            echo $strategy->fetch($params['repository_list'], $this->user);
-        }
-        else {
-            echo "<h3>".$this->getText('tree_msg_no_available_repo')."</h3>";
-        }
-    }
-
-    protected function adminDefaultSettings($are_mirrors_defined, $pane) {
-        $mirror_presenters = $this->getMirrorPresentersForGitAdmin();
-        $project_id        = $this->project->getID();
-
-        $builder        = $this->getAccessRightsPresenterOptionsBuilder();
-        $read_options   = $builder->getDefaultOptions($this->project, Git::DEFAULT_PERM_READ);
-        $write_options  = $builder->getDefaultOptions($this->project, Git::DEFAULT_PERM_WRITE);
-        $rewind_options = $builder->getDefaultOptions($this->project, Git::DEFAULT_PERM_WPLUS);
-        $csrf           = new CSRFSynchronizerToken("plugins/git/?group_id=$project_id&action=admin-default-access-rights");
-
-        $pane_access_control = true;
-        $pane_mirroring      = false;
-
-        if ($are_mirrors_defined && $pane === self::DEFAULT_SETTINGS_PANE_MIRRORING) {
-            $pane_access_control = false;
-            $pane_mirroring      = true;
-        }
-
-        $user = UserManager::instance()->getCurrentUser();
-
-        $can_use_fine_grained_permissions = $this->git_permissions_manager->userIsGitAdmin($user, $this->project);
-
-        $are_fine_grained_permissions_defined = $this->fine_grained_retriever->doesProjectUseFineGrainedPermissions(
-            $this->project
-        );
-
-        $branches_permissions     = $this->default_fine_grained_permission_factory->getBranchesFineGrainedPermissionsForProject($this->project);
-        $tags_permissions         = $this->default_fine_grained_permission_factory->getTagsFineGrainedPermissionsForProject($this->project);
-        $new_fine_grained_ugroups = $builder->getAllOptions($this->project);
-
-        $delete_url  = '?action=delete-default-permissions&pane=access_control&group_id='.$this->project->getID();
-        $url         = '?action=admin-default-settings&pane=access_control&group_id='.$this->project->getID();
-        $csrf_delete = new CSRFSynchronizerToken($url);
-
-        $branches_permissions_representation = array();
-        foreach ($branches_permissions as $permission) {
-            $branches_permissions_representation[] = $this->fine_grained_builder->buildDefaultPermission(
-                $permission,
-                $this->project
-            );
-        }
-
-        $tags_permissions_representation = array();
-        foreach ($tags_permissions as $permission) {
-            $tags_permissions_representation[] = $this->fine_grained_builder->buildDefaultPermission(
-                $permission,
-                $this->project
-            );
-        }
-
-        $presenter = new GitPresenters_AdminDefaultSettingsPresenter(
-            $project_id,
-            $are_mirrors_defined,
-            $mirror_presenters,
-            $csrf,
-            $read_options,
-            $write_options,
-            $rewind_options,
-            $pane_access_control,
-            $pane_mirroring,
-            $are_fine_grained_permissions_defined,
-            $can_use_fine_grained_permissions,
-            $branches_permissions_representation,
-            $tags_permissions_representation,
-            $new_fine_grained_ugroups,
-            $delete_url,
-            $csrf_delete,
-            $this->areRegexpActivatedAtSiteLevel(),
-            $this->isRegexpActivatedForDefault(),
-            $this->areRegexpConflictingForDefault()
-        );
-
-        $renderer = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR).'/templates');
-
-        echo $renderer->renderToString('admin', $presenter);
-    }
-
-    private function areRegexpActivatedAtSiteLevel()
-    {
-        return $this->regexp_retriever->areRegexpActivatedAtSiteLevel();
-    }
-
-
-    private function isRegexpActivatedForDefault()
-    {
-        return $this->regexp_retriever->areRegexpActivatedForDefault($this->project);
-    }
-
-    private function areRegexpConflictingForDefault()
-    {
-        return $this->regexp_retriever->areDefaultRegexpConflitingWithPlateform($this->project);
-    }
-
-    private function getMirrorPresentersForGitAdmin() {
-        $mirrors            = $this->mirror_data_mapper->fetchAllForProject($this->project);
-        $default_mirror_ids = $this->mirror_data_mapper->getDefaultMirrorIdsForProject($this->project);
-        $mirror_presenters  = array();
-
-        foreach ($mirrors as $mirror) {
-            $is_used = in_array($mirror->id, $default_mirror_ids);
-
-            $mirror_presenters[] = new GitPresenters_MirrorPresenter($mirror, $is_used);
-        }
-
-        return $mirror_presenters;
-    }
-
 }

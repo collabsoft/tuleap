@@ -18,12 +18,13 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Agiledashboard\FormElement\BurnupCacheDao;
-use Tuleap\Agiledashboard\FormElement\BurnupCacheDateRetriever;
+use Tuleap\AgileDashboard\BacklogItem\RemainingEffortValueRetriever;
+use Tuleap\AgileDashboard\FormElement\BurnupCacheDao;
+use Tuleap\AgileDashboard\FormElement\BurnupCacheDateRetriever;
 use Tuleap\AgileDashboard\FormElement\BurnupCalculator;
 use Tuleap\AgileDashboard\FormElement\BurnupDao;
 use Tuleap\AgileDashboard\FormElement\MessageFetcher;
-use Tuleap\Agiledashboard\FormElement\SystemEvent\SystemEvent_BURNUP_DAILY;
+use Tuleap\AgileDashboard\FormElement\SystemEvent\SystemEvent_BURNUP_DAILY;
 use Tuleap\AgileDashboard\FormElement\SystemEvent\SystemEvent_BURNUP_GENERATE;
 use Tuleap\AgileDashboard\Kanban\KanbanXmlImporter;
 use Tuleap\AgileDashboard\Kanban\RealTime\KanbanArtifactMessageBuilder;
@@ -38,34 +39,43 @@ use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneDao;
 use Tuleap\AgileDashboard\Planning\PlanningJavascriptDependenciesProvider;
 use Tuleap\AgileDashboard\RealTime\RealTimeArtifactMessageController;
-use Tuleap\AgileDashboard\RealTime\RealTimeArtifactMessageSender;
 use Tuleap\AgileDashboard\Semantic\Dao\SemanticDoneDao;
+use Tuleap\AgileDashboard\Semantic\MoveChangesetXMLUpdater;
+use Tuleap\AgileDashboard\Semantic\MoveSemanticInitialEffortChecker;
 use Tuleap\AgileDashboard\Semantic\SemanticDone;
 use Tuleap\AgileDashboard\Semantic\SemanticDoneFactory;
 use Tuleap\AgileDashboard\Semantic\SemanticDoneValueChecker;
 use Tuleap\AgileDashboard\Widget\MyKanban;
 use Tuleap\AgileDashboard\Widget\ProjectKanban;
+use Tuleap\AgileDashboard\Widget\WidgetKanbanConfigDAO;
+use Tuleap\AgileDashboard\Widget\WidgetKanbanConfigRetriever;
+use Tuleap\AgileDashboard\Widget\WidgetKanbanConfigUpdater;
 use Tuleap\AgileDashboard\Widget\WidgetKanbanCreator;
 use Tuleap\AgileDashboard\Widget\WidgetKanbanDao;
 use Tuleap\AgileDashboard\Widget\WidgetKanbanDeletor;
 use Tuleap\AgileDashboard\Widget\WidgetKanbanRetriever;
 use Tuleap\BurningParrotCompatiblePageEvent;
-use Tuleap\Dashboard\Project\ProjectDashboardController;
-use Tuleap\Dashboard\User\UserDashboardController;
+use Tuleap\Cardwall\Agiledashboard\CardwallPaneInfo;
 use Tuleap\Layout\IncludeAssets;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupPaneCollector;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupDisplayEvent;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupPaneCollector;
 use Tuleap\RealTime\NodeJSClient;
 use Tuleap\Request\CurrentPage;
 use Tuleap\Tracker\Artifact\Event\ArtifactCreated;
 use Tuleap\Tracker\Artifact\Event\ArtifactsReordered;
+use Tuleap\Tracker\Events\MoveArtifactGetExternalSemanticCheckers;
+use Tuleap\Tracker\Events\MoveArtifactParseFieldChangeNodes;
 use Tuleap\Tracker\FormElement\Event\MessageFetcherAdditionalWarnings;
 use Tuleap\Tracker\FormElement\Field\ListFields\Bind\CanValueBeHiddenStatementsCollection;
+use Tuleap\Tracker\FormElement\Field\ListFields\FieldValueMatcher;
+use Tuleap\Tracker\RealTime\RealTimeArtifactMessageSender;
 use Tuleap\Tracker\Report\Event\TrackerReportDeleted;
+use Tuleap\Tracker\Report\Event\TrackerReportSetToPrivate;
+use Tuleap\Tracker\Artifact\ActionButtons\MoveArtifactActionAllowedByPluginRetriever;
 use Tuleap\Tracker\Semantic\SemanticStatusCanBeDeleted;
 use Tuleap\Tracker\Semantic\SemanticStatusGetDisabledValues;
 
-require_once 'common/plugin/Plugin.class.php';
-require_once 'autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 require_once 'constants.php';
 
 /**
@@ -93,12 +103,12 @@ class AgileDashboardPlugin extends Plugin {
     {
         // Do not load the plugin if tracker is not installed & active
         if (defined('TRACKER_BASE_URL')) {
-            require_once dirname(__FILE__) .'/../../tracker/include/autoload.php';
             $this->addHook('cssfile', 'cssfile', false);
             $this->addHook('javascript_file');
             $this->addHook(\Tuleap\Widget\Event\GetWidget::NAME);
             $this->addHook(\Tuleap\Widget\Event\GetUserWidgetList::NAME);
             $this->addHook(\Tuleap\Widget\Event\GetProjectWidgetList::NAME);
+            $this->addHook(\Tuleap\Widget\Event\ConfigureAtXMLImport::NAME);
             $this->addHook(TRACKER_EVENT_INCLUDE_CSS_FILE);
             $this->addHook(TRACKER_EVENT_TRACKERS_DUPLICATED, 'tracker_event_trackers_duplicated', false);
             $this->addHook(TRACKER_EVENT_BUILD_ARTIFACT_FORM_ACTION, 'tracker_event_build_artifact_form_action', false);
@@ -141,6 +151,7 @@ class AgileDashboardPlugin extends Plugin {
             $this->addHook(Tracker_Artifact_EditRenderer::EVENT_ADD_VIEW_IN_COLLECTION);
             $this->addHook(Event::BURNING_PARROT_GET_STYLESHEETS);
             $this->addHook(Event::BURNING_PARROT_GET_JAVASCRIPT_FILES);
+            $this->addHook(PermissionPerGroupDisplayEvent::NAME);
             $this->addHook(BurningParrotCompatiblePageEvent::NAME);
             $this->addHook(CanValueBeHiddenStatementsCollection::NAME);
             $this->addHook(SemanticStatusGetDisabledValues::NAME);
@@ -149,6 +160,7 @@ class AgileDashboardPlugin extends Plugin {
             $this->addHook(ArtifactsReordered::NAME);
             $this->addHook(TRACKER_EVENT_ARTIFACT_POST_UPDATE);
             $this->addHook(TrackerReportDeleted::NAME);
+            $this->addHook(TrackerReportSetToPrivate::NAME);
             $this->addHook(Tracker_FormElementFactory::GET_CLASSNAMES);
             $this->addHook(Event::GET_SYSTEM_EVENT_CLASS);
             $this->addHook('codendi_daily_start');
@@ -156,6 +168,10 @@ class AgileDashboardPlugin extends Plugin {
             $this->addHook(MessageFetcherAdditionalWarnings::NAME);
             $this->addHook(Event::IMPORT_XML_PROJECT_TRACKER_DONE);
             $this->addHook(PermissionPerGroupPaneCollector::NAME);
+            $this->addHook(TRACKER_EVENT_ARTIFACT_DELETE);
+            $this->addHook(MoveArtifactGetExternalSemanticCheckers::NAME);
+            $this->addHook(MoveArtifactParseFieldChangeNodes::NAME);
+            $this->addHook(MoveArtifactActionAllowedByPluginRetriever::NAME);
         }
 
         if (defined('CARDWALL_BASE_URL')) {
@@ -278,7 +294,13 @@ class AgileDashboardPlugin extends Plugin {
         $milestone          = $milestone_provider->getMilestone();
 
         if ($milestone) {
-            $provider = new AgileDashboard_BacklogItem_SubBacklogItemProvider(new Tracker_ArtifactDao(), $this->getBacklogFactory(), $this->getBacklogItemCollectionFactory());
+            $provider = new AgileDashboard_BacklogItem_SubBacklogItemProvider(
+                new Tracker_ArtifactDao(),
+                $this->getBacklogFactory(),
+                $this->getBacklogItemCollectionFactory(),
+                $this->getPlanningFactory()
+            );
+
             $params['result'][]         = $provider->getMatchingIds($milestone, $backlog_tracker, $user);
             $params['search_performed'] = true;
         }
@@ -326,9 +348,10 @@ class AgileDashboardPlugin extends Plugin {
         $event_listener->process($params);
     }
 
-    public function tracker_event_include_css_file($params) {
+    public function tracker_event_include_css_file($params)
+    {
         $request = HTTPRequest::instance();
-        if ($request->get('pane') === Cardwall_PaneInfo::IDENTIFIER) {
+        if ($request->get('pane') === CardwallPaneInfo::IDENTIFIER || $this->isHomepageURL($request)) {
             $params['include_tracker_css_file'] = true;
         }
     }
@@ -402,8 +425,9 @@ class AgileDashboardPlugin extends Plugin {
             return;
         }
 
-        $widget_kanban_dao       = new WidgetKanbanDao();
-        $widget_kanban_creator   = new WidgetKanbanCreator(
+        $widget_kanban_dao        = new WidgetKanbanDao();
+        $widget_kanban_config_dao = new WidgetKanbanConfigDAO();
+        $widget_kanban_creator    = new WidgetKanbanCreator(
             $widget_kanban_dao
         );
         $widget_kanban_retriever = new WidgetKanbanRetriever(
@@ -412,17 +436,23 @@ class AgileDashboardPlugin extends Plugin {
         $widget_kanban_deletor   = new WidgetKanbanDeletor(
             $widget_kanban_dao
         );
+
+        $widget_config_retriever = new WidgetKanbanConfigRetriever(
+            $widget_kanban_config_dao
+        );
+
         $permission_manager      = new AgileDashboard_PermissionsManager();
         $kanban_factory          = new AgileDashboard_KanbanFactory(
             TrackerFactory::instance(),
             new AgileDashboard_KanbanDao()
         );
 
+        $widget_kanban_config_updater = new WidgetKanbanConfigUpdater(
+            $widget_kanban_config_dao
+        );
+
         switch ($event->getName()) {
             case MyKanban::NAME:
-                $request           = HTTPRequest::instance();
-                $tracker_report_id = $request->get('tracker_report_id');
-
                 $event->setWidget(
                     new MyKanban(
                         $widget_kanban_creator,
@@ -431,14 +461,12 @@ class AgileDashboardPlugin extends Plugin {
                         $kanban_factory,
                         TrackerFactory::instance(),
                         $permission_manager,
-                        $tracker_report_id
+                        $widget_config_retriever,
+                        $widget_kanban_config_updater
                     )
                 );
                 break;
             case ProjectKanban::NAME:
-                $request           = HTTPRequest::instance();
-                $tracker_report_id = $request->get('tracker_report_id');
-
                 $event->setWidget(
                     new ProjectKanban(
                         $widget_kanban_creator,
@@ -447,7 +475,8 @@ class AgileDashboardPlugin extends Plugin {
                         $kanban_factory,
                         TrackerFactory::instance(),
                         $permission_manager,
-                        $tracker_report_id
+                        $widget_config_retriever,
+                        $widget_kanban_config_updater
                     )
                 );
                 break;
@@ -462,6 +491,14 @@ class AgileDashboardPlugin extends Plugin {
     public function getProjectWidgetList(\Tuleap\Widget\Event\GetProjectWidgetList $event)
     {
         $event->addWidget(ProjectKanban::NAME);
+    }
+
+    public function configureAtXMLImport(\Tuleap\Widget\Event\ConfigureAtXMLImport $event)
+    {
+        if ($event->getWidget()->getId() === ProjectKanban::NAME) {
+            $xml_import = new \Tuleap\AgileDashboard\Widget\WidgetKanbanXMLImporter();
+            $xml_import->configureWidget($event);
+        }
     }
 
     private function redirectOrAppend(Codendi_Request $request, Tracker_Artifact $artifact, Tracker_Artifact_Redirect $redirect, $requested_planning, Tracker_Artifact $last_milestone_artifact = null) {
@@ -583,22 +620,11 @@ class AgileDashboardPlugin extends Plugin {
             return;
         }
 
-        if ($this->isInPermissionsPerGroupProjectAdmin()) {
-            $include_assets = new IncludeAssets(
-                AGILEDASHBOARD_BASE_DIR . '/../www/assets',
-                $this->getPluginPath() . '/assets'
-            );
-
-            $GLOBALS['HTML']->includeFooterJavascriptFile($include_assets->getFileURL('permission-per-group.js'));
-        }
-
         $provider = $this->getJavascriptDependenciesProvider();
         if ($provider === null) {
             return;
         }
 
-        $params['javascript_files'][] = '/scripts/codendi/Tooltip.js';
-        $params['javascript_files'][] = '/scripts/codendi/Tooltip-loader.js';
         foreach ($provider->getDependencies() as $javascript) {
             if (isset($javascript['snippet'])) {
                 $GLOBALS['HTML']->includeFooterJavascriptSnippet($javascript['snippet']);
@@ -606,6 +632,16 @@ class AgileDashboardPlugin extends Plugin {
                 $params['javascript_files'][] = $javascript['file'];
             }
         }
+    }
+
+    public function permissionPerGroupDisplayEvent(PermissionPerGroupDisplayEvent $event)
+    {
+        $include_assets = new IncludeAssets(
+            AGILEDASHBOARD_BASE_DIR . '/../www/assets',
+            $this->getPluginPath() . '/assets'
+        );
+
+        $event->addJavascript($include_assets->getFileURL('permission-per-group.js'));
     }
 
     /**
@@ -644,6 +680,13 @@ class AgileDashboardPlugin extends Plugin {
         $pane_info_identifier = new AgileDashboard_PaneInfoIdentifier();
 
         return $pane_info_identifier->isPaneAPlanningV2($request->get('pane'));
+    }
+
+    private function isHomepageURL(HTTPRequest $request)
+    {
+        return (strpos($_SERVER['REQUEST_URI'], $this->getPluginPath() . '/?group_id=') === 0
+            && $request->get('action') === false
+        );
     }
 
     public function process(Codendi_Request $request)
@@ -1091,14 +1134,18 @@ class AgileDashboardPlugin extends Plugin {
         return $this->sequence_id_manager;
     }
 
-    private function getBacklogItemCollectionFactory() {
+    private function getBacklogItemCollectionFactory()
+    {
         return new AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactory(
             new AgileDashboard_BacklogItemDao(),
             $this->getArtifactFactory(),
             $this->getFormElementFactory(),
             $this->getMilestoneFactory(),
             $this->getPlanningFactory(),
-            new AgileDashboard_Milestone_Backlog_BacklogItemBuilder()
+            new AgileDashboard_Milestone_Backlog_BacklogItemBuilder(),
+            new RemainingEffortValueRetriever(
+                $this->getFormElementFactory()
+            )
         );
     }
 
@@ -1274,17 +1321,10 @@ class AgileDashboardPlugin extends Plugin {
     public function semanticStatusCanBeDeleted(SemanticStatusCanBeDeleted $event)
     {
         $tracker = $event->getTracker();
-        $dao     = new SemanticDoneDao();
 
-        $selected_values = $dao->getSelectedValues($tracker->getId());
-
-        if ($selected_values->rowCount() === 0) {
+        if (! $this->doesTrackerNotificationUseStatusSemantic($tracker) &&
+            ! $this->doesSemanticDoneUsesSemanticStatus($tracker)) {
             $event->semanticIsDeletable();
-        } else {
-            $GLOBALS['Response']->addFeedback(
-                Feedback::WARN,
-                dgettext('tuleap-agiledashboard', 'The semantic status cannot de deleted because the semantic done is defined for this tracker.')
-            );
         }
     }
 
@@ -1370,12 +1410,32 @@ class AgileDashboardPlugin extends Plugin {
         $updater = new TrackerReportUpdater(new TrackerReportDao());
 
         $updater->deleteAllForReport($report);
+
+        $this->deleteReportConfigForKanbanWidget(
+            $event->getReport()
+        );
+    }
+
+    public function trackerReportSetToPrivate(TrackerReportSetToPrivate $event)
+    {
+        $this->deleteReportConfigForKanbanWidget(
+            $event->getReport()
+        );
+    }
+
+    private function deleteReportConfigForKanbanWidget(Tracker_Report $report)
+    {
+        $widget_kanban_config_updater = new WidgetKanbanConfigUpdater(
+            new WidgetKanbanConfigDAO()
+        );
+
+        $widget_kanban_config_updater->deleteConfigurationForWidgetMatchingReportId($report);
     }
 
     public function codendi_daily_start($params)
     {
         SystemEventManager::instance()->createEvent(
-            'Tuleap\\Agiledashboard\\FormElement\\SystemEvent\\' . SystemEvent_BURNUP_DAILY::NAME,
+            SystemEvent_BURNUP_DAILY::class,
             "",
             SystemEvent::PRIORITY_MEDIUM,
             SystemEvent::OWNER_APP
@@ -1386,8 +1446,8 @@ class AgileDashboardPlugin extends Plugin {
     public function get_system_event_class($params)
     {
         switch ($params['type']) {
-            case 'Tuleap\\Agiledashboard\\FormElement\\SystemEvent\\' . SystemEvent_BURNUP_DAILY::NAME:
-                $params['class']        = 'Tuleap\\Agiledashboard\\FormElement\\SystemEvent\\' . SystemEvent_BURNUP_DAILY::NAME;
+            case SystemEvent_BURNUP_DAILY::class:
+                $params['class']        = SystemEvent_BURNUP_DAILY::class;
                 $params['dependencies'] = array(
                     $this->getBurnupDao(),
                     $this->getBurnupCalculator(),
@@ -1396,8 +1456,8 @@ class AgileDashboardPlugin extends Plugin {
                     new BurnupCacheDateRetriever()
                 );
                 break;
-            case 'Tuleap\\Agiledashboard\\FormElement\\SystemEvent\\' . SystemEvent_BURNUP_GENERATE::NAME:
-                $params['class']        = 'Tuleap\\Agiledashboard\\FormElement\\SystemEvent\\' . SystemEvent_BURNUP_GENERATE::NAME;
+            case SystemEvent_BURNUP_GENERATE::class:
+                $params['class']        = SystemEvent_BURNUP_GENERATE::class;
                 $params['dependencies'] = array(
                     new BurnupDao(),
                     $this->getBurnupCalculator(),
@@ -1413,8 +1473,8 @@ class AgileDashboardPlugin extends Plugin {
 
     public function system_event_get_types_for_default_queue($params)
     {
-        $params['types'][] = 'Tuleap\\Agiledashboard\\FormElement\\SystemEvent\\' . SystemEvent_BURNUP_DAILY::NAME;
-        $params['types'][] = 'Tuleap\\Agiledashboard\\FormElement\\SystemEvent\\' . SystemEvent_BURNUP_GENERATE::NAME;
+        $params['types'][] = SystemEvent_BURNUP_DAILY::class;
+        $params['types'][] = SystemEvent_BURNUP_GENERATE::class;
     }
 
     /**
@@ -1524,11 +1584,6 @@ class AgileDashboardPlugin extends Plugin {
             && $request->get('pane') === DetailsPaneInfo::IDENTIFIER;
     }
 
-    private function isInPermissionsPerGroupProjectAdmin()
-    {
-        return strpos($_SERVER['REQUEST_URI'], '/project/admin/permission_per_group') === 0;
-    }
-
     /**
      * @param PermissionPerGroupPaneCollector $event
      */
@@ -1554,13 +1609,102 @@ class AgileDashboardPlugin extends Plugin {
                 array(
                     "ugroup_id"            => $ugroup_id,
                     "project_id"           => $project->getID(),
-                    "selected_ugroup_name" => $ugroup_name,
-                    "locale"               => $this->getCurrentUser()->getLocale()
+                    "selected_ugroup_name" => $ugroup_name
                 )
             );
 
         $rank_in_project = $project->getService($this->getServiceShortname())->getRank();
 
         $event->addPane($admin_permission_pane, $rank_in_project);
+    }
+
+    public function tracker_event_artifact_delete(array $params)
+    {
+        $burnup_cache_dao = new BurnupCacheDao();
+        $artifact         = $params['artifact'];
+
+        $burnup_cache_dao->deleteArtifactCacheValue($artifact->getId());
+    }
+
+    private function doesTrackerNotificationUseStatusSemantic(Tracker $tracker)
+    {
+        if ($tracker->getNotificationsLevel() !== \Tracker::NOTIFICATIONS_LEVEL_STATUS_CHANGE) {
+            return false;
+        }
+        $GLOBALS['Response']->addFeedback(
+            Feedback::WARN,
+            dgettext('tuleap-agiledashboard', 'The semantic status cannot de deleted because tracker notifications is set to "Status change notifications".')
+        );
+        return true;
+    }
+
+    private function doesSemanticDoneUsesSemanticStatus(Tracker $tracker)
+    {
+        $dao             = new SemanticDoneDao();
+        $selected_values = $dao->getSelectedValues($tracker->getId());
+
+        if ($selected_values->rowCount() === 0) {
+            return false;
+        }
+
+        $GLOBALS['Response']->addFeedback(
+            Feedback::WARN,
+            dgettext('tuleap-agiledashboard', 'The semantic status cannot de deleted because the semantic done is defined for this tracker.')
+        );
+        return true;
+    }
+
+    public function moveArtifactGetExternalSemanticCheckers(MoveArtifactGetExternalSemanticCheckers $event)
+    {
+        $checker = new MoveSemanticInitialEffortChecker(
+            $this->getSemanticInitialEffortFactory(),
+            $this->getFormElementFactory()
+        );
+
+        $event->addExternalSemanticsChecker($checker);
+    }
+
+    public function moveArtifactParseFieldChangeNodes(MoveArtifactParseFieldChangeNodes $event)
+    {
+        if (! $this->getMoveSemanticInitialEffortChecker()->areSemanticsAligned(
+            $event->getSourceTracker(),
+            $event->getTargetTracker())
+        ) {
+            return;
+        }
+
+        $updater = new MoveChangesetXMLUpdater(
+            $this->getSemanticInitialEffortFactory(),
+            $this->getFormElementFactory(),
+            new FieldValueMatcher(new XMLImportHelper(UserManager::instance()))
+        );
+
+        if ($updater->parseFieldChangeNodesAtGivenIndex(
+            $event->getSourceTracker(),
+            $event->getTargetTracker(),
+            $event->getChangesetXml(),
+            $event->getIndex(),
+            $event->getFeedbackFieldCollector()
+        )) {
+            $event->setModifiedByPlugin();
+        }
+    }
+
+    /**
+     * @return MoveSemanticInitialEffortChecker
+     */
+    private function getMoveSemanticInitialEffortChecker()
+    {
+        return new MoveSemanticInitialEffortChecker(
+            $this->getSemanticInitialEffortFactory(),
+            $this->getFormElementFactory()
+        );
+    }
+
+    public function moveArtifactActionAllowedByPluginRetriever(MoveArtifactActionAllowedByPluginRetriever $event)
+    {
+        if ($this->getSemanticInitialEffortFactory()->getByTracker($event->getTracker())->getFieldId() !== 0) {
+            $event->hasExternalSemanticDefined();
+        };
     }
 }

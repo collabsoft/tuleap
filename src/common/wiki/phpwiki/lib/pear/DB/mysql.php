@@ -53,7 +53,6 @@ class DB_mysql extends DB_common
     var $prepare_types = array();
     var $num_rows = array();
     var $transaction_opcount = 0;
-    var $autocommit = true;
     var $fetchmode = DB_FETCHMODE_ORDERED; /* Default fetch mode */
     var $_db = false;
 
@@ -65,9 +64,9 @@ class DB_mysql extends DB_common
      *
      * @access public
      */
-    function DB_mysql()
+    function __construct()
     {
-        $this->DB_common();
+        parent::__construct();
         $this->phptype = 'mysql';
         $this->dbsyntax = 'mysql';
         $this->features = array(
@@ -101,80 +100,12 @@ class DB_mysql extends DB_common
     // {{{ connect()
 
     /**
-     * Connect to a database and log in as the specified user.
-     *
-     * @param $dsn the data source name (see DB::parseDSN for syntax)
-     * @param $persistent (optional) whether the connection should
-     *        be persistent
-     * @access public
      * @return int DB_OK on success, a DB error on failure
      */
-    function connect($dsninfo, $persistent = false)
+    public function connect()
     {
-        /// ++ MV add for Codendi: re-use codendi DB connexion
-        global $conn;
-        $this->_db = $GLOBALS['sys_dbname'];
-        $this->dsn = $dsninfo;
-        $this->connection = $conn->db;
-        return DB_OK;
-        /// -- MV add
-
-        if (!DB::assertExtension('mysql')) {
-            return $this->raiseError(DB_ERROR_EXTENSION_NOT_FOUND);
-        }
-        $this->dsn = $dsninfo;
-        if ($dsninfo['protocol'] && $dsninfo['protocol'] == 'unix') {
-            $dbhost = ':' . $dsninfo['socket'];
-        } else {
-            $dbhost = $dsninfo['hostspec'] ? $dsninfo['hostspec'] : 'localhost';
-            if ($dsninfo['port']) {
-                $dbhost .= ':' . $dsninfo['port'];
-            }
-        }
-
-        $connect_function = $persistent ? 'mysql_pconnect' : 'mysql_connect';
-
-        if ($dbhost && $dsninfo['username'] && isset($dsninfo['password'])) {
-            $conn = @$connect_function($dbhost, $dsninfo['username'],
-                                       $dsninfo['password']);
-        } elseif ($dbhost && $dsninfo['username']) {
-            $conn = @$connect_function($dbhost, $dsninfo['username']);
-        } elseif ($dbhost) {
-            $conn = @$connect_function($dbhost);
-        } else {
-            $conn = false;
-        }
-        if (!$conn) {
-            if (($err = @mysql_error()) != '') {
-                return $this->raiseError(DB_ERROR_CONNECT_FAILED, null, null,
-                                         null, $err);
-            } elseif (empty($php_errormsg)) {
-                return $this->raiseError(DB_ERROR_CONNECT_FAILED);
-            } else {
-                return $this->raiseError(DB_ERROR_CONNECT_FAILED, null, null,
-                                         null, $php_errormsg);
-            }
-        }
-
-        if ($dsninfo['database']) {
-            if (!@mysql_select_db($dsninfo['database'], $conn)) {
-               switch(mysql_errno($conn)) {
-                        case 1049:
-                            return $this->raiseError(DB_ERROR_NOSUCHDB, null, null,
-                                                     null, @mysql_error($conn));
-                        case 1044:
-                             return $this->raiseError(DB_ERROR_ACCESS_VIOLATION, null, null,
-                                                      null, @mysql_error($conn));
-                        default:
-                            return $this->raiseError(DB_ERROR, null, null,
-                                                     null, @mysql_error($conn));
-                    }
-            }
-            // fix to allow calls to different databases in the same script
-            $this->_db = $dsninfo['database'];
-        }
-
-        $this->connection = $conn;
+        $this->_db        = ForgeConfig::get('sys_dbname');
+        $this->connection = CodendiDataAccess::getDataAccessUsingOriginalMySQLDriverInstance()->db;
         return DB_OK;
     }
 
@@ -212,24 +143,8 @@ class DB_mysql extends DB_common
      */
     function simpleQuery($query)
     {
-        $ismanip = DB::isManip($query);
         $this->last_query = $query;
         $query = $this->modifyQuery($query);
-        if ($this->_db) {
-            if (!@mysql_select_db($this->_db, $this->connection)) {
-                return $this->mysqlRaiseError(DB_ERROR_NODBSELECTED);
-            }
-        }
-        if (!$this->autocommit && $ismanip) {
-            if ($this->transaction_opcount == 0) {
-                $result = @mysql_query('SET AUTOCOMMIT=0', $this->connection);
-                $result = @mysql_query('BEGIN', $this->connection);
-                if (!$result) {
-                    return $this->mysqlRaiseError();
-                }
-            }
-            $this->transaction_opcount++;
-        }
         $result = @mysql_query($query, $this->connection);
         if (!$result) {
             return $this->mysqlRaiseError();
@@ -389,20 +304,6 @@ class DB_mysql extends DB_common
     }
 
     // }}}
-    // {{{ autoCommit()
-
-    /**
-     * Enable/disable automatic commits
-     */
-    function autoCommit($onoff = false)
-    {
-        // XXX if $this->transaction_opcount > 0, we should probably
-        // issue a warning here.
-        $this->autocommit = $onoff ? true : false;
-        return DB_OK;
-    }
-
-    // }}}
     // {{{ commit()
 
     /**
@@ -411,13 +312,7 @@ class DB_mysql extends DB_common
     function commit()
     {
         if ($this->transaction_opcount > 0) {
-            if ($this->_db) {
-                if (!@mysql_select_db($this->_db, $this->connection)) {
-                    return $this->mysqlRaiseError(DB_ERROR_NODBSELECTED);
-                }
-            }
             $result = @mysql_query('COMMIT', $this->connection);
-            $result = @mysql_query('SET AUTOCOMMIT=1', $this->connection);
             $this->transaction_opcount = 0;
             if (!$result) {
                 return $this->mysqlRaiseError();
@@ -435,13 +330,7 @@ class DB_mysql extends DB_common
     function rollback()
     {
         if ($this->transaction_opcount > 0) {
-            if ($this->_db) {
-                if (!@mysql_select_db($this->_db, $this->connection)) {
-                    return $this->mysqlRaiseError(DB_ERROR_NODBSELECTED);
-                }
-            }
             $result = @mysql_query('ROLLBACK', $this->connection);
-            $result = @mysql_query('SET AUTOCOMMIT=1', $this->connection);
             $this->transaction_opcount = 0;
             if (!$result) {
                 return $this->mysqlRaiseError();
@@ -725,7 +614,7 @@ class DB_mysql extends DB_common
     // }}}
     // {{{ modifyQuery()
 
-    function modifyQuery($query)
+    protected function modifyQuery($query)
     {
         if ($this->options['portability'] & DB_PORTABILITY_DELETE_COUNT) {
             // "DELETE FROM table" gives 0 affected rows in MySQL.
@@ -784,94 +673,6 @@ class DB_mysql extends DB_common
     }
 
     // }}}
-    // {{{ tableInfo()
-
-    /**
-     * Returns information about a table or a result set.
-     *
-     * @param object|string  $result  DB_result object from a query or a
-     *                                string containing the name of a table
-     * @param int            $mode    a valid tableInfo mode
-     * @return array  an associative array with the information requested
-     *                or an error object if something is wrong
-     * @access public
-     * @internal
-     * @see DB_common::tableInfo()
-     */
-    function tableInfo($result, $mode = null) {
-        if (isset($result->result)) {
-            /*
-             * Probably received a result object.
-             * Extract the result resource identifier.
-             */
-            $id = $result->result;
-            $got_string = false;
-        } elseif (is_string($result)) {
-            /*
-             * Probably received a table name.
-             * Create a result resource identifier.
-             */
-            $id = @mysql_list_fields($this->dsn['database'],
-                                     $result, $this->connection);
-            $got_string = true;
-        } else {
-            /*
-             * Probably received a result resource identifier.
-             * Copy it.
-             * Deprecated.  Here for compatibility only.
-             */
-            $id = $result;
-            $got_string = false;
-        }
-
-        if (!is_resource($id)) {
-            return $this->mysqlRaiseError(DB_ERROR_NEED_MORE_DATA);
-        }
-
-        if ($this->options['portability'] & DB_PORTABILITY_LOWERCASE) {
-            $case_func = 'strtolower';
-        } else {
-            $case_func = 'strval';
-        }
-
-        $count = @mysql_num_fields($id);
-
-        // made this IF due to performance (one if is faster than $count if's)
-        if (!$mode) {
-            for ($i=0; $i<$count; $i++) {
-                $res[$i]['table'] = $case_func(@mysql_field_table($id, $i));
-                $res[$i]['name']  = $case_func(@mysql_field_name($id, $i));
-                $res[$i]['type']  = @mysql_field_type($id, $i);
-                $res[$i]['len']   = @mysql_field_len($id, $i);
-                $res[$i]['flags'] = @mysql_field_flags($id, $i);
-            }
-        } else { // full
-            $res['num_fields']= $count;
-
-            for ($i=0; $i<$count; $i++) {
-                $res[$i]['table'] = $case_func(@mysql_field_table($id, $i));
-                $res[$i]['name']  = $case_func(@mysql_field_name($id, $i));
-                $res[$i]['type']  = @mysql_field_type($id, $i);
-                $res[$i]['len']   = @mysql_field_len($id, $i);
-                $res[$i]['flags'] = @mysql_field_flags($id, $i);
-
-                if ($mode & DB_TABLEINFO_ORDER) {
-                    $res['order'][$res[$i]['name']] = $i;
-                }
-                if ($mode & DB_TABLEINFO_ORDERTABLE) {
-                    $res['ordertable'][$res[$i]['table']][$res[$i]['name']] = $i;
-                }
-            }
-        }
-
-        // free the result only if we were called on a table
-        if ($got_string) {
-            @mysql_free_result($id);
-        }
-        return $res;
-    }
-
-    // }}}
     // {{{ getSpecialQuery()
 
     /**
@@ -886,22 +687,6 @@ class DB_mysql extends DB_common
                 return 'SHOW TABLES';
             case 'views':
                 return DB_ERROR_NOT_CAPABLE;
-            case 'users':
-                $sql = 'select distinct User from user';
-                if ($this->dsn['database'] != 'mysql') {
-                    $dsn = $this->dsn;
-                    $dsn['database'] = 'mysql';
-                    if (DB::isError($db = DB::connect($dsn))) {
-                        return $db;
-                    }
-                    $sql = $db->getCol($sql);
-                    $db->disconnect();
-                    // XXX Fixme the mysql driver should take care of this
-                    if (!@mysql_select_db($this->dsn['database'], $this->connection)) {
-                        return $this->mysqlRaiseError(DB_ERROR_NODBSELECTED);
-                    }
-                }
-                return $sql;
             case 'databases':
                 return 'SHOW DATABASES';
             default:

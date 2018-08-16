@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,19 +20,7 @@
 
 require_once 'bootstrap.php';
 
-Mock::generatePartial('GitRepository', 'GitRepositoryTestVersion', array('_getUserManager', 'getRepositoryIDByName', 'getDao'));
 Mock::generatePartial('GitRepository', 'GitRepositorySecondTestVersion', array('_getProjectManager', 'getDao'));
-
-Mock::generate('Git_Backend_Gitolite');
-
-Mock::generate('GitBackend');
-
-Mock::generate('GitDao');
-Mock::generate('UserManager');
-Mock::generate('PFUser');
-Mock::generate('ProjectManager');
-Mock::generate('Project');
-Mock::generate('DataAccessResult');
 
 class GitRepositoryTest extends TuleapTestCase {
 
@@ -64,53 +52,45 @@ class GitRepositoryTest extends TuleapTestCase {
         $this->assertFalse($repo->isDotGit('default.git.old'));
     }
 
-    public function testGetRepositoryIDByNameSuccess() {
-        $repo = new GitRepositorySecondTestVersion();
-        $pm = new MockProjectManager();
-        $project = new Mockproject();
+    public function testGetRepositoryIDByNameSuccess()
+    {
+        $repo = partial_mock('GitRepository', array('_getProjectManager', 'getDao'));
+        $pm = mock('ProjectManager');
+        $project = mock('Project');
         $repo->setReturnValue('_getProjectManager', $pm);
         $pm->setReturnValue('getProjectByUnixName', $project);
-        $dao = new MockGitDao();
+        $dao = mock('GitDao');
         $repo->setReturnValue('getDao', $dao);
-        $dar = new MockDataAccessResult();
-        $dar->setReturnValue('isError', false);
-        $dar->setReturnValue('getRow', array ("repository_id" => 48));
-        $dao->setReturnValue('getProjectRepositoryByName', $dar);
+        $dao->setReturnValue('getProjectRepositoryByName', ['repository_id' => 48]);
 
         $this->assertEqual($repo->getRepositoryIDByName('repo', 'prj'), 48);
 
         $repo->expectOnce('_getProjectManager');
         $dao->expectOnce('getProjectRepositoryByName');
         $project->expectOnce('getID');
-        $dar->expectOnce('isError');
-        $dar->expectOnce('getRow');
     }
 
     public function testGetRepositoryIDByNameNoRepository() {
-        $repo = new GitRepositorySecondTestVersion();
-        $pm = new MockProjectManager();
-        $project = new Mockproject();
+        $repo = partial_mock('GitRepository', array('_getProjectManager', 'getDao'));
+        $pm = mock('ProjectManager');
+        $project = mock('Project');
         $repo->setReturnValue('_getProjectManager', $pm);
         $pm->setReturnValue('getProjectByUnixName', $project);
-        $dao = new MockGitDao();
+        $dao = mock('GitDao');
         $repo->setReturnValue('getDao', $dao);
-        $dar = new MockDataAccessResult();
-        $dar->setReturnValue('isError', true);
-        $dao->setReturnValue('getProjectRepositoryByName', $dar);
+        $dao->setReturnValue('getProjectRepositoryByName', false);
 
         $this->assertEqual($repo->getRepositoryIDByName('repo', 'prj'), 0);
 
         $repo->expectOnce('_getProjectManager');
         $dao->expectOnce('getProjectRepositoryByName');
         $project->expectOnce('getID');
-        $dar->expectOnce('isError');
-        $dar->expectNever('getRow');
     }
 
     public function testGetRepositoryIDByNameNoProjectID() {
-        $repo = new GitRepositorySecondTestVersion();
-        $pm = new MockProjectManager();
-        $project = new Mockproject();
+        $repo = partial_mock('GitRepository', array('_getProjectManager', 'getDao'));
+        $pm = mock('ProjectManager');
+        $project = mock('Project');
         $repo->setReturnValue('_getProjectManager', $pm);
         $pm->setReturnValue('getProjectByUnixName', false);
 

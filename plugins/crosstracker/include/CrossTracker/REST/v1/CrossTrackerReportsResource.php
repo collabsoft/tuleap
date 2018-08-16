@@ -26,6 +26,7 @@ use PFUser;
 use ProjectManager;
 use Tracker;
 use Tracker_FormElementFactory;
+use Tracker_Semantic_ContributorDao;
 use Tracker_Semantic_DescriptionDao;
 use Tracker_Semantic_StatusDao;
 use Tracker_Semantic_TitleDao;
@@ -40,34 +41,50 @@ use Tuleap\CrossTracker\Permission\CrossTrackerUnauthorizedException;
 use Tuleap\CrossTracker\Report\Query\Advanced\InvalidComparisonCollectorVisitor;
 use Tuleap\CrossTracker\Report\Query\Advanced\InvalidSearchableCollectorVisitor;
 use Tuleap\CrossTracker\Report\Query\Advanced\InvalidSearchablesCollectionBuilder;
-use Tuleap\CrossTracker\Report\Query\Advanced\InvalidSemantic\EqualComparisonChecker;
-use Tuleap\CrossTracker\Report\Query\Advanced\InvalidSemantic\GreaterThanComparisonChecker;
-use Tuleap\CrossTracker\Report\Query\Advanced\InvalidSemantic\GreaterThanOrEqualComparisonChecker;
-use Tuleap\CrossTracker\Report\Query\Advanced\InvalidSemantic\LesserThanComparisonChecker;
-use Tuleap\CrossTracker\Report\Query\Advanced\InvalidSemantic\MetadataChecker;
-use Tuleap\CrossTracker\Report\Query\Advanced\InvalidSemantic\NotEqualComparisonChecker;
-use Tuleap\CrossTracker\Report\Query\Advanced\InvalidSemantic\MetadataUsageChecker;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\CrossTrackerExpertQueryReportDao;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\AlwaysThereField\Date;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\AlwaysThereField\Users;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\BetweenComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\EqualComparisonFromWhereBuilder;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\GreaterThanComparisonFromWhereBuilder;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\GreaterThanOrEqualComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\InComparisonFromWhereBuilder;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\LesserThanComparisonFromWhereBuilder;
-use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\SearchableVisitor;
-use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\Semantic\Description;
-use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\EqualComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\LesserThanOrEqualComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\ListValueExtractor;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\NotEqualComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\NotInComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\Semantic\AssignedTo;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\Semantic\Description;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\Semantic\Status;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\Semantic\Title;
-use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\AlwaysThereField\SubmittedOn;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\SearchableVisitor;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilderVisitor;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\Between\BetweenComparisonChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\Equal\EqualComparisonChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\GreaterThan\GreaterThanComparisonChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\GreaterThan\GreaterThanOrEqualComparisonChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\In\InComparisonChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\LesserThan\LesserThanComparisonChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\LesserThan\LesserThanOrEqualComparisonChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\ListValueValidator;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\NotEqual\NotEqualComparisonChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Comparison\NotIn\NotInComparisonChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Metadata\MetadataChecker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryValidation\Metadata\MetadataUsageChecker;
 use Tuleap\REST\AuthenticatedResource;
 use Tuleap\REST\Header;
 use Tuleap\REST\JsonDecoder;
 use Tuleap\REST\ProjectAuthorization;
 use Tuleap\REST\QueryParameterException;
 use Tuleap\REST\QueryParameterParser;
+use Tuleap\Tracker\Report\Query\Advanced\DateFormat;
 use Tuleap\Tracker\Report\Query\Advanced\ExpertQueryValidator;
 use Tuleap\Tracker\Report\Query\Advanced\Grammar\Parser;
 use Tuleap\Tracker\Report\Query\Advanced\Grammar\SyntaxError;
+use Tuleap\Tracker\Report\Query\Advanced\InvalidFields\Date\DateFormatValidator;
+use Tuleap\Tracker\Report\Query\Advanced\InvalidFields\EmptyStringAllowed;
+use Tuleap\Tracker\Report\Query\Advanced\InvalidFields\EmptyStringForbidden;
 use Tuleap\Tracker\Report\Query\Advanced\LimitSizeIsExceededException;
 use Tuleap\Tracker\Report\Query\Advanced\ParserCacheProxy;
 use Tuleap\Tracker\Report\Query\Advanced\QueryBuilder\DateTimeValueRounder;
@@ -142,6 +159,10 @@ class CrossTrackerReportsResource extends AuthenticatedResource
             new SizeValidatorVisitor($report_config->getExpertQueryLimit())
         );
 
+        $date_validator                 = new DateFormatValidator(new EmptyStringForbidden(), DateFormat::DATETIME);
+        $list_value_validator           = new ListValueValidator(new EmptyStringAllowed(), $this->user_manager);
+        $list_value_validator_not_empty = new ListValueValidator(new EmptyStringForbidden(), $this->user_manager);
+
         $this->invalid_comparisons_collector = new InvalidComparisonCollectorVisitor(
             new InvalidSearchableCollectorVisitor(),
             new MetadataChecker(
@@ -149,47 +170,179 @@ class CrossTrackerReportsResource extends AuthenticatedResource
                     Tracker_FormElementFactory::instance(),
                     new Tracker_Semantic_TitleDao(),
                     new Tracker_Semantic_DescriptionDao(),
-                    new Tracker_Semantic_StatusDao()
+                    new Tracker_Semantic_StatusDao(),
+                    new Tracker_Semantic_ContributorDao()
                 )
             ),
-            new EqualComparisonChecker(),
-            new NotEqualComparisonChecker(),
-            new GreaterThanComparisonChecker(),
-            new GreaterThanOrEqualComparisonChecker(),
-            new LesserThanComparisonChecker()
+            new EqualComparisonChecker($date_validator, $list_value_validator),
+            new NotEqualComparisonChecker($date_validator, $list_value_validator),
+            new GreaterThanComparisonChecker($date_validator, $list_value_validator),
+            new GreaterThanOrEqualComparisonChecker($date_validator, $list_value_validator),
+            new LesserThanComparisonChecker($date_validator, $list_value_validator),
+            new LesserThanOrEqualComparisonChecker($date_validator, $list_value_validator),
+            new BetweenComparisonChecker($date_validator, $list_value_validator),
+            new InComparisonChecker($date_validator, $list_value_validator_not_empty),
+            new NotInComparisonChecker($date_validator, $list_value_validator_not_empty)
         );
 
-        $query_builder_visitor = new QueryBuilderVisitor(
+        $submitted_on_alias_field     = 'tracker_artifact.submitted_on';
+        $last_update_date_alias_field = 'last_changeset.submitted_on';
+        $submitted_by_alias_field     = 'tracker_artifact.submitted_by';
+        $last_update_by_alias_field   = 'last_changeset.submitted_by';
+
+        $date_value_extractor    = new Date\DateValueExtractor();
+        $date_time_value_rounder = new DateTimeValueRounder();
+        $list_value_extractor    = new ListValueExtractor();
+        $query_builder_visitor   = new QueryBuilderVisitor(
             new SearchableVisitor(),
             new EqualComparisonFromWhereBuilder(
                 new Title\EqualComparisonFromWhereBuilder(),
                 new Description\EqualComparisonFromWhereBuilder(),
                 new Status\EqualComparisonFromWhereBuilder(),
-                new SubmittedOn\EqualComparisonFromWhereBuilder(
-                    new DateTimeValueRounder()
+                new Date\EqualComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $submitted_on_alias_field
+                ),
+                new Date\EqualComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $last_update_date_alias_field
+                ),
+                new Users\EqualComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager,
+                    $submitted_by_alias_field
+                ),
+                new Users\EqualComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager,
+                    $last_update_by_alias_field
+                ),
+                new AssignedTo\EqualComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager
                 )
             ),
             new NotEqualComparisonFromWhereBuilder(
                 new Title\NotEqualComparisonFromWhereBuilder(),
                 new Description\NotEqualComparisonFromWhereBuilder(),
                 new Status\NotEqualComparisonFromWhereBuilder(),
-                new SubmittedOn\NotEqualComparisonFromWhereBuilder(
-                    new DateTimeValueRounder()
+                new Date\NotEqualComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $submitted_on_alias_field
+                ),
+                new Date\NotEqualComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $last_update_date_alias_field
+                ),
+                new Users\NotEqualComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager,
+                    $submitted_by_alias_field
+                ),
+                new Users\NotEqualComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager,
+                    $last_update_by_alias_field
+                ),
+                new AssignedTo\NotEqualComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager
                 )
             ),
             new GreaterThanComparisonFromWhereBuilder(
-                new SubmittedOn\GreaterThanComparisonFromWhereBuilder(
-                    new DateTimeValueRounder()
+                new Date\GreaterThanComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $submitted_on_alias_field
+                ),
+                new Date\GreaterThanComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $last_update_date_alias_field
                 )
             ),
             new GreaterThanOrEqualComparisonFromWhereBuilder(
-                new SubmittedOn\GreaterThanOrEqualComparisonFromWhereBuilder(
-                    new DateTimeValueRounder()
+                new Date\GreaterThanOrEqualComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $submitted_on_alias_field
+                ),
+                new Date\GreaterThanOrEqualComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $last_update_date_alias_field
                 )
             ),
             new LesserThanComparisonFromWhereBuilder(
-                new SubmittedOn\LesserThanComparisonFromWhereBuilder(
-                    new DateTimeValueRounder()
+                new Date\LesserThanComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $submitted_on_alias_field
+                ),
+                new Date\LesserThanComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $last_update_date_alias_field
+                )
+            ),
+            new LesserThanOrEqualComparisonFromWhereBuilder(
+                new Date\LesserThanOrEqualComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $submitted_on_alias_field
+                ),
+                new Date\LesserThanOrEqualComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $last_update_date_alias_field
+                )
+            ),
+            new BetweenComparisonFromWhereBuilder(
+                new Date\BetweenComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $submitted_on_alias_field
+                ),
+                new Date\BetweenComparisonFromWhereBuilder(
+                    $date_value_extractor,
+                    $date_time_value_rounder,
+                    $last_update_date_alias_field
+                )
+            ),
+            new InComparisonFromWhereBuilder(
+                new Users\InComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager,
+                    $submitted_by_alias_field
+                ),
+                new Users\InComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager,
+                    $last_update_by_alias_field
+                ),
+                new AssignedTo\InComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager
+                )
+            ),
+            new NotInComparisonFromWhereBuilder(
+                new Users\NotInComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager,
+                    $submitted_by_alias_field
+                ),
+                new Users\NotInComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager,
+                    $last_update_by_alias_field
+                ),
+                new AssignedTo\NotInComparisonFromWhereBuilder(
+                    $list_value_extractor,
+                    $this->user_manager
                 )
             )
         );

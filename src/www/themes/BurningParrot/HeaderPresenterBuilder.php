@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,7 +27,9 @@ use EventManager;
 use ThemeVariant;
 use ThemeVariantColor;
 use Tuleap\Layout\IncludeAssets;
+use Tuleap\Layout\CssAsset;
 use Tuleap\Layout\SidebarPresenter;
+use Tuleap\Layout\ThemeVariation;
 use Tuleap\Theme\BurningParrot\Navbar\PresenterBuilder as NavbarPresenterBuilder;
 use URLRedirect;
 use ForgeConfig;
@@ -61,6 +63,9 @@ class HeaderPresenterBuilder
     /** @var CurrentProjectNavbarInfoPresenter */
     private $current_project_navbar_info_presenter;
 
+    /** @var CssAsset[] */
+    private $css_assets;
+
     public function build(
         NavbarPresenterBuilder $navbar_presenter_builder,
         HTTPRequest $request,
@@ -76,7 +81,8 @@ class HeaderPresenterBuilder
         URLRedirect $url_redirect,
         array $toolbar,
         array $breadcrumbs,
-        $motd
+        $motd,
+        array $css_assets
     ) {
         $this->navbar_presenter_builder              = $navbar_presenter_builder;
         $this->request                               = $request;
@@ -87,8 +93,10 @@ class HeaderPresenterBuilder
         $this->main_classes                          = $main_classes;
         $this->sidebar                               = $sidebar;
         $this->current_project_navbar_info_presenter = $current_project_navbar_info_presenter;
+        $this->css_assets                            = $css_assets;
 
         $color = $this->getMainColor();
+        $theme_variation = new ThemeVariation($color, $current_user);
 
         return new HeaderPresenter(
             $this->current_user,
@@ -102,7 +110,7 @@ class HeaderPresenterBuilder
                 $url_redirect
             ),
             $color,
-            $this->getStylesheets($color),
+            $this->getStylesheets($theme_variation),
             $feedback_logs,
             $this->getBodyClassesAsString(),
             $this->getMainClassesAsString(),
@@ -169,22 +177,29 @@ class HeaderPresenterBuilder
         return $page_title;
     }
 
-    private function getStylesheets(ThemeVariantColor $color)
+    private function getStylesheets(ThemeVariation $theme_variation)
     {
-        $core_burning_parrot_include_assets = new IncludeAssets(
-            ForgeConfig::get('tuleap_dir') . '/src/www/themes/BurningParrot/assets',
-            '/themes/BurningParrot/assets'
+        $stylesheets = array(
+            '/themes/common/tlp/dist/tlp' . $theme_variation->getFileColorCondensedSuffix() . '.min.css',
         );
 
-        $stylesheets = array(
-            '/themes/common/tlp/dist/tlp-'. $color->getName() .'.min.css',
+        $core_burning_parrot_css = new CssAsset(
+            new IncludeAssets(
+                ForgeConfig::get('tuleap_dir') . '/src/www/themes/BurningParrot/assets',
+                '/themes/BurningParrot/assets'
+            ),
+            'burning-parrot'
         );
-        $stylesheets[] = $core_burning_parrot_include_assets->getFileURL('burning-parrot-' . $color->getName() . '.css');
+        $stylesheets[] = $core_burning_parrot_css->getFileURL($theme_variation);
+
+        foreach ($this->css_assets as $css_asset) {
+            $stylesheets[] = $css_asset->getFileURL($theme_variation);
+        }
 
         EventManager::instance()->processEvent(
             Event::BURNING_PARROT_GET_STYLESHEETS,
             array(
-                'variant' => $this->getMainColor(),
+                'variant'     => $this->getMainColor(),
                 'stylesheets' => &$stylesheets
             )
         );
@@ -195,36 +210,7 @@ class HeaderPresenterBuilder
     private function getMainColor()
     {
         $theme_variant = new ThemeVariant();
-        $color         = new ThemeVariantColor('blue', '#1593c4');
-
-        switch ($theme_variant->getVariantForUser($this->current_user)) {
-            case 'FlamingParrot_Orange':
-            case 'FlamingParrot_DarkOrange':
-                $color = new ThemeVariantColor('orange', '#f79514');
-                break;
-            case 'FlamingParrot_Green':
-            case 'FlamingParrot_DarkGreen':
-                $color = new ThemeVariantColor('green', '#67af45');
-                break;
-            case 'FlamingParrot_BlueGrey':
-            case 'FlamingParrot_DarkBlueGrey':
-                $color = new ThemeVariantColor('grey', '#5b6c79');
-                break;
-            case 'FlamingParrot_Purple':
-            case 'FlamingParrot_DarkPurple':
-                $color = new ThemeVariantColor('purple', '#79558a');
-                break;
-            case 'FlamingParrot_Red':
-            case 'FlamingParrot_DarkRed':
-                $color = new ThemeVariantColor('red', '#bd2626');
-                break;
-            case 'FlamingParrot_Blue':
-            case 'FlamingParrot_DarkBlue':
-            default:
-                $color = new ThemeVariantColor('blue', '#1593c4');
-        }
-
-        return $color;
+        return ThemeVariantColor::buildFromVariant($theme_variant->getVariantForUser($this->current_user));
     }
 
     private function getMainClassesAsString()

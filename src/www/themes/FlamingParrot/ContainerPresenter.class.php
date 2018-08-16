@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class FlamingParrot_ContainerPresenter {
-
+class FlamingParrot_ContainerPresenter
+{
     /** @var array */
     private $breadcrumbs;
-
-    /** @var boolean */
-    private $force_breadcrumbs;
 
     /** @var array */
     private $toolbar;
@@ -55,9 +52,8 @@ class FlamingParrot_ContainerPresenter {
     /** @var boolean */
     private $sidebar_collapsable;
 
-    function __construct(
-        $breadcrumbs,
-        $force_breadcrumbs,
+    public function __construct(
+        array $breadcrumbs,
         $toolbar,
         $project_name,
         $project_link,
@@ -70,7 +66,6 @@ class FlamingParrot_ContainerPresenter {
         $sidebar_collapsable
     ) {
         $this->breadcrumbs         = $breadcrumbs;
-        $this->force_breadcrumbs   = $force_breadcrumbs;
         $this->toolbar             = $toolbar;
         $this->project_name        = $project_name;
         $this->project_link        = $project_link;
@@ -84,7 +79,7 @@ class FlamingParrot_ContainerPresenter {
     }
 
     public function hasBreadcrumbs() {
-        return (count($this->breadcrumbs) > 0 || $this->force_breadcrumbs);
+        return count($this->breadcrumbs) > 0;
     }
 
     public function breadcrumbs() {

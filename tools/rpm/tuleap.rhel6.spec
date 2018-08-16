@@ -44,17 +44,15 @@ AutoReqProv: no
 
 Requires: vixie-cron >= 4.1-9, tmpwatch
 # Php and web related stuff
-Requires: rh-php56-php-mysqlnd, rh-php56-php-pdo, rh-php56-php-xml, rh-php56-php-mbstring, rh-php56-php-gd,
-Requires: rh-php56-php-soap, rh-php56-php-pear, rh-php56-php-intl, rh-php56-php-process, rh-php56-php-cli
-Requires: rh-php56-php-bcmath, rh-php56-php-fpm, rh-php56-php-opcache, rh-php56-php-pecl-jsonc
+Requires: php56-php-mysqlnd, php56-php-pdo, php56-php-xml, php56-php-mbstring, php56-php-gd
+Requires: php56-php-soap, php56-php-pear, php56-php-intl, php56-php-process, php56-php-cli
+Requires: php56-php-bcmath, php56-php-fpm, php56-php-opcache, php56-php-pecl-jsonc, php56-php-pecl-zip
 Requires: dejavu-lgc-sans-fonts, dejavu-lgc-sans-mono-fonts, dejavu-lgc-serif-fonts
 
 Requires: jpgraph-%{PKG_NAME}
 Requires: ckeditor >= 4.3.2
 
 Requires: curl
-Requires: php-ZendFramework2-Loader, php-ZendFramework2-Mail
-Requires: php-markdown
 Requires: tuleap-core-subversion
 
 # PHPWiki
@@ -72,7 +70,7 @@ Requires: mysql
 # libnss-mysql (system authentication based on MySQL)
 Requires: libnss-mysql, nss, nscd
 # Forgeupgrade
-Requires: forgeupgrade >= 1.2
+Requires: forgeupgrade >= 1.6
 # MIME libs
 Requires: shared-mime-info
 # Documentation
@@ -82,7 +80,7 @@ Requires(post): policycoreutils-python
 # Bind utils
 Requires: bind-utils
 
-Obsoletes: php-restler, php-amqplib-amqplib
+Obsoletes: php-restler, php-amqplib-amqplib, php-markdown
 
 %description
 Tuleap is a web based application that address all the aspects of product development.
@@ -119,7 +117,7 @@ Group: Development/Tools
 Version: 1.2
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, subversion, mod_dav_svn, subversion-perl, tuleap-core-subversion-modperl, perl-CGI
-Requires: viewvc, viewvc-theme-tuleap >= 1.0.4
+Requires: viewvc, viewvc-theme-tuleap >= 1.0.6
 Requires: sha1collisiondetector
 %description core-subversion
 Manage dependencies for Tuleap Subversion integration
@@ -129,7 +127,7 @@ Summary: Subversion with mod_perl authentication
 Group: Development/Tools
 Version: 1.3
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
-Requires: mod_perl perl-Digest-SHA
+Requires: mod_perl, perl-Digest-SHA, perl(Crypt::Eksblowfish::Bcrypt), perl(Redis)
 %description core-subversion-modperl
 Provides authentication for Subversion component based on mod_perl rather than
 mod_mysql.
@@ -142,7 +140,7 @@ Group: Development/Tools
 Version: @@CORE_CVS_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, xinetd, rcs, cvsgraph, perl-CGI
-Requires: viewvc, viewvc-theme-tuleap >= 1.0.4
+Requires: viewvc, viewvc-theme-tuleap >= 1.0.6
 Requires: cvs-tuleap
 %description core-cvs
 Manage dependencies for Tuleap CVS integration
@@ -170,7 +168,7 @@ Version: @@PLUGIN_SVN_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 AutoReqProv: no
 Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, subversion, mod_dav_svn, subversion-perl, tuleap-core-subversion-modperl
-Requires: viewvc, viewvc-theme-tuleap >= 1.0.4
+Requires: viewvc, viewvc-theme-tuleap >= 1.0.6
 %description plugin-svn
 Integration of Subversion software configuration management tool with Tuleap.
 
@@ -180,8 +178,8 @@ Group: Development/Tools
 Version: @@PLUGIN_GIT_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 AutoReqProv: no
-Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, git > 1.7.4, php-Smarty, php-markdown, gitolite = 2.3.1, gitphp-tuleap >= 0.2.5-15
-Requires: geshi, php-guzzle-Guzzle, sudo
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, git > 1.7.4, gitolite = 2.3.1
+Requires: php-guzzle-Guzzle, sudo
 Provides: tuleap-plugin-git = %{version}
 Conflicts: tuleap-plugin-git-gitolite3
 %description plugin-git
@@ -195,8 +193,8 @@ Group: Development/Tools
 Version: @@PLUGIN_GIT_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 AutoReqProv: no
-Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, rh-git29-git, php-Smarty, php-markdown, gitolite3, gitphp-tuleap >= 0.2.5-15
-Requires: geshi, php-guzzle-Guzzle, sudo
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, rh-git29-git, gitolite3
+Requires: php-guzzle-Guzzle, sudo
 Provides: tuleap-plugin-git = %{version}
 Conflicts: tuleap-plugin-git
 %description plugin-git-gitolite3
@@ -208,7 +206,7 @@ This package is integrated with gitolite v3 (new version)
 Summary: Pullrequest management for Tuleap
 Version: @@PLUGIN_PULLREQUEST_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
-Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, %{name}-plugin-git
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, %{name}-plugin-git, rh-git29-git
 Group: Development/Tools
 %description plugin-pullrequest
 %{summary}.
@@ -218,7 +216,7 @@ Summary: Tuleap plugin to manage LDAP integration
 Group: Development/Tools
 Version: @@PLUGIN_LDAP_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
-Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, perl-LDAP, python-ldap, rh-php56-php-ldap
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, perl-LDAP, php56-php-ldap
 Provides: tuleap-plugin-ldap = %{version}
 %description plugin-ldap
 LDAP Plugin for Tuleap. Provides LDAP information, LDAP
@@ -279,7 +277,7 @@ Summary: Tracker v5 for Tuleap
 Group: Development/Tools
 Version: @@PLUGIN_TRACKER_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
-Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, libxslt, rh-php56-php-imap
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, libxslt, php56-php-imap
 %description plugin-tracker
 New tracker generation for Tuleap.
 
@@ -357,7 +355,7 @@ Group: Development/Tools
 Version: @@PLUGIN_MEDIAWIKI_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}
-Requires: php-mediawiki-tuleap-123
+Requires: php-mediawiki-tuleap-123 >= 1.23.9-5
 %description plugin-mediawiki
 This plugin provides Mediawiki integration in Tuleap.
 
@@ -367,7 +365,6 @@ Group: Development/Tools
 Version: @@PLUGIN_OPENIDCONNECTCLIENT_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}
-Requires: php-openid-connect-client
 %description plugin-openidconnectclient
 Connect to Tuleap using an OpenID Connect provider
 
@@ -463,6 +460,15 @@ Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}
 %description plugin-bugzilla-reference
 %{summary}.
 
+%package plugin-create-test-env
+Summary: Create test environment on a Tuleap server
+Group: Development/Tools
+Version: @@PLUGIN_CREATE_TEST_ENV_VERSION@@
+Release: @@VERSION@@_@@RELEASE@@%{?dist}
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, tuleap-plugin-botmattermost
+%description plugin-create-test-env
+%{summary}.
+
 %package api-explorer
 Summary: Web API Explorer
 Group: Development/Tools
@@ -520,9 +526,17 @@ for i in tools plugins site-content src VERSION AUTHORS; do
 done
 # No need of template
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/template
-%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/tests
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/label
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/crosstracker
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/textualreport
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/timetracking
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/dynamic_credentials
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/velocity
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/mfa
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/prometheus_metrics
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/tuleap_synchro
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/src/www/assets/tuleap_synchro
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/src/www/assets/velocity
 # Remove development tools and utility files
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/src/composer.json
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/src/composer.lock
@@ -698,6 +712,14 @@ touch $RPM_BUILD_ROOT/%{APP_DATA_DIR}/gitolite/projects.list
 
 # Plugin im
 %{__install} plugins/IM/etc/05-im.conf.dist $RPM_BUILD_ROOT/etc/httpd/conf.d/tuleap-aliases/05-im.conf
+
+# Plugin create_test_env
+%{__install} plugins/create_test_env/etc/sudoers.d/tuleap_plugin_create_test_env $RPM_BUILD_ROOT/%{_sysconfdir}/sudoers.d
+
+# Plugin LDAP
+%{__install} plugins/ldap/etc/logrotate.syslog.dist $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_ldap
+%{__perl} -pi -e "s~%PROJECT_NAME%~%{APP_NAME}~g" $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_ldap
+%{__perl} -pi -e "s~%%APP_USER%%~%{APP_USER}~g" $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_ldap
 
 # Symlink for compatibility with older version
 %{__ln_s} %{APP_DIR} $RPM_BUILD_ROOT/%{OLD_APP_DIR}
@@ -989,7 +1011,10 @@ fi
 %{APP_DIR}/src/www/api/VERSION
 %{APP_DIR}/src/www/api/.htaccess
 %{APP_DIR}/src/www/api/reference
-%{APP_DIR}/src/www/assets
+%dir %{APP_DIR}/src/www/assets
+%{APP_DIR}/src/www/assets/*.js
+%{APP_DIR}/src/www/assets/manifest.json
+%{APP_DIR}/src/www/assets/admindelegation
 %{APP_DIR}/src/www/codendi.css
 %{APP_DIR}/src/www/cvs
 %{APP_DIR}/src/www/export
@@ -1168,6 +1193,8 @@ fi
 %files plugin-ldap
 %defattr(-,%{APP_USER},%{APP_USER},-)
 %{APP_DIR}/plugins/ldap
+%attr(00644,root,root) /etc/logrotate.d/%{APP_NAME}_ldap
+%config(noreplace) /etc/logrotate.d/%{APP_NAME}_ldap
 
 %files plugin-im
 %defattr(-,%{APP_USER},%{APP_USER},-)
@@ -1218,6 +1245,7 @@ fi
 %files plugin-cardwall
 %defattr(-,%{APP_USER},%{APP_USER},-)
 %{APP_DIR}/plugins/cardwall
+%{APP_DIR}/src/www/assets/cardwall
 
 %files plugin-agiledashboard
 %defattr(-,%{APP_USER},%{APP_USER},-)
@@ -1291,6 +1319,12 @@ fi
 %defattr(-,%{APP_USER},%{APP_USER},-)
 %{APP_DIR}/plugins/bugzilla_reference
 %attr(00644,root,root) /etc/logrotate.d/%{APP_NAME}_bugzilla_reference
+
+%files plugin-create-test-env
+%defattr(-,%{APP_USER},%{APP_USER},-)
+%{APP_DIR}/plugins/create_test_env
+%attr(00400,root,root) %{_sysconfdir}/sudoers.d/tuleap_plugin_create_test_env
+%{APP_DIR}/src/www/assets/create_test_env
 
 %files api-explorer
 %defattr(-,%{APP_USER},%{APP_USER},-)

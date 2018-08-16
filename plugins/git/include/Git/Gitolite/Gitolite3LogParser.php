@@ -26,9 +26,11 @@ use Git;
 use GitRepositoryFactory;
 use GitRepositoryGitoliteAdmin;
 use Logger;
+use PFUser;
 use System_Command;
 use Tuleap\Git\History\Dao;
 use Tuleap\Git\RemoteServer\Gerrit\HttpUserValidator;
+use UserDao;
 use UserManager;
 use GitRepository;
 
@@ -73,6 +75,11 @@ class Gitolite3LogParser
     private $file_logs_dao;
 
     /**
+     * @var UserDao
+     */
+    private $user_dao;
+
+    /**
      * @var array
      */
     private $access_cache = array();
@@ -82,6 +89,11 @@ class Gitolite3LogParser
      */
     private $day_accesses_cache = array();
 
+    /**
+     * @var array
+     */
+    private $user_last_access_cache = [];
+
     public function __construct(
         Logger $logger,
         System_Command $system_command,
@@ -89,7 +101,8 @@ class Gitolite3LogParser
         Dao $history_dao,
         GitRepositoryFactory $repository_factory,
         UserManager $user_manager,
-        GitoliteFileLogsDao $file_logs_dao
+        GitoliteFileLogsDao $file_logs_dao,
+        UserDao $user_dao
     ) {
         $this->logger             = $logger;
         $this->system_command     = $system_command;
@@ -98,6 +111,7 @@ class Gitolite3LogParser
         $this->repository_factory = $repository_factory;
         $this->user_manager       = $user_manager;
         $this->file_logs_dao      = $file_logs_dao;
+        $this->user_dao           = $user_dao;
     }
 
     public function parseAllLogs($path)
@@ -144,6 +158,7 @@ class Gitolite3LogParser
 
                 $this->storeCacheInDb();
                 $this->file_logs_dao->storeLastLine($log, ftell($log_file));
+                $this->updateLastAccessDates();
                 fclose($log_file);
             }
         }
@@ -178,6 +193,7 @@ class Gitolite3LogParser
 
             if ($user) {
                 $user_id = $user->getId();
+                $this->cacheUserLastAccessDate($user, $day);
             } else {
                 $user_id = 0;
             }
@@ -207,32 +223,12 @@ class Gitolite3LogParser
         foreach ($this->access_cache as $day => $repositories) {
             foreach ($repositories as $repository_id => $users) {
                 foreach ($users as $user_id => $count) {
-                    if ($this->hasRecord($repository_id, $user_id, $day)) {
-                        $this->history_dao->addGitReadAccess($day, $repository_id, $user_id, $count);
-                    } else {
-                        $this->history_dao->insertGitReadAccess($day, $repository_id, $user_id, $count);
-                    }
+                    $this->history_dao->addGitReadAccess($day, $repository_id, $user_id, $count);
                 }
             }
         }
         $this->history_dao->commit();
         $this->resetCaches();
-    }
-
-    private function hasRecord($repository_id, $user_id, $day)
-    {
-        $this->cacheAccessPerDay($day);
-        return isset($this->day_accesses_cache[$day][$repository_id][$user_id]);
-    }
-
-    private function cacheAccessPerDay($day)
-    {
-        if (! isset($this->day_accesses_cache[$day])) {
-            $dar = $this->history_dao->searchAccessPerDay($day);
-            foreach ($dar as $row) {
-                $this->day_accesses_cache[$day][$row['repository_id']][$row['user_id']] = 1;
-            }
-        }
     }
 
     private function isAReadAccess(array $line)
@@ -243,5 +239,24 @@ class Gitolite3LogParser
     private function isNotASystemUser($user)
     {
         return $user !== GitRepositoryGitoliteAdmin::USERNAME && ! $this->user_validator->isLoginAnHTTPUserLogin($user);
+    }
+
+    private function cacheUserLastAccessDate(PFUser $user, DateTime $date)
+    {
+        $user_id   = $user->getId();
+        $timestamp = $date->getTimestamp();
+
+        if (isset($this->user_last_access_cache[$user_id]) && $this->user_last_access_cache[$user_id] >= $timestamp) {
+            return;
+        }
+
+        $this->user_last_access_cache[$user_id] = $timestamp;
+    }
+
+    private function updateLastAccessDates()
+    {
+        foreach ($this->user_last_access_cache as $user_id => $timestamp) {
+            $this->user_dao->storeLastAccessDate($user_id, $timestamp);
+        }
     }
 }

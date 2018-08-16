@@ -37,11 +37,11 @@ PLUGIN_REFERENCEALIAS_GIT_VERSION=$(shell LANG=C cat $(BASE_DIR)/plugins/referen
 PLUGIN_ARTIFACTSFOLDERS_VERSION=$(shell LANG=C cat $(BASE_DIR)/plugins/artifactsfolders/VERSION)
 PLUGIN_CAPTCHA_VERSION=$(shell LANG=C cat $(BASE_DIR)/plugins/captcha/VERSION)
 PLUGIN_BUGZILLA_REFERENCE_VERSION=$(shell LANG=C cat $(BASE_DIR)/plugins/bugzilla_reference/VERSION)
+PLUGIN_CREATE_TEST_ENV_VERSION=$(shell LANG=C cat $(BASE_DIR)/plugins/create_test_env/VERSION)
+PLUGIN_DOCMAN_VERSION=$(shell LANG=C cat $(BASE_DIR)/plugins/docman/VERSION)
 
 THEME_FLAMINGPARROT_VERSION=$(shell LANG=C cat $(BASE_DIR)/src/www/themes/FlamingParrot/VERSION)
 THEME_BURNINGPARROT_VERSION=$(shell LANG=C cat $(BASE_DIR)/src/www/themes/BurningParrot/VERSION)
-
-ANGULAR_APPS_TO_BUILD=plugins/pullrequest/www/js/angular
 
 ifdef GIT_BRANCH
 TAG_RELEASE = $(subst -, ,$(GIT_BRANCH))
@@ -108,16 +108,14 @@ mo:
 node:
 	cd $(BASE_DIR) &&\
 	     npm install &&\
-	     npm run build &&\
-	for directory in $(ANGULAR_APPS_TO_BUILD); do\
-	     cd $(BASE_DIR)/$$directory &&\
-	     npm install &&\
-	     bower install --allow-root --config.interactive=false &&\
-	     npm run build; \
-	done
+	     npm run build
 
 composer:
+	echo "Processing $(BASE_DIR)/src/"
 	composer install --classmap-authoritative --no-dev --no-interaction --no-scripts --working-dir=$(BASE_DIR)/src/
+	find $(BASE_DIR)/plugins/ -mindepth 2 -maxdepth 2 -type f -name 'composer.json' \
+		-exec echo "Processing {}" \; -execdir composer install --classmap-authoritative --no-dev --no-interaction --no-scripts \;
+	composer install --classmap-authoritative --no-dev --no-interaction --no-scripts --working-dir=$(BASE_DIR)/tools/Configuration/
 
 $(RPM_TMP)/SOURCES/$(PKG_NAME)-$(version).tar.gz: rpmprep node composer mo
 	[ -h $(RPM_TMP)/SOURCES/$(PKG_NAME)-$(version) ] || ln -s $(BASE_DIR) $(RPM_TMP)/SOURCES/$(PKG_NAME)-$(version)
@@ -135,14 +133,12 @@ $(RPM_TMP)/SOURCES/$(PKG_NAME)-$(version).tar.gz: rpmprep node composer mo
 				-name "node_modules" -o\
 				-path "*/.DS_Store" -o\
 				-path $(PKG_NAME)-$(version)/src/www/themes/common/tlp -o\
-				-path $(PKG_NAME)-$(version)/plugins/tests -o\
-				-path $(PKG_NAME)-$(version)/plugins/pullrequest/www/js/angular -o\
+				-path $(PKG_NAME)-$(version)/plugins/pullrequest/www/scripts -o\
 				-path $(PKG_NAME)-$(version)/plugins/agiledashboard/www/js/planning-v2 -o\
 				-path $(PKG_NAME)-$(version)/plugins/agiledashboard/www/js/kanban \)\
 				-prune -o -print \
 			&& \
 			find $(PKG_NAME)-$(version)/src/www/themes/common/tlp/dist; \
-			find $(PKG_NAME)-$(version)/plugins/pullrequest/www/js/angular/bin; \
 			find $(PKG_NAME)-$(version)/plugins/agiledashboard/www/js/planning-v2/dist; \
 			find $(PKG_NAME)-$(version)/plugins/agiledashboard/www/js/kanban/dist; \
 		} | \
@@ -204,6 +200,8 @@ $(RPM_TMP)/SPECS/$(SPEC_FILE): $(SPEC_FILE)
 		sed -e 's/@@PLUGIN_ARTIFACTSFOLDERS_VERSION@@/$(PLUGIN_ARTIFACTSFOLDERS_VERSION)/g' |\
 		sed -e 's/@@PLUGIN_CAPTCHA_VERSION@@/$(PLUGIN_CAPTCHA_VERSION)/g' |\
 		sed -e 's/@@PLUGIN_BUGZILLA_REFERENCE_VERSION@@/$(PLUGIN_BUGZILLA_REFERENCE_VERSION)/g' |\
+		sed -e 's/@@PLUGIN_CREATE_TEST_ENV_VERSION@@/$(PLUGIN_CREATE_TEST_ENV_VERSION)/g' |\
+		sed -e 's/@@PLUGIN_DOCMAN_VERSION@@/$(PLUGIN_DOCMAN_VERSION)/g' |\
 		sed -e 's/@@THEME_FLAMINGPARROT_VERSION@@/$(THEME_FLAMINGPARROT_VERSION)/g' |\
 		sed -e 's/@@THEME_BURNINGPARROT_VERSION@@/$(THEME_BURNINGPARROT_VERSION)/g' |\
 		sed -e 's/@@PKG_NAME@@/$(PKG_NAME)/g' \

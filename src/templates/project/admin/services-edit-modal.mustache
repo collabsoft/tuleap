@@ -51,7 +51,7 @@
             </div>
         {{/ is_read_only }}
 
-        <div class="tlp-form-element">
+        <div class="tlp-form-element {{^ is_link_customizable }} tlp-form-element-disabled {{/ is_link_customizable }}">
             <label class="tlp-label" for="project-admin-services-edit-modal-{{ id }}-link">
                 {{# gettext }}Link{{/ gettext }}
                 <i class="fa fa-asterisk"></i>
@@ -65,7 +65,9 @@
                    pattern="(https?://|#|/|\?).+"
                    title="{{# gettext }}Please, enter a http:// or https:// link{{/ gettext }}"
                    required
-                   value="{{ link }}">
+                   value="{{ link }}"
+                   {{^ is_link_customizable }} disabled {{/ is_link_customizable }}
+            >
         </div>
 
         {{# can_see_shortname }}
@@ -93,24 +95,10 @@
                        name="description"
                        placeholder="{{# gettext }}Awesome service to manage extra stuff{{/ gettext }}"
                        size="70"
-                       maxlength="255">
+                       maxlength="255"
+                       value ="{{ description }}">
             </div>
         {{/ is_read_only }}
-
-        {{# is_default_template }}
-            <div class="tlp-form-element">
-                <label class="tlp-label" for="project-admin-services-edit-modal-{{ id }}-scope">
-                    {{# gettext }}Scope{{/ gettext }}
-                </label>
-                <select class="tlp-select tlp-select-adjusted" id="project-admin-services-edit-modal-{{ id }}-scope" name="scope">
-                    <option value="system" {{^ is_scope_project }}selected{{/ is_scope_project }}>{{# gettext }}System{{/ gettext }}</option>
-                    <option value="project" {{# is_scope_project }}selected{{/ is_scope_project }}>{{# gettext }}Project{{/ gettext }}</option>
-                </select>
-            </div>
-        {{/ is_default_template }}
-        {{^ is_default_template }}
-            <input type="hidden" name="scope" value="{{ scope }}">
-        {{/ is_default_template }}
 
         <hr class="tlp-modal-separator">
 
@@ -118,7 +106,7 @@
             <div class="tlp-form-element">
                 <label class="tlp-label tlp-checkbox">
                     <input type="checkbox" name="is_active" value="1" {{# is_active }}checked{{/is_active}}>
-                    {{# gettext }}Instantiated for new projects{{/ gettext }}
+                    {{# gettext }}Available (also available for new projects){{/ gettext }}
                 </label>
             </div>
         {{/ can_update_is_active }}
@@ -128,7 +116,12 @@
 
         <div class="tlp-form-element">
             <label class="tlp-label tlp-checkbox">
-                <input type="checkbox" name="is_used" value="1" {{# is_used }}checked{{/ is_used }}>
+                <input type="checkbox"
+                       name="is_used"
+                       value="1"
+                       {{# is_used }}checked{{/ is_used }}
+                       data-test="service-{{ short_name }}-is-used"
+                >
                 {{# gettext }}Enabled{{/ gettext }}
             </label>
         </div>
@@ -168,7 +161,11 @@
         <button type="reset" class="tlp-button-primary tlp-button-outline tlp-modal-action" data-dismiss="modal">
             {{# gettext }}Cancel{{/ gettext }}
         </button>
-        <button type="submit" class="tlp-button-primary tlp-modal-action user-group-modal-button">
+        <button
+                type="submit"
+                class="tlp-button-primary tlp-modal-action user-group-modal-button"
+                data-test="save-service-{{ short_name }}-modifications"
+        >
             <i class="fa fa-save tlp-button-icon"></i> {{# gettext }}Save modifications{{/ gettext }}
         </button>
     </div>

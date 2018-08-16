@@ -224,6 +224,8 @@ $sys_extra_plugin_path = '';
 // / ! \ it is really not recommended to enable it.
 $sys_plugins_editable_configuration = 1;
 
+$sys_plugins_that_can_not_be_disabled_from_the_web_ui = '';
+
 // Themeing related paths
 $sys_themeroot = $codendi_dir . '/src/www/themes/';
 $sys_custom_themeroot = $sys_custom_dir . '/themes';
@@ -332,10 +334,6 @@ $sys_is_project_public = 1;
 // if set to 0 (zero) then the project privacy radio buttons are hidden during the project registration
 $sys_user_can_choose_project_privacy = 1;
 
-// If set to 1 (one) new projects must be approved by site
-// admin. If 0 new projects are automatically approved
-$sys_project_approval = 1;
-
 // Is license approval mandatory when downloading a file from the FRS?
 // (1 is mandatory, 0 is optional)
 $sys_frs_license_mandatory = 0;
@@ -347,6 +345,11 @@ $sys_exchange_policy_url = '';
 // Maximum duration of a session (in seconds)
 // Default value is about 2 weeks: 3600*24*14=1209600
 $sys_session_lifetime = 1209600;
+
+// Delay between 2 updates of "last access" date for a user
+// Default is 6 hours, it's good enough if you want to know the day a user was seen
+// A number to low will degrade performances
+$last_access_resolution = 21600;
 
 // Duration before deleting pending accounts which have not been activated
 // (in days)
@@ -443,13 +446,7 @@ $sys_default_theme_variant = 'FlamingParrot_Orange';
 // * FlamingParrot_BlueGrey
 // * FlamingParrot_Purple
 // * FlamingParrot_Red
-// * FlamingParrot_DarkOrange
-// * FlamingParrot_DarkBlue
-// * FlamingParrot_DarkGreen
-// * FlamingParrot_DarkBlueGrey
-// * FlamingParrot_DarkPurple
-// * FlamingParrot_DarkRed
-$sys_available_theme_variants = 'FlamingParrot_Orange,FlamingParrot_Blue,FlamingParrot_Green,FlamingParrot_BlueGrey,FlamingParrot_Purple,FlamingParrot_Red,FlamingParrot_DarkOrange,FlamingParrot_DarkBlue,FlamingParrot_DarkGreen,FlamingParrot_DarkBlueGrey,FlamingParrot_DarkPurple,FlamingParrot_DarkRed';
+$sys_available_theme_variants = 'FlamingParrot_Orange,FlamingParrot_Blue,FlamingParrot_Green,FlamingParrot_BlueGrey,FlamingParrot_Purple,FlamingParrot_Red';
 
 // Set the reporting level for logging
 //
@@ -496,15 +493,6 @@ $sys_rest_api_over_http = 0;
 // You have to ensure those headers are properly set by your reverse proxy
 // otherwise it might be an injection point for an attacker
 $sys_trusted_proxies = '';
-
-// Configure connection to statsd server
-//
-// Idealy the server would be an IP address (will save a few ms for the DNS resolution)
-// Server ID is optional. It's useful if you want to aggregate several servers on the same
-// statsd server.
-//$statsd_server    = 'graphite.graphite-statsd.docker';
-//$statsd_port      = 8125;
-//$statsd_server_id = 'local';
 
 // When 0 mail sent to everybody can lead to information leak, non projects members can receive mails of private projects
 $sys_mail_secure_mode = 0;

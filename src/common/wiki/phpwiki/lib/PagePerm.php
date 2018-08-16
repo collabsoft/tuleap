@@ -167,7 +167,6 @@ function action2access ($action) {
     case 'diff':
     case 'select':
     case 'search':
-    case 'pdf':
         return 'view';
     case 'zip':
     case 'ziphtml':
@@ -332,7 +331,7 @@ function array_diff_assoc_recursive($array1, $array2) {
 class PagePermission {
     var $perm;
 
-    function PagePermission($hash = array()) {
+    function __construct($hash = array()) {
         $this->_group = &$GLOBALS['request']->getGroup();
         if (is_array($hash) and !empty($hash)) {
             $accessTypes = $this->accessTypes();

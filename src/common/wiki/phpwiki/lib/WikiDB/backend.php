@@ -431,12 +431,6 @@ class WikiDB_backend
     }
 
     /**
-     * Optimize the database.
-     */
-    function optimize() {
-    }
-
-    /**
      * Check database integrity.
      *
      * This should check the validity of the internal structure of the database.
@@ -486,7 +480,7 @@ class WikiDB_backend
      */
     function limit($limit) {
         if (strstr($limit, ','))
-            return split(',', $limit);
+            return preg_split('/,/D', $limit);
         else
             return array(0, $limit);
     }
@@ -607,7 +601,7 @@ class WikiDB_backend_iterator
  */
 class WikiDB_backend_search
 {
-    function WikiDB_backend_search($search, &$dbh) {
+    function __construct($search, &$dbh) {
         $this->_dbh = $dbh;
         $this->_case_exact =  $search->_case_exact;
         $this->_stoplist   =& $search->_stoplist;

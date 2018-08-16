@@ -16,7 +16,7 @@
  */
 class XmlContent
 {
-    function XmlContent (/* ... */) {
+    function __construct (/* ... */) {
         $this->_content = array();
         $this->_pushContent_array(func_get_args());
     }
@@ -115,23 +115,6 @@ class XmlContent
         return $xml;
     }
 
-    function asPDF () {
-        $pdf = '';
-        foreach ($this->_content as $item) {
-            if (is_object($item)) {
-                if (method_exists($item, 'asPDF'))
-                    $pdf .= $item->asPDF();
-                elseif (method_exists($item, 'asString'))
-                    $pdf .= $this->_quote($item->asString());
-                else
-                    $pdf .= sprintf("==Object(%s)==", get_class($item));
-            }
-            else
-                $pdf .= $this->_quote((string) $item);
-        }
-        return $pdf;
-    }
-
     function asString () {
         $val = '';
         foreach ($this->_content as $item) {
@@ -180,9 +163,9 @@ class XmlContent
  */
 class XmlElement extends XmlContent
 {
-    function XmlElement ($tagname /* , $attr_or_content , ...*/) {
+    function __construct ($tagname /* , $attr_or_content , ...*/) {
         //FIXME: php5 incompatible
-        $this->XmlContent();
+        parent::__construct();
         $this->_init(func_get_args());
     }
 
@@ -414,7 +397,7 @@ class XmlElement extends XmlContent
 };
 
 class RawXml {
-    function RawXml ($xml_text) {
+    function __construct ($xml_text) {
         $this->_xml = $xml_text;
     }
 
@@ -432,7 +415,7 @@ class RawXml {
 }
 
 class FormattedText {
-    function FormattedText ($fs /* , ... */) {
+    function __construct ($fs /* , ... */) {
         if ($fs !== false) {
             $this->_init(func_get_args());
         }

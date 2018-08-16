@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,83 +26,40 @@ class GitViews_ShowRepo {
      * @var GitRepository
      */
     protected $repository;
-
-    /**
-     *
-     * @var Git
-     */
-    protected $controller;
-
     /**
      * @var Codendi_Request
      */
     protected $request;
-
-    /**
-     * @var Git_Driver_Gerrit
-     */
-    private $driver_factory;
-
-    /**
-     * @var Git_Driver_Gerrit_UserAccountManager $gerrit_usermanager
-     */
-    private $gerrit_usermanager;
-
-    /**
-     * @var array
-     */
-    private $gerrit_servers;
-
-    /** @var Git_GitRepositoryUrlManager */
-    private $url_manager;
-
     /** @var Git_Mirror_MirrorDataMapper */
     private $mirror_data_mapper;
+    /**
+     * @var GitPhpAccessLogger
+     */
+    private $access_logger;
 
     public function __construct(
         GitRepository $repository,
-        Git $controller,
-        Git_GitRepositoryUrlManager $url_manager,
-        Codendi_Request $request,
-        Git_Driver_Gerrit_GerritDriverFactory $driver_factory,
-        Git_Driver_Gerrit_UserAccountManager $gerrit_usermanager,
-        array $gerrit_servers,
+        HTTPRequest $request,
         Git_Mirror_MirrorDataMapper $mirror_data_mapper,
-        GitPhpAccessLogger $access_loger
+        GitPhpAccessLogger $access_logger
     ) {
         $this->repository         = $repository;
-        $this->controller         = $controller;
         $this->request            = $request;
-        $this->driver_factory     = $driver_factory;
-        $this->gerrit_usermanager = $gerrit_usermanager;
-        $this->gerrit_servers     = $gerrit_servers;
-        $this->url_manager        = $url_manager;
         $this->mirror_data_mapper = $mirror_data_mapper;
-        $this->access_loger       = $access_loger;
+        $this->access_logger      = $access_logger;
     }
 
-
-    public function display() {
-        $git_php_viewer = new GitViews_GitPhpViewer(
-            $this->repository,
-            $this->controller->getPlugin()->getConfigurationParameter('gitphp_path')
-        );
-        if ($this->controller->isADownload()) {
+    public function display(Git_URL $url) {
+        $git_php_viewer = new GitViews_GitPhpViewer($this->repository, $this->request->getCurrentUser());
+        if ($url->isADownload($this->request)) {
             $view = new GitViews_ShowRepo_Download($git_php_viewer);
         } else {
             $view = new GitViews_ShowRepo_Content(
                 $this->repository,
                 $git_php_viewer,
                 $this->request,
-                $this->request->getCurrentUser(),
-                $this->controller,
-                $this->url_manager,
-                $this->driver_factory,
-                $this->gerrit_usermanager,
                 $this->mirror_data_mapper,
-                $this->access_loger,
-                $this->gerrit_servers,
-                $this->controller->getPlugin()->getThemePath()
+                $this->access_logger
             );
         }
         $view->display();

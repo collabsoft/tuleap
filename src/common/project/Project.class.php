@@ -81,8 +81,8 @@ class Project extends Group implements PFO_Project {
 		basically just call the parent to set up everything
                 and set up services arrays
     */
-    function Project($param) {
-        $this->Group($param);
+    function __construct($param) {
+        parent::__construct($param);
         
         //for right now, just point our prefs array at Group's data array
         //this will change later when we split the project_data table off from groups table
@@ -145,6 +145,7 @@ class Project extends Group implements PFO_Project {
 
             $this->service_data_array[$short_name] = $res_row;
             $this->services[$short_name] = $service;
+
             if ($service->isActive()) {
                 $this->cache_active_services[] = $service;
             }
@@ -502,7 +503,7 @@ class Project extends Group implements PFO_Project {
     }
 
     public function projectsMustBeApprovedByAdmin() {
-        return ForgeConfig::get('sys_project_approval', 1) === 1;
+        return (int) ForgeConfig::get(\ProjectManager::CONFIG_PROJECT_APPROVAL, 1) === 1;
     }
 
     /**

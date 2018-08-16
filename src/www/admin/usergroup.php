@@ -4,7 +4,7 @@
  * Copyright 1999-2000 (c) VA Linux Systems
  * http://sourceforge.net
  *
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,6 +22,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Password\Configuration\PasswordConfigurationDAO;
+use Tuleap\Password\Configuration\PasswordConfigurationRetriever;
 use Tuleap\User\Admin\UserChangePasswordPresenter;
 use Tuleap\User\Admin\UserDetailsAccessPresenter;
 use Tuleap\user\Admin\UserDetailsFormatter;
@@ -38,7 +41,12 @@ require_once('common/system_event/SystemEventManager.class.php');
 $request = HTTPRequest::instance();
 $request->checkUserIsSuperUser();
 
-$GLOBALS['HTML']->includeFooterJavascriptFile('/scripts/admin/userdetails.js');
+$assets_path    = ForgeConfig::get('tuleap_dir') . '/src/www/assets';
+$include_assets = new IncludeAssets($assets_path, '/assets');
+
+$GLOBALS['HTML']->includeFooterJavascriptFile(
+    $include_assets->getFileURL('site-admin-user-details.js')
+);
 $GLOBALS['HTML']->includeFooterJavascriptFile('/scripts/check_pw.js');
 
 $um                  = UserManager::instance();
@@ -70,9 +78,11 @@ if ($request->valid($vAction)) {
     $action = '';
 }
 
-$password_csrf = new CSRFSynchronizerToken('/admin/usergroup.php?user_id='.$user->getId());
+$user_administration_csrf = new CSRFSynchronizerToken('/admin/usergroup.php?user_id='.$user->getId());
 
 if ($request->isPost()) {
+    $user_administration_csrf->check();
+
     if ($action == 'update_user') {
         /*
          * Update the user
@@ -230,15 +240,13 @@ if ($request->isPost()) {
             $GLOBALS['Response']->redirect('/admin/usergroup.php?user_id='.$user->getId());
         }
 
-        $errors = array();
-        if (! account_pwvalid($request->get('form_pw'), $errors)) {
-            foreach($errors as $e) {
-                $GLOBALS['Response']->addFeedback(Feedback::ERROR, $e);
-                $GLOBALS['Response']->redirect('/admin/usergroup.php?user_id='.$user->getId());
+        $password_sanity_checker = \Tuleap\Password\PasswordSanityChecker::build();
+        if (! $password_sanity_checker->check($request->get('form_pw'))) {
+            foreach($password_sanity_checker->getErrors() as $error) {
+                $GLOBALS['Response']->addFeedback(Feedback::ERROR, $error);
             }
+            $GLOBALS['Response']->redirect('/admin/usergroup.php?user_id='.$user->getId());
         }
-
-        $password_csrf->check();
 
         $user = $user_manager->getUserById($request->get('user_id'));
 
@@ -283,7 +291,9 @@ EventManager::instance()->processEvent(
     )
 );
 
-$password_strategy = new PasswordStrategy();
+$password_configuration_retriever = new PasswordConfigurationRetriever(new PasswordConfigurationDAO());
+$password_configuration           = $password_configuration_retriever->getPasswordConfiguration();
+$password_strategy                = new PasswordStrategy($password_configuration);
 include($GLOBALS['Language']->getContent('account/password_strategy'));
 $passwords_validators = array();
 foreach ($password_strategy->validators as $key => $v) {
@@ -304,10 +314,11 @@ $siteadmin->renderAPresenter(
         new UserDetailsAccessPresenter($user, $um->getUserAccessInfo($user)),
         new UserChangePasswordPresenter(
             $user,
-            $password_csrf,
+            $user_administration_csrf,
             $additional_password_messages,
             $passwords_validators
         ),
+        $user_administration_csrf,
         $additional_details,
         $details_formatter->getMore($user),
         $details_formatter->getShells($user),

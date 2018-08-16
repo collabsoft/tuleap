@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -18,9 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-
-require_once('common/frs/FRSReleaseFactory.class.php');
-require_once('common/frs/FRSPackageFactory.class.php');
 
 /**
  *
@@ -63,7 +60,7 @@ class FRSPackage {
      */
     var $approve_license;
 
-    function FRSPackage($data_array = null) {
+    function __construct($data_array = null) {
         $this->package_id       = null;
         $this->group_id         = null;
         $this->name             = null;

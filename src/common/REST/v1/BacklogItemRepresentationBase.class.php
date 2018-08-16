@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@
 
 namespace Tuleap\REST\v1;
 
-class BacklogItemRepresentationBase {
-
+class BacklogItemRepresentationBase
+{
     const BACKLOG_ROUTE = 'backlog';
 
     const CONTENT_ROUTE = 'content';
@@ -58,9 +58,17 @@ class BacklogItemRepresentationBase {
     public $color;
 
     /**
+     * @var String
+     */
+    public $background_color_name;
+
+    /**
      * @var Float
      */
     public $initial_effort;
+
+    /** @var float */
+    public $remaining_effort;
 
     /**
      * @var \Tuleap\Tracker\REST\Artifact\ArtifactReference
@@ -86,4 +94,9 @@ class BacklogItemRepresentationBase {
      * @var array
      */
     public $accept;
+
+    /**
+     * @var array
+     */
+    public $card_fields;
 }

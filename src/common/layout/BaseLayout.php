@@ -30,6 +30,12 @@ use Project;
 use ProjectManager;
 use Response;
 use Toggler;
+use Tuleap\Layout\BreadCrumbDropdown\BreadCrumb;
+use Tuleap\Layout\BreadCrumbDropdown\BreadCrumbCollection;
+use Tuleap\Layout\BreadCrumbDropdown\BreadCrumbLink;
+use Tuleap\Layout\BreadCrumbDropdown\BreadCrumbLinkCollection;
+use Tuleap\Layout\BreadCrumbDropdown\BreadCrumbSubItems;
+use Tuleap\Layout\BreadCrumbDropdown\SubItemsUnlabelledSection;
 use Tuleap\Project\Admin\MembershipDelegationDao;
 use Tuleap\Sanitizer\URISanitizer;
 use UserManager;
@@ -63,7 +69,7 @@ abstract class BaseLayout extends Response
     protected $is_rendered_through_service = false;
 
     /**
-     * @var array
+     * @var BreadCrumbCollection
      */
     protected $breadcrumbs;
 
@@ -77,13 +83,18 @@ abstract class BaseLayout extends Response
      */
     protected $uri_sanitizer;
 
+    /**
+     * @var string[]
+     */
+    protected $css_assets = [];
+
     public function __construct($root)
     {
         parent::__construct();
         $this->root    = $root;
         $this->imgroot = $root . '/images/';
 
-        $this->breadcrumbs = array();
+        $this->breadcrumbs = new BreadCrumbCollection();
         $this->toolbar     = array();
 
         $this->include_asset = new IncludeAssets(ForgeConfig::get('codendi_dir').'/src/www/assets', '/assets');
@@ -95,6 +106,11 @@ abstract class BaseLayout extends Response
     abstract public function displayStaticWidget(Widget_Static $widget);
     abstract public function includeCalendarScripts();
     abstract protected function getUser();
+
+    public function addCssAsset(CssAsset $asset)
+    {
+        $this->css_assets[] = $asset;
+    }
 
     /**
      * Build an img tag
@@ -131,7 +147,8 @@ abstract class BaseLayout extends Response
     {
         $motd      = '';
         $motd_file = $GLOBALS['Language']->getContent('others/motd');
-        if (! strpos($motd_file, "empty.txt")) { # empty.txt returned when no motd file found
+        if (! strpos($motd_file, "empty.txt")) {
+            # empty.txt returned when no motd file found
             ob_start();
             include($motd_file);
             $motd = ob_get_clean();
@@ -426,19 +443,67 @@ abstract class BaseLayout extends Response
 
     public function addBreadcrumbs($breadcrumbs)
     {
-        $purifier = Codendi_HTMLPurifier::instance();
-        foreach ($breadcrumbs as $breadcrumb) {
-            $classname = '';
-            if (isset($breadcrumb['classname'])) {
-                $classname = 'class="breadcrumb-step-' . $purifier->purify($breadcrumb['classname']) . '"';
-            }
-            $this->addBreadcrumb(
-                '<a href="' .
-                $this->uri_sanitizer->sanitizeForHTMLAttribute($purifier->purify($breadcrumb['url'])) .
-                '" ' . $classname . '>' .
-                $purifier->purify($breadcrumb['title']) . '</a>'
-            );
+        if ($breadcrumbs instanceof BreadCrumbCollection) {
+            $this->breadcrumbs = $breadcrumbs;
+            return;
         }
+
+        foreach ($breadcrumbs as $breadcrumb) {
+            $this->breadcrumbs->addBreadCrumb($this->getBreadCrumbItem($breadcrumb));
+        }
+    }
+
+    /**
+     * @param array $breadcrumb
+     *
+     * @return BreadCrumb
+     */
+    private function getBreadCrumbItem(array $breadcrumb)
+    {
+        $link = $this->getLink($breadcrumb);
+
+        $item = new BreadCrumb($link);
+        if (isset($breadcrumb['sub_items'])) {
+            $item->setSubItems($this->getSubItems($breadcrumb['sub_items']));
+        }
+
+        return $item;
+    }
+
+    /**
+     * @param array $sub_items
+     *
+     * @return BreadCrumbSubItems
+     */
+    private function getSubItems(array $sub_items)
+    {
+        $links = [];
+        foreach ($sub_items as $sub_item) {
+            $links[] = $this->getLink($sub_item);
+        }
+        $collection = new BreadCrumbSubItems();
+        $collection->addSection(
+            new SubItemsUnlabelledSection(
+                new BreadCrumbLinkCollection($links)
+            )
+        );
+
+        return $collection;
+    }
+
+    /**
+     * @param array $breadcrumb
+     *
+     * @return BreadCrumbLink
+     */
+    private function getLink(array $breadcrumb)
+    {
+        $link = new BreadCrumbLink($breadcrumb['title'], $breadcrumb['url']);
+        if (isset($breadcrumb['icon_name'])) {
+            $link->setIconName($breadcrumb['icon_name']);
+        }
+
+        return $link;
     }
 
     /**
@@ -476,13 +541,6 @@ abstract class BaseLayout extends Response
     public function setRenderedThroughservice($value)
     {
         $this->is_rendered_through_service = $value;
-    }
-
-    protected function addBreadcrumb($step)
-    {
-        $this->breadcrumbs[] = $step;
-
-        return $this;
     }
 
     protected function getProjectSidebar($params, $project)

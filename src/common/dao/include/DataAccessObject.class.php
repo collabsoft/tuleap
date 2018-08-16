@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,19 +19,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'DataAccess.class.php';
-require_once 'DataAccessResult.class.php';
-require_once 'DataAccessResultEmpty.class.php';
-require_once 'DataAccessQueryException.class.php';
+use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessInterface;
+use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessResultInterface;
 
 /**
- *  Base class for data access objects
+ * @deprecated See \Tuleap\DB\DataAccessObject
  */
 class DataAccessObject {
     /**
      * Private
      * $da stores data access object
-     * @var DataAccess
+     * @var LegacyDataAccessInterface
+     * @deprecated
      */
     var $da;
 
@@ -41,29 +40,35 @@ class DataAccessObject {
     private $throw_exception_on_errors = false;
 
     //! A constructor
+
     /**
-    * Constructs the Dao
-    * @param $da DataAccess
-    */
-    public function __construct(DataAccess $da = null) {
+     * Constructs the Dao
+     * @param $da LegacyDataAccessInterface
+     * @deprecated
+     */
+    public function __construct(LegacyDataAccessInterface $da = null) {
         $this->table_name = 'CLASSNAME_MUST_BE_DEFINE_FOR_EACH_CLASS';
         $this->da = $da ? $da : CodendiDataAccess::instance();
     }
-    public function DataAccessObject($da = null) {
-        $this->__construct($da);
-    }
 
+    /**
+     * @deprecated
+     */
     public function startTransaction() {
         $this->da->startTransaction();
     }
 
     /**
      * After having called this method, all DB errors will be converted to exception
+     * @deprecated
      */
     public function enableExceptionsOnError() {
         $this->throw_exception_on_errors = true;
     }
 
+    /**
+     * @deprecated
+     */
     public function commit() {
         $this->da->commit();
         if ($this->da->isError() && $this->throw_exception_on_errors) {
@@ -71,13 +76,16 @@ class DataAccessObject {
         }
     }
 
+    /**
+     * @deprecated
+     */
     public function rollBack() {
         $this->da->rollback();
     }
 
     /**
-     *
-     * @return DataAccess
+     * @deprecated
+     * @return LegacyDataAccessInterface
      */
     public function getDa() {
         return $this->da;
@@ -89,6 +97,7 @@ class DataAccessObject {
      * @param string $sql the query string
      * @throws DataAccessQueryException
      *
+     * @deprecated
      * @return DataAccessResult|false
      */
     public function retrieve($sql, $params = array()) {
@@ -104,6 +113,8 @@ class DataAccessObject {
      *
      * @param string $sql the query string
      *
+     * @deprecated
+     *
      * @return array|false
      */
     protected function retrieveFirstRow($sql) {
@@ -114,6 +125,8 @@ class DataAccessObject {
      * Like retrieve, but returns only the number of matching rows
      *
      * @param string $sql
+     *
+     * @deprecated
      *
      * @return int
      */
@@ -126,6 +139,9 @@ class DataAccessObject {
      * Like retrieve, but returns only the ids.
      *
      * @param string $sql the query string
+     *
+     * @deprecated
+     *
      * @return array of string
      */
     protected function retrieveIds($sql) {
@@ -136,9 +152,12 @@ class DataAccessObject {
      * Extracts ids from a DataAccessResult.
      *
      * @param DataAccessResult $dar
+     *
+     * @deprecated
+     *
      * @return array of string
      */
-    private function extractIds(DataAccessResult $dar) {
+    private function extractIds(LegacyDataAccessResultInterface $dar) {
         $ids = array();
         foreach ($dar as $row) {
             $ids[] = (int)$row['id'];
@@ -153,6 +172,8 @@ class DataAccessObject {
      * @param string $sql the query string
      * @throws DataAccessQueryException
      *
+     * @deprecated
+     *
      * @return boolean true if success
      */
     public function update($sql, $params = array()) {
@@ -160,7 +181,10 @@ class DataAccessObject {
         return $this->handleError($result, $sql);
     }
 
-    private function handleError(DataAccessResult $dar, $sql) {
+    /**
+     * @deprecated
+     */
+    private function handleError(LegacyDataAccessResultInterface $dar, $sql) {
         if ($dar->isError()) {
             if ($this->throw_exception_on_errors) {
                 throw new DataAccessQueryException($this->getErrorMessage($dar, $sql));
@@ -173,7 +197,10 @@ class DataAccessObject {
         }
     }
 
-    private function getErrorMessage(DataAccessResult $dar, $sql) {
+    /**
+     * @deprecated
+     */
+    private function getErrorMessage(LegacyDataAccessResultInterface $dar, $sql) {
         $trace = debug_backtrace();
         $i     = isset($trace[1]) ? 1 : 0;
         return $dar->isError() .' ==> '. $sql ." @@ ". $trace[$i]['file'] .' at line '. $trace[$i]['line'];
@@ -183,6 +210,8 @@ class DataAccessObject {
      * execute and get the last insert id
      *
      * @param string $sql statement (INSERT INTO ...)
+     *
+     * @deprecated
      *
      * @return int the last insert id or false if there is an error
      */
@@ -210,6 +239,8 @@ class DataAccessObject {
      * @param   string $primary_key the column name of the primary key. Default 'id'
      * @param   string $parent_key the column key used to groups items. Default 'parent_id'
      * @param   string $rank_key the column key used to rank items. Default 'rank'
+     *
+     * @deprecated
      *
      * @return  mixed false if there is no rank to update of the numerical
      *          value of the new rank of the item. If return 'null' it means
@@ -351,6 +382,7 @@ class DataAccessObject {
 
     /**
      * Return the result of 'FOUND_ROWS()' SQL method for the last query.
+     * @deprecated
      */
     function foundRows() {
         $sql = "SELECT FOUND_ROWS() as nb";
@@ -371,6 +403,7 @@ class DataAccessObject {
      * Please adjust the settings in /etc/my.cnf to be sure to retrieve all matching artifacts.
      * The default is 1024 (1K) wich is not enough. For example 50000 matching artifacts take ~ 500K
      *
+     * @deprecated
      */
     public function setGroupConcatLimit() {
         $this->retrieve("SET SESSION group_concat_max_len = 134217728");
@@ -378,6 +411,9 @@ class DataAccessObject {
 
     /**
      * @deprecated Use DataAccess::quoteLikeValueSurround
+     *
+     * @deprecated
+     *
      * @return string
      */
     protected function searchExactMatch($string)
@@ -390,6 +426,9 @@ class DataAccessObject {
      *
      * @param String $field
      * @param String $string
+     *
+     * @deprecated
+     *
      * @return String
      */
     protected function searchExplodeMatch($field, $string) {

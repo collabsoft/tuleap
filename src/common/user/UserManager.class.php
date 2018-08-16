@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,6 +24,7 @@ use Tuleap\Dashboard\Widget\DashboardWidgetDao;
 use Tuleap\User\InvalidSessionException;
 use Tuleap\User\SessionManager;
 use Tuleap\User\SessionNotCreatedException;
+use Tuleap\User\UserConnectionUpdateEvent;
 use Tuleap\User\UserRetrieverByLoginNameEvent;
 use Tuleap\Widget\WidgetFactory;
 
@@ -404,7 +405,8 @@ class UserManager {
                     $now = $_SERVER['REQUEST_TIME'];
                     $break_time = $now - $accessInfo['last_access_date'];
                     //if the access is not later than 6 hours, it is not necessary to log it
-                    if ($break_time > 21600) {
+                    if ($break_time > ForgeConfig::get('last_access_resolution')) {
+                        $this->_getEventManager()->processEvent(new UserConnectionUpdateEvent($this->_currentuser));
                         $this->getDao()->storeLastAccessDate($this->_currentuser->getId(), $now);
                     }
                 }
@@ -484,12 +486,12 @@ class UserManager {
      */
     function login($name, $pwd, $allowpending = false) {
         try {
-            Tuleap\Instrument\Collect::increment('service.accounts.authentication.password.attempted');
             $password_expiration_checker = new User_PasswordExpirationChecker();
             $password_handler            = PasswordHandlerFactory::getPasswordHandler();
-            $login_manager = new User_LoginManager(
+            $login_manager               = new User_LoginManager(
                 EventManager::instance(),
                 $this,
+                new \Tuleap\user\PasswordVerifier($password_handler),
                 $password_expiration_checker,
                 $password_handler
             );
@@ -509,7 +511,7 @@ class UserManager {
 
             $this->getDao()->storeLoginSuccess($user->getId(), $_SERVER['REQUEST_TIME']);
 
-            Tuleap\Instrument\Collect::increment('service.accounts.authentication.password.succeeded');
+            \Tuleap\User\LoginInstrumentation::increment('success');
             return $this->setCurrentUser($user);
 
         } catch (User_InvalidPasswordWithUserException $exception) {
@@ -533,7 +535,7 @@ class UserManager {
             $GLOBALS['Response']->addFeedback(Feedback::ERROR, $exception->getMessage());
         }
 
-        Tuleap\Instrument\Collect::increment('service.accounts.authentication.password.failed');
+        \Tuleap\User\LoginInstrumentation::increment('failure');
         return $this->setCurrentUser($this->createAnonymousUser());
     }
 
@@ -939,7 +941,7 @@ class UserManager {
     function checkUserAccountValidity() {
         // All rules applies at midnight
         $current_date = format_date('Y-m-d', $_SERVER['REQUEST_TIME']);
-        $date_list    = split("-", $current_date, 3);
+        $date_list    = explode("-", $current_date, 3);
         $midnightTime = mktime(0, 0, 0, $date_list[1], $date_list[2], $date_list[0]);
 
         $this->suspendExpiredAccounts($midnightTime);
@@ -1005,5 +1007,10 @@ class UserManager {
     public function removeConfirmHash($confirm_hash) {
         $dao = $this->getDao();
         $dao->removeConfirmHash($confirm_hash);
+    }
+
+    public function setEmailChangeConfirm($user_id, $confirm_hash, $email_new)
+    {
+        return $this->getDao()->setEmailChangeConfirm($user_id, $confirm_hash, $email_new);
     }
 }

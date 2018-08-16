@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,6 +20,7 @@
 
 require_once 'bootstrap.php';
 
+use Tuleap\Git\Gitolite\GitoliteAccessURLGenerator;
 use Tuleap\Markdown\ContentInterpretor;
 use Tuleap\Git\Permissions\FineGrainedPermission;
 use Tuleap\Git\XmlUgroupRetriever;
@@ -35,21 +36,60 @@ class MyMockGitDao extends MockGitDao {
 }
 
 class GitXmlImporterTest extends TuleapTestCase {
+    /**
+     * @var XMLImportHelper
+     */
+    private  $user_finder;
+    /**
+     * @var ProjectManager
+     */
     private $project_manager;
     private $old_sys_data_dir;
+    /**
+     * @var GitXmlImporter
+     */
     private $importer;
+    /**
+     * @var GitPlugin
+     */
     private $git_plugin;
     private $temp_project_dir;
-    private $old_homedir;
+    /**
+     * @var GitRepositoryFactory
+     */
     private $git_factory;
+    /**
+     * @var GitRepositoryManager
+     */
     private $git_manager;
+    /**
+     * @var GitDao
+     */
     private $git_dao;
+    /**
+     * @var Git_SystemEventManager
+     */
     private $git_systemeventmanager;
+    /**
+     * @var PermissionsDAO
+     */
     private $permission_dao;
     private $old_cwd;
+    /**
+     * @var System_Command
+     */
     private $system_command;
+    /**
+     * @var UGroupManager
+     */
     private $ugroup_manager;
+    /**
+     * @var UGroupDao
+     */
     private $ugroup_dao;
+    /**
+     * @var EventManager
+     */
     private $event_manager;
 
     public function setUp() {
@@ -102,7 +142,8 @@ class GitXmlImporterTest extends TuleapTestCase {
             $this->mirror_data_mapper,
             mock('Tuleap\Git\Permissions\FineGrainedPermissionReplicator'),
             mock('ProjectHistoryDao'),
-            mock('Tuleap\Git\Permissions\HistoryValueFormatter')
+            mock('Tuleap\Git\Permissions\HistoryValueFormatter'),
+            $this->event_manager
         );
 
         $restricted_plugin_dao = mock('RestrictedPluginDao');
@@ -134,8 +175,9 @@ class GitXmlImporterTest extends TuleapTestCase {
             null,
             mock('Git_Mirror_MirrorDataMapper')
         );
+        $this->user_finder = mock(XMLImportHelper::class);
 
-        $gitolite       = new Git_Backend_Gitolite($git_gitolite_driver, $this->logger);
+        $gitolite       = new Git_Backend_Gitolite($git_gitolite_driver, mock(GitoliteAccessURLGenerator::class), $this->logger);
         $this->importer = new GitXmlImporter(
             $this->logger,
             $this->git_manager,
@@ -151,7 +193,9 @@ class GitXmlImporterTest extends TuleapTestCase {
             $this->regexp_fine_grained_enabler,
             $this->fine_grained_factory,
             $this->fine_grained_saver,
-            $this->xml_ugroup_retriever
+            $this->xml_ugroup_retriever,
+            $this->git_dao,
+            $this->user_finder
         );
 
         $this->temp_project_dir = parent::getTmpDir() . DIRECTORY_SEPARATOR . 'test_project';
@@ -392,7 +436,7 @@ XML;
 XML;
         stub($this->ugroup_dao)->searchByGroupIdAndName()->returnsEmptyDar();
 
-        expect($this->event_manager)->processEvent()->once();
+        expect($this->event_manager)->processEvent()->count(2);
 
         $this->import(new SimpleXMLElement($xml));
     }
@@ -623,5 +667,25 @@ XML;
 
     private function import($xml) {
         return $this->importer->import(new Tuleap\Project\XML\Import\ImportConfig(), $this->project, mock('PFUSer'), $xml, parent::getTmpDir());
+    }
+
+    public function itShouldImportGitLastPushData()
+    {
+        $xml = <<<XML
+            <project>
+                <git>
+                    <repository bundle-path="stable.bundle" name="stable">
+                        <last-push-date push_date="1527145846" commits_number="1" refname="refs/heads/master" operation_type="create" refname_type="branch">
+                            <user format="id">102</user>
+                        </last-push-date>
+                    </repository>
+                </git>
+            </project>
+XML;
+
+        stub($this->user_finder)->getUser()->returns(aUser()->withId(102)->build());
+        expect($this->git_dao)->logGitPush()->once();
+        $this->import(new SimpleXMLElement($xml));
+        $this->assertEqual(GitRepository::DEFAULT_DESCRIPTION, $this->git_dao->last_saved_repository->getDescription());
     }
 }

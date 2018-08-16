@@ -9,7 +9,7 @@ _checkArgument() {
 }
 
 _checkCommand() {
-    for c in ${cmd[@]}; do
+    for c in ${@}; do
         if [ ! -f ${c} ]; then
             _errorMessage "${c}: command not found"
             exit 1
@@ -34,6 +34,18 @@ _checkFilePassword() {
     fi
 }
 
+_checkIfTuleapInstalled() {
+    if [ -f ${tuleap_conf}/${local_inc} ] && \
+        [ -f ${tuleap_conf}/${database_inc} ]; then
+        tuleap_installed="true"
+    fi
+}
+
+_checkInstalledPlugins() {
+    installed_plugins=($(rpm -aq tuleap-plugin-\* | \
+        ${awk} -F"-" '!/pluginsadministration/ {print $3}'))
+}
+
 _checkLogFile() {
     if [ -f ${tuleap_log} ]; then
         ${mv} ${tuleap_log} ${tuleap_log}.$(${date} +%Y-%m-%d_%H-%M-%S)
@@ -41,8 +53,8 @@ _checkLogFile() {
 }
 
 _checkMandatoryOptions() {
-    if [ "${mysql_password:-NULL}" = "NULL" -a "${mysql_server,,}" = "localhost" ] || \
-        [ "${mysql_password:-NULL}" = "NULL" -a "${mysql_server}" = "127.0.0.1" ]; then
+    if [ "${mysql_password:-NULL}" = "NULL" -a "${mysql_server:-localhost}" = "localhost" ] || \
+        [ "${mysql_password:-NULL}" = "NULL" -a "${mysql_server:-127.0.0.1}" = "127.0.0.1" ]; then
         local -a mandatoryOptions=('\--server-name=' '\--mysql-server=')
     else
         local -a mandatoryOptions=('\--server-name=' '\--mysql-server='
@@ -76,9 +88,9 @@ _checkMysqlMode() {
 
     local sql_mode=$(_mysqlExecute ${1} ${2} "$(_sqlShowMode)")
 
-    if [[ ${sql_mode#* } =~ STRICT_.*_TABLES ]]; then
+    if [[ ${sql_mode#* } =~ STRICT_.*_TABLES ]] || [[ ${sql_mode#* } =~ ONLY_FULL_GROUP_BY ]]; then
         _errorMessage "MySQL: unsupported sql_mode: ${sql_mode//sql_mode/}"
-        _errorMessage "Please remove STRICT_ALL_TABLES or STRICT_TRANS_TABLES from my.cnf"
+        _errorMessage "Please remove STRICT_ALL_TABLES or STRICT_TRANS_TABLES and ONLY_FULL_GROUP_BY from my.cnf"
         exit 1
     else
         _infoMessage "Sql_mode : ${sql_mode//sql_mode/}"
@@ -100,6 +112,15 @@ _checkOsVersion() {
         _errorMessage "Sorry, Tuleap is running only on RedHat/CentOS"
         exit 1
     fi
+}
+
+_checkPluginsConfiguration() {
+    for plugin in ${installed_plugins[@]}; do
+        case ${plugin} in
+            git) _pluginGit;;
+            svn) _pluginSVN;;
+        esac
+    done
 }
 
 _checkSeLinux() {

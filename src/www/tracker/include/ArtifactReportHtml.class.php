@@ -24,9 +24,9 @@ class ArtifactReportHtml extends ArtifactReport {
          *
          *      @return boolean success.
          */
-        function ArtifactReportHtml($report_id,$atid) {
+        function __construct($report_id,$atid) {
         // echo 'ArtifactReportHtml('.$report_id.','.$atid.')';
-                return $this->ArtifactReport($report_id,$atid);
+                return parent::__construct($report_id,$atid);
         }
         
         /**
@@ -320,7 +320,7 @@ class ArtifactReportHtml extends ArtifactReport {
          *      @return string
          *
          */
-        function showResult ($group_id,$prefs,$offset,$total_rows,$url,$nolink,$chunksz,$morder,$advsrch,$chunksz,$aids,$masschange=false,$pv) {
+        function showResult ($group_id,$prefs,$offset,$total_rows,$url,$nolink,$chunksz,$morder,$advsrch,$aids,$masschange=false,$pv) {
             global $Language,$ath;
             $hp = Codendi_HTMLPurifier::instance();
             $html_result = "";
@@ -753,7 +753,7 @@ class ArtifactReportHtml extends ArtifactReport {
                         $chunksz = 100000; 
                     }
                     if ($pv == 2 || !$user_dont_want_to_see_results) {
-                        $html_result .= $this->showResult($group_id,$prefs,$offset,$totalrows,$url,($pv == 1 ? true:false),$chunksz,$morder,$advsrch,$chunksz,$aids,$masschange,$pv);
+                        $html_result .= $this->showResult($group_id,$prefs,$offset,$totalrows,$url,($pv == 1 ? true:false),$chunksz,$morder,$advsrch,$aids,$masschange,$pv);
                     }
                     $html_result .= '</form>';
                     if ($pv != 2 && !$user_dont_want_to_see_results) {  

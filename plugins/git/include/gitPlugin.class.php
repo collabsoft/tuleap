@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  * Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
+ * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -21,20 +21,24 @@
  */
 
 use Tuleap\Admin\AdminPageRenderer;
-use Tuleap\BurningParrotCompatiblePageEvent;
-use Tuleap\Dashboard\Project\ProjectDashboardController;
-use Tuleap\Dashboard\User\UserDashboardController;
 use Tuleap\Git\AccessRightsPresenterOptionsBuilder;
+use Tuleap\Git\BreadCrumbDropdown\GitCrumbBuilder;
+use Tuleap\Git\BreadCrumbDropdown\RepositoryCrumbBuilder;
+use Tuleap\Git\BreadCrumbDropdown\RepositorySettingsCrumbBuilder;
+use Tuleap\Git\BreadCrumbDropdown\RepositorySettingsCrumbsBuilder;
+use Tuleap\Git\BreadCrumbDropdown\ServiceAdministrationCrumbBuilder;
 use Tuleap\Git\CIToken\Dao as CITokenDao;
 use Tuleap\Git\CIToken\Manager as CITokenManager;
 use Tuleap\Git\CreateRepositoryController;
+use Tuleap\Git\DefaultSettings\DefaultSettingsRouter;
+use Tuleap\Git\DefaultSettings\IndexController;
 use Tuleap\Git\DiskUsage\Collector;
 use Tuleap\Git\DiskUsage\Retriever;
-use Tuleap\Git\Events\ParseGitolite3Logs;
 use Tuleap\Git\GerritCanMigrateChecker;
 use Tuleap\Git\GerritServerResourceRestrictor;
 use Tuleap\Git\GitGodObjectWrapper;
 use Tuleap\Git\Gitolite\Gitolite3LogParser;
+use Tuleap\Git\Gitolite\GitoliteAccessURLGenerator;
 use Tuleap\Git\Gitolite\GitoliteFileLogsDao;
 use Tuleap\Git\Gitolite\SSHKey\AuthorizedKeysFileCreator;
 use Tuleap\Git\Gitolite\SSHKey\DumperFactory;
@@ -45,6 +49,8 @@ use Tuleap\Git\Gitolite\SSHKey\Provider\User;
 use Tuleap\Git\Gitolite\SSHKey\Provider\WholeInstanceKeysAggregator;
 use Tuleap\Git\Gitolite\SSHKey\SystemEvent\MigrateToTuleapSSHKeyManagement;
 use Tuleap\Git\Gitolite\VersionDetector;
+use Tuleap\Git\GitViews\Header\HeaderRenderer;
+use Tuleap\Git\GitXmlExporter;
 use Tuleap\Git\GlobalParameterDao;
 use Tuleap\Git\History\Dao as HistoryDao;
 use Tuleap\Git\History\GitPhpAccessLogger;
@@ -53,13 +59,6 @@ use Tuleap\Git\Notifications\NotificationsForProjectMemberCleaner;
 use Tuleap\Git\Notifications\UgroupsToNotifyDao;
 use Tuleap\Git\Notifications\UgroupToNotifyUpdater;
 use Tuleap\Git\Notifications\UsersToNotifyDao;
-use Tuleap\Git\PerGroup\AdminUrlBuilder;
-use Tuleap\Git\PerGroup\CollectionOfUgroupsFormatter;
-use Tuleap\Git\PerGroup\FineGrainedPermissionsPresenterBuilder;
-use Tuleap\Git\PerGroup\GitPaneSectionCollector;
-use Tuleap\Git\PerGroup\PermissionPerGroupGitRepositoriesSectionBuilder;
-use Tuleap\Git\PerGroup\PermissionPerGroupGitSectionBuilder;
-use Tuleap\Git\PerGroup\SimplePermissionsPresenterBuilder;
 use Tuleap\Git\Permissions\DefaultFineGrainedPermissionFactory;
 use Tuleap\Git\Permissions\DefaultFineGrainedPermissionReplicator;
 use Tuleap\Git\Permissions\FineGrainedDao;
@@ -85,6 +84,16 @@ use Tuleap\Git\Permissions\RegexpRepositoryDao;
 use Tuleap\Git\Permissions\RegexpTemplateDao;
 use Tuleap\Git\Permissions\TemplateFineGrainedPermissionSaver;
 use Tuleap\Git\Permissions\TemplatePermissionsUpdater;
+use Tuleap\Git\PermissionsPerGroup\AdminUrlBuilder;
+use Tuleap\Git\PermissionsPerGroup\CollectionOfUGroupRepresentationBuilder;
+use Tuleap\Git\PermissionsPerGroup\CollectionOfUgroupsFormatter;
+use Tuleap\Git\PermissionsPerGroup\CollectionOfUGroupsRepresentationFormatter;
+use Tuleap\Git\PermissionsPerGroup\GitJSONPermissionsRetriever;
+use Tuleap\Git\PermissionsPerGroup\GitPaneSectionCollector;
+use Tuleap\Git\PermissionsPerGroup\PermissionPerGroupController;
+use Tuleap\Git\PermissionsPerGroup\PermissionPerGroupGitSectionBuilder;
+use Tuleap\Git\PermissionsPerGroup\RepositoryFineGrainedRepresentationBuilder;
+use Tuleap\Git\PermissionsPerGroup\RepositorySimpleRepresentationBuilder;
 use Tuleap\Git\RemoteServer\Gerrit\HttpUserValidator;
 use Tuleap\Git\RemoteServer\Gerrit\Restrictor;
 use Tuleap\Git\Repository\DescriptionUpdater;
@@ -95,25 +104,36 @@ use Tuleap\Git\Repository\Settings\WebhookAddController;
 use Tuleap\Git\Repository\Settings\WebhookDeleteController;
 use Tuleap\Git\Repository\Settings\WebhookEditController;
 use Tuleap\Git\Repository\Settings\WebhookRouter;
+use Tuleap\Git\RepositoryList\GitRepositoryListController;
+use Tuleap\Git\RepositoryList\ListPresenterBuilder;
 use Tuleap\Git\RestrictedGerritServerDao;
+use Tuleap\Git\SystemEvents\ParseGitolite3Logs;
 use Tuleap\Git\Webhook\WebhookDao;
 use Tuleap\Git\XmlUgroupRetriever;
+use Tuleap\GitBundle;
 use Tuleap\Glyph\GlyphLocation;
 use Tuleap\Glyph\GlyphLocationsCollector;
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Layout\ServiceUrlCollector;
 use Tuleap\Mail\MailFilter;
 use Tuleap\Mail\MailLogger;
-use Tuleap\Project\Admin\PerGroup\PermissionPerGroupUGroupFormatter;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupPaneCollector;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupUGroupRetriever;
-use Tuleap\Project\Admin\ProjectUGroup\UserBecomesProjectAdmin;
-use Tuleap\Project\Admin\ProjectUGroup\UserIsNoLongerProjectAdmin;
-use Tuleap\Project\HierarchyDisplayer;
 use Tuleap\Project\Admin\Navigation\NavigationDropdownItemPresenter;
 use Tuleap\project\Admin\Navigation\NavigationDropdownQuickLinksCollector;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupDisplayEvent;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupPaneCollector;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupFormatter;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupRepresentationBuilder;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupRetriever;
+use Tuleap\Project\Admin\ProjectUGroup\UserBecomesProjectAdmin;
+use Tuleap\Project\Admin\ProjectUGroup\UserIsNoLongerProjectAdmin;
 use Tuleap\Project\HeartbeatsEntryCollection;
+use Tuleap\Project\HierarchyDisplayer;
+use Tuleap\Request\RestrictedUsersAreHandledByPluginEvent;
+use Tuleap\REST\JsonDecoder;
+use Tuleap\REST\QueryParameterParser;
 
 require_once 'constants.php';
-require_once 'autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 /**
  * GitPlugin
@@ -217,9 +237,7 @@ class GitPlugin extends Plugin
         $this->addHook(Event::MANAGE_THIRD_PARTY_APPS, 'manage_third_party_apps');
 
         $this->addHook(Event::REGISTER_PROJECT_CREATION);
-        $this->addHook(Event::GET_PROJECTID_FROM_URL);
-        $this->addHook('anonymous_access_to_script_allowed');
-        $this->addHook(Event::IS_SCRIPT_HANDLED_FOR_RESTRICTED);
+        $this->addHook(RestrictedUsersAreHandledByPluginEvent::NAME);
         $this->addHook(Event::GET_SERVICES_ALLOWED_FOR_RESTRICTED);
         $this->addHook(Event::PROJECT_ACCESS_CHANGE);
         $this->addHook(Event::SITE_ACCESS_CHANGE);
@@ -227,11 +245,13 @@ class GitPlugin extends Plugin
         $this->addHook('fill_project_history_sub_events');
         $this->addHook(Event::POST_SYSTEM_EVENTS_ACTIONS);
 
-        $this->addHook(EVENT::REST_RESOURCES);
-        $this->addHook(EVENT::REST_PROJECT_RESOURCES);
-        $this->addHook(EVENT::REST_PROJECT_GET_GIT);
-        $this->addHook(EVENT::REST_PROJECT_OPTIONS_GIT);
+        $this->addHook(Event::REST_RESOURCES);
+        $this->addHook(Event::REST_PROJECT_RESOURCES);
+        $this->addHook(Event::REST_PROJECT_GET_GIT);
+        $this->addHook(Event::REST_PROJECT_OPTIONS_GIT);
 
+
+        $this->addHook(Event::EXPORT_XML_PROJECT);
         $this->addHook(Event::IMPORT_XML_PROJECT, 'importXmlProject', false);
 
         // Gerrit user suspension
@@ -243,13 +263,13 @@ class GitPlugin extends Plugin
 
         $this->addHook('codendi_daily_start');
 
-        $this->addHook(Event::BURNING_PARROT_GET_STYLESHEETS);
-        $this->addHook(Event::BURNING_PARROT_GET_JAVASCRIPT_FILES);
+        $this->addHook(PermissionPerGroupDisplayEvent::NAME);
+
+        $this->addHook(\Tuleap\Request\CollectRoutesEvent::NAME);
     }
 
     public function getHooksAndCallbacks()
     {
-        $this->addHook(BurningParrotCompatiblePageEvent::NAME);
         $this->addHook(GlyphLocationsCollector::NAME);
         $this->addHook(HeartbeatsEntryCollection::NAME);
         $this->addHook(HierarchyDisplayer::NAME);
@@ -257,6 +277,7 @@ class GitPlugin extends Plugin
         $this->addHook(UserBecomesProjectAdmin::NAME);
         $this->addHook(UserIsNoLongerProjectAdmin::NAME);
         $this->addHook(PermissionPerGroupPaneCollector::NAME);
+        $this->addHook(ServiceUrlCollector::NAME);
 
         if (defined('STATISTICS_BASE_DIR')) {
             $this->addHook(Statistics_Event::FREQUENCE_STAT_ENTRIES);
@@ -264,6 +285,35 @@ class GitPlugin extends Plugin
         }
 
         return parent::getHooksAndCallbacks();
+    }
+
+    public function export_xml_project($params)
+    {
+        $this->getGitExporter($params['project'])->exportToXml(
+            $params['into_xml'],
+            $params['archive'],
+            $params['temporary_dump_path_on_filesystem']
+        );
+    }
+
+    private function getGitExporter(Project $project)
+    {
+        $user_manager = UserManager::instance();
+        return new GitXmlExporter(
+            $project,
+            $this->getGitPermissionsManager(),
+            $this->getUGroupManager(),
+            $this->getRepositoryFactory(),
+            $this->getLogger(),
+            new System_Command(),
+            new GitBundle(new System_Command(), $this->getLogger()),
+            new Git_LogDao(),
+            $user_manager,
+            new UserXMLExporter(
+                $user_manager,
+                new UserXMLExportedCollection(new XML_RNGValidator(), new XML_SimpleXMLCDATAFactory())
+            )
+        );
     }
 
     public function getServiceShortname() {
@@ -278,15 +328,8 @@ class GitPlugin extends Plugin
     {
         $params['plugins'][] = array(
             'label' => $GLOBALS['Language']->getText('plugin_git', 'descriptor_name'),
-            'href'  => $this->getPluginPath() . '/admin/index.php'
+            'href'  => GIT_SITE_ADMIN_BASE_URL
         );
-    }
-
-    public function burningParrotCompatiblePage(BurningParrotCompatiblePageEvent $event)
-    {
-        if (strpos($_SERVER['REQUEST_URI'], $this->getPluginPath().'/admin/') === 0) {
-            $event->setIsInBurningParrotCompatiblePage();
-        }
     }
 
     public function getPluginInfo() {
@@ -335,14 +378,6 @@ class GitPlugin extends Plugin
         }
     }
 
-    public function burning_parrot_get_stylesheets(array $params)
-    {
-        if ($this->canIncludeStylesheets()) {
-            $variant = $params['variant'];
-            $params['stylesheets'][] = $this->getThemePath() .'/css/style-'. $variant->getName() .'.css';
-        }
-    }
-
     public function jsFile($params) {
         // Only show the javascript if we're actually in the Git pages.
         if (strpos($_SERVER['REQUEST_URI'], $this->getPluginPath()) === 0) {
@@ -354,25 +389,9 @@ class GitPlugin extends Plugin
         }
     }
 
-    public function burning_parrot_get_javascript_files(array $params)
+    public function permissionPerGroupDisplayEvent(PermissionPerGroupDisplayEvent $event)
     {
-        if (strpos($_SERVER['REQUEST_URI'], GIT_BASE_URL) === 0) {
-            if (strpos($_SERVER['REQUEST_URI'], 'gerrit_servers_admin')) {
-                $params['javascript_files'][] = GIT_BASE_URL . '/scripts/modal-add-gerrit-server.js';
-                $params['javascript_files'][] = GIT_BASE_URL . '/scripts/modal-delete-gerrit-server.js';
-                $params['javascript_files'][] = GIT_BASE_URL . '/scripts/modal-edit-gerrit-server.js';
-            } else if (strpos($_SERVER['REQUEST_URI'], 'mirrors_admin')) {
-                $params['javascript_files'][] = GIT_BASE_URL . '/scripts/modal-add-mirror.js';
-                $params['javascript_files'][] = GIT_BASE_URL . '/scripts/modal-mirror-configuration.js';
-            } else if (strpos($_SERVER['REQUEST_URI'], 'mirrors_restriction')) {
-                $params['javascript_files'][] = '/scripts/tuleap/manage-allowed-projects-on-resource.js';
-            } else if (strpos($_SERVER['REQUEST_URI'], 'gerrit_servers_restriction')) {
-                $params['javascript_files'][] = '/scripts/tuleap/manage-allowed-projects-on-resource.js';
-            }
-            else if (strpos($_SERVER['REQUEST_URI'], 'gitolite_config')) {
-                $params['javascript_files'][] = GIT_BASE_URL . '/scripts/admin-gitolite.js';
-            }
-        }
+        $event->addJavascript($this->getIncludeAssets()->getFileURL('permission-per-group.js'));
     }
 
     public function javascript($params) {
@@ -585,7 +604,7 @@ class GitPlugin extends Plugin
                 );
                 break;
             case ParseGitolite3Logs::NAME:
-                $params['class'] = '\\Tuleap\\Git\\Events\\ParseGitolite3Logs';
+                $params['class'] = '\\Tuleap\\Git\\SystemEvents\\ParseGitolite3Logs';
                 $params['dependencies'] = array(
                     $this->getGitolite3Parser()
                 );
@@ -672,18 +691,16 @@ class GitPlugin extends Plugin
         return true;
     }
 
-    public function getBackendGitolite() {
-        return new Git_Backend_Gitolite($this->getGitoliteDriver(), $this->getLogger());
-    }
-
-    public function process()
+    public function getBackendGitolite()
     {
-        $router_chain = $this->getChainOfRouters();
-
-        $router_chain->process(HTTPRequest::instance());
+        return new Git_Backend_Gitolite(
+            $this->getGitoliteDriver(),
+            new GitoliteAccessURLGenerator($this->getPluginInfo()),
+            $this->getLogger()
+        );
     }
 
-    private function getChainOfRouters()
+    protected function getChainOfRouters()
     {
         $repository_retriever = new RepositoryFromRequestRetriever(
             $this->getRepositoryFactory(),
@@ -696,24 +713,35 @@ class GitPlugin extends Plugin
         $webhook_router
             ->chain($this->getCreateRepositoryController())
             ->chain($this->getCITokenRouter($repository_retriever))
+            ->chain($this->getPermissionsPerGroupController())
+            ->chain($this->getDefaultSettingsRouter())
             ->chain($final_link);
 
         return $webhook_router;
     }
 
+    private function getDefaultSettingsRouter()
+    {
+        return new DefaultSettingsRouter(
+            new IndexController(
+                $this->getAccessRightsPresenterOptionsBuilder(),
+                $this->getGitPermissionsManager(),
+                $this->getFineGrainedRetriever(),
+                $this->getDefaultFineGrainedPermissionFactory(),
+                $this->getFineGrainedRepresentationBuilder(),
+                $this->getRegexpFineGrainedRetriever(),
+                $this->getMirrorDataMapper(),
+                $this->getHeaderRenderer(),
+                EventManager::instance()
+            )
+        );
+    }
+
     private function getCreateRepositoryController()
     {
         return new CreateRepositoryController(
-            $this->getRepositoryFactory(),
-            $this->getBackendGitolite(),
-            $this->getMirrorDataMapper(),
-            $this->getRepositoryManager(),
-            $this->getGitPermissionsManager(),
-            $this->getFineGrainedPermissionReplicator(),
-            new ProjectHistoryDao(),
-            $this->getHistoryValueFormatter(),
-            $this->getCITokenManager(),
-            $this->getGitRepositoryUrlManager()
+            $this->getGitRepositoryUrlManager(),
+            $this->getRepositoryCreator()
         );
     }
 
@@ -735,16 +763,13 @@ class GitPlugin extends Plugin
         );
     }
 
-    /**
-     * We expect that the check fo access right to this method has already been done by the caller
-     */
-    public function processAdmin(Codendi_Request $request) {
+    private function getAdminRouter() {
         $project_manager             = ProjectManager::instance();
         $gerrit_ressource_restrictor = new GerritServerResourceRestrictor(new RestrictedGerritServerDao());
 
-        $admin = new Git_AdminRouter(
+        return new Git_AdminRouter(
             $this->getGerritServerFactory(),
-            new CSRFSynchronizerToken('/plugins/git/admin/'),
+            new CSRFSynchronizerToken(GIT_SITE_ADMIN_BASE_URL),
             $this->getMirrorDataMapper(),
             new Git_MirrorResourceRestrictor(
                 new Git_RestrictedMirrorDao(),
@@ -767,9 +792,6 @@ class GitPlugin extends Plugin
             ),
             $this->getManagementDetector()
         );
-
-        $admin->process($request);
-        $admin->display($request);
     }
 
     private function getRegexpFineGrainedEnabler()
@@ -805,7 +827,7 @@ class GitPlugin extends Plugin
         return new RegexpRepositoryDao();
     }
 
-    private function getMirrorDataMapper() {
+    protected function getMirrorDataMapper() {
         return new Git_Mirror_MirrorDataMapper(
             new Git_Mirror_MirrorDao(),
             UserManager::instance(),
@@ -1501,7 +1523,8 @@ class GitPlugin extends Plugin
         return new DescriptionUpdater(new ProjectHistoryDao(), $this->getGitSystemEventManager());
     }
 
-    private function getGitController() {
+    private function getGitController()
+    {
         $gerrit_server_factory = $this->getGerritServerFactory();
         return new Git(
             $this,
@@ -1513,7 +1536,6 @@ class GitPlugin extends Plugin
             $this->getRepositoryFactory(),
             UserManager::instance(),
             ProjectManager::instance(),
-            PluginManager::instance(),
             HTTPRequest::instance(),
             $this->getProjectCreator(),
             new Git_Driver_Gerrit_Template_TemplateFactory(new Git_Driver_Gerrit_Template_TemplateDao()),
@@ -1543,7 +1565,8 @@ class GitPlugin extends Plugin
             $this->getRegexpPermissionFilter(),
             new UsersToNotifyDao(),
             $this->getUgroupsToNotifyDao(),
-            new UGroupManager()
+            new UGroupManager(),
+            $this->getHeaderRenderer()
         );
     }
 
@@ -1628,9 +1651,7 @@ class GitPlugin extends Plugin
 
     private function getFineGrainedRepresentationBuilder()
     {
-        $user_group_factory  = new User_ForgeUserGroupFactory(new UserGroupDao());
-        $permissions_manager = $this->getPermissionsManager();
-        $option_builder      = new AccessRightsPresenterOptionsBuilder($user_group_factory, $permissions_manager);
+        $option_builder = $this->getAccessRightsPresenterOptionsBuilder();
 
         return new FineGrainedRepresentationBuilder($option_builder);
     }
@@ -1785,7 +1806,8 @@ class GitPlugin extends Plugin
             $this->getMirrorDataMapper(),
             $this->getFineGrainedPermissionReplicator(),
             new ProjectHistoryDao(),
-            $this->getHistoryValueFormatter()
+            $this->getHistoryValueFormatter(),
+            EventManager::instance()
         );
     }
 
@@ -1793,7 +1815,10 @@ class GitPlugin extends Plugin
         return new GitRepositoryFactory($this->getGitDao(), ProjectManager::instance());
     }
 
-    private function getGitDao() {
+    /**
+     * @protected for testing purpose
+     */
+    protected function getGitDao() {
         return new GitDao();
     }
 
@@ -1804,11 +1829,11 @@ class GitPlugin extends Plugin
         return new Git_Driver_Gerrit_GerritDriverFactory($this->getLogger());
     }
 
-    private function getPermissionsManager() {
+    protected function getPermissionsManager() {
         return PermissionsManager::instance();
     }
 
-    private function getGitPermissionsManager() {
+    protected function getGitPermissionsManager() {
         return new GitPermissionsManager(
             new Git_PermissionsDao(),
             $this->getGitSystemEventManager(),
@@ -1939,38 +1964,6 @@ class GitPlugin extends Plugin
         );
     }
 
-    /** @see Event::GET_PROJECTID_FROM_URL */
-    public function get_projectid_from_url($params) {
-        if (strpos($_SERVER['REQUEST_URI'], $this->getPluginPath()) === 0) {
-            $url = new Git_URL(
-                ProjectManager::instance(),
-                $this->getRepositoryFactory(),
-                $_SERVER['REQUEST_URI']
-            );
-            if ($url->isSmartHTTP()) {
-                return;
-            }
-
-            $project = $url->getProject();
-            if ($project && ! $project->isError()) {
-                $params['project_id'] = $url->getProject()->getId();
-            }
-        }
-    }
-
-    public function anonymous_access_to_script_allowed($params) {
-        if (strpos($_SERVER['REQUEST_URI'], $this->getPluginPath()) === 0) {
-            $url = new Git_URL(
-                ProjectManager::instance(),
-                $this->getRepositoryFactory(),
-                $_SERVER['REQUEST_URI']
-            );
-            if ($url->isSmartHTTP()) {
-                $params['anonymous_allowed'] = true;
-            }
-        }
-    }
-
     /**
      * @return boolean true if friendly URLs have been activated
      */
@@ -2099,24 +2092,30 @@ class GitPlugin extends Plugin
         $class  = "Tuleap\\Git\\REST\\".$version."\\RepositoryRepresentationBuilder";
         return new $class(
             $this->getGitPermissionsManager(),
-            $this->getGerritServerFactory()
+            $this->getGerritServerFactory(),
+            new Git_LogDao(),
+            EventManager::instance()
         );
     }
 
     public function rest_project_get_git($params) {
         $class            = "Tuleap\\Git\\REST\\".$params['version']."\\ProjectResource";
-        $project_resource = new $class($this->getRepositoryFactory(), $this->getRESTRepositoryRepresentationBuilder($params['version']));
         $project          = $params['project'];
+        $project_resource = new $class(
+            $this->getRepositoryFactory(),
+            $this->getRESTRepositoryRepresentationBuilder($params['version']),
+            new QueryParameterParser(new JsonDecoder())
+        );
 
-        $params['result'] = $project_resource->getGit(
+        $params['result']->repositories = $project_resource->getGit(
             $project,
             $this->getCurrentUser(),
             $params['limit'],
             $params['offset'],
-            $params['fields']
+            $params['fields'],
+            $params['query'],
+            $params['total_git_repo']
         );
-
-        $params['total_git_repo'] = count($this->getRepositoryFactory()->getAllRepositories($project));
     }
 
     public function rest_project_options_git($params) {
@@ -2174,20 +2173,25 @@ class GitPlugin extends Plugin
                     </thead>
                     <tbody>';
         if (count($archived_repositories)) {
+            $html_purifier = Codendi_HTMLPurifier::instance();
             foreach($archived_repositories as $archived_repository) {
                 $tab_content .= '<tr>';
-                $tab_content .= '<td>'.$archived_repository->getName().'</td>';
-                $tab_content .= '<td>'.$archived_repository->getCreationDate().'</td>';
-                $tab_content .= '<td>'.$archived_repository->getCreator()->getName().'</td>';
-                $tab_content .= '<td>'.$archived_repository->getDeletionDate().'</td>';
+                $tab_content .= '<td>'.$html_purifier->purify($archived_repository->getName()).'</td>';
+                $tab_content .= '<td>'.$html_purifier->purify($archived_repository->getCreationDate()).'</td>';
+                $tab_content .= '<td>'.$html_purifier->purify($archived_repository->getCreator()->getName()).'</td>';
+                $tab_content .= '<td>'.$html_purifier->purify($archived_repository->getDeletionDate()).'</td>';
                 $tab_content .= '<td class="tlp-table-cell-actions">
-                    <a href="/plugins/git/?action=restore&group_id='.$group_id.'&repo_id='.$archived_repository->getId().'"
-                        class="tlp-table-cell-actions-button tlp-button-small tlp-button-outline tlp-button-primary"
-                        onClick="return confirm(\''.$GLOBALS['Language']->getText('plugin_git', 'restore_confirmation').'\')"
-                    >
-                        <i class="fa fa-repeat tlp-button-icon"></i> '.$GLOBALS['Language']->getText('plugin_git', 'archived_repositories_restore').'
-                    </a>
-                </td>';
+                                    <form method="post" action="/plugins/git/"
+                                    onsubmit="return confirm(\'' . $html_purifier->purify($GLOBALS['Language']->getText('plugin_git', 'restore_confirmation'), CODENDI_PURIFIER_JS_QUOTE).'\')">
+                                        ' . $params['csrf_token']->fetchHTMLInput() . '
+                                        <input type="hidden" name="action" value="restore">
+                                        <input type="hidden" name="group_id" value="'. $html_purifier->purify($group_id) .'">
+                                        <input type="hidden" name="repo_id" value="'. $html_purifier->purify($archived_repository->getId()) .'">
+                                        <button class="tlp-table-cell-actions-button tlp-button-small tlp-button-primary tlp-button-outline">
+                                            <i class="fa fa-repeat tlp-button-icon"></i> '. $html_purifier->purify($GLOBALS['Language']->getText('plugin_git', 'archived_repositories_restore')) .'
+                                        </button>
+                                    </form>
+                                 </td>';
                 $tab_content .= '</tr>';
             }
         } else {
@@ -2205,10 +2209,10 @@ class GitPlugin extends Plugin
         $params['html'][]= $tab_content;
     }
 
-    public function is_script_handled_for_restricted($params) {
-        $uri = $params['uri'];
-        if (strpos($uri, $this->getPluginPath()) === 0) {
-            $params['allow_restricted'] = true;
+    public function restrictedUsersAreHandledByPluginEvent(RestrictedUsersAreHandledByPluginEvent $event)
+    {
+        if (strpos($event->getUri(), $this->getPluginPath()) === 0) {
+            $event->setPluginHandleRestricted();
         }
     }
 
@@ -2300,7 +2304,9 @@ class GitPlugin extends Plugin
             new XmlUgroupRetriever(
                 $logger,
                 $this->getUGroupManager()
-            )
+            ),
+            new GitDao(),
+            new XMLImportHelper(UserManager::instance())
         );
 
         $importer->import(
@@ -2315,7 +2321,7 @@ class GitPlugin extends Plugin
     /**
      * @return GitPhpAccessLogger
      */
-    private function getGitPhpAccessLogger()
+    protected function getGitPhpAccessLogger()
     {
         $dao = new HistoryDao();
 
@@ -2331,7 +2337,7 @@ class GitPlugin extends Plugin
                 null,
                 SystemEvent::PRIORITY_LOW,
                 SystemEvent::OWNER_ROOT,
-                '\\Tuleap\\Git\\Events\\ParseGitolite3Logs'
+                '\\Tuleap\\Git\\SystemEvents\\ParseGitolite3Logs'
             );
         }
 
@@ -2347,15 +2353,9 @@ class GitPlugin extends Plugin
             new HistoryDao(),
             $this->getRepositoryFactory(),
             UserManager::instance(),
-            new GitoliteFileLogsDao()
+            new GitoliteFileLogsDao(),
+            $this->getUserDao()
         );
-    }
-
-    private function canIncludeStylesheets()
-    {
-        return strpos($_SERVER['REQUEST_URI'], '/plugins/git') === 0
-            || strpos($_SERVER['REQUEST_URI'], '/my/') === 0
-            || strpos($_SERVER['REQUEST_URI'], '/projects/') === 0;
     }
 
     public function collectGlyphLocations(GlyphLocationsCollector $glyph_locations_collector)
@@ -2426,36 +2426,215 @@ class GitPlugin extends Plugin
 
         $ugroup_manager          = $this->getUGroupManager();
         $formatter               = new PermissionPerGroupUGroupFormatter($ugroup_manager);
-        $collection_formatter    = new CollectionOfUgroupsFormatter($formatter);
+        $collection_formatter    = new CollectionOfUgroupsFormatter($formatter, $ugroup_manager);
         $service_section_builder = new PermissionPerGroupGitSectionBuilder(
             new PermissionPerGroupUGroupRetriever(PermissionsManager::instance()),
             $collection_formatter,
             $ugroup_manager
         );
-        $admin_url_builder       = new AdminUrlBuilder();
-        $simple_builder          = new SimplePermissionsPresenterBuilder(
-            $this->getGitPermissionsManager(),
-            $collection_formatter,
-            $admin_url_builder
-        );
-        $fine_grained_builder    = new FineGrainedPermissionsPresenterBuilder(
-            $this->getGitPermissionsManager(),
-            $collection_formatter,
-            $this->getFineGrainedFactory(),
-            $admin_url_builder
-        );
-        $repos_section_builder   = new PermissionPerGroupGitRepositoriesSectionBuilder(
-            $this->getFineGrainedRetriever(),
-            $ugroup_manager,
-            $this->getRepositoryFactory(),
-            $simple_builder,
-            $fine_grained_builder
-        );
-        $sections_collector      = new GitPaneSectionCollector(
+
+        $sections_collector = new GitPaneSectionCollector(
             $service_section_builder,
-            $repos_section_builder
+            $this->getUGroupManager()
         );
 
         $sections_collector->collectSections($event);
+    }
+
+    private function getJSONRepositoriesRetriever()
+    {
+        $ugroup_manager = $this->getUGroupManager();
+        $ugroup_representation_builder = new PermissionPerGroupUGroupRepresentationBuilder($this->getUGroupManager());
+        $ugroup_builder = new CollectionOfUGroupRepresentationBuilder(
+            $ugroup_manager, $ugroup_representation_builder
+        );
+        $admin_url_builder = new AdminUrlBuilder();
+        $simple_builder = new RepositorySimpleRepresentationBuilder(
+            $this->getGitPermissionsManager(),
+            $ugroup_builder,
+            $admin_url_builder
+        );
+        $fine_grained_builder = new RepositoryFineGrainedRepresentationBuilder(
+            $this->getGitPermissionsManager(),
+            $ugroup_builder,
+            new CollectionOfUGroupsRepresentationFormatter($ugroup_representation_builder),
+            $this->getFineGrainedFactory(),
+            $admin_url_builder
+        );
+
+        return new GitJSONPermissionsRetriever(
+            new \Tuleap\Git\PermissionsPerGroup\RepositoriesPermissionRepresentationBuilder(
+                $fine_grained_builder,
+                $simple_builder,
+                $this->getRepositoryFactory(),
+                $this->getFineGrainedRetriever()
+            )
+        );
+    }
+
+    private function getPermissionsPerGroupController()
+    {
+        return new PermissionPerGroupController($this->getJSONRepositoriesRetriever());
+    }
+
+    /**
+     * @access protected for test purpose
+     * @return \Tuleap\Git\GitViews\ShowRepo\RepoHeader
+     */
+    protected function getRepoHeader()
+    {
+        return new Tuleap\Git\GitViews\ShowRepo\RepoHeader(
+            $this->getGitRepositoryUrlManager(),
+            $this->getGerritDriverFactory(),
+            new Git_Driver_Gerrit_UserAccountManager($this->getGerritDriverFactory(), $this->getGerritServerFactory()),
+            $this->getMirrorDataMapper(),
+            $this->getGitPermissionsManager(),
+            $this->getHeaderRenderer(),
+            $this->getGerritServerFactory()->getServers(),
+            $this->getConfigurationParameter('master_location_name')
+        );
+    }
+
+    /**
+     * @return UserDao
+     */
+    protected function getUserDao()
+    {
+        return new UserDao();
+    }
+
+    public function collectRoutesEvent(\Tuleap\Request\CollectRoutesEvent $event)
+    {
+        $event->getRouteCollector()->addGroup(GIT_SITE_ADMIN_BASE_URL, function (FastRoute\RouteCollector $r) {
+            $r->addRoute(
+                ['GET', 'POST'], '[/]', function() {
+                return $this->getAdminRouter();
+            });
+        });
+
+        $event->getRouteCollector()->addGroup(GIT_BASE_URL, function (FastRoute\RouteCollector $r) {
+            $r->addRoute(['GET'], '/index.php/{project_id:\d+}/view/{repository_id:\d+}/[{args}]', function () {
+                return new \Tuleap\Git\GitLegacyURLRedirectController(
+                    $this->getProjectManager(),
+                    $this->getRepositoryFactory()
+                );
+            });
+            $r->addRoute(['GET', 'POST'], '/{project_name}/{path:.*\.git|.*}/{smart_http:HEAD|info/refs\??.*|git-upload-pack|git-receive-pack|objects/info[^/]+|objects/[0-9a-f]{2}/[0-9a-f]{38}|pack/pack-[0-9a-f]{40}\.pack|pack/pack-[0-9a-f]{40}\.idx}', function () {
+                return new \Tuleap\Git\HTTP\HTTPController(
+                    $this->getLogger(),
+                    $this->getProjectManager(),
+                    $this->getRepositoryFactory(),
+                    $this->getGerritServerFactory(),
+                    $this->getPermissionsManager(),
+                    $this->getUserDao()
+                );
+            });
+            $r->get('/{project_name:[A-z0-9-]+}[/]', function() {
+                return new GitRepositoryListController(
+                    $this->getProjectManager(),
+                    $this->getRepositoryFactory(),
+                    new ListPresenterBuilder(
+                        $this->getGitPermissionsManager(),
+                        $this->getGitDao(),
+                        UserManager::instance()
+                    ),
+                    $this->getIncludeAssets()
+                );
+            });
+            $r->addRoute(['GET', 'POST'], '/{project_name}/{path:.*}', function () {
+                return new \Tuleap\Git\GitRepositoryBrowserController(
+                    $this->getRepositoryFactory(),
+                    $this->getProjectManager(),
+                    $this->getMirrorDataMapper(),
+                    $this->getGitPhpAccessLogger(),
+                    $this->getRepoHeader()
+                );
+            });
+            $r->addRoute(['GET', 'POST'], '/{path:.*}', function () {
+                return new \Tuleap\Git\GitPluginDefaultController(
+                    $this->getChainOfRouters(),
+                    $this->getRepositoryFactory(),
+                    EventManager::instance(),
+                    $this->getRepoHeader()
+                );
+            });
+        });
+    }
+
+    /**
+     *
+     * @access protected for test purpose
+     * @return IncludeAssets
+     */
+    protected function getIncludeAssets()
+    {
+        $include_assets = new IncludeAssets(
+            GIT_BASE_DIR . '/../www/assets',
+            $this->getPluginPath() . '/assets'
+        );
+        return $include_assets;
+    }
+
+    /**
+     * @return \Tuleap\Git\Repository\RepositoryCreator
+     */
+    private function getRepositoryCreator()
+    {
+        return new \Tuleap\Git\Repository\RepositoryCreator(
+            $this->getRepositoryFactory(),
+            $this->getBackendGitolite(),
+            $this->getMirrorDataMapper(),
+            $this->getRepositoryManager(),
+            $this->getGitPermissionsManager(),
+            $this->getFineGrainedPermissionReplicator(),
+            new ProjectHistoryDao(),
+            $this->getHistoryValueFormatter(),
+            $this->getCITokenManager(),
+            EventManager::instance()
+        );
+    }
+
+    public function serviceUrlCollector(ServiceUrlCollector $collector)
+    {
+        if ($collector->getServiceShortname() === $this->getServiceShortname()) {
+            $collector->setUrl(GIT_BASE_URL . "/" . urlencode($collector->getProject()->getUnixNameLowerCase()));
+        }
+    }
+
+    /**
+     * @access protected for test purpose
+     * @return HeaderRenderer
+     */
+    protected function getHeaderRenderer()
+    {
+        $service_crumb_builder        = new GitCrumbBuilder($this->getGitPermissionsManager(), $this->getPluginPath());
+        $settings_crumb_builder       = new RepositorySettingsCrumbBuilder($this->getPluginPath());
+        $administration_crumb_builder = new ServiceAdministrationCrumbBuilder($this->getPluginPath());
+
+        $repository_crumb_builder = new RepositoryCrumbBuilder(
+            $this->getGitRepositoryUrlManager(),
+            $this->getGitPermissionsManager(),
+            $this->getPluginPath()
+        );
+
+        return new HeaderRenderer(
+            EventManager::instance(),
+            $service_crumb_builder,
+            $administration_crumb_builder,
+            $repository_crumb_builder,
+            $settings_crumb_builder
+        );
+    }
+
+    /**
+     * @return AccessRightsPresenterOptionsBuilder
+     */
+    private function getAccessRightsPresenterOptionsBuilder()
+    {
+        $user_group_factory  = new User_ForgeUserGroupFactory(new UserGroupDao());
+        $permissions_manager = $this->getPermissionsManager();
+        $option_builder      = new AccessRightsPresenterOptionsBuilder($user_group_factory, $permissions_manager);
+
+        return $option_builder;
     }
 }

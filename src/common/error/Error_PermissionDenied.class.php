@@ -81,15 +81,13 @@ abstract class Error_PermissionDenied {
      * Build the user interface to ask for membership
      * 
      */
-    function buildInterface() {
-        $user = $this->getUserManager()->getCurrentUser();
-
+    function buildInterface(PFUser $user, Project $project = null) {
         if ($user->isAnonymous()) {
             $event_manager = EventManager::instance();
             $redirect = new URLRedirect($event_manager);
             $redirect->redirectToLogin();
         } else {
-            $this->buildPermissionDeniedInterface();
+            $this->buildPermissionDeniedInterface($project);
         }
     }
 
@@ -193,7 +191,7 @@ abstract class Error_PermissionDenied {
      * @param String  $messageToAdmin
      */
     function sendMail($project, $user, $urlData, $hrefApproval,$messageToAdmin) {
-        $mail = new Mail();
+        $mail = new Codendi_Mail();
 
         //to
         $adminList = $this->extractReceiver($project, $urlData);
@@ -211,7 +209,7 @@ abstract class Error_PermissionDenied {
         if ($adminList['status']== false) {
             $body .= "\n\n". $GLOBALS['Language']->getText($this->getTextBase(), 'mail_content_unvalid_ugroup', array($project->getPublicName()));
         }
-        $mail->setBody($body);
+        $mail->setBodyText($body);
 
         if (!$mail->send()) {
             exit_error($GLOBALS['Language']->getText('global', 'error'), $GLOBALS['Language']->getText('global', 'mail_failed', array($GLOBALS['sys_email_admin'])));
@@ -252,9 +250,8 @@ abstract class Error_PermissionDenied {
     /**
      * Build the Permission Denied error interface
      */
-    private function buildPermissionDeniedInterface(){
+    private function buildPermissionDeniedInterface(Project $project = null) {
         $purifier = Codendi_HTMLPurifier::instance();
-        $groupId  = (isset($GLOBALS['group_id'])) ? $GLOBALS['group_id'] : $this->url->getGroupIdFromUrl($_SERVER['REQUEST_URI']);
         $param    = $this->returnBuildInterfaceParam();
 
 
@@ -266,10 +263,10 @@ abstract class Error_PermissionDenied {
 
         //In case of restricted user, we only show the zone text area to ask for membership
         //just when the requested page belongs to a project
-        if (!(($param['func'] == 'restricted_user_request') && (!isset($groupId)))) {
+        if (!(($param['func'] == 'restricted_user_request') && ($project === null))) {
             $message = $GLOBALS['Language']->getText('project_admin_index', 'member_request_delegation_msg_to_requester');
             $pm = ProjectManager::instance();
-            $dar = $pm->getMessageToRequesterForAccessProject($groupId);
+            $dar = $pm->getMessageToRequesterForAccessProject($project->getID());
             if ($dar && !$dar->isError() && $dar->rowCount() == 1) {
                 $row = $dar->current();
                 if ($row['msg_to_requester'] != "member_request_delegation_msg_to_requester") {
@@ -281,7 +278,7 @@ abstract class Error_PermissionDenied {
             echo '<form action="' . $purifier->purify($param['action']) . '" method="post" name="display_form">
                   <textarea wrap="virtual" rows="5" cols="70" name="' . $purifier->purify($param['name']) . '">' . $purifier->purify($message) . ' </textarea></p>
                   <input type="hidden" id="func" name="func" value="' . $purifier->purify($param['func']) . '">
-                  <input type="hidden" id="groupId" name="groupId" value="' . $purifier->purify($groupId) . '">
+                  <input type="hidden" id="groupId" name="groupId" value="' . $purifier->purify($project->getID()) . '">
                   <input type="hidden" id="data" name="url_data" value="' . $purifier->purify($_SERVER['REQUEST_URI']) . '">
                   <br><input name="Submit" type="submit" value="' . $purifier->purify($GLOBALS['Language']->getText('include_exit', 'send_mail')) . '"/></br>
               </form>';

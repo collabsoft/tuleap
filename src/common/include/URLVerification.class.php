@@ -20,6 +20,7 @@
  */
 
 use Tuleap\Project\Admin\MembershipDelegationDao;
+use Tuleap\Request\RestrictedUsersAreHandledByPluginEvent;
 
 /**
  * Check the URL validity (protocol, host name, query) regarding server constraints
@@ -93,8 +94,11 @@ class URLVerification {
             return true;
         }
 
-        // Site admin configuration
-        if ($this->isUrlAllowedBySiteContent($server)) {
+        if ($server['REQUEST_URI'] === '/' && ForgeConfig::get(ForgeAccess::ANONYMOUS_CAN_SEE_SITE_HOMEPAGE) === '1') {
+            return true;
+        }
+
+        if ($server['REQUEST_URI'] === '/contact.php' && ForgeConfig::get(ForgeAccess::ANONYMOUS_CAN_SEE_CONTACT) === '1') {
             return true;
         }
 
@@ -104,28 +108,6 @@ class URLVerification {
         $this->getEventManager()->processEvent('anonymous_access_to_script_allowed', $params);
 
         return $anonymousAllowed;
-    }
-
-    /**
-     * Allow to define whitlist URLs for anonymous by site admin in configuration
-     *
-     * @param Array $server
-     *
-     * @return Boolean
-     */
-    protected function isUrlAllowedBySiteContent($server) {
-        $enable_anonymous_url = false;
-        $allowed_scripts      = array();
-
-        include($GLOBALS['Language']->getContent('include/allowed_url_anonymously','en_US'));
-        if ($enable_anonymous_url) {
-            foreach ($allowed_scripts as $script) {
-                if (strcmp($server['SCRIPT_NAME'], $script) === 0) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
@@ -271,8 +253,8 @@ class URLVerification {
         $user = $this->getCurrentUser();
         if ($user->isRestricted()) {
             $url = $this->getUrl();
-            if (!$this->restrictedUserCanAccessUrl($user, $url, $server['REQUEST_URI'], $server['SCRIPT_NAME'])) {
-                $this->displayRestrictedUserError($url);
+            if (!$this->restrictedUserCanAccessUrl($user, $url, $server['REQUEST_URI'], null)) {
+                $this->displayRestrictedUserError($url, $user);
             }
         }
     }
@@ -280,22 +262,23 @@ class URLVerification {
     /**
      * Test if given url is restricted for user
      *
-     * @param PFUser  $user
-     * @param Url   $url
-     * @param Array $request_uri
-     * @param Array $script_name
-     * 
+     * @param PFUser $user
+     * @param Url $url
+     * @param String $request_uri
      * @return Boolean False if user not allowed to see the content
      */
-    protected function restrictedUserCanAccessUrl($user, $url, $request_uri, $script_name) {
+    protected function restrictedUserCanAccessUrl($user, $url, $request_uri, Project $project = null) {
         // This assume that we already checked that project is accessible to restricted prior to function call.
         // Hence, summary page is ALWAYS accessible
-        if ($script_name === '/projects.php')
-        {
+        if (strpos($request_uri, '/projects/') !== false) {
             return true;
         }
 
-        $group_id =  (isset($GLOBALS['group_id'])) ? $GLOBALS['group_id'] : $url->getGroupIdFromUrl($request_uri);
+        if ($project !== null) {
+            $group_id = $project->getID();
+        } else {
+            $group_id =  (isset($GLOBALS['group_id'])) ? $GLOBALS['group_id'] : $url->getGroupIdFromUrl($request_uri);
+        }
 
         // Make sure the URI starts with a single slash
         $req_uri='/'.trim($request_uri, "/");
@@ -359,11 +342,8 @@ class URLVerification {
         }
 
         // Welcome page
-        if (!$allow_welcome_page) {
-            $sc_name='/'.trim($script_name, "/");
-            if ($sc_name == '/index.php') {
-                return false;
-            }
+        if (! $allow_welcome_page && $request_uri === '/') {
+            return false;
         }
 
         //Forbid search unless it's on a tracker
@@ -435,14 +415,9 @@ class URLVerification {
         }
 
         if (! $user_is_allowed) {
-            $this->getEventManager()->processEvent(
-                Event::IS_SCRIPT_HANDLED_FOR_RESTRICTED,
-                array(
-                    'allow_restricted' => &$user_is_allowed,
-                    'user'             => $user,
-                    'uri'              => $script_name
-                )
-            );
+            $event = new RestrictedUsersAreHandledByPluginEvent($request_uri);
+            $this->getEventManager()->processEvent($event);
+            $user_is_allowed = $event->getPluginHandleRestricted();
         }
 
         if ($group_id && ! $user_is_allowed) {
@@ -461,9 +436,9 @@ class URLVerification {
      * 
      * @return void
      */
-    function displayRestrictedUserError($url) {
+    function displayRestrictedUserError(URL $url, PFUser $user, Project $project = null) {
         $error = new Error_PermissionDenied_RestrictedUser($url);
-        $error->buildInterface();
+        $error->buildInterface($user, $project);
         exit;
     }
     
@@ -474,10 +449,10 @@ class URLVerification {
      * 
      * @return void
      */
-    function displayPrivateProjectError($url) {
+    function displayPrivateProjectError(URL $url, PFUser $user, Project $project = null) {
         $GLOBALS['Response']->send401UnauthorizedHeader();
         $sendMail = new Error_PermissionDenied_PrivateProject($url);
-        $sendMail->buildInterface();
+        $sendMail->buildInterface($user, $project);
         exit;
     }
 
@@ -494,7 +469,7 @@ class URLVerification {
      *
      * @return void
      */
-    public function assertValidUrl($server, HTTPRequest $request) {
+    public function assertValidUrl($server, HTTPRequest $request, Project $project = null) {
         if (!$this->isException($server)) {
             $this->verifyProtocol($request);
             $this->verifyRequest($server);
@@ -512,19 +487,30 @@ class URLVerification {
                     $password_expiration_checker->checkPasswordLifetime($user);
                 }
 
-                $group_id = (isset($GLOBALS['group_id'])) ? $GLOBALS['group_id'] : $url->getGroupIdFromUrl($server['REQUEST_URI']);
-                if ($group_id) {
-                    $project = $this->getProjectManager()->getProject($group_id);
+                if (! $project) {
+                    $group_id = (isset($GLOBALS['group_id'])) ? $GLOBALS['group_id'] : $url->getGroupIdFromUrl($server['REQUEST_URI']);
+                    if ($group_id) {
+                        $project = $this->getProjectManager()->getProject($group_id);
+                    }
+                }
+                if ($project) {
                     $this->userCanAccessProject($user, $project);
                 } else {
                     $this->checkRestrictedAccess($server);
                 }
+
                 return true;
 
             } catch (Project_AccessRestrictedException $exception) {
-                $this->displayRestrictedUserError($url);
+                if (! isset($project)) {
+                    $project = null;
+                }
+                $this->displayRestrictedUserError($url, $user, $project);
             } catch (Project_AccessPrivateException $exception) {
-                $this->displayPrivateProjectError($url);
+                if (! isset($project)) {
+                    $project = null;
+                }
+                $this->displayPrivateProjectError($url, $user, $project);
             } catch (Project_AccessProjectNotFoundException $exception) {
                 $this->exitError(
                     $GLOBALS['Language']->getText('include_html','g_not_exist'),
@@ -575,7 +561,8 @@ class URLVerification {
         } elseif ($this->getPermissionsOverriderManager()->doesOverriderAllowUserToAccessProject($user, $project)) {
             return true;
         } elseif ($user->isRestricted()) {
-            if ( ! $project->allowsRestricted() || ! $this->restrictedUserCanAccessUrl($user, $this->getUrl(), $_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'])) {
+            if ( ! $project->allowsRestricted() ||
+                ! $this->restrictedUserCanAccessUrl($user, $this->getUrl(), $_SERVER['REQUEST_URI'], $project)) {
                 throw new Project_AccessRestrictedException();
             }
             return true;

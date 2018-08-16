@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2011-2018. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,9 @@
 // This script handle execution of SOAP requests
 // In wsdl.php script there is WSDL generation thanks to NuSOAP
 //    and nice display thanks to wsdl view
+
+use Tuleap\Tracker\Report\AdditionalCriteria\CommentCriterionValueRetriever;
+use Tuleap\Tracker\Report\AdditionalCriteria\CommentDao;
 
 require_once 'pre.php';
 require_once dirname(__FILE__).'/../../include/constants.php';
@@ -45,8 +48,8 @@ if ($request->exist('wsdl')) {
     require_once TRACKER_BASE_DIR.'/wsdl.php';
 
     // Call the service method to initiate the transaction and send the response
-    $HTTP_RAW_POST_DATA = isset($HTTP_RAW_POST_DATA) ? $HTTP_RAW_POST_DATA : '';
-    $server->service($HTTP_RAW_POST_DATA);
+    $post_data = file_get_contents("php://input") ?: '';
+    $server->service($post_data);
 
 } else {
     require_once TRACKER_BASE_DIR.'/Tracker/SOAPServer.class.php';
@@ -71,12 +74,11 @@ if ($request->exist('wsdl')) {
         Tracker_ArtifactFactory::instance(),
         Tracker_ReportFactory::instance(),
         new Tracker_FileInfoFactory(new Tracker_FileInfoDao, $formelement_factory, $artifact_factory),
-        new TrackerManager()
+        new TrackerManager(),
+        new CommentCriterionValueRetriever(new CommentDao())
     );
     $xml_security = new XML_Security();
     $xml_security->enableExternalLoadOfEntities();
     $server->handle();
     $xml_security->disableExternalLoadOfEntities();
 }
-
-?>

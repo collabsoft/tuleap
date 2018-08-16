@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
  *
  * Originally written by Manuel VACELET, 2007.
@@ -58,8 +58,8 @@ class Valid_Numeric extends Valid {
  */
 class Valid_GroupId
 extends Valid {
-    function Valid_GroupId() {
-        parent::Valid('group_id');
+    function __construct() {
+        parent::__construct('group_id');
         //$this->setErrorMessage($GLOBALS['Language']->getText('include_exit','no_gid_err'));
     }
 
@@ -75,8 +75,8 @@ extends Valid {
  */
 class Valid_Pv
 extends Valid {
-    function Valid_Pv() {
-        parent::Valid('pv');
+    function __construct() {
+        parent::__construct('pv');
     }
 
     function validate($value) {
@@ -185,8 +185,8 @@ extends Valid {
  */
 class Valid_WhiteList
 extends Valid {
-    function Valid_WhiteList($key, $whitelist) {
-        parent::Valid($key);
+    function __construct($key, $whitelist) {
+        parent::__construct($key);
         $this->addRule(new Rule_WhiteList($whitelist));
     }
 }
@@ -241,13 +241,13 @@ class Valid_Email
 extends Valid_String {
     var $separator;
 
-    function Valid_Email($key=null, $separator=null) {
+    function __construct($key=null, $separator=null) {
         if(is_string($separator)) {
             $this->separator = $separator;
         } else {
             $this->separator = null;
         }
-        parent::Valid_String($key);
+        parent::__construct($key);
     }
 
     function validate($value) {
@@ -284,7 +284,7 @@ extends Valid {
      * @param  String Index of file to check in $_FILES array.
      * @return Boolean
      */
-    function validate($files, $index) {
+    function validate($files, $index = '') {
         if(is_array($files) && isset($files[$index])) {
             $this->addRule(new Rule_File());
             return parent::validate($files[$index]);

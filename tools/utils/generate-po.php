@@ -96,6 +96,9 @@ executeCommandAndExitIfStderrNotEmpty("find $core_src -name '*.php' \
     | sed '/^msgctxt/d' \
     > $template");
 
+info("[core] Ensure .pot strings uniquness");
+executeCommandAndExitIfStderrNotEmpty("msguniq --sort-output --use-first -o $template $template");
+
 info("[core] Generating .pot file for .mustache files");
 $mustache_template = "$basedir/site-content/tuleap-core.mustache.pot";
 $gettext_in_mustache_extractor->extract(
@@ -127,7 +130,8 @@ foreach (glob("$basedir/src/www/scripts/*", GLOB_ONLYDIR) as $path) {
             $po       = escapeshellarg("$path/${gettext['po']}");
             $template = escapeshellarg("$path/${gettext['po']}/template.pot");
             executeCommandAndExitIfStderrNotEmpty("find $src \
-                        \( -name '*.js' -o -name '*.vue'  \) \
+                        \( -name '*.js' -o -name '*.vue' \) \
+                        -not \( -path '**/node_modules/*' -o -path '**/coverage/*' \) \
                     | xargs xgettext \
                         --language=JavaScript \
                         --default-domain=core \
@@ -237,8 +241,10 @@ EOS;
                 $src      = escapeshellarg("$path/${gettext['src']}");
                 $po       = escapeshellarg("$path/${gettext['po']}");
                 $template = escapeshellarg("$path/${gettext['po']}/template.pot");
+
                 executeCommandAndExitIfStderrNotEmpty("find $src \
                         \( -name '*.js' -o -name '*.vue' \) \
+                        -not \( -path '**/node_modules/*' -o -path '**/coverage/*' \) \
                     | xargs xgettext \
                         --language=JavaScript \
                         --default-domain=core \
@@ -249,6 +255,23 @@ EOS;
                         -o - \
                     | sed '/^msgctxt/d' \
                     > $template");
+
+                info("[$translated_plugin][js][$component] Merging .pot file into .po files");
+                exec("find $po -name '*.po' -exec msgmerge --update \"{}\" $template \;");
+            }
+        }
+
+        if (isset($json['gettext-vue']) && is_array($json['gettext-vue'])) {
+            foreach ($json['gettext-vue'] as $component => $gettext) {
+                info("[$translated_plugin][vue][$component] Generating default .pot file");
+                $scripts           = escapeshellarg("$path/${gettext['scripts']}");
+                $po                = escapeshellarg("$path/${gettext['po']}");
+                $template          = escapeshellarg("$path/${gettext['po']}/template.pot");
+                $vue_template_path = "$path/${gettext['po']}/template.pot";
+                $vue_template      = escapeshellarg($vue_template_path);
+                executeCommandAndExitIfStderrNotEmpty("(cd $scripts && npm run extract-gettext-cli -- --output $template)");
+
+                exec("msgcat --no-location --sort-output -o $template $vue_template");
 
                 info("[$translated_plugin][js][$component] Merging .pot file into .po files");
                 exec("find $po -name '*.po' -exec msgmerge --update \"{}\" $template \;");

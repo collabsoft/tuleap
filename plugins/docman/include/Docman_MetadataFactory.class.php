@@ -42,7 +42,7 @@ class Docman_MetadataFactory {
     var $modifiableMetadata;
     var $groupId;
     
-    function Docman_MetadataFactory($groupId) {
+    function __construct($groupId) {
         // Metadata hard coded as table columns
         $this->hardCodedMetadata = array('title', 'description', 'owner'
                                          , 'create_date', 'update_date'
@@ -519,7 +519,8 @@ class Docman_MetadataFactory {
         return $deleted;
     }
 
-    function &getHardCodedMetadataFromLabel($label, $value=null) {
+    public function getHardCodedMetadataFromLabel($label, $value=null)
+    {
         $md = null;
         switch($label) {
         case 'title':

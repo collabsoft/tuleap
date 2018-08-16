@@ -1,23 +1,24 @@
 <?php
-/*
+/**
+ * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2006. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2006
  * 
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 require_once('Docman_ItemAction.class.php');
 
@@ -186,7 +187,8 @@ class Docman_Item {
         return $GLOBALS['Language']->getText('plugin_docman', 'doc_type_item');
     }
 
-    public function initFromRow(&$row) {
+    public function initFromRow($row)
+    {
         if (isset($row['item_id']))     $this->setId($row['item_id']);
         if (isset($row['title']))       $this->setTitle($row['title']);
         if (isset($row['description'])) $this->setDescription($row['description']);
@@ -218,7 +220,8 @@ class Docman_Item {
         return $row;
     }
     
-    public function accept(&$visitor, $params = array()) {
+    public function accept($visitor, $params = array())
+    {
     }
 
     public function addMetadata(&$metadata) {
@@ -289,7 +292,8 @@ class Docman_Item {
         $metadata_value = $this->getHardCodedMetadataValue($label);
         $metadata       = null; // can't refactor with early return as it returns value by ref :(
         if($metadata_value !== null) {
-            $metadata = Docman_MetadataFactory::getHardCodedMetadataFromLabel($label, $metadata_value);
+            $metadata_factory = new Docman_MetadataFactory($this->groupId);
+            $metadata = $metadata_factory->getHardCodedMetadataFromLabel($label, $metadata_value);
         } elseif (isset($this->_metadata[$label])) {
             $metadata = $this->_metadata[$label];
         }

@@ -50,23 +50,46 @@
 
         <fieldset>
             <h3><i class="icon-desktop"></i> {{ appearance_title }}</h3>
-            <div class="control-group user-account-group">
-                <label class="control-label user-account-label">{{ theme_label }}</label>
-                <div class="controls">
-                    <select name="user_theme" class="select-user-preferences">
-                            {{# all_themes }}
-                            <option value="{{theme_name}}" {{# is_selected }} selected {{/ is_selected }}>
-                                {{theme_name}} {{# is_default }} ({{ default_theme }}) {{/ is_default}}
-                            </option>
-                            {{/ all_themes }}
-                    </select>
+            {{^ has_only_flamingparrot }}
+                <div class="control-group user-account-group">
+                    <label class="control-label user-account-label">{{ theme_label }}</label>
+                    <div class="controls">
+                        <select name="user_theme" class="select-user-preferences">
+                                {{# all_themes }}
+                                <option value="{{theme_name}}" {{# is_selected }} selected {{/ is_selected }}>
+                                    {{theme_name}} {{# is_default }} ({{ default_theme }}) {{/ is_default}}
+                                </option>
+                                {{/ all_themes }}
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <div id="theme_variant_group" class="control-group user-account-group">
-                <label class="control-label user-account-label">{{ theme_variant_label }}</label>
+                <div id="theme_variant_group" class="control-group user-account-group">
+                    <label class="control-label user-account-label">{{ theme_variant_label }}</label>
+                    <div class="controls">
+                        <div id="theme_variant_list"></div>
+                        <input type="hidden" name="current_theme_variant" id="current_theme_variant" value=""/>
+                    </div>
+                </div>
+            {{/ has_only_flamingparrot }}
+            {{# has_only_flamingparrot }}
+                <div class="control-group user-account-group">
+                    <label class="control-label user-account-label">{{ theme_label }}</label>
+                    <div class="controls">
+                        <div id="theme_variant_list"></div>
+                        <input type="hidden" name="user_theme" class="select-user-preferences" value="FlamingParrot">
+                        <input type="hidden" name="current_theme_variant" id="current_theme_variant" value=""/>
+                    </div>
+                </div>
+            {{/ has_only_flamingparrot }}
+            <div class="control-group user-account-group">
+                <label class="control-label user-account-label">{{# gettext }}Display density:{{/ gettext }}</label>
                 <div class="controls">
-                    <div id="theme_variant_list"></div>
-                    <input type="hidden" name="current_theme_variant" id="current_theme_variant" value=""/>
+                    <select name="{{ display_density_name }}" class="select-user-preferences">
+                        <option value="">{{# gettext }}Comfortable{{/ gettext }}</option>
+                        <option value="{{ display_density_condensed }}" {{# is_condensed }}selected{{/ is_condensed }}>
+                            {{# gettext }}Condensed{{/ gettext }}
+                        </option>
+                    </select>
                 </div>
             </div>
             <div class="control-group user-account-group">
@@ -161,6 +184,21 @@
                 </div>
             </div>
         </fieldset>
+
+    <fieldset>
+        <h3><i class="icon-eye-close"></i> {{# gettext }}Accessibility{{/ gettext }}</h3>
+        <p>
+            {{# gettext }}This option displays special patterns on colored cards in Agiledashboard and Cardwall tracker reports. This helps distinguish between colors and their variants.{{/ gettext }}
+        </p>
+        <label class="checkbox">
+            <input type="checkbox"
+                   name="form_accessibility_mode"
+                   value="1"
+                   {{# user_has_accessibility_mode }} checked="checked" {{/ user_has_accessibility_mode }}
+            />
+            {{# gettext }}Enable accessibility mode{{/ gettext }}
+        </label>
+    </fieldset>
 
         <fieldset>
             <h3><i class="icon-beaker"></i> {{ lab_features_title }}</h3>

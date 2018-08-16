@@ -1,17 +1,41 @@
 _serviceEnable() {
-    # ${1}: service name
+    # ${@}: services name
 
-    ${systemctl} enable ${1}
+    ${systemctl} --quiet enable ${@}
+}
+
+_serviceIsActive() {
+    # ${@}: services name
+
+    ${systemctl} --quiet is-active ${@}
+}
+
+_serviceIsEnabled() {
+    # ${@}: services name
+
+    ${systemctl} --quiet is-enabled ${@}
 }
 
 _serviceMask() {
-    # ${1}: service name
+    # ${@}: services name
 
-    ${systemctl} mask ${1}
+    ${systemctl} --quiet mask ${@}
 }
 
 _serviceStart() {
-    # ${1}: service name
+    # ${@}: services name
 
-    ${systemctl} start ${1}
+    ${systemctl} start ${@}
+}
+
+_serviceReload() {
+    # ${@}: services name
+
+    ${systemctl} reload ${@}
+}
+
+_serviceRestart() {
+    # ${@}: services name
+
+    ${systemctl} restart ${@}
 }

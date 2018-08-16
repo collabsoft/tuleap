@@ -72,6 +72,7 @@ class GitRepository implements DVCSRepository {
     private $remote_project_deletion_date;
     private $remote_project_is_deleted;
     private $remote_server_migration_status;
+    private $last_push_date;
 
     private $is_mirrored;
 
@@ -91,7 +92,7 @@ class GitRepository implements DVCSRepository {
         $this->isInitialized   = 0;
         $this->access          = 'private';
         $this->mailPrefix      = self::DEFAULT_MAIL_PREFIX;
-        $this->notifiedMails   = array();
+        $this->notifiedMails;
 
         $this->hooks           = array();
         $this->branches        = array();
@@ -321,9 +322,8 @@ class GitRepository implements DVCSRepository {
         $repoId = 0;
         if ($project) {
             $projectId = $project->getID();
-            $dar = $this->getDao()->getProjectRepositoryByName($repositoryName, $projectId);
-            if ($dar && !empty($dar) && !$dar->isError()) {
-                     $row = $dar->getRow();
+            $row = $this->getDao()->getProjectRepositoryByName($repositoryName, $projectId);
+            if ($row && !empty($row)) {
                      $repoId = $row[GitDao::REPOSITORY_ID];
             }
         }
@@ -614,7 +614,7 @@ class GitRepository implements DVCSRepository {
     public function getDiffLink(Git_GitRepositoryUrlManager $url_manager, $revision_hash) {
         $url  = HTTPRequest::instance()->getServerUrl();
         $url .= $url_manager->getRepositoryBaseUrl($this);
-        $url .= '?p='.$this->getName().'.git&a=commitdiff&h=' . $revision_hash;
+        $url .= '?a=commitdiff&h=' . $revision_hash;
 
         return $url;
     }
@@ -641,6 +641,9 @@ class GitRepository implements DVCSRepository {
     }
     
     public function getNotifiedMails() {
+        if ($this->notifiedMails === null) {
+            $this->loadNotifiedMails();
+        }
         return $this->notifiedMails;
     }
 
@@ -916,5 +919,15 @@ class GitRepository implements DVCSRepository {
 
     public function setBackupPath($path) {
         $this->backup_path = $path;
+    }
+
+    public function setLastPushDate($date)
+    {
+        $this->last_push_date = $date;
+    }
+
+    public function getLastPushDate()
+    {
+        return $this->last_push_date;
     }
 }

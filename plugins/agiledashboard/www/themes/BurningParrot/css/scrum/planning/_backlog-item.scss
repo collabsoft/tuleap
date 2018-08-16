@@ -19,6 +19,7 @@
 
 @import 'backlog-item-details';
 @import 'backlog-item-transit';
+@import './item-progress';
 
 %hide-moves-icons {
     > .backlog-item-content-collapsed > .backlog-item-details-effort-container {
@@ -39,6 +40,16 @@
     &.compact-view {
         .extra-card-fields {
             display: none;
+        }
+    }
+
+    &.detailed-view {
+        > .backlog-item-details > .backlog-item-details-content > .card-accessibility {
+            position: absolute;
+            top: 40px;
+            right: 9px;
+            height: calc(100% - 40px);
+
         }
     }
 

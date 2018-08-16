@@ -39,7 +39,7 @@ class Response {
     /**
     * Constructor
     */
-    public function Response() {
+    public function __construct() {
         $session_id = UserManager::instance()->getCurrentUser()->getSessionId();
         if ($session_id) {
             $dao = $this->getFeedbackDao();
@@ -126,7 +126,7 @@ class Response {
     function _serializeFeedback() {
         $dao        = $this->getFeedbackDao();
         $session_id = UserManager::instance()->getCurrentUser()->getSessionId();
-        $dao->create($session_id, json_encode($this->_feedback->getLogs()));
+        $dao->create($session_id, $this->_feedback->getLogs());
     }
 
     public function sendStatusCode($code) {
@@ -160,6 +160,12 @@ class Response {
         header('Content-Type: application/json; charset=UTF-8', true);
         header('HTTP/1.0 400 Bad Request', true, 400);
         echo json_encode($message);
+        exit;
+    }
+
+    public function permanentRedirect($redirect_url)
+    {
+        header("Location: $redirect_url", true, 301);
         exit;
     }
 }

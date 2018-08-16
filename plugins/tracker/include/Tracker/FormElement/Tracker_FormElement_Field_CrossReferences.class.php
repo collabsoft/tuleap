@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -140,7 +140,8 @@ class Tracker_FormElement_Field_CrossReferences extends Tracker_FormElement_Fiel
         return $crossref_factory;
     }
 
-    public function fetchCSVChangesetValue($artifact_id, $changeset_id, $value) {
+    public function fetchCSVChangesetValue($artifact_id, $changeset_id, $value, $report = null)
+    {
         $html = '';
         $crossref_fact = $this->getCrossReferencesFactory($artifact_id);
 
@@ -168,7 +169,8 @@ class Tracker_FormElement_Field_CrossReferences extends Tracker_FormElement_Fiel
         return '<input type="text" name="criteria['. $this->id .']" value="'. $hp->purify($this->getCriteriaValue($criteria), CODENDI_PURIFIER_CONVERT_HTML) .'" />';
     }
 
-    public function fetchArtifactForOverlay(Tracker_Artifact $artifact) {
+    public function fetchArtifactForOverlay(Tracker_Artifact $artifact, $submitted_values = [])
+    {
         return '';
     }
 
@@ -215,7 +217,7 @@ class Tracker_FormElement_Field_CrossReferences extends Tracker_FormElement_Fiel
         return new CrossReferenceDao();
     }
 
-    public function afterCreate() {
+    public function afterCreate(array $form_element_data, $tracker_is_empty) {
        
     }
 
@@ -481,7 +483,12 @@ class Tracker_FormElement_Field_CrossReferences extends Tracker_FormElement_Fiel
      *
      * @return boolean true on success or false on failure
      */
-    public function validateFieldWithPermissionsAndRequiredStatus(Tracker_Artifact $artifact, $submitted_value, Tracker_Artifact_ChangesetValue $last_changeset_value = null) {
+    public function validateFieldWithPermissionsAndRequiredStatus(
+        Tracker_Artifact $artifact,
+        $submitted_value,
+        Tracker_Artifact_ChangesetValue $last_changeset_value = null,
+        $is_submission = null
+    ) {
         return true;
     }
     
@@ -503,7 +510,8 @@ class Tracker_FormElement_Field_CrossReferences extends Tracker_FormElement_Fiel
      *
      * @return string html
      */
-     public function fetchSubmit() {
+     public function fetchSubmit($submitted_values = [])
+     {
          return '';
      }
 

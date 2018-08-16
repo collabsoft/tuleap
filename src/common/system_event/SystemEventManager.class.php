@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2011 — 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 — 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -38,7 +38,6 @@ class SystemEventManager {
         $event_manager = $this->_getEventManager();
         $events_to_listen = array(
             Event::SYSTEM_CHECK,
-            Event::USER_EMAIL_CHANGED,
             Event::PROJECT_RENAME,
             Event::USER_RENAME,
             Event::COMPUTE_MD5SUM,
@@ -100,7 +99,7 @@ class SystemEventManager {
         return self::$_instance;
     }
 
-    public function setInstance(SystemEventManager $instance) {
+    public static function setInstance(SystemEventManager $instance) {
         self::$_instance = $instance;
     }
 
@@ -156,11 +155,6 @@ class SystemEventManager {
             $this->createEvent(SystemEvent::TYPE_MOVE_FRS_FILE,
                                $this->concatParameters($params, array('project_path', 'file_id', 'old_path' )),
                                SystemEvent::PRIORITY_HIGH);
-            break;
-        case Event::USER_EMAIL_CHANGED:
-            $this->createEvent(SystemEvent::TYPE_USER_EMAIL_CHANGED,
-                               $params['user_id'],
-                               SystemEvent::PRIORITY_LOW);
             break;
         case 'approve_pending_project':
             $this->createEvent(SystemEvent::TYPE_PROJECT_CREATE,
@@ -414,7 +408,6 @@ class SystemEventManager {
         case SystemEvent::TYPE_UGROUP_MODIFY:
         case SystemEvent::TYPE_USER_CREATE:
         case SystemEvent::TYPE_USER_DELETE:
-        case SystemEvent::TYPE_USER_EMAIL_CHANGED:
         case SystemEvent::TYPE_USER_RENAME:
         case SystemEvent::TYPE_MAILING_LIST_CREATE:
         case SystemEvent::TYPE_MAILING_LIST_DELETE:

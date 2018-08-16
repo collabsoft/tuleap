@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2011 — 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 — 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,11 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-
-require_once 'common/dao/SystemEventsFollowersDao.class.php';
-require_once 'common/mail/Mail.class.php';
-require_once 'common/event/EventManager.class.php';
-require_once 'SystemEventMissingParameterException.class.php';
 
 /**
  * System Event class
@@ -50,7 +45,6 @@ abstract class SystemEvent {
     const TYPE_UGROUP_MODIFY         = "UGROUP_MODIFY";
     const TYPE_USER_CREATE           = "USER_CREATE";
     const TYPE_USER_DELETE           = "USER_DELETE";
-    const TYPE_USER_EMAIL_CHANGED    = "USER_EMAIL_CHANGED";
     const TYPE_USER_MODIFY           = "USER_MODIFY";
     const TYPE_USER_RENAME           = "USER_RENAME";
     const TYPE_MEMBERSHIP_CREATE     = "MEMBERSHIP_CREATE";
@@ -414,11 +408,11 @@ abstract class SystemEvent {
         }
         if (count($listeners)) {
             $listeners = array_unique($listeners);
-            $m = new Mail();
+            $m = new Codendi_Mail();
             $m->setFrom($GLOBALS['sys_noreply']);
             $m->setTo(implode(',', $listeners));
             $m->setSubject('['. $this->getstatus() .'] '. $this->getType());
-            $m->setBody("
+            $m->setBodyText("
 Event:        #{$this->getId()}
 Type:         {$this->getType()}
 Parameters:   {$this->verbalizeParameters(false)}

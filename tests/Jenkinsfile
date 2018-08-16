@@ -23,6 +23,17 @@ def runKarmaTests(String name, String path) {
     junit "results/karma/test-$name-results.xml"
 }
 
+def runSOAPTests(String name, String image_version) {
+    sh """
+    cid="\$(docker create -v \$WORKSPACE/sources:/usr/share/tuleap:ro \$DOCKER_REGISTRY/enalean/tuleap-test-soap:${image_version})"
+    docker start --attach "\$cid" || true
+    mkdir -p 'results/api-soap'
+    docker cp "\$cid":/output/soap_tests.xml results/api-soap/soap_tests_${name}.xml || true
+    docker rm -fv "\$cid"
+    """
+    junit "results/api-soap/soap_tests_${name}.xml"
+}
+
 pipeline {
     agent {
         label 'docker'
@@ -49,18 +60,7 @@ pipeline {
         stage('Check lockfiles') {
             steps {
                 dir ('sources') {
-                    sh """
-                    #!/bin/bash
-                    set +ex
-                    modified_lockfiles="\$(git status --porcelain | grep -E '(package-lock.json|composer.lock)' || true)"
-                    if [ -z "\$modified_lockfiles" ]; then
-                        echo "All lockfiles are present and up to date!"
-                    else
-                        echo 'Your lockfiles does not seem to be present or up to date!'
-                        echo "\$modified_lockfiles"
-                        exit 1
-                    fi
-                    """
+                    sh 'tests/files_status_checker/verify.sh lockfiles package-lock.json composer.lock'
                 }
             }
             post {
@@ -74,70 +74,58 @@ pipeline {
 
         stage('Tests') {
             steps {
-                parallel 'UT SimpleTest PHP 5.6': {
-                    sh """
-                    cid="\$(docker create -v \$WORKSPACE/sources:/tuleap:ro \$DOCKER_REGISTRY/enalean/tuleap-simpletest:c6-php56)"
-                    docker start --attach "\$cid" || true
-                    mkdir -p 'results/ut-simpletest-php-56'
-                    docker cp "\$cid":/output/unit_tests_report.xml results/ut-simpletest-php-56/
-                    docker rm -fv "\$cid"
-                    """
-                    junit 'results/ut-simpletest-php-56/unit_tests_report.xml'
+                parallel 'UT SimpleTest 1.1.x PHP 5.6': {
+                    sh "make -C $WORKSPACE/sources simpletest11x-56-ci"
+                    junit 'results/ut-simpletest11x-php-56/results.xml'
+                },
+                'UT SimpleTest PHP 7.2': {
+                    sh "make -C $WORKSPACE/sources simpletest-72-ci"
+                    junit 'results/ut-simpletest-php-72/results.xml'
                 },
                 'UT PHPUnit PHP 5.6': {
                     sh "make -C $WORKSPACE/sources phpunit-ci-56"
                     junit 'results/ut-phpunit-php-56/phpunit_tests_results.xml'
                 },
-                'UT PHPUnit PHP 7.0': {
-                    sh "make -C $WORKSPACE/sources phpunit-ci-70"
-                    junit 'results/ut-phpunit-php-70/phpunit_tests_results.xml'
+                'UT PHPUnit PHP 7.2': {
+                    sh "make -C $WORKSPACE/sources phpunit-ci-72"
+                    junit 'results/ut-phpunit-php-72/phpunit_tests_results.xml'
                 },
                 'Karma AgileDashboard PlanningV2': { runKarmaTests('planning', 'plugins/agiledashboard/www/js/planning-v2') },
                 'Karma AgileDashboard Kanban': { runKarmaTests('kanban', 'plugins/agiledashboard/www/js/kanban') },
                 'Karma Tracker': { runKarmaTests('tracker', 'plugins/tracker/www/scripts') },
                 'Karma FRS plugin': { runKarmaTests('frs', 'plugins/frs/www/js/angular') },
                 'Karma Label plugin': { runKarmaTests('label', 'plugins/label/www/scripts') },
-                'Karma PullRequest plugin': { runKarmaTests('pullrequest', 'plugins/pullrequest/www/js/angular') },
+                'Karma PullRequest plugin': { runKarmaTests('pullrequest', 'plugins/pullrequest/www/scripts') },
                 'Karma CrossTracker plugin': { runKarmaTests('crosstracker', 'plugins/crosstracker/www/scripts') },
-                'REST CentOS 6 PHP 5.6 Apache 2.4 MySQL 5.6': { runRESTTests('c6-php56-httpd24-mysql56') },
-                'SOAP': {
-                    sh """
-                    mkdir -p working_copy/api-soap
-                    cp -R sources/* working_copy/api-soap/
-                    cid="\$(docker create -v \$WORKSPACE/working_copy/api-soap:/usr/share/tuleap \$DOCKER_REGISTRY/enalean/tuleap-test-soap:3)"
-                    docker start --attach "\$cid" || true
-                    mkdir -p 'results/api-soap'
-                    docker cp "\$cid":/output/soap_tests.xml results/api-soap/ || true
-                    docker rm -fv "\$cid"
-                    """
-                    junit 'results/api-soap/soap_tests.xml'
-                },
-                'Whole platform integration': {
+                'Karma TimeTracking plugin': { runKarmaTests('timetracking', 'plugins/timetracking/www/scripts') },
+                'Karma Git plugin': { runKarmaTests('git', 'plugins/git/www/scripts') },
+                'REST CentOS 6 PHP 5.6 MySQL 5.6': { runRESTTests('c6-php56-mysql56') },
+                'REST CentOS 6 PHP 7.2 MySQL 5.6': { runRESTTests('c6-php72-mysql56') },
+                'SOAP PHP 5.6': { runSOAPTests('php-56', '3') },
+                'SOAP PHP 7.2': { runSOAPTests('php-72', '4') },
+                'Distributed SVN integration': {
                     dir ('sources') {
                         sh """
-                        tests/selenium/wrap.sh "$WORKSPACE/results/distlp-integration"
+                        tests/e2e/distlp/wrap.sh "$WORKSPACE/results/distlp-integration"
                         """
                     }
-                    junit 'results/distlp-integration/Tuleap-Tests-*.xml'
+                    junit 'results/distlp-integration/distlp-svn-cli.xml'
+                    junit 'results/distlp-integration/results-*.xml'
                 },
-                'Build and run': {
-                    sh """#!/bin/bash
-                    UNIQUE_NAME="$JOB_NAME-$BUILD_NUMBER"
-
-                    function cleanup {
-                        docker rm "\$UNIQUE_NAME-rpm-builder" || true
-                        docker rm "\$UNIQUE_NAME-rpm-installer" || true
+                'Build and run CentOS 6': {
+                    dir ('sources') {
+                        sh 'OS=centos6 tests/build_and_run/test.sh'
                     }
-                    trap cleanup EXIT
-
-                    docker run -i --name "\$UNIQUE_NAME-rpm-builder" -v "$WORKSPACE/sources":/tuleap:ro $DOCKER_REGISTRY/enalean/tuleap-buildrpms:centos6-without-srpms --os rhel6
-                    docker run -i --name "\$UNIQUE_NAME-rpm-installer" --volumes-from "\$UNIQUE_NAME-rpm-builder" $DOCKER_REGISTRY/enalean/tuleap-installrpms:ci
-
-                    mkdir -p 'results/build-and-run'
-                    docker cp "\$UNIQUE_NAME-rpm-installer":/output/index.html results/build-and-run/
-
-                    grep "version \$(cat sources/VERSION)" results/build-and-run/index.html
-                    """
+                },
+                'Build CentOS 7': {
+                    dir ('sources') {
+                        sh 'OS=centos7 tests/build_and_run/test.sh'
+                    }
+                },
+                'Check translation files': {
+                    dir ('sources') {
+                        sh 'tests/files_status_checker/verify.sh "translation files" "*.po\$"'
+                    }
                 },
                 failFast: false
             }

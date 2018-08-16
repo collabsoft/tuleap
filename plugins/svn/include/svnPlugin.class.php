@@ -23,12 +23,14 @@ require_once 'constants.php';
 use Tuleap\CVS\DiskUsage\Collector as CVSCollector;
 use Tuleap\CVS\DiskUsage\FullHistoryDao;
 use Tuleap\CVS\DiskUsage\Retriever as CVSRetriever;
+use Tuleap\Httpd\PostRotateEvent;
 use Tuleap\Layout\IncludeAssets;
 use Tuleap\Project\Admin\Navigation\NavigationDropdownItemPresenter;
 use Tuleap\project\Admin\Navigation\NavigationDropdownQuickLinksCollector;
-use Tuleap\Project\Admin\PerGroup\PermissionPerGroupUGroupFormatter;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupPaneCollector;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupUGroupRetriever;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupDisplayEvent;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupFormatter;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupPaneCollector;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupRetriever;
 use Tuleap\project\Event\ProjectRegistrationActivateService;
 use Tuleap\REST\Event\ProjectGetSvn;
 use Tuleap\REST\Event\ProjectOptionsSvn;
@@ -63,6 +65,7 @@ use Tuleap\Svn\EventRepository\SystemEvent_SVN_RESTORE_REPOSITORY;
 use Tuleap\Svn\Explorer\ExplorerController;
 use Tuleap\Svn\Explorer\RepositoryBuilder;
 use Tuleap\Svn\Explorer\RepositoryDisplayController;
+use Tuleap\Svn\Logs\DBWriter;
 use Tuleap\Svn\Logs\QueryBuilder;
 use Tuleap\Svn\Migration\RepositoryCopier;
 use Tuleap\SVN\Notifications\CollectionOfUgroupToBeNotifiedPresenterBuilder;
@@ -73,10 +76,10 @@ use Tuleap\Svn\Notifications\NotificationsForProjectMemberCleaner;
 use Tuleap\Svn\Notifications\UgroupsToNotifyDao;
 use Tuleap\Svn\Notifications\UgroupsToNotifyUpdater;
 use Tuleap\Svn\Notifications\UsersToNotifyDao;
-use Tuleap\Svn\PerGroup\PaneCollector;
-use Tuleap\Svn\PerGroup\PermissionPerGroupRepositoryRepresentationBuilder;
-use Tuleap\Svn\PerGroup\PermissionPerGroupSVNServicePaneBuilder;
-use Tuleap\Svn\PerGroup\SVNJSONPermissionsRetriever;
+use Tuleap\Svn\PermissionsPerGroup\PaneCollector;
+use Tuleap\Svn\PermissionsPerGroup\PermissionPerGroupRepositoryRepresentationBuilder;
+use Tuleap\Svn\PermissionsPerGroup\PermissionPerGroupSVNServicePaneBuilder;
+use Tuleap\Svn\PermissionsPerGroup\SVNJSONPermissionsRetriever;
 use Tuleap\Svn\Reference\Extractor;
 use Tuleap\Svn\Repository\HookConfigChecker;
 use Tuleap\Svn\Repository\HookConfigRetriever;
@@ -175,15 +178,16 @@ class SvnPlugin extends Plugin
         $this->addHook(PermissionPerGroupPaneCollector::NAME);
 
         $this->addHook(Event::BURNING_PARROT_GET_STYLESHEETS);
-        $this->addHook(Event::BURNING_PARROT_GET_JAVASCRIPT_FILES);
+        $this->addHook(PermissionPerGroupDisplayEvent::NAME);
+
+        $this->addHook(PostRotateEvent::NAME);
     }
 
     public function export_xml_project($params)
     {
-        if (! isset($params['options']['all'])) {
+        if (! isset($params['options']['all']) || $params['options']['all'] === false) {
             return;
         }
-
 
         $this->getSvnExporter($params['project'])->exportToXml(
             $params['into_xml'],
@@ -327,7 +331,7 @@ class SvnPlugin extends Plugin
 
     private function getApacheConfGenerator()
     {
-        return new ApacheConfGenerator(new System_Command(), Backend::instance(Backend::SVN));
+        return ApacheConfGenerator::build();
     }
 
     /** @return Tuleap\Svn\Repository\RepositoryManager */
@@ -471,6 +475,8 @@ class SvnPlugin extends Plugin
         }
 
         $project_id = $project->getId();
+        $request->set('group_id', $project_id);
+
         if (! PluginManager::instance()->isPluginAllowedForProject($this, $project_id)) {
             $GLOBALS['Response']->addFeedback(
                 'error',
@@ -612,7 +618,8 @@ class SvnPlugin extends Plugin
                 new ViewVCProxy(
                     $repository_manager,
                     ProjectManager::instance(),
-                    new AccessHistorySaver(new AccessHistoryDao())
+                    new AccessHistorySaver(new AccessHistoryDao()),
+                    EventManager::instance()
                 ),
                 EventManager::instance()
             ),
@@ -710,7 +717,7 @@ class SvnPlugin extends Plugin
         $archived_repositories = $this->getRepositoryManager()->getRestorableRepositoriesByProject($project);
 
         $restore_controller = new RestoreController($this->getRepositoryManager());
-        $tab_content        = $restore_controller->displayRestorableRepositories($archived_repositories, $project_id);
+        $tab_content        = $restore_controller->displayRestorableRepositories($params['csrf_token'], $archived_repositories, $project_id);
         $params['html'][]   = $tab_content;
     }
 
@@ -1123,8 +1130,7 @@ class SvnPlugin extends Plugin
         $service_pane_builder = new PermissionPerGroupSVNServicePaneBuilder(
             new PermissionPerGroupUGroupRetriever(PermissionsManager::instance()),
             new PermissionPerGroupUGroupFormatter($ugroup_manager),
-            $ugroup_manager,
-            $this->getUserManager()
+            $ugroup_manager
         );
 
         $collector = new PaneCollector($this->getUGroupManager(), $service_pane_builder);
@@ -1147,20 +1153,18 @@ class SvnPlugin extends Plugin
     }
 
 
-    public function burning_parrot_get_javascript_files(array $params)
+    public function permissionPerGroupDisplayEvent(PermissionPerGroupDisplayEvent $event)
     {
-        if ($this->isInProjectAdmin()) {
-            $include_assets = new IncludeAssets(
-                SVN_BASE_DIR . '/../www/assets',
-                $this->getPluginPath() . '/assets'
-            );
+        $include_assets = new IncludeAssets(
+            SVN_BASE_DIR . '/../www/assets',
+            $this->getPluginPath() . '/assets'
+        );
 
-            $GLOBALS['HTML']->includeFooterJavascriptFile($include_assets->getFileURL('permission-per-group.js'));
-        }
+        $event->addJavascript($include_assets->getFileURL('permission-per-group.js'));
     }
 
-    private function isInProjectAdmin()
+    public function httpdPostRotate(PostRotateEvent $event)
     {
-        return strpos($_SERVER['REQUEST_URI'], '/project/admin/permission_per_group') === 0;
+        DBWriter::build($event->getLogger())->postrotate();
     }
 }

@@ -28,6 +28,9 @@ require_once 'constants.php';
 use Tuleap\Layout\IncludeAssets;
 use Tuleap\LDAP\Exception\IdentifierTypeNotFoundException;
 use Tuleap\LDAP\Exception\IdentifierTypeNotRecognizedException;
+use Tuleap\LDAP\GroupSyncNotificationsManager;
+use Tuleap\LDAP\GroupSyncAdminEmailNotificationsManager;
+use Tuleap\LDAP\LdapLogger;
 use Tuleap\LDAP\LinkModalContentPresenter;
 use Tuleap\LDAP\NonUniqueUidRetriever;
 use Tuleap\Project\Admin\ProjectMembers\MembersEditProcessAction;
@@ -35,6 +38,7 @@ use Tuleap\Project\Admin\ProjectMembers\ProjectMembersAdditionalModalCollectionP
 use Tuleap\LDAP\Project\UGroup\Binding\AdditionalModalPresenterBuilder;
 use Tuleap\Project\Admin\ProjectUGroup\BindingAdditionalModalPresenterCollection;
 use Tuleap\Project\Admin\ProjectUGroup\UGroupEditProcessAction;
+use Tuleap\svn\Event\GetSVNLoginNameEvent;
 use Tuleap\User\Admin\UserDetailsPresenter;
 use Tuleap\Project\UserRemover;
 use Tuleap\Project\UserRemoverDao;
@@ -129,6 +133,7 @@ class LdapPlugin extends Plugin {
         // Backend SVN
         $this->addHook('backend_factory_get_svn', 'backend_factory_get_svn', false);
         $this->addHook(Event::SVN_APACHE_AUTH,    'svn_apache_auth',         false);
+        $this->addHook(GetSVNLoginNameEvent::NAME);
 
         // Daily codendi job
         $this->addHook('codendi_daily_start', 'codendi_daily_start', false);
@@ -190,10 +195,11 @@ class LdapPlugin extends Plugin {
     }
 
     /**
-     * @return TruncateLevelLogger
+     * @return LdapLogger
      */
-    public function getLogger() {
-        return new TruncateLevelLogger(new BackendLogger(), ForgeConfig::get('sys_logger_level'));
+    public function getLogger()
+    {
+        return new LdapLogger();
     }
 
     /**
@@ -367,7 +373,7 @@ class LdapPlugin extends Plugin {
             } catch (LDAP_UserNotFoundException $exception) {
                 $GLOBALS['Response']->addFeedback(Feedback::ERROR, $exception->getMessage());
             } catch (LDAP_AuthenticationFailedException $exception) {
-                $logger = new BackendLogger();
+                $logger = $this->getLogger();
                 $logger->info("[LDAP] User ".$params['loginname']." failed to authenticate");
             }
         }
@@ -476,7 +482,9 @@ class LdapPlugin extends Plugin {
         if ($this->isLdapAuthType() && $this->isLDAPUserManagementEnabled()) {
             $lri  = $this->getLdap()->searchLogin($event->getLoginName());
             $user = $this->getLdapUserManager()->getUserFromLdapIterator($lri);
-            $event->setUser($user);
+            if ($user !== null) {
+                $event->setUser($user);
+            }
         }
     }
 
@@ -785,9 +793,11 @@ class LdapPlugin extends Plugin {
 
             if ($ldap_group) {
                 $group_name = $ldap_group->getCommonName();
+                $display_name = $ldap_group->getGroupDisplayName();
                 $is_linked  = true;
             } else {
                 $group_name = '';
+                $display_name = '';
                 $is_linked  = false;
             }
 
@@ -797,7 +807,7 @@ class LdapPlugin extends Plugin {
             $mustache_renderer = TemplateRendererFactory::build()->getRenderer(LDAP_TEMPLATE_DIR);
 
             $action_label = ($ldap_group)
-                ? sprintf(dgettext('tuleap-ldap', "Update directory group binding (%s)"), $group_name)
+                ? sprintf(dgettext('tuleap-ldap', "Update directory group binding (%s)"), $display_name)
                 : dgettext('tuleap-ldap', "Set directory group binding");
 
             $modal_button = $mustache_renderer->renderToString(
@@ -815,7 +825,8 @@ class LdapPlugin extends Plugin {
                     $is_linked,
                     $action_label,
                     $collector->getCurrentLocale(),
-                    $collector->getCSRF()
+                    $collector->getCSRF(),
+                    $display_name
                 )
             );
 
@@ -911,6 +922,33 @@ class LdapPlugin extends Plugin {
     }
 
     /**
+     * @see \Tuleap\svn\Event\GetSVNLoginNameEvent
+     */
+    public function getSvnLoginName(GetSVNLoginNameEvent $event)
+    {
+        if (! $this->isLdapAuthType()) {
+            return;
+        }
+        $ldap_project_manager = new LDAP_ProjectManager();
+        if (! $ldap_project_manager->hasSVNLDAPAuth($event->getProject()->getID())) {
+            return;
+        }
+
+        $user_name = $event->getUsername();
+        $ldap_user = $this->getLdapUserManager()->getLdapLoginFromUserIds([$event->getUser()->getId()])->getRow();
+        if ($ldap_user['ldap_uid'] !== false) {
+            $user_name = $ldap_user['ldap_uid'];
+        }
+
+        $ldap_result_iterator = $this->getLdap()->searchLogin($user_name);
+        if ($ldap_result_iterator && count($ldap_result_iterator) === 1) {
+            $event->setUsername($ldap_result_iterator->current()->getLogin());
+        } else {
+            $event->setUsername('');
+        }
+    }
+
+    /**
      * Hook
      *
      * @param Array $params
@@ -920,6 +958,8 @@ class LdapPlugin extends Plugin {
     public function codendi_daily_start($params)
     {
         if ($this->isLdapAuthType() && $this->isDailySyncEnabled()) {
+            $this->getLogger()->info('Starting LDAP daily synchronisation');
+
             $ldapQuery = new LDAP_DirectorySynchronization($this->getLdap(), $this->getLogger());
             $ldapQuery->syncAll();
 
@@ -936,18 +976,23 @@ class LdapPlugin extends Plugin {
             $this->synchronizeProjectMembers();
             $this->synchronizeStaticUgroupMembers();
 
+            $this->getLogger()->info('LDAP daily synchronisation done');
             return true;
         }
     }
 
     private function synchronizeProjectMembers()
     {
-        $ldap_project_group_manager = $this->getLdapProjectGroupManager();
+        $this->getLogger()->info('LDAP daily synchronisation: project members');
+
+        $ldap_project_group_manager = $this->buildLdapProjectGroupManager($this->getGroupSyncNotificationsManager());
         $ldap_project_group_manager->synchronize();
     }
 
     private function synchronizeStaticUgroupMembers()
     {
+        $this->getLogger()->info('LDAP daily synchronisation: static ugroup members');
+
         $ldapUserGroupManager = $this->getLdapUserGroupManager();
         $ldapUserGroupManager->synchronizeUgroups();
     }
@@ -1133,6 +1178,37 @@ class LdapPlugin extends Plugin {
     }
 
     /**
+     * @return Boolean
+     * */
+    private function isGroupSyncAdminNotificationsEnabled() {
+        return $this->getLdap()->getLDAPParam('grp_sync_admin_notifications_enabled');
+    }
+
+    /**
+     * @return \Tuleap\LDAP\GroupSyncNotificationsManager
+     * */
+    private function getGroupSyncNotificationsManager()
+    {
+        if ($this->isGroupSyncAdminNotificationsEnabled()) {
+            return new GroupSyncAdminEmailNotificationsManager(
+                $this->getLdapUserManager(),
+                ProjectManager::instance(),
+                new \Codendi_Mail(),
+                \UserManager::instance()
+            );
+        }
+        return $this->getSilentNotificationsManager();
+    }
+
+    /**
+     * @return \Tuleap\LDAP\GroupSyncNotificationsManager
+     * */
+    private function getSilentNotificationsManager()
+    {
+        return new \Tuleap\LDAP\GroupSyncSilentNotificationsManager();
+    }
+
+    /**
      * @return LDAP_UserGroupManager
      */
     public function getLdapUserGroupManager()
@@ -1142,7 +1218,8 @@ class LdapPlugin extends Plugin {
             $this->getLdapUserManager(),
             $this->getUserGroupDao(),
             ProjectManager::instance(),
-            $this->getLogger()
+            $this->getLogger(),
+            $this->getSilentNotificationsManager()
         );
     }
 
@@ -1156,14 +1233,27 @@ class LdapPlugin extends Plugin {
 
     /**
      * @return LDAP_ProjectGroupManager
-     */
+     * */
     public function getLdapProjectGroupManager()
     {
-        return new LDAP_ProjectGroupManager(
+        return $this->buildLdapProjectGroupManager($this->getSilentNotificationsManager());
+    }
+
+    /**
+     * @return LDAP_ProjectGroupManager
+     */
+    private function buildLdapProjectGroupManager(\Tuleap\LDAP\GroupSyncNotificationsManager $notifications_manager)
+    {
+        $user_manager    = $this->getLdapUserManager();
+        $project_manager = ProjectManager::instance();
+        $manager = new LDAP_ProjectGroupManager(
             $this->getLdap(),
-            $this->getLdapUserManager(),
-            $this->getLdapProjectGroupDao()
+            $user_manager,
+            $this->getLdapProjectGroupDao(),
+            $project_manager,
+            $notifications_manager
         );
+        return $manager;
     }
 
     /**

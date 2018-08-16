@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,6 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\ArtifactInstrumentation;
 use Tuleap\Tracker\Artifact\Exception\FieldValidationException;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\SourceOfAssociationCollectionBuilder;
 
@@ -46,7 +47,12 @@ abstract class Tracker_Artifact_Changeset_NewChangesetCreatorBase extends Tracke
         ReferenceManager $reference_manager,
         SourceOfAssociationCollectionBuilder $source_of_association_collection_builder
     ) {
-        parent::__construct($fields_validator, $formelement_factory, $artifact_factory, $event_manager);
+        parent::__construct(
+            $fields_validator,
+            $formelement_factory,
+            $artifact_factory,
+            $event_manager
+        );
 
         $this->changeset_dao                            = $changeset_dao;
         $this->changeset_comment_dao                    = $changeset_comment_dao;
@@ -133,6 +139,7 @@ abstract class Tracker_Artifact_Changeset_NewChangesetCreatorBase extends Tracke
                 $this->changeset_dao->rollBack();
                 throw new Tracker_AfterSaveException();
             }
+            ArtifactInstrumentation::increment(ArtifactInstrumentation::TYPE_UPDATED);
         } catch (Tracker_NoChangeException $exception) {
             $collection = $this->source_of_association_collection_builder->getSourceOfAssociationCollection(
                 $artifact,
@@ -153,10 +160,11 @@ abstract class Tracker_Artifact_Changeset_NewChangesetCreatorBase extends Tracke
         }
 
         if ($send_notification) {
-            $artifact->getChangeset($changeset_id)->notify();
+            $artifact->getChangeset($changeset_id)->executePostCreationActions();
         }
 
         $this->event_manager->processEvent(TRACKER_EVENT_ARTIFACT_POST_UPDATE, array('artifact' => $artifact));
+
         return $new_changeset;
     }
 
@@ -250,15 +258,12 @@ abstract class Tracker_Artifact_Changeset_NewChangesetCreatorBase extends Tracke
         $workflow = $artifact->getWorkflow();
         $fields_data = $this->field_initializator->process($artifact, $fields_data);
 
-        if ($workflow) {
-            $workflow->validate($fields_data, $artifact, $comment);
-            /*
-             * We need to run the post actions to validate the data
-             */
-            $workflow->before($fields_data, $submitter, $artifact);
-            $workflow->checkGlobalRules($fields_data, $this->formelement_factory);
-            //$GLOBALS['Language']->getText('plugin_tracker_artifact', 'global_rules_not_valid');
-        }
+        $workflow->validate($fields_data, $artifact, $comment);
+        /*
+         * We need to run the post actions to validate the data
+         */
+        $workflow->before($fields_data, $submitter, $artifact);
+        $workflow->checkGlobalRules($fields_data, $this->formelement_factory);
 
         return true;
     }

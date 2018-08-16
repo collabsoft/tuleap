@@ -20,6 +20,8 @@
 
 namespace Tuleap\Widget;
 
+use ForgeConfig;
+use TemplateRendererFactory;
 use Tuleap\Widget\Event\GetProjectWidgetList;
 use Tuleap\Widget\Event\GetUserWidgetList;
 use Tuleap\Widget\Event\GetWidget;
@@ -169,6 +171,14 @@ class WidgetFactory
             case 'projectcontacts':
                 $widget = new Widget_Contacts();
                 break;
+            case Note\ProjectNote::NAME:
+                $widget = new Note\ProjectNote(
+                    new Note\NoteDao(),
+                    TemplateRendererFactory::build()->getRenderer(
+                        __DIR__ . '/../../templates/widgets'
+                    )
+                );
+                break;
             default:
                 $get_widget_event = new GetWidget($widget_name);
                 $this->event_manager->processEvent($get_widget_event);
@@ -181,11 +191,6 @@ class WidgetFactory
         }
 
         return $widget;
-    }
-
-    public function isProjectWidget(Widget $widget)
-    {
-        return in_array($widget->getId(), $this->getWidgetsForOwnerType(ProjectDashboardController::LEGACY_DASHBOARD_TYPE));
     }
 
     /**

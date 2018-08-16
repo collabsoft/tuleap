@@ -1,32 +1,30 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
 require_once('FRSPackage.class.php');
 require_once('common/dao/FRSPackageDao.class.php');
-require_once('common/user/UserManager.class.php');
-require_once('common/permission/PermissionsManager.class.php');
 require_once('FRSReleaseFactory.class.php');
-require_once('www/project/admin/ugroup_utils.php');
 require_once ('common/frs/FRSLog.class.php');
 
+use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessResultInterface;
 use Tuleap\FRS\FRSPackagePaginatedCollection;
 use Tuleap\FRS\FRSPermissionManager;
 use Tuleap\FRS\FRSPermissionFactory;
@@ -167,7 +165,7 @@ class FRSPackageFactory {
     /**
      * @return FRSPackage[]
      */
-    private function instantiateActivePackagesForUserFromDar($group_id, PFUser $user, DataAccessResult $dar)
+    private function instantiateActivePackagesForUserFromDar($group_id, PFUser $user, LegacyDataAccessResultInterface $dar)
     {
         $packages = array();
         if ($dar && !$dar->isError()) {
@@ -417,7 +415,7 @@ class FRSPackageFactory {
      * @param FRSPackage $package Permissions will apply on this Package
      */
     function setDefaultPermissions(FRSPackage $package) {
-        $this->getPermissionsManager()->addPermission(FRSPackage::PERM_READ, $package->getPackageID(), $GLOBALS['UGROUP_REGISTERED']);
+        $this->getPermissionsManager()->addPermission(FRSPackage::PERM_READ, $package->getPackageID(), ProjectUGroup::REGISTERED);
         permission_add_history($package->getGroupID(), FRSPackage::PERM_READ, $package->getPackageID());
     }
 

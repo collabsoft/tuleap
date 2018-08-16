@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,8 +19,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\MessageFactoryBuilder;
 use Tuleap\Tracker\Admin\ArtifactLinksUsageDao;
 use Tuleap\Tracker\Admin\ArtifactLinksUsageUpdater;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactDeletorBuilder;
 use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfig;
 use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfigDao;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
@@ -28,16 +31,30 @@ use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureIsChildLinkRetrie
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\SourceOfAssociationCollectionBuilder;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\SourceOfAssociationDetector;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\SubmittedValueConvertor;
+use Tuleap\Tracker\FormElement\View\Admin\DisplayAdminFormElementsWarningsEvent;
 use Tuleap\Tracker\Notifications\CollectionOfUgroupToBeNotifiedPresenterBuilder;
-use Tuleap\Tracker\Notifications\CollectionOfUserToBeNotifiedPresenterBuilder;
+use Tuleap\Tracker\Notifications\CollectionOfUserInvolvedInNotificationPresenterBuilder;
 use Tuleap\Tracker\Notifications\GlobalNotificationsAddressesBuilder;
 use Tuleap\Tracker\Notifications\GlobalNotificationsEmailRetriever;
+use Tuleap\Tracker\Notifications\GlobalNotificationSubscribersFilter;
+use Tuleap\Tracker\Notifications\NotificationLevelExtractor;
 use Tuleap\Tracker\Notifications\NotificationListBuilder;
+use Tuleap\Tracker\Notifications\NotificationsForceUsageUpdater;
+use Tuleap\Tracker\Notifications\RecipientsManager;
+use Tuleap\Tracker\Notifications\Settings\UserNotificationSettingsDAO;
+use Tuleap\Tracker\Notifications\Settings\UserNotificationSettingsRetriever;
 use Tuleap\Tracker\Notifications\UgroupsToNotifyDao;
+use Tuleap\Tracker\Notifications\UnsubscribersNotificationDAO;
+use Tuleap\Tracker\Notifications\UserNotificationOnlyStatusChangeDAO;
 use Tuleap\Tracker\Notifications\UsersToNotifyDao;
 use Tuleap\Tracker\RecentlyVisited\RecentlyVisitedDao;
 use Tuleap\Tracker\RecentlyVisited\VisitRecorder;
 use Tuleap\Tracker\RecentlyVisited\VisitRetriever;
+use Tuleap\Tracker\Webhook\Actions\AdminWebhooks;
+use Tuleap\Tracker\Webhook\WebhookDao;
+use Tuleap\Tracker\Webhook\WebhookFactory;
+use Tuleap\Tracker\Webhook\WebhookLogsRetriever;
+use Tuleap\Tracker\Webhook\WebhookXMLExporter;
 use Tuleap\Tracker\XML\Updater\FieldChange\FieldChangeComputedXMLUpdater;
 
 require_once('common/date/DateHelper.class.php');
@@ -53,6 +70,14 @@ class Tracker implements Tracker_Dispatchable_Interface
     const PERMISSION_SUBMITTER           = 'PLUGIN_TRACKER_ACCESS_SUBMITTER';
     const PERMISSION_NONE                = 'PLUGIN_TRACKER_NONE';
     const PERMISSION_SUBMITTER_ONLY      = 'PLUGIN_TRACKER_ACCESS_SUBMITTER_ONLY';
+
+    const NOTIFICATIONS_LEVEL_DEFAULT       = 0;
+    const NOTIFICATIONS_LEVEL_DISABLED      = 1;
+    const NOTIFICATIONS_LEVEL_STATUS_CHANGE = 2;
+
+    const NOTIFICATIONS_LEVEL_DEFAULT_LABEL       = 'notifications_level_default';
+    const NOTIFICATIONS_LEVEL_DISABLED_LABEL      = 'notifications_level_disabled';
+    const NOTIFICATIONS_LEVEL_STATUS_CHANGE_LABEL = 'notifications_level_status_change';
 
     const REMAINING_EFFORT_FIELD_NAME = "remaining_effort";
     const ASSIGNED_TO_FIELD_NAME      = "assigned_to";
@@ -78,7 +103,7 @@ class Tracker implements Tracker_Dispatchable_Interface
     public $deletion_date;
     public $instantiate_for_new_projects;
     public $log_priority_changes;
-    public $stop_notification;
+    private $notifications_level;
     private $formElementFactory;
     private $sharedFormElementFactory;
     private $project;
@@ -94,22 +119,25 @@ class Tracker implements Tracker_Dispatchable_Interface
     public $formElements = array();
     public $reports = array();
     public $workflow;
+    public $webhooks = [];
 
-    public function __construct($id,
-            $group_id,
-            $name,
-            $description,
-            $item_name,
-            $allow_copy,
-            $submit_instructions,
-            $browse_instructions,
-            $status,
-            $deletion_date,
-            $instantiate_for_new_projects,
-            $log_priority_changes,
-            $stop_notification,
-            $color,
-            $enable_emailgateway) {
+    public function __construct(
+        $id,
+        $group_id,
+        $name,
+        $description,
+        $item_name,
+        $allow_copy,
+        $submit_instructions,
+        $browse_instructions,
+        $status,
+        $deletion_date,
+        $instantiate_for_new_projects,
+        $log_priority_changes,
+        $notifications_level,
+        $color,
+        $enable_emailgateway
+    ) {
         $this->id                           = $id;
         $this->group_id                     = $group_id;
         $this->name                         = $name;
@@ -122,7 +150,7 @@ class Tracker implements Tracker_Dispatchable_Interface
         $this->deletion_date                = $deletion_date;
         $this->instantiate_for_new_projects = $instantiate_for_new_projects;
         $this->log_priority_changes         = $log_priority_changes;
-        $this->stop_notification            = $stop_notification;
+        $this->notifications_level          = (int) $notifications_level;
         $this->enable_emailgateway          = $enable_emailgateway;
         $this->formElementFactory           = Tracker_FormElementFactory::instance();
         $this->sharedFormElementFactory     = new Tracker_SharedFormElementFactory($this->formElementFactory, new Tracker_FormElement_Field_List_BindFactory());
@@ -271,8 +299,21 @@ class Tracker implements Tracker_Dispatchable_Interface
      *
      * @return boolean true is notifications are stopped for this tracker, false otherwise
      */
-    function isNotificationStopped() {
-        return $this->stop_notification == 1;
+    public function isNotificationStopped() {
+        return (int) $this->notifications_level === self::NOTIFICATIONS_LEVEL_DISABLED;
+    }
+
+    /**
+     * @return int
+     */
+    public function getNotificationsLevel()
+    {
+        return (int) $this->notifications_level;
+    }
+
+    public function setNotificationsLevel($notifications_level)
+    {
+        $this->notifications_level = (int) $notifications_level;
     }
 
     /**
@@ -641,28 +682,6 @@ class Tracker implements Tracker_Dispatchable_Interface
                     $GLOBALS['Response']->redirect(TRACKER_BASE_URL.'/?tracker='. $this->getId());
                 }
                 break;
-            case 'admin-notifications':
-                if ($this->userIsAdmin($current_user)) {
-                    $this->getDateReminderManager()->processReminder($layout, $request, $current_user);
-                    $this->getNotificationsManager()->process($layout, $request, $current_user);
-                } else {
-                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_tracker_admin', 'access_denied'));
-                    $GLOBALS['Response']->redirect(TRACKER_BASE_URL.'/?tracker='. $this->getId());
-                }
-                break;
-            case 'notifications':
-            // you just need to be registered to have access to this part
-                if ($current_user->isLoggedIn()) {
-                    $this->getDateReminderManager()->processReminder($layout, $request, $current_user);
-                    $this->getNotificationsManager()->process($layout, $request, $current_user);
-                } else {
-                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_tracker_admin', 'access_denied'));
-                    $GLOBALS['Response']->redirect(TRACKER_BASE_URL.'/?tracker='. $this->getId());
-                }
-                break;
-            case 'display_reminder_form':
-                print $this->getDateReminderManager()->getDateReminderRenderer()->getNewDateReminderForm();
-                break;
             case 'admin-canned':
             // TODO : project members can access this part ?
                 if ($this->userIsAdmin($current_user)) {
@@ -680,6 +699,15 @@ class Tracker implements Tracker_Dispatchable_Interface
             case Workflow::FUNC_ADMIN_DELETE_TRIGGER:
                 if ($this->userIsAdmin($current_user)) {
                     $this->getWorkflowManager()->process($layout, $request, $current_user);
+                } else {
+                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_tracker_admin', 'access_denied'));
+                    $GLOBALS['Response']->redirect(TRACKER_BASE_URL.'/?tracker='. $this->getId());
+                }
+                break;
+            case AdminWebhooks::FUNC_ADMIN_WEBHOOKS:
+                if ($this->userIsAdmin($current_user)) {
+                    $admin_webhook = new AdminWebhooks($this, $this->getWebhookFactory(), $this->getWebhookLogsRetriever());
+                    $admin_webhook->process($layout, $request, $current_user);
                 } else {
                     $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_tracker_admin', 'access_denied'));
                     $GLOBALS['Response']->redirect(TRACKER_BASE_URL.'/?tracker='. $this->getId());
@@ -823,7 +851,8 @@ class Tracker implements Tracker_Dispatchable_Interface
                     if ($request->exist('confirm')) {
                         $artifact = $this->getTrackerArtifactFactory()->getArtifactById($request->get('id'));
                         if ($artifact && $artifact->getTrackerId() == $this->getId()) {
-                            $artifact->delete($current_user);
+                            $artifact_deletor = ArtifactDeletorBuilder::build();
+                            $artifact_deletor->delete($artifact, $current_user);
                             $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_tracker_admin', 'clean_info_deleted', array($request->get('id'))));
                         } else {
                             $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_tracker_admin', 'clean_error_noart', array($request->get('id'))));
@@ -902,9 +931,9 @@ class Tracker implements Tracker_Dispatchable_Interface
 
     public function createFormElement($type, $formElement_data, $user) {
         if ($type == 'shared') {
-            $this->sharedFormElementFactory->createFormElement($this, $formElement_data, $user);
+            $this->sharedFormElementFactory->createFormElement($this, $formElement_data, $user, false, false);
         } else {
-            $this->formElementFactory->createFormElement($this, $type, $formElement_data);
+            $this->formElementFactory->createFormElement($this, $type, $formElement_data, false, false);
         }
     }
 
@@ -1299,7 +1328,7 @@ class Tracker implements Tracker_Dispatchable_Interface
         if (UserManager::instance()->getCurrentUser()->isLoggedIn()) {
             $toolbar[] = array(
                     'title' => $GLOBALS['Language']->getText('plugin_tracker', 'notifications'),
-                    'url'   => TRACKER_BASE_URL.'/?tracker='. $this->id .'&amp;func=notifications',
+                    'url'   => TRACKER_BASE_URL.'/notifications/my/' . urlencode($this->id) . '/',
             );
         }
         if ($this->userIsAdmin()) {
@@ -1374,7 +1403,7 @@ class Tracker implements Tracker_Dispatchable_Interface
                         'img'         => $GLOBALS['HTML']->getImagePath('ic/48/tracker-canned.png'),
                 ),
                 'editnotifications' => array(
-                        'url'         => TRACKER_BASE_URL.'/?tracker='. $this->id .'&func=notifications',
+                        'url'         => TRACKER_BASE_URL.'/notifications/' . urlencode($this->id) . '/',
                         'short_title' => $GLOBALS['Language']->getText('plugin_tracker_include_type','mail_notif'),
                         'title'       => $GLOBALS['Language']->getText('plugin_tracker_include_type','mail_notif'),
                         'description' => $GLOBALS['Language']->getText('plugin_tracker_include_type','define_notif'),
@@ -1834,12 +1863,29 @@ EOS;
         $breadcrumbs = array_merge(array(
                 $items['editformElements']
                 ), $breadcrumbs);
+
+        $include_assets = new \Tuleap\Layout\IncludeAssets(
+            __DIR__ . '/../../www/assets',
+            TRACKER_BASE_URL . '/assets'
+        );
+
+        $include_assets_css = new \Tuleap\Layout\IncludeAssets(
+            __DIR__ . '/../../www/themes/FlamingParrot/assets',
+            TRACKER_BASE_URL . '/themes/FlamingParrot/assets'
+        );
+
+        $GLOBALS['HTML']->addStylesheet(
+            $include_assets_css->getFileURL('colorpicker.css')
+        );
+
+        $GLOBALS['HTML']->includeFooterJavascriptFile($include_assets->getFileURL('TrackerAdminFields.js'));
+
         $this->displayAdminHeader($layout, $title, $breadcrumbs);
     }
 
     public function displayAdminFormElements(Tracker_IDisplayTrackerLayout $layout, $request, $current_user) {
         $hp = Codendi_HTMLPurifier::instance();
-        $this->displayWarningArtifactByEmailRequiredFields();
+        $this->displayAdminFormElementsWarnings();
         $items = $this->getAdminItems();
         $title = $items['editformElements']['title'];
         $this->displayAdminFormElementsHeader($layout, $title, array());
@@ -2119,12 +2165,14 @@ EOS;
     /**
      * @return Tracker_NotificationsManager
      */
-    public function getNotificationsManager() {
-        $user_to_notify_dao        = new UsersToNotifyDao();
-        $ugroup_to_notify_dao      = new UgroupsToNotifyDao();
-        $notification_list_builder = new NotificationListBuilder(
+    public function getNotificationsManager()
+    {
+        $user_to_notify_dao             = new UsersToNotifyDao();
+        $ugroup_to_notify_dao           = new UgroupsToNotifyDao();
+        $unsubscribers_notification_dao = new UnsubscribersNotificationDAO;
+        $notification_list_builder      = new NotificationListBuilder(
             new UGroupDao(),
-            new CollectionOfUserToBeNotifiedPresenterBuilder($user_to_notify_dao),
+            new CollectionOfUserInvolvedInNotificationPresenterBuilder($user_to_notify_dao, $unsubscribers_notification_dao),
             new CollectionOfUgroupToBeNotifiedPresenterBuilder($ugroup_to_notify_dao)
         );
         return new Tracker_NotificationsManager(
@@ -2132,17 +2180,29 @@ EOS;
             $notification_list_builder,
             $user_to_notify_dao,
             $ugroup_to_notify_dao,
+            new UserNotificationSettingsDAO,
             new GlobalNotificationsAddressesBuilder(),
             UserManager::instance(),
-            new UGroupManager()
+            new UGroupManager(),
+            new GlobalNotificationSubscribersFilter($unsubscribers_notification_dao),
+            new NotificationLevelExtractor(),
+            new \TrackerDao(),
+            new \ProjectHistoryDao(),
+            new NotificationsForceUsageUpdater(
+                new RecipientsManager(
+                    \Tracker_FormElementFactory::instance(),
+                    UserManager::instance(),
+                    $unsubscribers_notification_dao,
+                    new UserNotificationSettingsRetriever(
+                        new Tracker_GlobalNotificationDao(),
+                        new UnsubscribersNotificationDAO(),
+                        new UserNotificationOnlyStatusChangeDAO()
+                    ),
+                    new UserNotificationOnlyStatusChangeDAO()
+                ),
+                new UserNotificationSettingsDAO()
+            )
         );
-    }
-
-    /**
-     * @return Tracker_DateReminderManager
-     */
-    public function getDateReminderManager() {
-        return new Tracker_DateReminderManager($this);
     }
 
     /**
@@ -2529,8 +2589,8 @@ EOS;
         if ($this->log_priority_changes) {
             $xmlElem->addAttribute('log_priority_changes', $this->log_priority_changes);
         }
-        if ($this->stop_notification) {
-            $xmlElem->addAttribute('stop_notification', $this->stop_notification);
+        if ($this->notifications_level) {
+            $xmlElem->addAttribute('notifications_level', $this->notifications_level);
         }
 
         // these will not be used at the import
@@ -2588,6 +2648,9 @@ EOS;
         if(!empty($workflow)) {
             $workflow->exportToXML($child, $xmlMapping);
         }
+
+        $webhook_xml_exporter = $this->getWebhookXMLExporter();
+        $webhook_xml_exporter->exportTrackerWebhooksInXML($xmlElem, $this);
 
         // permissions
         $node_perms      = $xmlElem->addChild('permissions');
@@ -2723,7 +2786,7 @@ EOS;
                         $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_tracker_admin_import', 'error_in_csv_file', array($i)));
                         $is_valid = false;
                     } else {
-                        $lines[] = $line;
+                        $lines[] = $this->getCSVLine($line, $i);
                     }
                     $i++;
                 }
@@ -2833,6 +2896,20 @@ EOS;
         }
     }
 
+    /**
+     * @return array
+     */
+    private function getCSVLine(array $line, $index)
+    {
+        $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        if ($index === 0 && strpos($line[0], $bom) === 0) {
+            $line[0] = substr($line[0], strlen($bom));
+        }
+
+        return $line;
+    }
+
     public function displayWarningArtifactByEmailSemantic() {
         $artifactbyemail_status = $this->getArtifactByMailStatus();
 
@@ -2844,7 +2921,14 @@ EOS;
         }
     }
 
-    public function displayWarningArtifactByEmailRequiredFields() {
+    private function displayAdminFormElementsWarnings()
+    {
+        $this->displayWarningArtifactByEmailRequiredFields();
+        $event = new DisplayAdminFormElementsWarningsEvent($this, $GLOBALS['Response']);
+        EventManager::instance()->processEvent($event);
+    }
+
+    private function displayWarningArtifactByEmailRequiredFields() {
         $artifactbyemail_status = $this->getArtifactByMailStatus();
 
         if (! $artifactbyemail_status->isRequiredFieldsConfigured($this)) {
@@ -3169,7 +3253,7 @@ EOS;
      /**
      * Get UserManager instance
      *
-     * @return Tracker_ArtifactFactory
+     * @return UserManager
      */
     protected function getUserManager() {
         return UserManager::instance();
@@ -3572,10 +3656,17 @@ EOS;
         Tracker_XML_Exporter_FilePathXMLExporter $file_path_xml_exporter,
         PFUser $current_user
     ) {
-        $builder           = new Tracker_XML_Exporter_ArtifactXMLExporterBuilder();
-        $user_xml_exporter = $this->getUserXMLExporter();
+        $builder               = new Tracker_XML_Exporter_ArtifactXMLExporterBuilder();
+        $user_xml_exporter     = $this->getUserXMLExporter();
+        $is_in_archive_context = false;
 
-        return $builder->build($children_collector, $file_path_xml_exporter, $current_user, $user_xml_exporter);
+        return $builder->build(
+            $children_collector,
+            $file_path_xml_exporter,
+            $current_user,
+            $user_xml_exporter,
+            $is_in_archive_context
+        );
     }
 
     private function getUserXMLExporter() {
@@ -3621,5 +3712,35 @@ EOS;
             }
         }
         return false;
+    }
+
+    /**
+     * @return WebhookXMLExporter
+     */
+    protected function getWebhookXMLExporter()
+    {
+        return new WebhookXMLExporter(
+            $this->getWebhookFactory()
+        );
+    }
+
+    /**
+     * @return WebhookFactory
+     */
+    private function getWebhookFactory()
+    {
+        return new WebhookFactory(
+            new WebhookDao()
+        );
+    }
+
+    /**
+     * @return WebhookLogsRetriever
+     */
+    private function getWebhookLogsRetriever()
+    {
+        return new WebhookLogsRetriever(
+            new WebhookDao()
+        );
     }
 }

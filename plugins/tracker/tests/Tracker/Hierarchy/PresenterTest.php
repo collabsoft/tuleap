@@ -17,10 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-require_once TRACKER_BASE_DIR . '/../tests/bootstrap.php';
-
-Mock::generate('Tracker_Hierarchy_HierarchicalTracker');
-Mock::generate('Tracker');
+require_once __DIR__.'/../../bootstrap.php';
 
 class Tracker_Hierarchy_PresenterTest extends TuleapTestCase
 {
@@ -32,10 +29,10 @@ class Tracker_Hierarchy_PresenterTest extends TuleapTestCase
             2 => aTracker()->withId(2)->withName('Tasks')->build()
         );
 
-        $tracker = new MockTracker_Hierarchy_HierarchicalTracker();
-        $tracker->setReturnValue('getUnhierarchizedTracker', aTracker()->build());
-        $tracker->setReturnValue('hasChild', false, array($possible_children[1]));
-        $tracker->setReturnValue('hasChild', true,  array($possible_children[2]));
+        $tracker = \Mockery::spy(\Tracker_Hierarchy_HierarchicalTracker::class);
+        $tracker->shouldReceive('getUnhierarchizedTracker')->andReturns(aTracker()->build());
+        $tracker->shouldReceive('hasChild')->with($possible_children[1])->andReturns(false);
+        $tracker->shouldReceive('hasChild')->with($possible_children[2])->andReturns(true);
 
         $presenter = new Tracker_Hierarchy_Presenter(
             $tracker,

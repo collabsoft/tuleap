@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,6 @@
  * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
-require_once 'www/project/admin/permissions.php';
 
 use Tuleap\Git\Permissions\FineGrainedDao;
 use Tuleap\Git\Permissions\FineGrainedRetriever;
@@ -129,7 +127,7 @@ class GitPermissionsManager
         }
     }
 
-    private function queueProjectsConfigurationUpdate(DataAccessResult $dar) {
+    private function queueProjectsConfigurationUpdate(array $dar) {
         $projects_ids = array();
         if (count($dar) > 0) {
             foreach ($dar as $row) {

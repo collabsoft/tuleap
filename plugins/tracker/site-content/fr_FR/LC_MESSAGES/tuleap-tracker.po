@@ -3,14 +3,14 @@ msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: \n"
-"Last-Translator: Thomas Gorka <thomas.gorka@enalean.com>\n"
+"Last-Translator: Joris MASSON <joris.masson@enalean.com>\n"
 "Language-Team: \n"
 "Language: fr_FR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Poedit 2.0.3\n"
+"X-Generator: Poedit 1.8.7.1\n"
 
 #, php-format
 msgid "%s has been created"
@@ -19,6 +19,14 @@ msgstr "%s a été créé"
 #, php-format
 msgid "%s has been created by %s"
 msgstr "%s a été créé par %s"
+
+#, php-format
+msgid "%s has been successfully moved to %s"
+msgstr "%s a été déplacé avec succès vers %s"
+
+#, php-format
+msgid "%s has been successfully moved to %s in %s"
+msgstr "%s a été déplacé avec succès vers %s dans %s"
 
 #, php-format
 msgid "%s has been updated"
@@ -36,6 +44,9 @@ msgstr "Tracker %s"
 msgid "'%s' is not supported for the operator %s."
 msgstr "'%s' n'est pas supporté pour l'opérateur %s."
 
+msgid "Actions"
+msgstr "Actions"
+
 msgid "Activate artifact links types for all the trackers of this project?"
 msgstr ""
 "Activer les liens entre artéfacts typés pour l'ensemble des outils de suivi "
@@ -45,8 +56,18 @@ msgstr ""
 msgid "Add a new %s"
 msgstr "Ajouter un nouveau %s"
 
+msgid ""
+"Add a target which will be called everytime an artifact is created or "
+"updated. The URL will be called using HTTP POST method."
+msgstr ""
+"Ajoutez une URL cible qui sera appelée à chaque création et mise à jour "
+"d'artéfact. Cette URL sera appelée avec HTTP POST."
+
 msgid "Add notification"
 msgstr "Ajouter une notification"
+
+msgid "Add webhook"
+msgstr "Ajouter un Webhook"
 
 msgid ""
 "After artifact edition, all the disabled types used will be cleared without "
@@ -54,6 +75,24 @@ msgid ""
 msgstr ""
 "Suite à une mise à jour d'artéfact, les types de lien désactivés seront "
 "supprimés sans enlever les liens existants."
+
+msgid ""
+"Archive deleted items plugin is enabled. Each deleted artifact will be "
+"archived in the folder defined in the plugin configuration."
+msgstr ""
+"Le plugin Archivage d'éléments supprimés est activé. Chaque artéfact "
+"supprimé sera archivé dans le dossier défini dans la configuration du plugin."
+
+msgid ""
+"Archive deleted items plugin is not installed or enabled. Each deleted "
+"artifact will be exported and placed in the temporary folder defined in the "
+"local.inc file. They will be purged automatically accordingly to the "
+"settings of the machine on which the server is running."
+msgstr ""
+"Le plugin Archivage d'éléments supprimés n'est pas installé ou activé. "
+"Chaque artéfact supprimé sera exporté et placé dans le dossier temporaire "
+"défini dans le fichier local.inc. Ils seront purgés automatiquement selon la "
+"configuration de la machine sur laquelle le serveur tourne."
 
 #, php-format
 msgid "Artifact (%s) does not belong to this tracker."
@@ -68,6 +107,29 @@ msgstr "Les liens entre artéfacts typés ont été activés."
 msgid "Artifact links types"
 msgstr "Liens entre artéfacts typés"
 
+#, php-format
+msgid "Artifact was moved from '%s' tracker in '%s' project."
+msgstr ""
+"Cet artéfact a été déplacé depuis l'outil de suivi '%s' du projet '%s'."
+
+msgid "Artifacts deletion"
+msgstr "Suppression d'artéfacts"
+
+msgid "Artifacts deletion configuration"
+msgstr "Configuration de la suppression d'artéfacts"
+
+msgid "Artifacts with artifact links can not be moved."
+msgstr ""
+"Les artéfacts avec des liens vers d'autres artéfacts ne peuvent pas être "
+"déplacés."
+
+msgid ""
+"As a tracker administrator, you can choose the e-mail notifications level in "
+"this tracker."
+msgstr ""
+"En tant qu'administrateur de l'outil de suivi, vous pouvez choisir le niveau "
+"de configuration des notifications par e-mail de cet outil de suivi."
+
 msgid ""
 "As a tracker administrator, you can provide email addresses to which new "
 "Artifact submissions (and possibly updates) will be systematically sent."
@@ -75,6 +137,20 @@ msgstr ""
 "En tant qu'administrateur de l'outil de suivi, vous pouvez spécifier des "
 "adresses e-mail qui recevront systématiquement les notifications de "
 "soumission (et éventuellement de modification) d'artefacts."
+
+msgid ""
+"Be careful, all the artifact content is sent in the payload without "
+"permission checks."
+msgstr ""
+"Attention, tout le contenu de l'artéfact est envoyé dans le payload sans "
+"prise en compte des permissions."
+
+msgid ""
+"Be careful: An artifact deletion is an action hardly reversible. Choose "
+"wisely."
+msgstr ""
+"Attention : Une suppression d'artéfact est une action difficilement "
+"réversible. Réfléchissez bien."
 
 msgid "Burndown is under calculation. It will be available in a few minutes."
 msgstr ""
@@ -85,6 +161,9 @@ msgstr "Annuler"
 
 msgid "Check permissions?"
 msgstr "Vérifier les permissions ?"
+
+msgid "Close"
+msgstr "Fermer"
 
 msgid "Comment"
 msgstr "Commentaire"
@@ -98,17 +177,50 @@ msgstr "Configurer les trackers"
 msgid "Confirm deletion"
 msgstr "Confirmer la suppression"
 
+msgid "Default Tuleap notifications"
+msgstr "Notifications par défaut"
+
+msgid ""
+"Default Tuleap notifications (people will get notified when they are "
+"submitter, assignee, commenter or CC)"
+msgstr ""
+"Notifications par défaut (les gens sont notifiés lorsqu'ils ont soumis, sont "
+"assignés, ont commenté ou sont en CC)"
+
+msgid "Default notifications"
+msgstr "Notifications par défaut"
+
 msgid "Delete"
 msgstr "Supprimer"
 
 msgid "Edit"
 msgstr "Éditer"
 
+msgid "Edit webhook"
+msgstr "Éditer un webhook"
+
+msgid "Email Notifications Settings"
+msgstr "Options de notification"
+
+msgid "Enable custom sender fields for email notifications"
+msgstr ""
+"Permettre la personnalisation des champs émetteurs pour les notifications "
+"par e-mail"
+
+msgid "Enable notifications"
+msgstr "Activer les notifications"
+
+msgid "Enable notifications for this tracker"
+msgstr "Activer les notifications pour cet outil de suivi"
+
 msgid "Error during parsing expert query"
 msgstr "Erreur pendant l'analyse de la requête experte"
 
 msgid "Field value cannot be empty"
 msgstr "La valeur du champ ne peux pas être vide"
+
+msgid "Force notification configuration usage to all users"
+msgstr "Forcer la configuration des notifications à tous les utilisateurs"
 
 #, php-format
 msgid "Group '%s' couldn't be added."
@@ -119,11 +231,60 @@ msgstr[1] "Les groupes '%s' n'ont pas pu être ajoutés"
 msgid "Hierarchy"
 msgstr "Hiérarchie"
 
+msgid "Last push"
+msgstr "Dernier push"
+
+msgid "Limit"
+msgstr "Limite"
+
+msgid "Limit successfully updated."
+msgstr "Limite mise à jour avec succès."
+
+msgid "Logs"
+msgstr "Historique"
+
+msgid "Logs for %s"
+msgstr "Historique pour %s"
+
+msgid "Mail configuration"
+msgstr "Configuration des e-mail"
+
+msgid ""
+"Maximum number of artifacts users can delete or move from the REST API on a "
+"24 hours sliding window."
+msgstr ""
+"Nombre maximum d'artéfacts que les utilisateurs peuvent supprimer ou "
+"déplacer depuis l'API REST sur une période de 24 heures."
+
+msgid "Move artifact"
+msgstr "Déplacer l'artéfact"
+
+msgid "No color"
+msgstr "Pas de couleur"
+
 msgid "No element selected."
 msgstr "Aucun élément sélectionné."
 
+msgid "No logs yet"
+msgstr "Pas encore d'historique"
+
 msgid "No notification set"
 msgstr "Aucune notification n'a été définie"
+
+msgid "No notifications"
+msgstr "Aucune notification n'a été définie"
+
+msgid "No notifications at all"
+msgstr "Aucune notification"
+
+msgid "No semantic defined in this tracker."
+msgstr "Aucune sémantique n'est définie pour cet outil de suivi."
+
+msgid "No users have unsubscribed."
+msgstr "Aucun utilisateur ne s'est désabonné."
+
+msgid "No webhooks defined"
+msgstr "Aucun webhook n'est défini"
 
 msgid "Notification successfully deleted."
 msgstr "La notification a été supprimée"
@@ -131,11 +292,33 @@ msgstr "La notification a été supprimée"
 msgid "Notification successfully saved."
 msgstr "Notification enregistrée avec succès."
 
+msgid "Notifications"
+msgstr "Notifications"
+
 msgid "Notified people"
 msgstr "Personnes notifiées"
 
+msgid ""
+"Notify me on all updates of artifacts I'm involved (assigned, submitter, cc, "
+"comment)"
+msgstr ""
+"Me notifier pour toutes les mises à jour d'artéfact où je suis impliqué "
+"(assigné, soumis, cc, commentaire)"
+
+msgid "Notify me on every change"
+msgstr "Me notifier à chaque changement"
+
+msgid "Notify me on status change"
+msgstr "Me notifier à chaque changement de statut"
+
+msgid "Notify me when artifacts are created"
+msgstr "Me notifier lors de la création d'un nouveau artéfact"
+
 msgid "On all updates?"
 msgstr "À chaque modification ?"
+
+msgid "Please provide a valid limit."
+msgstr "Veuillez fournir une limite valide."
 
 msgid ""
 "Please reactivate the \"_is_child\" artifact link type to be able to define "
@@ -144,17 +327,70 @@ msgstr ""
 "Merci d'activer le lien entre artéfacts \"_is_child\" afin de pouvoir "
 "définir une hiérarchie entre outils de suivi."
 
+msgid "Remove"
+msgstr "Enlever"
+
 msgid "Renderer id"
 msgstr "Id du rendu"
 
+msgid "Return type"
+msgstr "Retour"
+
 msgid "Save"
 msgstr "Sauvegarder"
+
+msgid "Save webhook"
+msgstr "Sauvegarder le webhook"
 
 msgid ""
 "Some selected values was not saved because they are used in another semantic."
 msgstr ""
 "Certaines valeurs selectionnées n'ont pu être enregistrées car elle sont "
 "utilisées par une autre sémantique."
+
+msgid "Something went wrong."
+msgstr "Quelque chose s'est mal passé."
+
+msgid "Status change notifications"
+msgstr "Notifications lors de la mise à jour du statut"
+
+msgid ""
+"Status change notifications (people will get notified when they are "
+"submitter, assignee, commenter or CC and artifact status is updated)"
+msgstr ""
+"Notifications lors de la mise à jour du statut (les gens sont notifiés "
+"lorsqu'ils ont soumis, sont assignés, ont commenté ou sont en CC)"
+
+msgid "Submit"
+msgstr "Valider"
+
+msgid "Submit Changes"
+msgstr "Valider"
+
+msgid "Suspend all notifications"
+msgstr "Suspendre toutes les notifications"
+
+msgid ""
+"Suspend all notifications, regardless of user preferences and regardless of "
+"\"Global Email Notifications\" below."
+msgstr ""
+"Désactiver les notifications quelles que soient les préférences utilisateur "
+"et les \"Notification e-mail globale\" ci-dessous."
+
+msgid "Suspend notifications"
+msgstr "Suspendre les notification"
+
+msgid "Switch to default colors"
+msgstr "Passer aux couleurs par défaut"
+
+msgid "Switch to old colors"
+msgstr "Passer aux anciennes couleurs"
+
+msgid "Target URL:"
+msgstr "URL cible :"
+
+msgid "That tracker does not exist."
+msgstr "Cet outil de suivi n'existe pas."
 
 #, php-format
 msgid "The @comments metadata cannot be compared to MYSELF()."
@@ -250,6 +486,22 @@ msgid ""
 msgstr ""
 "Le champ '%s' n'est pas supporté. Merci de vous référer à la documentation "
 "pour les types de champs autorisés."
+
+#, php-format
+msgid "The file field '%s' cannot be compared to MYSELF()."
+msgstr "Le champ fichier '%s' ne peut pas être comparé à MYSELF()."
+
+#, php-format
+msgid "The file field '%s' cannot be compared to NOW()."
+msgstr "Le champ fichier '%s' ne peut pas être comparé à NOW()."
+
+#, php-format
+msgid "The file field '%s' cannot be compared to OPEN()."
+msgstr "Le champ fichier '%s' ne peut pas être comparé à OPEN()."
+
+#, php-format
+msgid "The file field '%s' cannot be compared to the value '%s'."
+msgstr "Le champ fichier '%s' ne peut pas être comparé à la valeur '%s'."
 
 #, php-format
 msgid "The float field '%s' cannot be compared to MYSELF()."
@@ -415,6 +667,9 @@ msgstr ""
 "Le rapport a été trié sur cette colonne. Cette colonne ne permet cependant "
 "pas le tri. Le tri a donc été ignoré. Veuillez choisir une autre colonne."
 
+msgid "The submitted URL is not valid."
+msgstr "L'URL soumise n'est pas valide."
+
 #, php-format
 msgid "The text field '%s' cannot be compared to MYSELF()."
 msgstr "Le champ texte '%s' ne peut pas être comparé à MYSELF()."
@@ -427,8 +682,19 @@ msgstr "Le champ texte '%s' ne peut pas être comparé à NOW()."
 msgid "The text field '%s' cannot be compared to OPEN()."
 msgstr "Le champ texte '%s' ne peut pas être comparé à OPEN()."
 
+#, php-format
+msgid ""
+"The tracker '%s' cannot be updated because it doesn't exist. Try again "
+"without \"--update\""
+msgstr ""
+"L'outil de suivi '%s' ne peut pas être mis à jour parce qu'il n'existe pas. "
+"Réessayez sans l'option '--update'"
+
 msgid "The tracker hierarchy cannot be defined."
 msgstr "La hiérarchie entre outils de suivi ne peut être définie."
+
+msgid "The unsubscribe list has been successfully updated."
+msgstr "La liste des désabonnements ont été mise à jour avec succès."
 
 #, php-format
 msgid "The value '%s' doesn't exist for the list field '%s'."
@@ -436,6 +702,9 @@ msgstr "La valeur '%s' n’existe pas pour le champ liste ‘%s’."
 
 msgid "This template does not use trackers"
 msgstr "Ce patron n'utilise pas les trackers"
+
+msgid "Time"
+msgstr "Date"
 
 msgid "Tracker"
 msgstr "Tracker"
@@ -455,6 +724,18 @@ msgstr "Rendu d'un tracker"
 msgid "Tracker service is disabled."
 msgstr "Le service tracker est désactivé."
 
+msgid "Trackers"
+msgstr "Trackers"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "Unsubscribe a user"
+msgstr "Désabonner un utilisateur"
+
+msgid "Unsubscribers"
+msgstr "Désabonnés"
+
 msgid "Use"
 msgstr "Utiliser"
 
@@ -466,6 +747,12 @@ msgstr[1] "Les utilisateurs '%s' n'ont pas pu être ajoutés"
 
 msgid "User, group, email"
 msgstr "Utilisateur, groupe, email"
+
+msgid "User..."
+msgstr "Utilisateur..."
+
+msgid "Users having unsubscribed from the notifications"
+msgstr "Utilisateurs s'étant désabonné des notifications"
 
 msgid "Wait a minute..."
 msgstr "Attendez une minute..."
@@ -486,13 +773,84 @@ msgstr[1] ""
 "fait référence. Merci de vous référer à la documentation pour les "
 "comparaisons autorisées."
 
+msgid "Webhook sucessfully created"
+msgstr "Le webhook a été créé"
+
+msgid "Webhook sucessfully deleted"
+msgstr "Le webhook a été supprimé"
+
+msgid "Webhook sucessfully updated"
+msgstr "Le webhook a été mis à jour"
+
+msgid "Webhooks"
+msgstr "Webhooks"
+
 msgid "You are about to remove the notification. Please confirm your action."
 msgstr ""
 "Vous êtes sur le point de supprimer la notification. Merci de confirmer "
 "votre action."
 
+msgid ""
+"You are about to remove the user from the unsubscriber list. Please confirm "
+"your action."
+msgstr ""
+"Vous êtes sur le point de supprimer l'utilisateur de la liste des "
+"désabonnements.Merci de confirmer votre action."
+
+msgid "You are about to remove the webhook. Please confirm your action."
+msgstr ""
+"Vous êtes sur le point de supprimer le webhook. Veuillez confirmer la "
+"suppression."
+
+msgid "You can choose the notification mode you wish for this tracker."
+msgstr ""
+"Vous pouvez sélectionner le mode de notification que vous préférez pour ce "
+"tracker."
+
+msgid ""
+"You can define several webhooks that will be processed after each artifact "
+"creation and updates."
+msgstr ""
+"Vous pouvez définir plusieurs webhooks qui seront envoyés après chaque "
+"création et édition d'artéfact."
+
+msgid ""
+"You can use variables to customize the sender field. The available variables "
+"are %%realname and %%username.\n"
+"    These will be replaced by the full name and username of the user who "
+"updated the artifact."
+msgstr ""
+"Vous pouvez utiliser des variables pour personnaliser le champ expéditeur. "
+"Les variables disponibles sont %%realname et %%username.\n"
+"    Celles-ci seront remplacées par le nom complet et le nom d'utilisateur "
+"de la personne qui a mis uà jour l'artefact."
+
+msgid ""
+"You can't choose your notifications level for this tracker because tracker "
+"administrator has suspended all notifications."
+msgstr ""
+"Vous ne pouvez pas choisir votre mode de notification pour cet outil de "
+"suivi parce que l'administrateur a suspendu toutes les notifications."
+
+msgid ""
+"You can't switch to old colors because the field is currently being used by "
+"the card background color semantic"
+msgstr ""
+"Vous ne pouvez pas passer à l'ancienne palette car le champ est actuellement "
+"utilisé par la sémantique couleur de fond des cartes"
+
 msgid "You don't have permissions to see user groups."
 msgstr "Vous n'avez pas la permission de consulter les groupes d'utilisateur."
+
+msgid ""
+"You must configure a status semantic if you want to use the \"status change "
+"notifications\" notification level for this tracker."
+msgstr ""
+"Vous devez configurer la sémantique status si vous voulez utiliser le niveau "
+"de notification \"mise à jour du status\" pour ce tracker"
+
+msgid "Your notification settings have been successfully updated"
+msgstr "Vos paramètres de notification ont été mis à jour avec succès"
 
 msgid ""
 "changed. (But text is too long, we are unable to compute the differences in "

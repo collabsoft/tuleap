@@ -21,39 +21,28 @@
 
 namespace Tuleap\Httpd;
 
-use Tuleap\Queue\QueueFactory;
+use Tuleap\Event\Dispatchable;
 use Logger;
-use WrapperLogger;
 
 /**
  * Event emitted after HTTP log rotation
  */
-class PostRotateEvent
+class PostRotateEvent implements Dispatchable
 {
-    const QUEUE_PREFIX = 'httpd_postrotate';
-
-    const TOPIC        = 'tuleap.httpd.log';
+    const NAME = 'httpdPostRotate';
 
     /**
      * @var Logger
      */
     private $logger;
 
-    /**
-     * @var \Tuleap\Queue\PersistentQueue
-     */
-    private $queue;
-
     public function __construct(Logger $logger)
     {
-        $this->logger = new WrapperLogger($logger, 'httpd.postrotate');
-        $this->queue  = QueueFactory::getPersistentQueue($this->logger, self::QUEUE_PREFIX);
+        $this->logger = $logger;
     }
 
-    public function push($arg)
+    public function getLogger()
     {
-        $this->logger->info('Send message to '.self::TOPIC);
-        $this->queue->pushSinglePersistentMessage(self::TOPIC, $arg);
-        $this->logger->debug('Done');
+        return $this->logger;
     }
 }

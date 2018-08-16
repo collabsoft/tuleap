@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -424,8 +424,10 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
         //Field values
         foreach($this->getBind()->getAllValues() as $id => $value) {
             $selected = in_array($id, $criteria_value) ? 'selected="selected"' : '';
-            $style = $this->getBind()->getSelectOptionInlineStyle($id);
-            $html .= '<option value="'. $id .'"  title="'. $this->getBind()->formatCriteriaValue($id) .'" '. $selected .' style="'. $style .'">';
+
+            $styles = $this->getBind()->getSelectOptionStyles($id);
+
+            $html .= '<option value="'. $id .'"  title="'. $this->getBind()->formatCriteriaValue($id) .'" '. $selected .' style="'. $styles['inline-styles'] . '" class="' . $styles['classes'] . '">';
             $html .= $this->getBind()->formatCriteriaValue($id);
             $html .= '</option>';
         }
@@ -440,7 +442,7 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
      * to enhance the user experience
      * @return string
      */
-    public function fetchCriteriaAdditionnalInfo() {
+    public function fetchCriteriaAdditionnalInfo($criteria) {
         return ''; //$this->getBind()->fetchDecoratorsAsJavascript();
     }
     /**
@@ -753,7 +755,7 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
     }
 
     /**
-     * @return array of BindValues
+     * @return Tracker_FormElement_Field_List_BindValue[]
      */
     public function getAllValues() {
         return $this->getBind()->getAllValues();
@@ -890,9 +892,12 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
         } else {
             $label = $this->getBind()->formatArtifactValue($id);
         }
-        $style    = $this->getBind()->getSelectOptionInlineStyle($id);
+
+        $styles = $this->getBind()->getSelectOptionStyles($id);
+
         $selected = $is_selected ? 'selected="selected"' : '';
-        return '<option value="'. $id .'" '. $selected .' title="'. $label .'" style="'. $style .'">'. $label .'</option>';
+
+        return '<option value="'. $id .'" '. $selected .' title="'. $label .'" style="'. $styles['inline-styles'] . '" class="' .  $styles['classes'] .' ">'. $label .'</option>';
     }
 
     protected function fetchFieldContainerEnd() {
@@ -927,8 +932,9 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
 
         foreach($this->getBind()->getAllValues() as $id => $value) {
                     if (!$value->isHidden()) {
-                        $style = $this->getBind()->getSelectOptionInlineStyle($id);
-                        $html .= '<option value="'. $id .'" title="'. $this->getBind()->formatArtifactValue($id) .'" style="'. $style .'">';
+                        $styles  = $this->getBind()->getSelectOptionStyles($id);
+
+                        $html .= '<option value="'. $id .'" title="'. $this->getBind()->formatArtifactValue($id) .'" style="'. $styles['inline-styles'] . '" classe="' . $styles['classes'] .'">';
                         $html .= $this->getBind()->formatArtifactValue($id);
                         $html .= '</option>';
                     }
@@ -1002,47 +1008,50 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
     /**
      * @see Tracker_FormElement_Field::fetchCardValue()
      */
-    public function fetchCardValue(Tracker_Artifact $artifact, Tracker_CardDisplayPreferences $display_preferences) {
+    public function fetchCardValue(
+        Tracker_Artifact $artifact,
+        Tracker_CardDisplayPreferences $display_preferences = null
+    ) {
         $html = '';
         //We have to fetch all values of the changeset as we are a list of value
         //This is the case only if we are multiple but an old changeset may
         //contain multiple values
         $values = array();
-        foreach($this->getBind()->getChangesetValues($artifact->getLastChangeset()->id) as $v) {
+        foreach ($this->getBind()->getChangesetValues($artifact->getLastChangeset()->id) as $v) {
             $val = $this->getBind()->formatCardValue($v, $display_preferences);
             if ($val != '') {
                 $values[] = $val;
             }
         }
         $html .= implode(' ', $values);
+
         return $html;
     }
 
     /**
      * Update the form element.
      * Override the parent function to handle binds
-     *
-     * @return void
      */
-    protected function processUpdate(TrackerManager $tracker_manager, $request, $current_user) {
+    protected function processUpdate(Tracker_IDisplayTrackerLayout $layout, $request, $current_user, $redirect = false)
+    {
         $redirect = false;
         if ($request->exist('bind')) {
             $redirect = $this->getBind()->process($request->get('bind'), $no_redirect = true);
         }
-        parent::processUpdate($tracker_manager, $request, $current_user, $redirect);
+        parent::processUpdate($layout, $request, $current_user, $redirect);
     }
 
     /**
      * Hook called after a creation of a field
      *
-     * @param array $data The data used to create the field
-     *
-     * @return void
+     * @param array $form_element_data
+     * @param bool $tracker_is_empty
      */
-    public function afterCreate($formElement_data) {
-        parent::afterCreate();
-        $type      = isset($formElement_data['bind-type']) ? $formElement_data['bind-type'] : '';
-        $bind_data = isset($formElement_data['bind'])      ? $formElement_data['bind']      : array();
+    public function afterCreate(array $form_element_data, $tracker_is_empty)
+    {
+        parent::afterCreate($form_element_data, $tracker_is_empty);
+        $type      = isset($form_element_data['bind-type']) ? $form_element_data['bind-type'] : '';
+        $bind_data = isset($form_element_data['bind']) ? $form_element_data['bind'] : array();
 
         $bf = new Tracker_FormElement_Field_List_BindFactory();
         if ($this->bind = $bf->createBind($this, $type, $bind_data)) {
@@ -1082,10 +1091,9 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
      * Continue the initialisation from an xml (FormElementFactory is not smart enough to do all stuff.
      * Polymorphism rulez!!!
      *
-     * @param SimpleXMLElement $xml         containing the structure of the imported Tracker_FormElement
-     * @param array            &$xmlMapping where the newly created formElements indexed by their XML IDs are stored (and values)
-     *
-     * @return void
+     * @param SimpleXMLElement                          $xml         containing the structure of the imported Tracker_FormElement
+     * @param array                                     &$xmlMapping where the newly created formElements indexed by their XML IDs are stored (and values)
+     * @param User\XML\Import\IFindUserFromXMLReference $user_finder
      */
      public function continueGetInstanceFromXML(
          $xml,
@@ -1104,10 +1112,10 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
      * Callback called after factory::saveObject. Use this to do post-save actions
      *
      * @param Tracker $tracker The tracker
-     *
-     * @return void
+     * @param bool $tracker_is_empty
      */
-    public function afterSaveObject(Tracker $tracker) {
+    public function afterSaveObject(Tracker $tracker, $tracker_is_empty, $force_absolute_ranking)
+    {
         $bind = $this->getBind();
         $this->getListDao()->save($this->getId(), $this->getBindFactory()->getType($bind));
         $bind->saveObject();
@@ -1197,7 +1205,7 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
             . ' Example: {"field_id": 1548, "bind_value_ids": [457]}');
      }
 
-    public function getFieldDataFromRESTValueByField($value, Tracker_Artifact $artifact = null) {
+    public function getFieldDataFromRESTValueByField(array $value, Tracker_Artifact $artifact = null) {
         throw new Tracker_FormElement_RESTValueByField_NotImplementedException();
     }
 
@@ -1363,7 +1371,8 @@ abstract class Tracker_FormElement_Field_List extends Tracker_FormElement_Field 
     /**
      * @return bool
      */
-    protected function checkValueExists($value_id) {
+    public function checkValueExists($value_id)
+    {
         return $this->getBind()->isExistingValue($value_id) ||
                $value_id == Tracker_FormElement_Field_List::NONE_VALUE ||
                $value_id == Tracker_FormElement_Field_List::NOT_INDICATED_VALUE;

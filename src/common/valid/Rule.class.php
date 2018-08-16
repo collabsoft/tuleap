@@ -1,23 +1,24 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
  *
  * Originally written by Manuel VACELET, 2007.
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -100,7 +101,7 @@ extends Rule {
      * @access private
      */
     var $ref;
-    function Rule_Comparator($ref) {
+    function __construct($ref) {
         $this->ref = $ref;
     }
 }
@@ -274,14 +275,14 @@ class Rule_Email
 extends Rule {
     var $separator;
 
-    function Rule_Email($separator = null) {
+    function __construct($separator = null) {
         $this->separator = $separator;
     }
 
     function isValid($val) {
         if($this->separator !== null) {
             // If separator is defined, split the string and check each email.
-            $emails = split($this->separator, $val);
+            $emails = preg_split('/' . $this->separator . '/D', $val);
             $valid = true;
             while((list($key,$email) = each($emails)) && $valid) {
                 $valid = $valid & $this->validEmail(trim(rtrim($email)));
@@ -552,7 +553,7 @@ extends Rule {
      *
      * @return String
      */
-    public function getErrorMessage() {
+    public function getErrorMessage($key = '') {
         return $this->error;
     }
 
@@ -755,7 +756,7 @@ class Rule_ProjectFullName extends Rule_UserName {
      *
      * @return String
      */
-    public function getErrorMessage() {
+    public function getErrorMessage($key = '') {
         return $this->error;
     }
 
@@ -777,7 +778,7 @@ extends Rule {
     var $maxSize;
     var $i18nPageName;
 
-    function Rule_File() {
+    function __construct() {
         $this->maxSize = $GLOBALS['sys_max_size_upload'];
         $this->i18nPageName = 'rule_file';
     }

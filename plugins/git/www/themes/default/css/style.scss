@@ -151,10 +151,6 @@ td.plugin_git_first_col {
     margin-top: 18px;
 }
 
-#gitphp.plugin_git_gitphp .page_header .logo {
-    display: none;
-}
-
 #gitphp.plugin_git_gitphp td,
 #gitphp.plugin_git_gitphp td.link,
 #gitphp.plugin_git_gitphp div.search {
@@ -998,4 +994,9 @@ h1, h2, h3 {
 
 .git-notification-mail-list-submit {
     margin: 15px 0 0;
+}
+
+.git-checkout-command::before {
+    content: '$';
+    margin: 0 1em 0 0;
 }

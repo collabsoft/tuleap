@@ -1,23 +1,33 @@
 <?php
 /**
-* Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
-* 
-* 
-*
-* Docman_View_GetSpecificFieldsVisitor
-*/
-
-require_once(dirname(__FILE__).'/../Docman_ValidateUpload.class.php');
-require_once(dirname(__FILE__).'/../Docman_MetadataHtml.class.php');
+ * Copyright (c) Enalean, 2014-2018. All Rights Reserved.
+ * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 class Docman_MetadataHtmlWiki extends Docman_MetadataHtml {
     var $pagename;
 
-    function Docman_MetadataHtmlWiki($pagename) {
+    function __construct($pagename) {
         $this->pagename = $pagename;
     }
 
-    function getLabel() {
+    public function getLabel($show_mandatory_information = true)
+    {
         return $GLOBALS['Language']->getText('plugin_docman', 'specificfield_pagename');
     }
     
@@ -37,11 +47,12 @@ class Docman_MetadataHtmlWiki extends Docman_MetadataHtml {
 class Docman_MetadataHtmlLink extends Docman_MetadataHtml {
     var $link_url;
 
-    function Docman_MetadataHtmlLink($link_url) {
+    function __construct($link_url) {
         $this->link_url = $link_url;
     }
 
-    function getLabel() {
+    public function getLabel($show_mandatory_information = true)
+    {
         return $GLOBALS['Language']->getText('plugin_docman', 'specificfield_url');
     }
     
@@ -60,11 +71,12 @@ class Docman_MetadataHtmlLink extends Docman_MetadataHtml {
 
 class Docman_MetadataHtmlFile extends Docman_MetadataHtml {
    
-    function Docman_MetadataHtmlFile() {
+    function __construct() {
         
     }
 
-    function getLabel() {
+    public function getLabel($show_mandatory_information = true)
+    {
         return $GLOBALS['Language']->getText('plugin_docman', 'specificfield_embeddedcontent');
     }
     
@@ -75,7 +87,11 @@ class Docman_MetadataHtmlFile extends Docman_MetadataHtml {
         return $html;
     }
 
-    function &getValidator(&$request) {
+    public function &getValidator($request = null)
+    {
+        if ($request === null) {
+            $request = HTTPRequest::instance();
+        }
         $validator = new Docman_ValidateUpload($request);
         return $validator;
     }
@@ -84,11 +100,12 @@ class Docman_MetadataHtmlFile extends Docman_MetadataHtml {
 
 class Docman_MetadataHtmlEmbeddedFile extends Docman_MetadataHtml {
     var $content;
-    function Docman_MetadataHtmlEmbeddedFile($content) {
+    function __construct($content) {
         $this->content = $content;
     }
 
-    function getLabel() {
+    public function getLabel($show_mandatory_information = true)
+    {
         return $GLOBALS['Language']->getText('plugin_docman', 'specificfield_embeddedcontent');
     }
     
@@ -110,10 +127,11 @@ class Docman_MetadataHtmlEmbeddedFile extends Docman_MetadataHtml {
  */
 class Docman_MetadataHtmlEmpty extends Docman_MetadataHtml {
 
-    function Docman_MetadataHtmlEmpty() {
+    function __construct() {
     }
 
-    function getLabel() {
+    public function getLabel($show_mandatory_information = true)
+    {
         return $GLOBALS['Language']->getText('plugin_docman', 'specificfield_empty');
     }
     

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,6 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+use Tuleap\Tracker\Colorpicker\ColorpickerMountPointPresenter;
 
 require_once 'common/layout/ColorHelper.class.php';
 
@@ -49,13 +51,24 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
         return $html;
     }
 
-    private function fetchMappings() {
+    private function fetchMappings()
+    {
         $html  = '';
         $html .= '<table class="cardwall_admin_ontop_mappings"><thead><tr valign="top">';
         $html .= '<td></td>';
         foreach ($this->config->getDashboardColumns() as $column) {
             $html .= '<th>';
-            $html .= '<div class="cardwall-column-header-color" style="background-color: '. $column->bgcolor .'; color: '. $column->fgcolor .';"></div>';
+            if ($column->isHeaderATLPColor()) {
+                $color = $this->hp->purify($column->getHeadercolor());
+                $html .= '<div class="cardwall-column-header-color cardwall-column-header-color-'. $color . '"></div>';
+            } else {
+                $hexa_color = $column->getHeadercolor();
+                if (preg_match('/^#([a-fA-F0-9]{3}){1,2}$/', $hexa_color) !== 1) {
+                    $hexa_color = '';
+                }
+                $html .= '<div class="cardwall-column-header-color" style="background-color: '. $hexa_color .'"></div>';
+            }
+
             $html .= $this->fetchColumnHeader($column);
             $html .= '</th>';
         }
@@ -124,7 +137,6 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
             $html .= '</td>';
         }
         return $html;
-        return;
     }
 
     public function visitTrackerMappingFreestyle($mapping) {
@@ -175,7 +187,7 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
             $html .= '<select name="mapping_field['. (int)$mapping_tracker->getId() .'][values]['. $column_id .'][]" multiple="multiple" size="'. count($field_values) .'">';
             foreach ($field_values as $value) {
                 $selected = '';
-                
+
                 //TODO rather use the TrackerMapping and ask it some question, cannot rely on the fact that this array is indexed
                 // on value->getId(), for instance in the case of status mappings it ain't!
                 if (isset($mapping_values[$value->getId()]) && $mapping_values[$value->getId()]->getColumnId() == $column_id) {
@@ -207,27 +219,33 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
         return $html;
     }
 
-    private function decorateEdit($column) {
-        $id   = 'column_'. $column->id .'_field';
-        $hexa = ColorHelper::CssRGBToHexa($column->bgcolor);
-        $html = $this->fetchSquareColor('column_'.$column->id, $column->bgcolor, 'colorpicker');
-        $html .= '<input id="'.$id .'" type="text" size="6" autocomplete="off" name="column['. $column->id .'][bgcolor]" value="'. $hexa .'" />';
-        return $html;
-    }
+    private function decorateEdit(Cardwall_Column $column)
+    {
+        if ($column->isHeaderATLPColor()) {
+            $current_color = $column->getHeadercolor();
+        } else {
+            $current_color = ColorHelper::CssRGBToHexa($column->getHeadercolor());
+            if (preg_match('/^#([a-fA-F0-9]{3}){1,2}$/', $current_color) !== 1) {
+                $current_color = '';
+            }
+        }
 
-    private function fetchSquareColor($id, $title, $classname, $img = 'blank16x16.png') {
-        $html = '';
-        $bgcolor = "background-color:$title;";
+        $input_id   = 'column_'. $column->id .'_field';
+        $input_name = "column[$column->id][bgcolor]";
 
-        $html .= $GLOBALS['HTML']->getImage($img, array(
-            'id'     => $id,
-            'width'  => '16px',
-            'height' => '16px',
-            'style'  => 'margin-left: 5px; border: 1px solid black; vertical-align:middle; '. $bgcolor,
-            'title'  => $title,
-            'class'  => $classname,
-        ));
-        return $html;
+        $renderer = TemplateRendererFactory::build()->getRenderer(
+            TRACKER_TEMPLATE_DIR  . '/colorpicker/'
+        );
+
+        return $renderer->renderToString(
+            'colorpicker-mount-point',
+            new ColorpickerMountPointPresenter(
+                $current_color,
+                $input_name,
+                $input_id,
+                false
+            )
+        );
     }
 
     protected function fetchAdditionalColumnHeader() {
@@ -267,4 +285,3 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
         return $GLOBALS['Language']->getText($page, $category, $args);
     }
 }
-?>

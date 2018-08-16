@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,6 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\DAO\ComputedDao;
 use Tuleap\Tracker\FormElement\ComputedFieldCalculator;
 use Tuleap\Tracker\FormElement\FieldCalculator;
 
@@ -55,7 +56,7 @@ class Tracker_FormElement_Field_Computed_StorableValue extends TuleapTestCase
         $this->submitter        = aUser()->build();
         $this->new_changeset_value_id = 66666;
 
-        $this->value_dao = mock('Tracker_FormElement_Field_Value_ArtifactLinkDao');
+        $this->value_dao = mock(ComputedDao::class);
         stub($this->field)->getValueDao()->returns($this->value_dao);
         $changeset_value_dao = stub('Tracker_Artifact_Changeset_ValueDao')->save()->returns($this->new_changeset_value_id);
         stub($this->field)->getChangesetValueDao()->returns($changeset_value_dao);
@@ -112,6 +113,7 @@ class Tracker_FormElement_Field_Computed_HasChanges extends TuleapTestCase
     public function itDetectsChangeWhenBackToAutocompute()
     {
         stub($this->old_value)->getNumeric()->returns(1.0);
+        stub($this->old_value)->isManualValue()->returns(true);
         $submitted_value = array(
             'manual_value'    => '',
             'is_autocomputed' => true
@@ -123,6 +125,7 @@ class Tracker_FormElement_Field_Computed_HasChanges extends TuleapTestCase
     public function itDetectsChangeWhenBackToManualValue()
     {
         stub($this->old_value)->getNumeric()->returns(null);
+        stub($this->old_value)->isManualValue()->returns(false);
         $submitted_value = array(
             'manual_value'    => '123',
             'is_autocomputed' => false
@@ -134,6 +137,7 @@ class Tracker_FormElement_Field_Computed_HasChanges extends TuleapTestCase
     public function itDetectsChangeWhenBackToAutocomputeWhenManualValueIs0()
     {
         stub($this->old_value)->getNumeric()->returns(0.0);
+        stub($this->old_value)->isManualValue()->returns(true);
         $submitted_value = array(
             'manual_value'    => '',
             'is_autocomputed' => true
@@ -167,9 +171,22 @@ class Tracker_FormElement_Field_Computed_HasChanges extends TuleapTestCase
     public function itHasNotChangesIfYouAreStillInAutocomputedMode()
     {
         stub($this->old_value)->getNumeric()->returns(null);
+        stub($this->old_value)->isManualValue()->returns(false);
         $new_value = array(
             'is_autocomputed' => '1',
             'manual_value'    => ''
+        );
+
+        $this->assertFalse($this->field->hasChanges($this->artifact, $this->old_value, $new_value));
+    }
+
+    public function itHasNotChangesIfYouAreStillInAutocomputedModeWithAProvidedManualValueByHTMLForm()
+    {
+        stub($this->old_value)->getNumeric()->returns(null);
+        stub($this->old_value)->isManualValue()->returns(false);
+        $new_value = array(
+            'is_autocomputed' => '1',
+            'manual_value'    => '999999'
         );
 
         $this->assertFalse($this->field->hasChanges($this->artifact, $this->old_value, $new_value));
@@ -830,7 +847,7 @@ class Tracker_FormElement_Field_Computed_RESTValueTest extends TuleapTestCase
             Tracker_FormElement_Field_Computed::FIELD_VALUE_IS_AUTOCOMPUTED => true
         );
 
-        $this->assertClone($value, $this->field->getFieldDataFromRESTValue($value));
+        $this->assertEqual($value, $this->field->getFieldDataFromRESTValue($value));
     }
 
     public function itRejectsDataWhenAutocomputedIsDisabledAndNoManualValueIsProvided()

@@ -1,0 +1,33 @@
+{{# has_backlog_items_with_computed_velocity }}
+    <section class="tlp-pane">
+        <div class="tlp-pane-container">
+            <div class="tlp-pane-header">
+                <h1 class="tlp-pane-title">{{# dgettext }} tuleap-velocity | Velocity{{/ dgettext }}</h1>
+            </div>
+            <section class="tlp-pane-section">
+                {{# has_more_than_max_velocities_limit }}
+                    <div class="tlp-alert-info">
+                        {{# dgettext }} tuleap-velocity | The velocity chart only displays the last 7 artifacts found.{{/ dgettext }}
+                    </div>
+                {{/ has_more_than_max_velocities_limit }}
+                {{# has_invalid_artifacts }}
+                        <p class="tlp-alert-warning">
+                            {{# dngettext }}
+                                tuleap-velocity |
+                                Following artifact won't be displayed because it doesn't have a start date: |
+                                Following artifacts won't be displayed because they don't have a start date: |
+                                {{ nb_invalid_artifacts }}
+                            {{/ dngettext }}
+
+                            {{# invalid_artifacts }}
+                                <a href="{{ html_url }}">{{ xref }} - {{ title }}</a><span class="misconfigured-semantic-display-comma">, </span>
+                            {{/ invalid_artifacts }}
+                        </p>
+                {{/ has_invalid_artifacts }}
+                <div id="velocity-chart"
+                     data-sprints="{{ backlog_items_representation }}"
+                ></div>
+            </section>
+        </div>
+    </section>
+{{/ has_backlog_items_with_computed_velocity }}

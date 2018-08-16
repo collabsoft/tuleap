@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2008. All Rights Reserved.
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,6 +19,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use \Tuleap\LDAP\GroupSyncNotificationsManager;
+
 /**
  * Manage interaction between an LDAP group and Project members
  */
@@ -29,12 +31,22 @@ class LDAP_ProjectGroupManager extends LDAP_GroupManager
      * @var LDAP_ProjectGroupDao
      */
     private $dao;
+    /**
+     * @var ProjectManager
+     */
+    private $project_manager;
 
-    public function __construct(LDAP $ldap, LDAP_UserManager $ldap_user_manager, LDAP_ProjectGroupDao $dao)
-    {
-        parent::__construct($ldap, $ldap_user_manager);
+    public function __construct(
+        LDAP $ldap,
+        LDAP_UserManager $ldap_user_manager,
+        LDAP_ProjectGroupDao $dao,
+        ProjectManager $project_manager,
+        GroupSyncNotificationsManager $notifications_manager
+    ) {
+        parent::__construct($ldap, $ldap_user_manager, $project_manager, $notifications_manager);
 
-        $this->dao = $dao;
+        $this->dao             = $dao;
+        $this->project_manager = $project_manager;
     }
 
     /**
@@ -75,7 +87,7 @@ class LDAP_ProjectGroupManager extends LDAP_GroupManager
      */
     protected function getDbGroupMembersIds($groupId)
     {
-        $project = ProjectManager::instance()->getProject($groupId);
+        $project = $this->project_manager->getProject($groupId);
         return $project->getMembersId();
     }
 
@@ -117,6 +129,7 @@ class LDAP_ProjectGroupManager extends LDAP_GroupManager
 
             if ($this->doesLdapGroupExist($dn)) {
                 $this->bindWithLdap($row['bind_option'], $is_nightly_synchronized, $display_feedback);
+                $this->project_manager->clearProjectFromCache($row['group_id']);
             }
         }
     }

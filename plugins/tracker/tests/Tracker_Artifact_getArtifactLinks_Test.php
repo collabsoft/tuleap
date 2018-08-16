@@ -30,11 +30,12 @@ class Tracker_Artifact_getArtifactLinks_Test extends TuleapTestCase {
 
     public function setUp() {
         parent::setUp();
+        $this->setUpGlobalsMockery();
 
         $this->user      = aUser()->build();
         $this->tracker   = aTracker()->withId($this->current_id)->build();
-        $this->factory   = mock('Tracker_FormElementFactory');
-        $this->changeset = mock('Tracker_Artifact_Changeset');
+        $this->factory   = \Mockery::spy(\Tracker_FormElementFactory::class);
+        $this->changeset = \Mockery::spy(\Tracker_Artifact_Changeset::class);
         $this->artifact  = anArtifact()
             ->withId($this->current_id + 100)
             ->withTracker($this->tracker)
@@ -42,7 +43,7 @@ class Tracker_Artifact_getArtifactLinks_Test extends TuleapTestCase {
             ->withChangesets(array($this->changeset))
             ->build()
         ;
-        $hierarchy_factory = mock('Tracker_HierarchyFactory');
+        $hierarchy_factory = \Mockery::spy(\Tracker_HierarchyFactory::class);
         stub($hierarchy_factory)->getChildren()->returns(array());
         $this->artifact->setHierarchyFactory($hierarchy_factory);
     }
@@ -64,7 +65,7 @@ class Tracker_Artifact_getArtifactLinks_Test extends TuleapTestCase {
             new Tracker_Artifact(222, null, null, null, null)
         );
 
-        $field = mock('Tracker_FormElement_Field_ArtifactLink');
+        $field = \Mockery::spy(\Tracker_FormElement_Field_ArtifactLink::class);
         stub($field)->getLinkedArtifacts($this->changeset, $this->user)->returns($expected_list);
 
         stub($this->factory)->getAnArtifactLinkField($this->user, $this->tracker)->returns($field);
@@ -84,7 +85,7 @@ class Tracker_Artifact_getArtifactLinks_Test extends TuleapTestCase {
         $artifact2 = $this->giveMeAnArtifactWithChildren();
         $artifact1 = $this->giveMeAnArtifactWithChildren($artifact2, $artifact3);
 
-        $field     = mock('Tracker_FormElement_Field_ArtifactLink');
+        $field     = \Mockery::spy(\Tracker_FormElement_Field_ArtifactLink::class);
         stub($field)->getLinkedArtifacts($this->changeset, $this->user)->returns(array($artifact1, $artifact2));
 
         stub($this->factory)->getAnArtifactLinkField($this->user, $this->tracker)->returns($field);
@@ -107,7 +108,7 @@ class Tracker_Artifact_getArtifactLinks_Test extends TuleapTestCase {
         $artifact2 = $this->giveMeAnArtifactWithChildren();
         $artifact1 = $this->giveMeAnArtifactWithChildren($artifact2, $artifact3);
     
-        $field     = mock('Tracker_FormElement_Field_ArtifactLink');
+        $field     = \Mockery::spy(\Tracker_FormElement_Field_ArtifactLink::class);
         stub($field)->getLinkedArtifacts($this->changeset, $this->user)->returns(array($artifact1, $artifact4));
         stub($this->factory)->getAnArtifactLinkField($this->user, $this->tracker)->returns($field);
     
@@ -134,22 +135,85 @@ class Tracker_Artifact_getArtifactLinks_Test extends TuleapTestCase {
      * However as art 3 is linked to art 0 we should get it under art 0
      */
     public function itDoesNotReturnArtifactsThatAreNotInTheHierarchy() {
-        $us_tracker     = stub('Tracker')->getId()->returns(101);
-        $task_tracker   = stub('Tracker')->getId()->returns(102);
-        $bug_tracker    = stub('Tracker')->getId()->returns(103);
-        $sprint_tracker = stub('Tracker')->getId()->returns(104);
+        $us_tracker     = mockery_stub(\Tracker::class)->getId()->returns(101);
+        $task_tracker   = mockery_stub(\Tracker::class)->getId()->returns(102);
+        $bug_tracker    = mockery_stub(\Tracker::class)->getId()->returns(103);
+        $sprint_tracker = mockery_stub(\Tracker::class)->getId()->returns(104);
         
-        $hierarchy_factory = mock('Tracker_HierarchyFactory');
+        $hierarchy_factory = \Mockery::spy(\Tracker_HierarchyFactory::class);
         stub($hierarchy_factory)->getChildren($us_tracker->getId())->returns(array($task_tracker));
         stub($hierarchy_factory)->getChildren($task_tracker->getId())->returns(array());
         stub($hierarchy_factory)->getChildren($bug_tracker->getId())->returns(array());
         stub($hierarchy_factory)->getChildren($sprint_tracker->getId())->returns(array());
-        
-        $artifact0 = TestHelper::getPartialMock('Tracker_Artifact', array('getAnArtifactLinkField', 'getLastChangeset'));
-        $artifact1 = TestHelper::getPartialMock('Tracker_Artifact', array('getAnArtifactLinkField', 'getLastChangeset'));
-        $artifact2 = TestHelper::getPartialMock('Tracker_Artifact', array('getAnArtifactLinkField', 'getLastChangeset'));
-        $artifact3 = TestHelper::getPartialMock('Tracker_Artifact', array('getAnArtifactLinkField', 'getLastChangeset'));
-        $artifact4 = TestHelper::getPartialMock('Tracker_Artifact', array('getAnArtifactLinkField', 'getLastChangeset'));
+
+        $artifact4 = \Mockery::mock(
+            Tracker_Artifact::class,
+            [
+                'getLastChangeset' => \Mockery::spy(Tracker_Artifact_Changeset::class),
+                'getAnArtifactLinkField' => \Mockery::mock(
+                    Tracker_FormElement_Field_ArtifactLink::class,
+                    [
+                        'getLinkedArtifacts' => []
+                    ]
+                ),
+            ]
+        )->makePartial();
+
+        $artifact3 = \Mockery::mock(
+            Tracker_Artifact::class,
+            [
+                'getLastChangeset' => \Mockery::spy(Tracker_Artifact_Changeset::class),
+                'getAnArtifactLinkField' => \Mockery::mock(
+                    Tracker_FormElement_Field_ArtifactLink::class,
+                    [
+                        'getLinkedArtifacts' => []
+                    ]
+                ),
+            ]
+        )->makePartial();
+
+
+        $artifact2 = \Mockery::mock(
+            Tracker_Artifact::class,
+            [
+                'getLastChangeset' => \Mockery::spy(Tracker_Artifact_Changeset::class),
+            ]
+        )->makePartial();
+
+        $artifact1 = \Mockery::mock(
+            Tracker_Artifact::class,
+            [
+                'getLastChangeset' => \Mockery::spy(Tracker_Artifact_Changeset::class),
+                'getAnArtifactLinkField' => \Mockery::mock(
+                    Tracker_FormElement_Field_ArtifactLink::class,
+                    [
+                        'getLinkedArtifacts' => [$artifact2]
+                    ]
+                ),
+            ]
+        )->makePartial();
+
+        $artifact0 = \Mockery::mock(
+            Tracker_Artifact::class,
+            [
+                'getLastChangeset' => \Mockery::spy(Tracker_Artifact_Changeset::class),
+                'getAnArtifactLinkField' => \Mockery::mock(
+                    Tracker_FormElement_Field_ArtifactLink::class,
+                    [
+                        'getLinkedArtifacts' => [$artifact1, $artifact3]
+                    ]
+                ),
+            ]
+        )->makePartial();
+
+        $artifact2->shouldReceive('getAnArtifactLinkField')->andReturns(
+            \Mockery::mock(
+                Tracker_FormElement_Field_ArtifactLink::class,
+                [
+                    'getLinkedArtifacts' => [$artifact2, $artifact4]
+                ]
+            )
+        );
         
         $artifact0->setHierarchyFactory($hierarchy_factory);
         $artifact1->setHierarchyFactory($hierarchy_factory);
@@ -169,19 +233,8 @@ class Tracker_Artifact_getArtifactLinks_Test extends TuleapTestCase {
         $artifact3->setTracker($bug_tracker);
         $artifact4->setTracker($bug_tracker);
         
-        $this->setArtifactChildren($artifact0, array($artifact1, $artifact3));
-        $this->setArtifactChildren($artifact1, array($artifact2));
-        $this->setArtifactChildren($artifact2, array($artifact2, $artifact4));
-        
         $expected_result = array($artifact1, $artifact3);
         $this->assertEqual($expected_result, $artifact0->getUniqueLinkedArtifacts($this->user));
-    }
-     
-    private function setArtifactChildren($artifact, $children) {
-        $alfield = stub('Tracker_FormElement_Field_ArtifactLink')
-            ->getLinkedArtifacts()
-            ->returns($children);
-        stub($artifact)->getAnArtifactLinkField()->returns($alfield);
     }
      
     /**
@@ -201,11 +254,11 @@ class Tracker_Artifact_getArtifactLinks_Test extends TuleapTestCase {
         $this->current_id++;
         $tracker   = aTracker()->withId($this->current_id)->build();
         
-        $hierarchy_factory = mock('Tracker_HierarchyFactory');
+        $hierarchy_factory = \Mockery::spy(\Tracker_HierarchyFactory::class);
         stub($hierarchy_factory)->getChildren($tracker->getId())->returns($sub_trackers);
         
-        $changeset = mock('Tracker_Artifact_Changeset');
-        $field     = mock('Tracker_FormElement_Field_ArtifactLink');
+        $changeset = \Mockery::spy(\Tracker_Artifact_Changeset::class);
+        $field     = \Mockery::spy(\Tracker_FormElement_Field_ArtifactLink::class);
         stub($field)->getLinkedArtifacts($changeset, $this->user)->returns($children);
         stub($this->factory)->getAnArtifactLinkField($this->user, $tracker)->returns($field);
     

@@ -1,7 +1,7 @@
 <?php
 /*
  * Copyright (C) 2010 Roland Mas, Olaf Lenz
- * Copyright (c) Enalean, 2014 - 2017. All rights reserved
+ * Copyright (c) Enalean, 2014 - 2018. All rights reserved
  *
  * This file is part of Tuleap.
  *
@@ -23,8 +23,11 @@
  *  Mediawiki plugin of Tuleap.
  */
 
+use Tuleap\Mediawiki\MediawikiExtensionDAO;
+use Tuleap\Mediawiki\MediawikiMathExtensionEnabler;
 
 /* C style inclusion guard. Yes, I know. Don’t comment on it. */
+
 if (!isset($fusionforge_plugin_mediawiki_LocalSettings_included)) {
 $fusionforge_plugin_mediawiki_LocalSettings_included = true;
 
@@ -93,19 +96,7 @@ $fusionforgeproject = $project_name_retriever->getFusionForgeProjectName($fusion
 
 $group = $project_manager->getProjectByUnixName($fusionforgeproject);
 
-if (!isset($is_tuleap_mediawiki_123)) {
-    $is_tuleap_mediawiki_123 = false;
-
-    $restrictor_dao = new MediawikiSiteAdminResourceRestrictorDao();
-    if ($restrictor_dao->isMediawiki123(MediawikiSiteAdminResourceRestrictor::RESOURCE_ID, $fusionforgeproject)) {
-        $is_tuleap_mediawiki_123 = true;
-    }
-}
-
-$IP = '/usr/share/mediawiki-tuleap';
-if ($is_tuleap_mediawiki_123) {
-    $IP = '/usr/share/mediawiki-tuleap-123';
-}
+$IP = '/usr/share/mediawiki-tuleap-123';
 
 $gconfig_dir = forge_get_config('mwdata_path', 'mediawiki');
 $project_dir = forge_get_config('projects_path', 'mediawiki') . "/"
@@ -225,14 +216,7 @@ $GLOBALS['sys_session_expire'] = forge_get_config('session_expire');
 $GLOBALS['REMOTE_ADDR']        = getStringFromServer('REMOTE_ADDR') ;
 $GLOBALS['HTTP_USER_AGENT']    = getStringFromServer('HTTP_USER_AGENT') ;
 
-
-if ($is_tuleap_mediawiki_123) {
-    require_once 'DatabaseForgeMysql123.php';
-} else {
-    require_once("$IP/includes/Exception.php");
-    require_once("$IP/includes/db/Database.php");
-    require_once 'DatabaseForgeMysql.php';
-}
+require_once 'DatabaseForgeMysql123.php';
 
 function TuleapMediawikiAuthentication($user, &$result) {
     global $fusionforgeproject, $wgGroupPermissions ;
@@ -434,35 +418,6 @@ if (isset($_SERVER['SERVER_SOFTWARE'])) {
 
 $GLOBALS['wgHooks']['UserLoadFromSession'][] = 'TuleapMediawikiAuthentication';
 
-if (! $is_tuleap_mediawiki_123) {
-    //@see http://stackoverflow.com/questions/16893589/prevent-users-from-changing-their-passwords-in-mediawiki
-    // Disallow password reset on password reset page
-    $GLOBALS['wgHooks']['UserLoginMailPassword'][] = 'MailPasswordIsAllowed';
-    function MailPasswordIsAllowed ( $username, $error ) {
-        $error = wfMsg( 'resetpass_forbidden' );
-        return false;
-    }
-
-    //Disallow password change on password change page (referred by link in user preferences):
-    $GLOBALS['wgHooks']['PrefsPasswordAudit'][] = 'ChangePasswordIsAllowed';
-    function ChangePasswordIsAllowed ( $user ) {
-        throw new PasswordError( wfMsg( 'resetpass_forbidden' ));
-        return false;
-    }
-
-    //Hide password change link in user preferences:
-    $GLOBALS['wgHooks']['GetPreferences'][] = 'HidePreferenceOptions';
-    function HidePreferenceOptions ( $mw_user, &$preferences ) {
-        global $user;
-
-        $preferences['emailaddress']['default'] = $user->getEmail();
-        unset($preferences['emailauthentication']);
-        unset($preferences['password']);
-
-        return true;
-    }
-}
-
 $wgGroupPermissions = customizeMediawikiGroupsRights(
     $wgGroupPermissions,
     $manager,
@@ -506,17 +461,10 @@ if (is_file("$project_dir/ProjectSettings.php")) {
 }
 
 // Add Tuleap Skin
-if ($is_tuleap_mediawiki_123) {
-    $wgDefaultSkin    = 'tuleap123';
-    $wgAutoloadClasses['Tuleap123'] = __DIR__."/skins/Tuleap123/Tuleap123.php";
-    $wgValidSkinNames['tuleap123'] = 'Tuleap123';
-    require_once $wgAutoloadClasses['Tuleap123'];
-} else {
-    $wgDefaultSkin    = 'tuleap';
-    $wgAutoloadClasses['Tuleap'] = dirname(__FILE__)."/skins/Tuleap/Tuleap.php";
-    $wgValidSkinNames['tuleap'] = 'Tuleap';
-    require_once dirname(__FILE__)."/skins/Tuleap/Tuleap.php";
-}
+$wgDefaultSkin    = 'tuleap123';
+$wgAutoloadClasses['Tuleap123'] = __DIR__."/skins/Tuleap123/Tuleap123.php";
+$wgValidSkinNames['tuleap123'] = 'Tuleap123';
+require_once $wgAutoloadClasses['Tuleap123'];
 
 // ParserFunctions Extension inclusion
 require_once( "$IP/extensions/ParserFunctions/ParserFunctions.php" );
@@ -631,4 +579,22 @@ if ($mleb_manager->isMLEBExtensionInstalled()){
         require_once $mleb_path."/extensions/UniversalLanguageSelector/UniversalLanguageSelector.php";
         $GLOBALS['wgTranslatePageTranslationULS'] = true;
     }
+}
+
+$mediawiki_math_extension_enabler = new MediawikiMathExtensionEnabler(
+    new MediawikiExtensionDAO(),
+    new Mediawiki_Migration_MediawikiMigrator()
+);
+if ($mediawiki_math_extension_enabler->canPluginBeLoaded($IP, (isset($IS_RUNNING_UPDATE) && $IS_RUNNING_UPDATE), $group)) {
+    /*
+     * SHELL_MAX_ARG_STRLEN should be defined in $IP/includes/Defines.php but for some reasons
+     * it is not the case in our installation. Let's just set it to the default value.
+     */
+    define('SHELL_MAX_ARG_STRLEN', 100000);
+    $wgDefaultUserOptions['math'] = 'png';
+    $wgMathValidModes             = ['png', 'source'];
+    $wgMathDisableTexFilter       = 'never';
+    $wgMathFullRestbaseURL        = false;
+
+    require_once "$IP/extensions/Math/Math.php";
 }

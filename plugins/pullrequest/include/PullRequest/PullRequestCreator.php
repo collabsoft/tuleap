@@ -21,13 +21,12 @@
 namespace Tuleap\PullRequest;
 
 use EventManager;
-use GitRepositoryFactory;
 use GitRepository;
-use UserManager;
 use Tuleap\PullRequest\Exception\PullRequestCannotBeCreatedException;
 use Tuleap\PullRequest\Exception\PullRequestRepositoryMigratedOnGerritException;
 use Tuleap\PullRequest\Exception\PullRequestAlreadyExistsException;
 use Tuleap\PullRequest\Exception\PullRequestAnonymousUserException;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceCreator;
 
 class PullRequestCreator
 {
@@ -41,18 +40,32 @@ class PullRequestCreator
      * @var Dao
      */
     private $pull_request_dao;
+    /**
+     * @var PullRequestMerger
+     */
+    private $pull_request_merger;
+    /**
+     * @var EventManager
+     */
+    private $event_manager;
+    /**
+     * @var GitPullRequestReferenceCreator
+     */
+    private $git_pull_request_reference_creator;
 
 
     public function __construct(
         Factory $pull_request_factory,
         Dao $pull_request_dao,
         PullRequestMerger $pull_request_merger,
-        EventManager $event_manager
+        EventManager $event_manager,
+        GitPullRequestReferenceCreator $git_pull_request_reference_creator
     ) {
-        $this->pull_request_factory = $pull_request_factory;
-        $this->pull_request_dao     = $pull_request_dao;
-        $this->pull_request_merger  = $pull_request_merger;
-        $this->event_manager        = $event_manager;
+        $this->pull_request_factory               = $pull_request_factory;
+        $this->pull_request_dao                   = $pull_request_dao;
+        $this->pull_request_merger                = $pull_request_merger;
+        $this->event_manager                      = $event_manager;
+        $this->git_pull_request_reference_creator = $git_pull_request_reference_creator;
     }
 
     public function generatePullRequest(
@@ -78,17 +91,12 @@ class PullRequestCreator
             throw new PullRequestRepositoryMigratedOnGerritException();
         }
 
-        $executor       = new GitExec($repository_src->getFullPath(), $repository_src->getFullPath());
-        $sha1_src       = $executor->getBranchSha1("refs/heads/$branch_src");
-        $repo_dest_id   = $repository_dest->getId();
-        $repo_src_id    = $repository_src->getId();
-
-        if ($repo_src_id == $repo_dest_id) {
-            $sha1_dest = $executor->getBranchSha1("refs/heads/$branch_dest");
-        } else {
-            $this->setUpRemote($executor, $repo_dest_id, $repository_dest->getFullPath());
-            $sha1_dest = $executor->getBranchSha1("$repo_dest_id/$branch_dest");
-        }
+        $executor_repository_source      = new GitExec($repository_src->getFullPath(), $repository_src->getFullPath());
+        $executor_repository_destination = GitExec::buildFromRepository($repository_dest);
+        $sha1_src                        = $executor_repository_source->getBranchSha1("refs/heads/$branch_src");
+        $sha1_dest                       = $executor_repository_destination->getBranchSha1("refs/heads/$branch_dest");
+        $repo_dest_id                    = $repository_dest->getId();
+        $repo_src_id                     = $repository_src->getId();
 
         if ($sha1_src === $sha1_dest) {
             throw new PullRequestCannotBeCreatedException();
@@ -96,7 +104,7 @@ class PullRequestCreator
 
         $this->checkIfPullRequestAlreadyExists($repo_src_id, $sha1_src, $repo_dest_id, $sha1_dest);
 
-        $commit_message = $executor->getCommitMessage($sha1_src);
+        $commit_message = $executor_repository_source->getCommitMessage($sha1_src);
         $first_line     = array_shift($commit_message);
         $other_lines    = implode("\n", $commit_message);
 
@@ -113,16 +121,27 @@ class PullRequestCreator
             $branch_dest,
             $sha1_dest
         );
+        $pull_request = $this->pull_request_factory->create($creator, $pull_request, $repository_src->getProjectId());
 
-        $merge_status = $this->pull_request_merger->detectMergeabilityStatus($executor, $pull_request, $pull_request->getSha1Src(), $repository_src);
+        $this->git_pull_request_reference_creator->createPullRequestReference(
+            $pull_request,
+            $executor_repository_source,
+            $executor_repository_destination,
+            $repository_dest
+        );
+
+        $merge_status = $this->pull_request_merger->detectMergeabilityStatus(
+            $executor_repository_destination,
+            $pull_request->getSha1Src(),
+            $pull_request->getSha1Dest()
+        );
         $pull_request->setMergeStatus($merge_status);
-
-        $result = $this->pull_request_factory->create($creator, $pull_request, $repository_src->getProjectId());
+        $this->pull_request_factory->updateMergeStatus($pull_request, $merge_status);
 
         $event = new GetCreatePullRequest($pull_request, $creator, $repository_dest->getProject());
         $this->event_manager->processEvent($event);
 
-        return $result;
+        return $pull_request;
     }
 
     private function checkIfPullRequestAlreadyExists($repo_src_id, $sha1_src, $repo_dest_id, $sha1_dest)
@@ -132,13 +151,5 @@ class PullRequestCreator
         if ($row) {
             throw new PullRequestAlreadyExistsException();
         }
-    }
-
-    private function setUpRemote(GitExec $executor, $repo_id, $repo_path)
-    {
-        if (! $executor->remoteExists($repo_id)) {
-            $executor->addRemote($repo_id, $repo_path);
-        }
-        $executor->fetchRemote($repo_id);
     }
 }

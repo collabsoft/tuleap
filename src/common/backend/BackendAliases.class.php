@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2011, 2012, 2013, 2014. All rights reserved
+ * Copyright (c) Enalean, 2011-2018. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -24,20 +24,7 @@ class BackendAliases extends Backend {
     const ALIAS_ENTRY_FORMAT = "%-50s%-10s";
 
     protected $need_update=false;   
-    protected $userdao = null;
     protected $mailinglistdao = null;
-
-    /**
-     * Get the user dao
-     * 
-     * @return UserDao
-     */
-    protected function getUserDao() {
-        if (!$this->userdao) {
-            $this->userdao = new UserDao(CodendiDataAccess::instance());
-        }
-        return $this->userdao;
-    }
 
     /**
      * Get the mainling list dao
@@ -90,7 +77,6 @@ class BackendAliases extends Backend {
 
         if ((! $this->writeGenericAliases($fp))
             || (! $this->writeListAliases($fp))
-            || (! $this->writeUserAliases($fp))
             || (! $this->writeOtherAliases($fp))
         ) {
             $this->log("Can't write aliases to $alias_file_new", Backend::LOG_ERROR);
@@ -134,26 +120,6 @@ class BackendAliases extends Backend {
     }
 
     /** 
-     * User aliases for addresses like user@codendi.server.name
-     * 
-     * @param resource $fp A file system pointer resource that is typically created using fopen().
-     * 
-     * @return bool
-     */
-    protected function writeUserAliases($fp) {
-        fwrite($fp, "### Begin User Aliases ###\n\n");
-
-        $allowed_statuses=array('A', 'R'); // Active and restricted users
-        $dar = $this->getUserDao()->searchByStatus($allowed_statuses);
-        foreach ($dar as $row) {
-            if ($row['email'] && $row['user_name']) {
-                $this->writeAlias($fp, new System_Alias($row['user_name'], $row['email']));
-            }
-        }
-        return fwrite($fp, "\n\n");
-    }
-
-    /** 
      * Mailing list aliases for mailman 
      * 
      * @param resource $fp A file system pointer resource that is typically created using fopen().
@@ -173,16 +139,17 @@ class BackendAliases extends Backend {
                 // Remove blank chars
                 $list_name = str_replace(' ', '', $list_name);
                 // Mailman 2.1 aliases
-                $this->writeAlias($fp, new System_Alias("$list_name",             "\"|$mm_wrapper post $list_name\""));
-                $this->writeAlias($fp, new System_Alias("$list_name-admin",       "\"|$mm_wrapper admin $list_name\""));
-                $this->writeAlias($fp, new System_Alias("$list_name-bounces",     "\"|$mm_wrapper bounces $list_name\""));
-                $this->writeAlias($fp, new System_Alias("$list_name-confirm",     "\"|$mm_wrapper confirm $list_name\""));
-                $this->writeAlias($fp, new System_Alias("$list_name-join",        "\"|$mm_wrapper join $list_name\""));
-                $this->writeAlias($fp, new System_Alias("$list_name-leave",       "\"|$mm_wrapper leave $list_name\""));
-                $this->writeAlias($fp, new System_Alias("$list_name-owner",       "\"|$mm_wrapper owner $list_name\""));
-                $this->writeAlias($fp, new System_Alias("$list_name-request",     "\"|$mm_wrapper request $list_name\""));
-                $this->writeAlias($fp, new System_Alias("$list_name-subscribe",   "\"|$mm_wrapper subscribe $list_name\""));
-                $this->writeAlias($fp, new System_Alias("$list_name-unsubscribe", "\"|$mm_wrapper unsubscribe $list_name\""));
+                $list_name_as_argument = escapeshellarg($list_name);
+                $this->writeAlias($fp, new System_Alias("$list_name",             "\"|$mm_wrapper post $list_name_as_argument\""));
+                $this->writeAlias($fp, new System_Alias("$list_name-admin",       "\"|$mm_wrapper admin $list_name_as_argument\""));
+                $this->writeAlias($fp, new System_Alias("$list_name-bounces",     "\"|$mm_wrapper bounces $list_name_as_argument\""));
+                $this->writeAlias($fp, new System_Alias("$list_name-confirm",     "\"|$mm_wrapper confirm $list_name_as_argument\""));
+                $this->writeAlias($fp, new System_Alias("$list_name-join",        "\"|$mm_wrapper join $list_name_as_argument\""));
+                $this->writeAlias($fp, new System_Alias("$list_name-leave",       "\"|$mm_wrapper leave $list_name_as_argument\""));
+                $this->writeAlias($fp, new System_Alias("$list_name-owner",       "\"|$mm_wrapper owner $list_name_as_argument\""));
+                $this->writeAlias($fp, new System_Alias("$list_name-request",     "\"|$mm_wrapper request $list_name_as_argument\""));
+                $this->writeAlias($fp, new System_Alias("$list_name-subscribe",   "\"|$mm_wrapper subscribe $list_name_as_argument\""));
+                $this->writeAlias($fp, new System_Alias("$list_name-unsubscribe", "\"|$mm_wrapper unsubscribe $list_name_as_argument\""));
             }
         }
         return fwrite($fp, "\n\n");
@@ -204,7 +171,10 @@ class BackendAliases extends Backend {
         return fwrite($fp, "\n\n");
     }
 
-    private function writeAlias($fp, System_Alias $alias) {
-        fwrite($fp, sprintf(self::ALIAS_ENTRY_FORMAT, $alias->getName() . ":", $alias->getValue() . "\n"));
+    private function writeAlias($fp, System_Alias $alias)
+    {
+        $name  = str_replace(['"', "\n"], '', $alias->getName());
+        $value = str_replace("\n", '', $alias->getValue());
+        fwrite($fp, sprintf(self::ALIAS_ENTRY_FORMAT, '"' . $name . '":', $value . "\n"));
     }
 }

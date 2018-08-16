@@ -4,11 +4,10 @@
   "version": "0.2.0",
   "homepage": "https://www.enalean.com",
   "description": "Tuleap Tracker plugin",
-  "license": "GPL-2.0",
+  "license": "GPL-2.0+",
   "private": true,
   "dependencies": {
     "angular": "^1.3.20",
-    "angular-base64-upload": "0.1.21",
     "angular-filter": "^0.5.16",
     "angular-gettext": "^1.1.4",
     "angular-moment": "^0.8.3",
@@ -24,43 +23,28 @@
     "moment": "^2.18.1",
     "ng-ckeditor": "^2.0.3",
     "node-gettext": "^2.0.0",
+    "pump": "^3.0.0",
+    "readable-stream": "^2.3.6",
     "sprintf-js": "^1.1.1",
-    "vue": "^2.5.13"
+    "vue": "^2.5.13",
+    "vue-gettext": "^2.1.0",
+    "vuex": "^3.0.1"
   },
   "devDependencies": {
-    "angular-gettext-loader": "^1.0.1",
     "angular-mocks": "^1.3.20",
-    "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.2",
-    "babel-plugin-istanbul": "^4.1.5",
-    "babel-plugin-rewire-exports": "^0.3.0",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-env": "^1.6.1",
-    "concurrently": "^3.5.1",
     "gulp": "^3.9.1",
-    "gulp-angular-gettext": "^2.2.0",
-    "http-server": "^0.9.0",
-    "jasmine-core": "^2.6.4",
-    "jasmine-promise-matchers": "^2.3.0",
-    "karma": "^1.7.1",
-    "karma-chrome-launcher": "^2.2.0",
-    "karma-coverage": "^1.1.1",
-    "karma-jasmine": "^1.1.1",
-    "karma-junit-reporter": "^1.2.0",
-    "karma-webpack": "^2.0.9",
-    "ng-cache-loader": "0.0.23",
-    "po-gettext-loader": "^0.1.1",
-    "vue-loader": "^14.1.1",
-    "vue-loader-options-plugin": "^0.1.1",
-    "vue-template-compiler": "^2.5.13",
-    "webpack": "^3.10.0",
-    "webpack-assets-manifest": "^1.0.0"
+    "gulp-angular-gettext": "^2.2.0"
+  },
+  "config": {
+    "bin": "../../../../node_modules/.bin/"
   },
   "scripts": {
-    "build": "NODE_ENV=production webpack --optimize-minimize --bail",
-    "coverage": "rm -rf ./coverage/* && NODE_ENV=coverage karma start ./karma.conf.js && http-server -os -a 0.0.0.0 -p 9000 coverage/",
-    "test": "NODE_ENV=test karma start ./karma.conf.js",
-    "watch": "NODE_ENV=watch concurrently --raw --kill-others 'gulp watch' 'webpack --watch' 'karma start ./karma.conf.js'"
+    "build": "NODE_ENV=production $npm_package_config_bin/webpack --mode=production",
+    "coverage-modal": "rm -rf ./coverage/* && NODE_ENV=coverage $npm_package_config_bin/karma start ./karma.conf.js && $npm_package_config_bin/http-server -os -a 0.0.0.0 -p 9000 coverage/",
+    "coverage-artifacts": "rm -rf ./coverage/* && NODE_ENV=coverage $npm_package_config_bin/karma start ./artifact-action-buttons/karma.conf.js && $npm_package_config_bin/http-server -os -a 0.0.0.0 -p 9000 coverage/",
+    "test": "NODE_ENV=test $npm_package_config_bin/karma start ./karma.conf.js && NODE_ENV=test $npm_package_config_bin/karma start ./artifact-action-buttons/karma.conf.js",
+    "watch-modal": "NODE_ENV=watch $npm_package_config_bin/concurrently --raw --kill-others 'gulp watch' '$npm_package_config_bin/webpack --watch --mode=development' '$npm_package_config_bin/karma start ./karma.conf.js'",
+    "watch-artifacts": "NODE_ENV=watch $npm_package_config_bin/concurrently --raw --kill-others '$npm_package_config_bin/webpack --watch --mode=development' '$npm_package_config_bin/karma start ./artifact-action-buttons/karma.conf.js'",
+    "extract-gettext-cli": "$npm_package_config_bin/gettext-extract --attribute v-translate $(find artifact-action-buttons/ -type f -name '*.vue')"
   }
 }

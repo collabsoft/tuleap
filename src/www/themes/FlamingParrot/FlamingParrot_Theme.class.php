@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,9 @@
  */
 
 use Tuleap\Glyph\GlyphFinder;
+use Tuleap\layout\BreadCrumbDropdown\BreadCrumbPresenterBuilder;
 use Tuleap\Layout\IncludeAssets;
+use Tuleap\OpenGraph\NoOpenGraphPresenter;
 
 require_once 'common/templating/TemplateRenderer.class.php';
 require_once 'common/templating/TemplateRendererFactory.class.php';
@@ -73,12 +75,6 @@ class FlamingParrot_Theme extends Layout {
             "FlamingParrot_BlueGrey",
             "FlamingParrot_Purple",
             "FlamingParrot_Red",
-            "FlamingParrot_DarkOrange",
-            "FlamingParrot_DarkBlue",
-            "FlamingParrot_DarkGreen",
-            "FlamingParrot_DarkBlueGrey",
-            "FlamingParrot_DarkPurple",
-            "FlamingParrot_DarkRed"
         );
     }
 
@@ -90,12 +86,6 @@ class FlamingParrot_Theme extends Layout {
             "FlamingParrot_BlueGrey"        => "#5B6C79",
             "FlamingParrot_Purple"          => "#79558A",
             "FlamingParrot_Red"             => "#BD2626",
-            "FlamingParrot_DarkOrange"      => "#D68416",
-            "FlamingParrot_DarkBlue"        => "#137FA8",
-            "FlamingParrot_DarkGreen"       => "#59993B",
-            "FlamingParrot_DarkBlueGrey"    => "#4A5964",
-            "FlamingParrot_DarkPurple"      => "#684D75",
-            "FlamingParrot_DarkRed"         => "#AA1616"
         );
 
         return $array[$theme];
@@ -107,9 +97,18 @@ class FlamingParrot_Theme extends Layout {
            $title = $params['title'] .' - '. $title;
         }
 
+        $current_user    = UserManager::instance()->getCurrentUser();
+        $theme_variant   = new ThemeVariant();
+        $current_variant = $theme_variant->getVariantForUser($current_user);
+
+        $open_graph = isset($params['open_graph']) ? $params['open_graph'] : new NoOpenGraphPresenter();
+
         $this->render('header', new FlamingParrot_HeaderPresenter(
             $title,
-            $this->imgroot
+            $this->imgroot,
+            $open_graph,
+            $current_variant,
+            $this->getColorOfCurrentTheme($current_variant)
         ));
 
         $this->displayJavascriptElements($params);
@@ -194,10 +193,7 @@ class FlamingParrot_Theme extends Layout {
         $body_class[] = $sidebar_state;
 
         $this->render('body', new FlamingParrot_BodyPresenter(
-            $_SERVER['REQUEST_URI'],
-            $params['title'],
-            $this->imgroot,
-            $selected_top_tab,
+            $current_user,
             $this->getNotificationPlaceholder(),
             $body_class
         ));
@@ -349,9 +345,12 @@ class FlamingParrot_Theme extends Layout {
             $sidebar_collapsable = (! $current_user->isAnonymous() && $current_user->isLoggedIn()) ? true : false;
         }
 
+        $breadcrumb_presenter_builder = new BreadCrumbPresenterBuilder();
+
+        $breadcrumbs = $breadcrumb_presenter_builder->build($this->breadcrumbs);
+
         $this->render('container', new FlamingParrot_ContainerPresenter(
-            $this->breadcrumbs,
-            $this->force_breadcrumbs,
+            $breadcrumbs,
             $this->toolbar,
             $project_name,
             $project_link,

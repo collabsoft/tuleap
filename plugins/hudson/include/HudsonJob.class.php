@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2017. All rights reserved
+ * Copyright (c) Enalean, 2016-2018. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,122 +19,49 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
  
-class HudsonJob {
-    const API_XML = '/api/xml';
-
-    protected $hudson_job_url;
-    protected $hudson_dobuild_url;
-    protected $dom_job;
-    private $icons_path;
-    /**
-     * @var Http_Client
-     */
-    private $http_client;
+class HudsonJob
+{
     /**
      * @var null|string
      */
     private $name;
-
     /**
-     * Construct an Hudson job from a job URL
+     * @var SimpleXMLElement
      */
-    public function __construct($hudson_job_url, Http_Client $http_client, $name = null)
+    private $xml_content;
+
+    public function __construct($name, SimpleXMLElement $xml_content)
     {
-        $parsed_url = parse_url($hudson_job_url);
-        
-        if ( ! $parsed_url || ! array_key_exists('scheme', $parsed_url) ) {
-            throw new HudsonJobURLMalformedException($GLOBALS['Language']->getText('plugin_hudson','wrong_job_url', array($hudson_job_url)));
-        }
-
-        $this->setJobUrl($hudson_job_url);
-
         $this->name        = $name;
-        $controler         = $this->getHudsonControler();
-        $this->icons_path  = $controler->getIconsPath();
-        $this->http_client = $http_client;
+        $this->xml_content = $xml_content;
     }
 
-    private function setJobUrl($url) {
-        $matches = array();
-        if (preg_match(Jenkins_Client::BUILD_WITH_PARAMETERS_REGEXP, $url, $matches)) {
-            $this->hudson_job_url     = $matches['job_url'] . self::API_XML;
-            $this->hudson_dobuild_url = $url;
-        } else {
-            $this->hudson_job_url     = $url . self::API_XML;
-            $this->hudson_dobuild_url = $url . "/build";
-        }
-    }
-
-    public function getJobUrl() {
-        return $this->hudson_job_url;
-    }
-
-    public function getDoBuildUrl() {
-        return $this->hudson_dobuild_url;
-    }
-
-    function getHudsonControler() {
-        return new hudson();
-    }
-
-    protected function getDomJob() {
-        if (!$this->dom_job) {
-            $this->buildJobObject();
-        }
-        return $this->dom_job;
-    }
-
-    public function buildJobObject() {
-         $this->dom_job = $this->_getXMLObject($this->hudson_job_url);
-    }
-    
-    protected function _getXMLObject($hudson_job_url)
+    public function getName()
     {
-        $this->http_client->setOption(CURLOPT_URL, $hudson_job_url);
-        $this->http_client->doRequest();
-
-        $xmlstr = $this->http_client->getLastResponse();
-        if ($xmlstr !== false) {
-            $xmlobj = simplexml_load_string($xmlstr);
-            if ($xmlobj !== false) {
-                return $xmlobj;
-            } else {
-                throw new HudsonJobURLFileException($GLOBALS['Language']->getText('plugin_hudson', 'job_url_file_error',
-                    array($hudson_job_url)));
-            }
-        } else {
-            throw new HudsonJobURLFileNotFoundException($GLOBALS['Language']->getText('plugin_hudson',
-                'job_url_file_not_found', array($hudson_job_url)));
-        }
-    }
-    
-    function getProjectStyle() {
-        return $this->getDomJob()->getName();
-    }
-    function getName() {
-        try {
-            if ($this->name === null) {
-                $this->name = $this->getDomJob()->name;
-            }
-        } catch (Exception $e) {
-
+        if (! $this->name && isset($this->xml_content->name)) {
+            $this->name = (string) $this->xml_content->name;
         }
         return $this->name;
     }
-    function getUrl() {
-        return $this->getDomJob()->url;
-    }
-    function getColor() {
-        return $this->getDomJob()->color;
-    }
-    function getColorNoAnime() {
-        $color = $this->getColor();
-        if (strpos($color, "_anime")) {
-            $color = substr($color, 0, strpos($color, "_anime"));
+
+    public function getUrl()
+    {
+        if (isset($this->xml_content->url)) {
+            return (string) $this->xml_content->url;
         }
-        return $color;
+        return '';
     }
-    function getStatus() {
+
+    private function getColor()
+    {
+        if (isset($this->xml_content->color)) {
+            return (string) $this->xml_content->color;
+        }
+        return '';
+    }
+
+    public function getStatus()
+    {
         switch ($this->getColor()) {
             case "blue":
                 // The last build was successful.
@@ -174,124 +101,130 @@ class HudsonJob {
                 break;
         }
     }
-    
-    function getIconsPath() {
-        return $this->icons_path;
-    }
-    function getStatusIcon() {
+
+    public function getStatusIcon()
+    {
         switch ($this->getColor()) {
             case "blue":
                 // The last build was successful.
-                return $this->getIconsPath()."status_blue.png";
+                return hudsonPlugin::ICONS_PATH."status_blue.png";
                 break;
             case "blue_anime":
                 // The last build was successful. A new build is in progress.
-                return $this->getIconsPath()."status_blue.png";
+                return hudsonPlugin::ICONS_PATH."status_blue.png";
                 break;
             case "yellow":
                 // The last build was successful but unstable. This is primarily used to represent test failures.
-                return $this->getIconsPath()."status_yellow.png"; 
+                return hudsonPlugin::ICONS_PATH."status_yellow.png";
                 break;
             case "yellow_anime":
                 // The last build was successful but unstable. A new build is in progress.
-                return $this->getIconsPath()."status_yellow.png";
+                return hudsonPlugin::ICONS_PATH."status_yellow.png";
                 break;
             case "red":
                 // The last build fatally failed.
-                return $this->getIconsPath()."status_red.png";
+                return hudsonPlugin::ICONS_PATH."status_red.png";
                 break;
             case "red_anime":
                 // The last build fatally failed. A new build is in progress.
-                return $this->getIconsPath()."status_red.png";
+                return hudsonPlugin::ICONS_PATH."status_red.png";
                 break;
             case "grey":
                 // The project has never been built before, or the project is disabled.
-                return $this->getIconsPath()."status_grey.png";
+                return hudsonPlugin::ICONS_PATH."status_grey.png";
                 break;
             case "grey_anime":
                 // The first build of the project is in progress.
-                return $this->getIconsPath()."status_grey.png";
+                return hudsonPlugin::ICONS_PATH."status_grey.png";
                 break;
             default:
                 // Can we have anime icons here?
-                return $this->getIconsPath()."status_unknown.png";
+                return hudsonPlugin::ICONS_PATH."status_unknown.png";
                 break;
         }
     }
     
-    function isBuildable() {
-        return ($this->getDomJob()->buildable == "true");
+    public function hasBuilds()
+    {
+        return $this->getLastBuildNumber() !== 0;
     }
     
-    function hasBuilds() {
-        return ((int)$this->getLastBuildNumber() !== 0); 
+    public function getLastBuildNumber()
+    {
+        if ($this->xml_content->lastBuild->number) {
+            return (int) $this->xml_content->lastBuild->number;
+        }
+        return 0;
     }
     
-    function getLastBuildNumber() {
-        return $this->getDomJob()->lastBuild->number;
+    public function getLastSuccessfulBuildNumber()
+    {
+        if (isset($this->xml_content->lastSuccessfulBuild->number)) {
+            return (int) $this->xml_content->lastSuccessfulBuild->number;
+        }
+        return 0;
     }
-    function getLastBuildUrl() {
-        return $this->getDomJob()->lastBuild->url;
-    }
-    
-    function getLastSuccessfulBuildNumber() {
-        return $this->getDomJob()->lastSuccessfulBuild->number;
-    }
-    function getLastSuccessfulBuildUrl() {
-        return $this->getDomJob()->lastSuccessfulBuild->url;
-    }
-    
-    function getLastFailedBuildNumber() {
-        return $this->getDomJob()->lastFailedBuild->number;
-    }
-    function getLastFailedBuildUrl() {
-        return $this->getDomJob()->lastFailedBuild->url;
+
+    public function getLastSuccessfulBuildUrl()
+    {
+        if (isset($this->xml_content->lastSuccessfulBuild->url)) {
+            return (string) $this->xml_content->lastSuccessfulBuild->url;
+        }
+        return '';
     }
     
-    function getNextBuildNumber() {
-        return $this->getDomJob()->nextBuildNumber;
+    public function getLastFailedBuildNumber()
+    {
+        if ($this->xml_content !== null) {
+            return (int) $this->xml_content->lastFailedBuild->number;
+        }
+        return 0;
+    }
+
+    public function getLastFailedBuildUrl()
+    {
+        if (isset($this->xml_content->lastFailedBuild->url)) {
+            return (string) $this->xml_content->lastFailedBuild->url;
+        }
+        return '';
     }
     
-    function getHealthScores() {
+    private function getHealthScores()
+    {
+        if (! isset($this->xml_content->healthReport)) {
+            return [];
+        }
         $scores = array();
-        foreach ($this->getDomJob()->healthReport as $health_report) {
-            $scores[] = $health_report->score;
+        foreach ($this->xml_content->healthReport as $health_report) {
+            if (isset($health_report->score)) {
+                $scores[] = (int) $health_report->score;
+            }
         }
         return $scores;
     }
-    function getHealthDescriptions() {
-        $descs = array();
-        foreach ($this->getDomJob()->healthReport as $health_report) {
-            $scores[] = $health_report->description;
-        }
-        return $descs;
-    }
-    function getHealthAverageScore() {
-        $arr = $this->getHealthScores();
-        $sum = 0;
-        foreach ($arr as $score) {
-            $sum += (int)$score;
-        }
-        $num = sizeof($arr);
-        if ($num != 0) {
-            return floor($sum/$num);
-        } else {
+
+    private function getHealthAverageScore()
+    {
+        $health_scores = $this->getHealthScores();
+        if (count($health_scores) <= 0) {
             return 0;
         }
+        return floor(array_sum($health_scores)/count($health_scores));
     }
     
-    function getWeatherReportIcon() {
+    public function getWeatherReportIcon()
+    {
         $score = $this->getHealthAverageScore();
         if ($score >= 80) {
-            return $this->getIconsPath()."health_80_plus.gif";
+            return hudsonPlugin::ICONS_PATH."health_80_plus.gif";
         } elseif ($score >= 60) {
-            return $this->getIconsPath()."health_60_to_79.gif";
+            return hudsonPlugin::ICONS_PATH."health_60_to_79.gif";
         } elseif ($score >= 40) {
-            return $this->getIconsPath()."health_40_to_59.gif";
+            return hudsonPlugin::ICONS_PATH."health_40_to_59.gif";
         } elseif ($score >= 20) {
-            return $this->getIconsPath()."health_20_to_39.gif";
+            return hudsonPlugin::ICONS_PATH."health_20_to_39.gif";
         } else {
-            return $this->getIconsPath()."health_00_to_19.gif";
+            return hudsonPlugin::ICONS_PATH."health_00_to_19.gif";
         }
     }
 }

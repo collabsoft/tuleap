@@ -24,9 +24,21 @@ use Codendi_Request;
 use Feedback;
 use ForgeConfig;
 use Project;
+use Service;
+use Tuleap\Layout\ServiceUrlCollector;
 
 class ServicePOSTDataBuilder
 {
+    /**
+     * @var \EventManager
+     */
+    private $event_manager;
+
+    public function __construct(\EventManager $event_manager)
+    {
+        $this->event_manager = $event_manager;
+    }
+
     /**
      * @param Codendi_Request $request
      * @return ServicePOSTData
@@ -40,26 +52,32 @@ class ServicePOSTDataBuilder
         $short_name        = $request->getValidated('short_name', 'string', '');
         $label             = $request->getValidated('label', 'string', '');
         $description       = $request->getValidated('description', 'string', '');
-        $link              = $request->getValidated('link', 'localuri', '');
         $rank              = $request->getValidated('rank', 'int', 500);
-        $scope             = $request->getValidated('scope', 'string', '');
         $is_active         = $request->getValidated('is_active', 'uint', 0);
         $is_used           = $request->getValidated('is_used', 'uint', false);
         $is_in_iframe      = $request->get('is_in_iframe') ? 1 : 0;
         $is_system_service = $this->isSystemService($request, $short_name);
+        $scope             = $is_system_service ? Service::SCOPE_SYSTEM : Service::SCOPE_PROJECT;
 
         $this->checkShortname($project, $short_name);
         $this->checkLabel($label);
-        $this->checkLink($link);
         $this->checkRank($project, $short_name, $rank);
 
-        $link = $this->substituteVariablesInLink($project, $link);
+        $service_url_collector = new ServiceUrlCollector($project, $short_name);
+        $this->event_manager->processEvent($service_url_collector);
+        if ($service_url_collector->hasUrl()) {
+            $link = '';
+        } else {
+            $link = $request->getValidated('link', 'localuri', '');
+            $this->checkLink($link);
+            $link = $this->substituteVariablesInLink($project, $link);
+        }
 
         if (! $is_active) {
             if ($is_used) {
                 $GLOBALS['Response']->addFeedback(
-                    Feedback::INFO,
-                    $GLOBALS['Language']->getText('project_admin_servicebar', 'set_stat_unused')
+                    Feedback::WARN,
+                    _('A non available service cannot be enabled. To enable this service, switch it to available before.')
                 );
                 $is_used = false;
             }
@@ -137,7 +155,6 @@ class ServicePOSTDataBuilder
     }
 
     /**
-     * @param string $link
      * @throws InvalidServicePOSTDataException
      */
     private function checkLink($link)

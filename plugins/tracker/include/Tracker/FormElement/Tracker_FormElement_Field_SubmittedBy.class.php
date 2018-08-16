@@ -1,21 +1,22 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2013-2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
 
@@ -48,9 +49,9 @@ class Tracker_FormElement_Field_SubmittedBy extends Tracker_FormElement_Field_Li
                                array_values($criteria_value),
                                array_merge(array(100),array_keys($this->getBind()->getAllValues())));
             if (count($ids_to_search) > 1) {
-                return " artifact.submitted_by IN(". implode(',', $ids_to_search) .") ";
+                return " artifact.submitted_by IN(". $this->getCriteriaDao()->getDa()->escapeIntImplode($ids_to_search) .") ";
             } else if (count($ids_to_search)) {
-                return " artifact.submitted_by = ". implode('', $ids_to_search) ." ";
+                return " artifact.submitted_by = ". $this->getCriteriaDao()->getDa()->escapeInt($ids_to_search[0]) ." ";
             }
         }
         return '';
@@ -146,19 +147,19 @@ class Tracker_FormElement_Field_SubmittedBy extends Tracker_FormElement_Field_Li
     /**
      * Hook called after a creation of a field
      *
-     * @param array $data The data used to create the field
-     *
+     * @param array $form_element_data
+     * @param bool $tracker_is_empty
      * @return void
      */
-    public function afterCreate($formElement_data) {
+    public function afterCreate(array $form_element_data, $tracker_is_empty) {
         //force the bind
-        $formElement_data['bind-type'] = 'users';
-        $formElement_data['bind'] = array(
+        $form_element_data['bind-type'] = 'users';
+        $form_element_data['bind'] = array(
             'value_function' => array(
                 'artifact_submitters',
             )
         );
-        parent::afterCreate($formElement_data);
+        parent::afterCreate($form_element_data, $tracker_is_empty);
     }
 
     public function fetchSubmit($submitted_values = array()) {
@@ -220,7 +221,8 @@ class Tracker_FormElement_Field_SubmittedBy extends Tracker_FormElement_Field_Li
         return '';
     }
 
-    public function fetchArtifactValueWithEditionFormIfEditable(Tracker_Artifact $artifact, Tracker_Artifact_ChangesetValue $value = null) {
+    public function fetchArtifactValueWithEditionFormIfEditable(Tracker_Artifact $artifact, Tracker_Artifact_ChangesetValue $value = null, $submitted_values = [])
+    {
         return $this->fetchArtifactValueReadOnly($artifact, $value);
     }
 
@@ -279,7 +281,12 @@ class Tracker_FormElement_Field_SubmittedBy extends Tracker_FormElement_Field_Li
      *
      * @return boolean true on success or false on failure
      */
-    public function validateFieldWithPermissionsAndRequiredStatus(Tracker_Artifact $artifact, $submitted_value, Tracker_Artifact_ChangesetValue $last_changeset_value = null) {
+    public function validateFieldWithPermissionsAndRequiredStatus(
+        Tracker_Artifact $artifact,
+        $submitted_value,
+        Tracker_Artifact_ChangesetValue $last_changeset_value = null,
+        $is_submission = null
+    ) {
         $is_valid = true;
         if ($last_changeset_value === null && $submitted_value === null && $this->isRequired()) {
             $is_valid = false;
@@ -332,7 +339,8 @@ class Tracker_FormElement_Field_SubmittedBy extends Tracker_FormElement_Field_Li
     /**
      * @see Tracker_FormElement_Field::fetchCardValue()
      */
-    public function fetchCardValue(Tracker_Artifact $artifact, Tracker_CardDisplayPreferences $display_preferences) {
+    public function fetchCardValue(Tracker_Artifact $artifact, Tracker_CardDisplayPreferences $display_preferences = null)
+    {
         $value = new Tracker_FormElement_Field_List_Bind_UsersValue($artifact->getSubmittedBy());
         return $value->fetchCard($display_preferences);
     }

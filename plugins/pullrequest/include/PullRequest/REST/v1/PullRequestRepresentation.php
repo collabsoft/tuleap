@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,6 +20,7 @@
 
 namespace Tuleap\PullRequest\REST\v1;
 
+use Tuleap\PullRequest\GitReference\GitPullRequestReference;
 use Tuleap\PullRequest\PullRequest;
 use Tuleap\REST\JsonCast;
 use GitRepository;
@@ -45,11 +46,6 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
     const CONFLICT_MERGE       = 'conflict';
     const UNKNOWN_MERGE        = 'unknown-merge-status';
 
-
-    const BUILD_STATUS_UNKNOWN = 'unknown';
-    const BUILD_STATUS_SUCESS  = 'success';
-    const BUILD_STATUS_FAIL    = 'fail';
-
     /**
      * @var string {@type string}
      */
@@ -64,6 +60,11 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
      * @var string {@type string}
      */
     public $reference_dest;
+
+    /**
+     * @var string
+     */
+    public $head_reference;
 
     /**
      * @var string {@type string}
@@ -111,6 +112,12 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
     public $last_build_date;
 
     /**
+     * @var bool
+     * @deprecated
+     */
+    public $build_status_with_deprecated_route;
+
+    /**
      * @var string {@type string}
      */
     public $raw_title;
@@ -124,9 +131,13 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
         PullRequest $pull_request,
         GitRepository $repository,
         GitRepository $repository_dest,
+        GitPullRequestReference $git_reference,
         $user_can_merge,
         $user_can_abandon,
         $user_can_update_labels,
+        $last_build_status_name,
+        $last_build_date,
+        $build_status_with_deprecated_route,
         PullRequestShortStatRepresentation $pr_short_stat_representation
     ) {
         $this->buildMinimal($pull_request, $repository, $repository_dest);
@@ -137,10 +148,12 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
 
         $this->reference_src  = $pull_request->getSha1Src();
         $this->reference_dest = $pull_request->getSha1Dest();
+        $this->head_reference = $git_reference->getGitHeadReference();
         $this->status         = $this->expandStatusName($pull_request->getStatus());
 
-        $this->last_build_status = $this->expandBuildStatusName($pull_request->getLastBuildStatus());
-        $this->last_build_date   = JsonCast::toDate($pull_request->getLastBuildDate());
+        $this->last_build_status                  = $last_build_status_name;
+        $this->last_build_date                    = JsonCast::toDate($last_build_date);
+        $this->build_status_with_deprecated_route = JsonCast::toBoolean($build_status_with_deprecated_route);
 
         $this->user_can_update_labels = $user_can_update_labels;
         $this->user_can_merge         = $user_can_merge;
@@ -195,16 +208,5 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
         );
 
         return $status_name[$merge_status_acronym];
-    }
-
-    private function expandBuildStatusName($status_acronym)
-    {
-        $status_name = array(
-            PullRequest::BUILD_STATUS_UNKNOWN => self::BUILD_STATUS_UNKNOWN,
-            PullRequest::BUILD_STATUS_SUCCESS => self::BUILD_STATUS_SUCESS,
-            PullRequest::BUILD_STATUS_FAIL    => self::BUILD_STATUS_FAIL
-        );
-
-        return $status_name[$status_acronym];
     }
 }

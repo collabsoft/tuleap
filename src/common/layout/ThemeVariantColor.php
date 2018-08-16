@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -32,6 +32,39 @@ class ThemeVariantColor
         $this->hexa_code = $hexa_code;
     }
 
+    public static function buildFromDefaultVariant()
+    {
+        $theme_variant = new ThemeVariant();
+
+        return self::buildFromVariant($theme_variant);
+    }
+
+    public static function buildFromVariant($variant)
+    {
+        switch ($variant) {
+            case 'FlamingParrot_Orange':
+                $color = new ThemeVariantColor('orange', '#f79514');
+                break;
+            case 'FlamingParrot_Green':
+                $color = new ThemeVariantColor('green', '#67af45');
+                break;
+            case 'FlamingParrot_BlueGrey':
+                $color = new ThemeVariantColor('grey', '#5b6c79');
+                break;
+            case 'FlamingParrot_Purple':
+                $color = new ThemeVariantColor('purple', '#79558a');
+                break;
+            case 'FlamingParrot_Red':
+                $color = new ThemeVariantColor('red', '#bd2626');
+                break;
+            case 'FlamingParrot_Blue':
+            default:
+                $color = new ThemeVariantColor('blue', '#1593c4');
+        }
+
+        return $color;
+    }
+
     public function getName()
     {
         return $this->name;
@@ -41,5 +74,4 @@ class ThemeVariantColor
     {
         return $this->hexa_code;
     }
-
 }

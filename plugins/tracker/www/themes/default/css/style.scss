@@ -1,6 +1,9 @@
 @import '../../../scripts/node_modules/codemirror/lib/codemirror';
 @import '../../../scripts/node_modules/codemirror/addon/hint/show-hint';
 @import 'includes/cards';
+@import 'includes/field-bound-colors';
+@import "includes/columns-colors";
+@import "includes/move-artifact";
 
 /* {{{ New trackers */
 button[name=tracker_query_submit] {
@@ -499,9 +502,13 @@ select.tracker-report-expert-allowed-fields {
 
 .tracker_admin_static_value_hidden {
     background: url('../images/tracker_admin_static_value_hidden.png') top left repeat;
-    opacity: 0.35;
-    -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=35)"; /* IE 8 */
-    filter: alpha(opacity=35); /* IE < 8 */
+
+    > .tracker-admin-bindvalue_grip,
+    > .tracker-admin-bindvalue_actions,
+    > .tracker-admin-bindvalue_label,
+    > .tracker-admin-bindvalue_decorator > .dropdown > .dropdown-toggle {
+        opacity: .35;
+    }
 }
 
 .tracker_report_table_pager {
@@ -751,18 +758,28 @@ select.tracker-report-expert-allowed-fields {
 }
 
 .tracker_artifact_title {
-    font-weight: bold;
+    display: flex;
+    font-weight: 600;
     font-size: 2em;
     color: #474747;
-    margin: 7px 0 10px;
+    margin: 0 0 10px;
+
+    .xref-in-title {
+        margin: 0 10px 0 0;
+        padding: 4px 12px;
+        font-size: 18px;
+        line-height: 26px;
+    }
+
+    .tracker-hierarchy > li {
+        margin: 0;
+        line-height: 30px;
+    }
 }
 
 .tracker-artifact-actions {
-    float: right;
-
-    i {
-        margin-right: 5px;
-    }
+    margin: 0 0 0 10px;
+    font-weight: 400;
 }
 
 .copy-mode {
@@ -770,21 +787,18 @@ select.tracker-report-expert-allowed-fields {
 }
 
 .xref-in-title {
-    padding: 2px 7px;
-    font-size: 0.8em;
-    border-radius: 3px;
-    position: relative;
-    top: -1px;
-    color: #FFFFFF;
-    text-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+    display: inline-block;
+    margin: 0 5px 0 0;
+    padding: 2px 10px;
+    border-radius: 20px;
+    color: #ffffff;
+    font-size: 12px;
     font-weight: normal;
-
-    span {
-        display: none;
-    }
+    line-height: 20px;
+    white-space: nowrap;
 }
 
-a:hover .xref-in-title {
+.direct-link-to-artifact:hover > .xref-in-title {
     text-decoration: none;
 }
 
@@ -1259,6 +1273,12 @@ ul.tracker-form-element-checkbox {
 .tracker-admin-field:hover {
     border: 1px solid #F60;
     background: #FFC;
+
+    > .tracker_formelement_label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 }
 
 div.tracker-admin-field-controls {
@@ -1866,10 +1886,26 @@ ul.plugin_tracker_my_artifacts_list {
     margin: 0;
     padding: 0;
     list-style-type: none;
+    font-family: SourceSansPro, "Helvetica Neue", Arial, sans-serif;
 }
 
 .tracker-hierarchy ul {
     clear: both;
+}
+
+.tracker-hierarchy > li {
+    display: flex;
+    align-items: flex-start;
+    margin: 0 0 5px;
+
+    .tree-blank,
+    .tree-last {
+        flex: 0 0 auto;
+    }
+
+    .tree-last {
+        background-position: -48px 5px;
+    }
 }
 
 .tracker-admin-hierarchy-edit-form {
@@ -2945,112 +2981,6 @@ body.sidebar-expanded #tracker-settings > .submit-bar {
     max-width: 960px;
 }
 
-.artifact-references {
-    $grip-size: 40px;
-
-    position: fixed;
-    z-index: 1;
-    right: 0;
-    top: 140px;
-    width: $grip-size;
-    height: $grip-size;
-    overflow: hidden;
-    font-size: 0.9em;
-    transition: all 0.2s ease;
-
-    .artifact-references-content {
-        box-sizing: border-box;
-        -moz-box-sizing: border-box;
-        width: 0;
-        height: 0;
-        padding: 0;
-        transition: all 0.2s ease;
-        position: relative;
-        left: $grip-size;
-        background: rgba(255, 255, 255, 0.95);
-        border: 1px solid #E9E9E9;
-        border-right: none;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        -webkit-border-bottom-left-radius: 3px;
-        -moz-border-radius-bottomleft: 3px;
-        border-bottom-left-radius: 3px;
-
-        div {
-            padding-left: 15px;
-            padding-right: 15px;
-
-            img {
-                margin-right: 10px;
-            }
-
-            ul {
-                list-style-type: none;
-                margin: 0;
-
-                li {
-                    margin-bottom: 8px;
-                    line-height: 1.2em;
-
-                    a {
-                        color: #222;
-
-                        &:hover {
-                            text-decoration: none;
-                            opacity: 0.9;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    .grip {
-        position: absolute;
-        left: 0;
-        top: 0;
-        z-index: 1;
-        width: $grip-size;
-        height: $grip-size;
-        box-sizing: border-box;
-        -moz-box-sizing: border-box;
-        padding-top: 8px;
-        cursor: pointer;
-        text-align: center;
-        font-size: 1.6em;
-        -webkit-border-top-left-radius: 3px;
-        -webkit-border-bottom-left-radius: 3px;
-        -moz-border-radius-topleft: 3px;
-        -moz-border-radius-bottomleft: 3px;
-        border-top-left-radius: 3px;
-        border-bottom-left-radius: 3px;
-        border: 1px solid #222;
-        border-right: none;
-        color: #FFF;
-        transition: all 0.2s ease;
-        background-color: #303030;
-    }
-
-    &.expanded {
-        width: 400px + $grip-size;
-        height: auto;
-
-        .artifact-references-content {
-            width: 400px;
-            padding: 15px;
-            min-height: 100px;
-            height: auto;
-            max-height: 400px;
-        }
-
-        .grip {
-            background-color: rgba(255, 255, 255, 0.95);
-            border: 1px solid #E9E9E9;
-            color: #222;
-            border-right: none;
-        }
-    }
-}
-
 .tracker_report_renderer_description {
     color: #444;
     font-size: 0.9em;
@@ -3274,7 +3204,7 @@ select[name='add_notempty_condition[]'] {
     margin: 0;
 }
 
-#global_notifs {
+.tracker-admin-notification-table {
     max-width: 1200px;
     margin-bottom: 15px;
 }
@@ -3283,7 +3213,7 @@ select[name='add_notempty_condition[]'] {
     border-left: none;
 }
 
-input.tracker-global-notification-email {
+input.tracker-global-notification-email, input.tracker-unsubscriber {
     width: 100%;
     box-sizing: border-box;
     height: 30px;
@@ -3346,11 +3276,17 @@ td.tracker-global-notifications-checkbox-cell {
 
 .tracker-global-notifications-add-hidden,
 .tracker-global-notifications-row-add-hidden,
-.tracker-global-notifications-checkbox-cell-hidden {
+.tracker-global-notifications-checkbox-cell-hidden,
+.tracker-unsubcriber-add-hidden,
+.tracker-unsubscriber-row-add-hidden {
     display: none;
 }
 
-#global_notifs td {
+#tracker-unsubscriber-select {
+    width: 100%;
+}
+
+.tracker-admin-notification-table td {
     vertical-align: middle;
 }
 
@@ -3376,6 +3312,10 @@ td.tracker-global-notifications-checkbox-cell {
     p {
         font-size: 13px;
     }
+}
+
+td.tracker-unsubscriber-actions {
+    text-align: right;
 }
 
 .card-field-users {
@@ -3426,4 +3366,159 @@ td.tracker-global-notifications-checkbox-cell {
 .tracker-semantic-submit {
     display: block;
     margin: 0 0 20px;
+}
+
+.tracker-colorpicker {
+    display: inline-block;
+}
+
+.tracker-colorpicker > .colorpicker-input {
+    display: none;
+}
+
+.tracker-mail-notification-title {
+    margin: 20px 0 0;
+}
+
+.notifications-level-force-usage {
+    margin: 20px 0;
+}
+
+#tracker-webhooks {
+    > .popover {
+        h3 {
+            border: 0;
+            background: #da5353;
+            color: #ffffff;
+        }
+
+        form {
+            margin: 0;
+
+            .remove-tracker-webhooks-confirm-actions {
+                text-align: right;
+            }
+        }
+
+        p {
+            font-size: 13px;
+        }
+    }
+}
+
+.tracker-webhooks-desc {
+    margin: 10px 0 20px;
+
+    > .tracker-webhooks-desc-warn {
+        display: block;
+    }
+}
+
+.tracker-webhooks-list {
+    max-width: 960px;
+
+    > thead > tr > th,
+    > tbody > tr > td {
+        vertical-align: middle;
+        white-space: nowrap;
+
+        &:first-child {
+            width: 100%;
+            max-width: 430px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        &.last-push {
+            max-width: 200px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        &.action-buttons {
+            > a {
+                margin: 0 5px;
+
+                &:hover,
+                &:focus {
+                    text-decoration: none;
+                    opacity: .8;
+                }
+            }
+        }
+    }
+}
+
+.modal-tracker-webhooks {
+    > .modal-header {
+        border-bottom: 2px solid #888888;
+
+        > .close {
+            margin-left: 10px;
+        }
+
+        > h3 {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .modal-body {
+
+        > p:first-child {
+            margin-bottom: 30px;
+        }
+
+        input[type=url] {
+            width: 100%;
+            height: 30px;
+            box-sizing: border-box;
+        }
+
+        > .tracker-webhooks-all-logs {
+            > tbody {
+                font-size: 12px;
+
+                > tr:first-child > td {
+                    white-space: nowrap;
+                }
+
+                > tr > td:last-child {
+                    overflow: hidden;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                    max-width: 383px;
+                    width: 100%;
+                }
+            }
+        }
+    }
+}
+
+.remove-tracker-webhooks-popover {
+    display: none;
+}
+
+.create-tracker-webhook-btn {
+    margin: 0 0 10px;
+}
+
+#tracker-action-button-section {
+    .tracker-action-button {
+        text-align: left;
+        background-color: #ffffff;
+        border-color: #ffffff;
+        box-shadow: none;
+    }
+
+    .tracker-action-button:last-child {
+        margin: 5px 0;
+    }
+}
+
+#tracker-action-icon {
+    margin: 10px 0 0 5px;
 }

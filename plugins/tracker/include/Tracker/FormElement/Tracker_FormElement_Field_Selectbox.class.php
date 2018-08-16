@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_FormElement_Field_Selectbox extends Tracker_FormElement_Field_List implements Tracker_FormElement_IComputeValues{
+class Tracker_FormElement_Field_Selectbox extends Tracker_FormElement_Field_List implements Tracker_FormElement_IComputeValues
+{
 
     /**
      * @return the label of the field (mainly used in admin part)
@@ -247,39 +248,6 @@ class Tracker_FormElement_Field_Selectbox extends Tracker_FormElement_Field_List
         return count($value) === 1 && array_pop($value) == '100';
     }
 
-    /**
-     * Get the color for the current value of the field for an artifact.
-     *
-     * If no value, null is returned.
-     *
-     * @param Tracker_Artifact $artifact
-     *
-     * @return string | null
-     */
-    public function getCurrentDecoratorColor(Tracker_Artifact $artifact) {
-        $changeset = $artifact->getLastChangeset();
-        if (! $changeset) {
-            return null;
-        };
-
-        $values = $this->getBind()->getChangesetValues($changeset->getId());
-        if (! $values) {
-            return null;
-        }
-
-        // We might have many values selected in a list field (eg:
-        // multi-selectbox, checkbox). As we want only one color,
-        // arbitrary take the color of the first selected value.
-        $value_id = $values[0]['id'];
-
-        $decorators = $this->getDecorators();
-        if (! isset($decorators[$value_id])) {
-            return null;
-        }
-
-        return $decorators[$value_id]->css(null);
-    }
-
     public function getComputedValue(
         PFUser $user,
         Tracker_Artifact $artifact,
@@ -312,7 +280,9 @@ class Tracker_FormElement_Field_Selectbox extends Tracker_FormElement_Field_List
             if (count($value['bind_value_ids']) > 1) {
                 throw new Tracker_FormElement_InvalidFieldValueException('Selectbox fields can only have one value');
             }
-            return intval(array_shift(array_map(array($this->getBind(), 'getFieldDataFromRESTValue'), $value['bind_value_ids'])));
+
+            $map = array_map(array($this->getBind(), 'getFieldDataFromRESTValue'), $value['bind_value_ids']);
+            return (int) array_shift($map);
         }
         throw new Tracker_FormElement_InvalidFieldValueException('List fields values must be passed as an array of ids (integer) in \'bind_value_ids\''
            .' Expected format for field '.$this->id .' : {"field_id": 1548, "bind_value_ids": [457]}');

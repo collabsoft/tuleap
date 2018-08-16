@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -47,7 +47,8 @@ class GitRepositoryManager_DeleteAllRepositoriesTest extends TuleapTestCase {
             $this->mirror_data_mapper,
             mock('Tuleap\Git\Permissions\FineGrainedPermissionReplicator'),
             mock('ProjectHistoryDao'),
-            mock('Tuleap\Git\Permissions\HistoryValueFormatter')
+            mock('Tuleap\Git\Permissions\HistoryValueFormatter'),
+            mock(EventManager::class)
         );
     }
 
@@ -115,7 +116,8 @@ class GitRepositoryManager_IsRepositoryNameAlreadyUsedTest extends TuleapTestCas
             $this->mirror_data_mapper,
             mock('Tuleap\Git\Permissions\FineGrainedPermissionReplicator'),
             mock('ProjectHistoryDao'),
-            mock('Tuleap\Git\Permissions\HistoryValueFormatter')
+            mock('Tuleap\Git\Permissions\HistoryValueFormatter'),
+            mock(EventManager::class)
         );
     }
 
@@ -207,7 +209,8 @@ class GitRepositoryManager_CreateTest extends TuleapTestCase {
                 $this->mirror_data_mapper,
                 mock('Tuleap\Git\Permissions\FineGrainedPermissionReplicator'),
                 mock('ProjectHistoryDao'),
-                mock('Tuleap\Git\Permissions\HistoryValueFormatter')
+                mock('Tuleap\Git\Permissions\HistoryValueFormatter'),
+                mock(EventManager::class)
             )
         );
     }
@@ -302,6 +305,8 @@ class GitRepositoryManager_ForkTest extends TuleapTestCase {
             ->fetchAllRepositoryMirrors()
             ->returns(array());
 
+        $this->event_manager = mock(EventManager::class);
+
         $this->manager = partial_mock(
             'GitRepositoryManager',
             array('isRepositoryNameAlreadyUsed'),
@@ -314,7 +319,8 @@ class GitRepositoryManager_ForkTest extends TuleapTestCase {
                 $this->mirror_data_mapper,
                 mock('Tuleap\Git\Permissions\FineGrainedPermissionReplicator'),
                 mock('ProjectHistoryDao'),
-                mock('Tuleap\Git\Permissions\HistoryValueFormatter')
+                mock('Tuleap\Git\Permissions\HistoryValueFormatter'),
+                $this->event_manager
             )
         );
 
@@ -342,6 +348,16 @@ class GitRepositoryManager_ForkTest extends TuleapTestCase {
         stub($this->backend)->fork()->returns(667);
 
         expect($this->git_system_event_manager)->queueRepositoryFork($this->repository, new GitRepositoryIdMatchExpectation(667))->once();
+
+        $this->manager->fork($this->repository, mock('Project'), mock('PFUser'), 'namespace', GitRepository::REPO_SCOPE_INDIVIDUAL, $this->forkPermissions);
+    }
+
+    public function itAsksForExternalPluginsAfterForkingTheRepository()
+    {
+        stub($this->manager)->isRepositoryNameAlreadyUsed($this->repository)->returns(false);
+        stub($this->backend)->fork()->returns(667);
+
+        expect($this->event_manager)->processEvent()->once();
 
         $this->manager->fork($this->repository, mock('Project'), mock('PFUser'), 'namespace', GitRepository::REPO_SCOPE_INDIVIDUAL, $this->forkPermissions);
     }
@@ -391,6 +407,7 @@ class GitRepositoryManager_ForkTest extends TuleapTestCase {
             $repo = new MockGitRepository();
             $repo->setReturnValue('getId', $id);
             $repo->setReturnValue('userCanRead', true, array($this->user));
+            $repo->setReturnValue('getProject', $this->project);
             $this->backend->setReturnValue('isNameValid', true, array($namespace));
             stub($repo)->getBackend()->returns($this->backend);
             $repos[] = $repo;
@@ -410,6 +427,7 @@ class GitRepositoryManager_ForkTest extends TuleapTestCase {
             $repo = new MockGitRepository();
             $repo->setReturnValue('getId', $id);
             $repo->setReturnValue('userCanRead', true, array($this->user));
+            $repo->setReturnValue('getProject', \Mockery::spy(Project::class));
             stub($repo)->getBackend()->returns($this->backend);
             $repos[] = $repo;
         }
@@ -533,6 +551,7 @@ class GitRepositoryManager_ForkTest extends TuleapTestCase {
         $repo = new MockGitRepository();
         $repo->setReturnValue('getId', $id);
         $repo->setReturnValue('userCanRead', true);
+        $repo->setReturnValue('getProject', \Mockery::spy(Project::class));
         $this->backend->setReturnValue('isNameValid', true);
         stub($repo)->getBackend()->returns($this->backend);
         return $repo;

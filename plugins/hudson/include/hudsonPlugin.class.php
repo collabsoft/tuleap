@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -21,15 +21,23 @@
 
 use Tuleap\Dashboard\Project\ProjectDashboardController;
 use Tuleap\Dashboard\User\UserDashboardController;
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\MessageFactoryBuilder;
+use Tuleap\Hudson\HudsonJobBuilder;
 
-require_once 'autoload.php';
-require_once 'constants.php';
+require_once __DIR__ . '/autoload.php';
+require_once __DIR__ . '/constants.php';
 
 class hudsonPlugin extends Plugin
 {
+    const ICONS_PATH = '/plugins/hudson/themes/default/images/ic/';
+
     public function __construct($id)
     {
         parent::__construct($id);
+
+        bindtextdomain('tuleap-hudson', __DIR__.'/../site-content');
+
         $this->addHook('javascript_file', 'jsFile', false);
         $this->addHook('cssfile', 'cssFile', false);
         $this->addHook(Event::SERVICE_ICON);
@@ -42,7 +50,7 @@ class hudsonPlugin extends Plugin
         $this->addHook(\Tuleap\Widget\Event\GetProjectWidgetList::NAME);
 
         $this->addHook('get_available_reference_natures', 'getAvailableReferenceNatures', false);
-        $this->addHook('ajax_reference_tooltip', 'ajax_reference_tooltip', false);
+        $this->addHook(\Tuleap\Reference\ReferenceGetTooltipContentEvent::NAME);
         $this->addHook(Event::AJAX_REFERENCE_SPARKLINE, 'ajax_reference_sparkline', false);
         $this->addHook('statistics_collector',          'statistics_collector',       false);
 
@@ -115,9 +123,9 @@ class hudsonPlugin extends Plugin
 
     protected $hudsonJobFactory = null;
 
-    protected function getHudsonJobFactory() {
+    protected function getMinimalHudsonJobFactory() {
         if (!$this->hudsonJobFactory) {
-            $this->hudsonJobFactory = new HudsonJobFactory();
+            $this->hudsonJobFactory = new MinimalHudsonJobFactory();
         }
         return $this->hudsonJobFactory;
     }
@@ -125,60 +133,61 @@ class hudsonPlugin extends Plugin
     public function widgetInstance(\Tuleap\Widget\Event\GetWidget $get_widget_event) {
         $request = HTTPRequest::instance();
 
-        $user = UserManager::instance()->getCurrentUser();
-        $hf   = $this->getHudsonJobFactory();
+        $user        = UserManager::instance()->getCurrentUser();
+        $hf          = $this->getMinimalHudsonJobFactory();
+        $job_builder = new HudsonJobBuilder(MessageFactoryBuilder::build(), HttpClientFactory::createClient());
 
         switch($get_widget_event->getName()) {
             // MY
             case 'plugin_hudson_my_jobs':
                 require_once('hudson_Widget_MyMonitoredJobs.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_MyMonitoredJobs($user->getId(), $this, $hf));
+                $get_widget_event->setWidget(new hudson_Widget_MyMonitoredJobs($user->getId(), $this, $hf, $job_builder));
                 break;
             case 'plugin_hudson_my_joblastbuilds':
                 require_once('hudson_Widget_JobLastBuilds.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobLastBuilds(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobLastBuilds(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf, $job_builder));
                 break;
             case 'plugin_hudson_my_jobtestresults':
                 require_once('hudson_Widget_JobTestResults.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobTestResults(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobTestResults(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf, $job_builder));
                 break;
             case 'plugin_hudson_my_jobtesttrend':
                 require_once('hudson_Widget_JobTestTrend.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobTestTrend(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobTestTrend(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf, $job_builder));
                 break;
             case 'plugin_hudson_my_jobbuildhistory':
                 require_once('hudson_Widget_JobBuildHistory.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobBuildHistory(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobBuildHistory(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf, $job_builder));
                 break;
             case 'plugin_hudson_my_joblastartifacts':
                 require_once('hudson_Widget_JobLastArtifacts.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobLastArtifacts(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobLastArtifacts(UserDashboardController::LEGACY_DASHBOARD_TYPE, $user->getId(), $hf, $job_builder));
                 break;
 
             // PROJECT
             case 'plugin_hudson_project_jobsoverview':
                 require_once('hudson_Widget_ProjectJobsOverview.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_ProjectJobsOverview($request->get('group_id'), $this, $hf));
+                $get_widget_event->setWidget(new hudson_Widget_ProjectJobsOverview($request->get('group_id'), $this, $hf, $job_builder));
                 break;
             case 'plugin_hudson_project_joblastbuilds':
                 require_once('hudson_Widget_JobLastBuilds.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobLastBuilds(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobLastBuilds(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf, $job_builder));
                 break;
             case 'plugin_hudson_project_jobtestresults':
                 require_once('hudson_Widget_JobTestResults.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobTestResults(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobTestResults(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf, $job_builder));
                 break;
             case 'plugin_hudson_project_jobtesttrend':
                 require_once('hudson_Widget_JobTestTrend.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobTestTrend(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobTestTrend(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf, $job_builder));
                 break;
             case 'plugin_hudson_project_jobbuildhistory':
                 require_once('hudson_Widget_JobBuildHistory.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobBuildHistory(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobBuildHistory(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf, $job_builder));
                 break;
             case 'plugin_hudson_project_joblastartifacts':
                 require_once('hudson_Widget_JobLastArtifacts.class.php');
-                $get_widget_event->setWidget(new hudson_Widget_JobLastArtifacts(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf));
+                $get_widget_event->setWidget(new hudson_Widget_JobLastArtifacts(ProjectDashboardController::LEGACY_DASHBOARD_TYPE, $request->get('group_id'), $hf, $job_builder));
                 break;
         }
     }
@@ -228,17 +237,14 @@ class hudsonPlugin extends Plugin
         $params['natures'] = array_merge($params['natures'], $hudson_plugin_reference_natures);
     }
 
-    function ajax_reference_tooltip($params) {
-        require_once('HudsonJob.class.php');
-        require_once('HudsonBuild.class.php');
-        require_once('hudson_Widget_JobLastBuilds.class.php');
+    public function referenceGetTooltipContentEvent(Tuleap\Reference\ReferenceGetTooltipContentEvent $event)
+    {
         $html_purifier = Codendi_HTMLPurifier::instance();
 
-        $ref = $params['reference'];
-        switch ($ref->getNature()) {
+        switch ($event->getReference()->getNature()) {
             case 'hudson_build':
-                $val = $params['val'];
-                $group_id = $params['group_id'];
+                $val = $event->getValue();
+                $group_id = $event->getProject()->getID();
                 $job_dao = new PluginHudsonJobDao(CodendiDataAccess::instance());
                 if (strpos($val, "/") !== false) {
                     $arr = explode("/", $val);
@@ -256,22 +262,27 @@ class hudsonPlugin extends Plugin
                     $row         = $dar->current();
                     $http_client = new Http_Client();
                     $build       = new HudsonBuild($row['job_url'] . '/' . $build_id . '/', $http_client);
-                    echo '<strong>' . $GLOBALS['Language']->getText('plugin_hudson', 'build_time') . '</strong> ' . $html_purifier->purify($build->getBuildTime()) . '<br />';
-                    echo '<strong>' . $GLOBALS['Language']->getText('plugin_hudson', 'status') . '</strong> ' . $html_purifier->purify($build->getResult());
+                    $event->setOutput(
+                        '<strong>' . $GLOBALS['Language']->getText('plugin_hudson', 'build_time') . '</strong> ' . $html_purifier->purify($build->getBuildTime()) . '<br />'.
+                        '<strong>' . $GLOBALS['Language']->getText('plugin_hudson', 'status') . '</strong> ' . $html_purifier->purify($build->getResult())
+                    );
                 } else {
-                    echo '<span class="error">'.$GLOBALS['Language']->getText('plugin_hudson','error_object_not_found').'</span>';
+                    $event->setOutput('<span class="error">'.$GLOBALS['Language']->getText('plugin_hudson','error_object_not_found').'</span>');
                 }
                 break;
             case 'hudson_job':
                 $job_dao = new PluginHudsonJobDao(CodendiDataAccess::instance());
-                $job_name = $params['val'];
-                $group_id = $params['group_id'];
+                $job_name = $event->getValue();
+                $group_id = $event->getProject()->getID();
                 $dar = $job_dao->searchByJobName($job_name, $group_id);
                 if ($dar->valid()) {
                     $row = $dar->current();
                     try {
-                        $http_client = new Http_Client();
-                        $job         = new HudsonJob($row['job_url'], $http_client);
+                        $minimal_job_factory = $this->getMinimalHudsonJobFactory();
+                        $job_builder         = new HudsonJobBuilder(MessageFactoryBuilder::build(), HttpClientFactory::createClient());
+                        $job                 = $job_builder->getHudsonJob(
+                            $minimal_job_factory->getMinimalHudsonJob($row['job_url'], '')
+                        );
                         $job_id      = $row['job_id'];
 
                         $html  = '';
@@ -298,11 +309,11 @@ class hudsonPlugin extends Plugin
                         $html .= '  </td>';
                         $html .= ' </tr>';
                         $html .= '</table>';
-                        echo $html;
+                        $event->setOutput($html);
                     } catch (Exception $e) {
                     }
                 } else {
-                    echo '<span class="error">'.$GLOBALS['Language']->getText('plugin_hudson','error_object_not_found').'</span>';
+                    $event->setOutput('<span class="error">'.$GLOBALS['Language']->getText('plugin_hudson','error_object_not_found').'</span>');
                 }
                 break;
         }
@@ -349,8 +360,11 @@ class hudsonPlugin extends Plugin
                 if ($dar->valid()) {
                     $row = $dar->current();
                     try {
-                        $http_client         = new Http_Client();
-                        $job                 = new HudsonJob($row['job_url'], $http_client);
+                        $minimal_job_factory = $this->getMinimalHudsonJobFactory();
+                        $job_builder         = new HudsonJobBuilder(MessageFactoryBuilder::build(), HttpClientFactory::createClient());
+                        $job                 = $job_builder->getHudsonJob(
+                            $minimal_job_factory->getMinimalHudsonJob($row['job_url'], '')
+                        );
                         $params['sparkline'] = $job->getStatusIcon();
                     } catch (Exception $e) {
                     }

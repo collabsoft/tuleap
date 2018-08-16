@@ -35,11 +35,9 @@ Packager: Manuel VACELET <manuel.vacelet@enalean.com>
 AutoReqProv: no
 
 # Php and web related stuff
-Requires: rh-php56-php, rh-php56-php-mysql, rh-php56-php-xml, rh-php56-php-mbstring, rh-php56-php-gd, rh-php56-php-soap, rh-php56-php-pear, rh-php56-php-intl, rh-php56-php-process, rh-php56-php-opcache, rh-php56-php-fpm
+Requires: php56-php, php56-php-mysql, php56-php-xml, php56-php-mbstring, php56-php-gd, php56-php-soap, php56-php-pear, php56-php-intl, php56-php-process, php56-php-opcache, php56-php-fpm, rh-mysql57-mysql
 
-Requires: highlight
-
-Requires: php-ZendFramework2-Loader, php-ZendFramework2-Mail
+Requires: highlight, forgeupgrade >= 1.6, ckeditor, jpgraph-tuleap, nginx, logrotate
 
 # Unit file
 Requires: systemd
@@ -53,17 +51,6 @@ Tuleap is a web based application that address all the aspects of product develo
 #
 ## Core component definitions
 #
-
-%package install
-Summary: Initial setup of the platform
-Group: Development/Tools
-Version: @@VERSION@@
-Release: @@VERSION@@_@@RELEASE@@%{?dist}
-Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}
-%description install
-This package contains the setup script for the tuleap platform.
-It is meant to be install at the initial setup of the platform and
-recommanded to uninstall it after.
 
 %package core-mailman
 Summary: Mailman component for Tuleap
@@ -81,7 +68,7 @@ Group: Development/Tools
 Version: @@CORE_CVS_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 #Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, xinetd, rcs, cvsgraph, perl-CGI
-#Requires: viewvc, viewvc-theme-tuleap >= 1.0.4
+#Requires: viewvc, viewvc-theme-tuleap >= 1.0.6
 #Requires: cvs-tuleap
 %description core-cvs
 Manage dependencies for Tuleap CVS integration
@@ -93,9 +80,9 @@ Group: Development/Tools
 Version: 1.2
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, mod_dav_svn
-Requires: viewvc, viewvc-theme-tuleap >= 1.0.4
+Requires: viewvc, viewvc-theme-tuleap >= 1.0.6
 Requires: python, MySQL-python
-Requires: mod_perl, perl-Digest-SHA, perl-DBI, perl-DBD-MySQL
+Requires: mod_perl, perl-Digest-SHA, perl-DBI, perl-DBD-MySQL, perl(Crypt::Eksblowfish::Bcrypt), perl(Redis)
 Requires: tuleap-theme-flamingparrot
 Requires: sha1collisiondetector
 %description core-subversion
@@ -132,8 +119,8 @@ Group: Development/Tools
 Version: @@PLUGIN_GIT_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 AutoReqProv: no
-#Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, git19-git, php-Smarty, php-markdown, gitolite3, gitphp-tuleap >= 0.2.5-15
-#Requires: geshi, php-guzzle-Guzzle, sudo
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, rh-git29-git, gitolite3
+Requires: php-guzzle-Guzzle, sudo, openssh-server
 %description plugin-git
 Integration of git distributed software configuration management tool together
 with Tuleap.
@@ -143,7 +130,7 @@ This package is integrated with gitolite v3 (new version)
 Summary: Pullrequest management for Tuleap
 Version: @@PLUGIN_PULLREQUEST_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
-Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, %{name}-plugin-git
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, %{name}-plugin-git, rh-git29-git
 Group: Development/Tools
 %description plugin-pullrequest
 %{summary}.
@@ -153,7 +140,7 @@ Summary: Tuleap plugin to manage LDAP integration
 Group: Development/Tools
 Version: @@PLUGIN_LDAP_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
-Requires: rh-php56-php-ldap, perl-LDAP, python-ldap
+Requires: php56-php-ldap, perl-LDAP
 %description plugin-ldap
 LDAP Plugin for Tuleap. Provides LDAP information, LDAP
 authentication, user and group management.
@@ -201,7 +188,7 @@ Summary: Tracker v5 for Tuleap
 Group: Development/Tools
 Version: @@PLUGIN_TRACKER_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
-Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, libxslt, rh-php56-php-imap
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, libxslt, php56-php-imap
 %description plugin-tracker
 New tracker generation for Tuleap.
 
@@ -270,7 +257,7 @@ Group: Development/Tools
 Version: @@PLUGIN_MEDIAWIKI_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}
-#Requires: php-mediawiki-tuleap >= 1.20.3-6
+#Requires: php-mediawiki-tuleap-123 >= 1.23.9-5
 %description plugin-mediawiki
 This plugin provides Mediawiki integration in Tuleap.
 
@@ -280,7 +267,6 @@ Group: Development/Tools
 Version: @@PLUGIN_OPENIDCONNECTCLIENT_VERSION@@
 Release: @@VERSION@@_@@RELEASE@@%{?dist}
 Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}
-#Requires: php-openid-connect-client
 %description plugin-openidconnectclient
 Connect to Tuleap using an OpenID Connect provider
 
@@ -376,6 +362,24 @@ Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}
 %description plugin-bugzilla-reference
 %{summary}.
 
+%package plugin-create-test-env
+Summary: Create test environment on a Tuleap server
+Group: Development/Tools
+Version: @@PLUGIN_CREATE_TEST_ENV_VERSION@@
+Release: @@VERSION@@_@@RELEASE@@%{?dist}
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}, tuleap-plugin-botmattermost
+%description plugin-create-test-env
+%{summary}.
+
+%package plugin-docman
+Summary: Docman plugin for Tuleap
+Group: Development/Tools
+Version: @@PLUGIN_DOCMAN_VERSION@@
+Release: @@VERSION@@_@@RELEASE@@%{?dist}
+Requires: %{name} = @@VERSION@@-@@RELEASE@@%{?dist}
+%description plugin-docman
+Share your data with project members.
+
 %package api-explorer
 Summary: Web API Explorer
 Group: Development/Tools
@@ -433,10 +437,18 @@ done
 %{__rm} -f $RPM_BUILD_ROOT/%{APP_DIR}/src/utils/DocmanLegacyDownloader.pl
 # No need of template
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/template
-%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/tests
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/IM
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/label
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/crosstracker
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/textualreport
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/timetracking
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/dynamic_credentials
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/velocity
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/mfa
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/prometheus_metrics
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/plugins/tuleap_synchro
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/src/www/assets/tuleap_synchro
+%{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/src/www/assets/velocity
 # Remove development tools and utility files
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/src/composer.json
 %{__rm} -rf $RPM_BUILD_ROOT/%{APP_DIR}/src/composer.lock
@@ -456,26 +468,28 @@ done
 %{__ln_s} /etc/%{APP_NAME}/themes/common/images $RPM_BUILD_ROOT/%{APP_DIR}/src/www/themes/local
 
 # Data dir
-#%{__install} -m 755 -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}
+%{__install} -m 755 -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}
 #%{__install} -m 700 -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}/user
 #%{__install} -m 755 -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}/images
 
-# Install script
-#%{__install} -m 755 -d $RPM_BUILD_ROOT/%{_datadir}/tuleap-install
-#%{__install} -m 755 tools/setup.sh $RPM_BUILD_ROOT/%{_datadir}/tuleap-install/setup.sh
 
 # Install systemd Unit
 %{__install} -d $RPM_BUILD_ROOT/%{_unitdir}
 %{__install} src/utils/systemd/tuleap.service $RPM_BUILD_ROOT/%{_unitdir}
 %{__install} src/utils/systemd/tuleap-svn-updater.service $RPM_BUILD_ROOT/%{_unitdir}
-%{__install} src/utils/systemd/tuleap-svn-log-parser.service $RPM_BUILD_ROOT/%{_unitdir}
 %{__install} src/utils/systemd/tuleap-php-fpm.service $RPM_BUILD_ROOT/%{_unitdir}
+%{__install} src/utils/systemd/tuleap-process-system-events-default.timer $RPM_BUILD_ROOT/%{_unitdir}
+%{__install} src/utils/systemd/tuleap-process-system-events-default.service $RPM_BUILD_ROOT/%{_unitdir}
+%{__install} src/utils/systemd/tuleap-process-system-events-git.timer $RPM_BUILD_ROOT/%{_unitdir}
+%{__install} src/utils/systemd/tuleap-process-system-events-git.service $RPM_BUILD_ROOT/%{_unitdir}
+%{__install} src/utils/systemd/tuleap-launch-system-check.timer $RPM_BUILD_ROOT/%{_unitdir}
+%{__install} src/utils/systemd/tuleap-launch-system-check.service $RPM_BUILD_ROOT/%{_unitdir}
 
 # Install Tuleap executables
 %{__install} -d $RPM_BUILD_ROOT/%{_bindir}
 %{__install} src/utils/tuleap $RPM_BUILD_ROOT/%{_bindir}/tuleap
 
-#%{__install} -d $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
+%{__install} -d $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
 #%{__install} src/utils/gotohell $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
 #%{__install} src/utils/backup_job $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
 #%{__install} src/utils/cvs1/log_accum $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
@@ -530,6 +544,10 @@ done
 #%{__install} src/etc/02-themes.conf.dist $RPM_BUILD_ROOT/etc/httpd/conf.d/tuleap-aliases/02-themes.conf
 #%{__install} src/etc/03-plugins.conf.dist $RPM_BUILD_ROOT/etc/httpd/conf.d/tuleap-aliases/03-plugins.conf
 #%{__install} src/etc/04-cgi.conf.dist $RPM_BUILD_ROOT/etc/httpd/conf.d/tuleap-aliases/04-cgi.conf
+
+# Sudoers directory
+%{__install} -d $RPM_BUILD_ROOT/etc/sudoers.d
+
 #
 ## plugin webdav
 #%{__install} -d $RPM_BUILD_ROOT/%{APP_CACHE_DIR}/plugins/webdav/locks
@@ -538,35 +556,34 @@ done
 #%{__install} -d $RPM_BUILD_ROOT/%{_localstatedir}/run/forumml
 #%{__install} plugins/forumml/etc/sudoers.d/tuleap_plugin_forumml $RPM_BUILD_ROOT%{_sysconfdir}/sudoers.d/tuleap_plugin_forumml
 #
-## plugin-git
-#%{__install} -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}/gitroot
-#%{__install} -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}/gitolite
-#%{__install} -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}/gitolite/repositories
-#%{__install} -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}/gitolite/grokmirror
-#touch $RPM_BUILD_ROOT/%{APP_DATA_DIR}/gitolite/projects.list
-#%{__ln_s} var/lib/%{APP_NAME}/gitroot $RPM_BUILD_ROOT
-#%{__install} -d $RPM_BUILD_ROOT/%{APP_CACHE_DIR}/smarty
-#%{__install} -d $RPM_BUILD_ROOT/%{APP_CACHE_DIR}/smarty/templates_c
-#%{__install} -d $RPM_BUILD_ROOT/%{APP_CACHE_DIR}/smarty/cache
-#%{__install} plugins/git/bin/gl-membership.pl $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
-#%{__install} plugins/git/bin/gitolite-suexec-wrapper.sh $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
-#%{__install} plugins/git/bin/restore-tar-repository.php $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
-#%{__install} plugins/git/etc/logrotate.syslog.dist $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_git
-#%{__perl} -pi -e "s~%PROJECT_NAME%~%{APP_NAME}~g" $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_git
-#%{__perl} -pi -e "s~%%APP_USER%%~%{APP_USER}~g" $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_git
-%{__install} -d $RPM_BUILD_ROOT/etc/sudoers.d
-#%{__install} plugins/git/etc/sudoers.d/gitolite-http $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite2_http
-#%{__install} plugins/git/etc/sudoers.d/tuleap-git-postreceive $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_git_postreceive
-#
-## plugin-git-gitolite3
-#%{__install} plugins/git/bin/gitolite3-suexec-wrapper.sh $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
-#%{__install} plugins/git/etc/sudoers.d/gitolite3-http $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite3_http
-#%{__perl} -pi -e "s~%libbin_dir%~%{APP_LIBBIN_DIR}~g" $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite3_http
-#%{__install} plugins/git/etc/sudoers.d/gitolite3-replace-authorized-keys $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite3_replace_authorized_keys
+
+# plugin-git
+%{__install} -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}/gitolite
+%{__install} -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}/gitolite/repositories
+%{__install} -d $RPM_BUILD_ROOT/%{APP_DATA_DIR}/gitolite/grokmirror
+%{__install} -d $RPM_BUILD_ROOT/%{APP_CACHE_DIR}/smarty
+%{__install} -d $RPM_BUILD_ROOT/%{APP_CACHE_DIR}/smarty/templates_c
+%{__install} -d $RPM_BUILD_ROOT/%{APP_CACHE_DIR}/smarty/cache
+%{__install} plugins/git/bin/sudo/gl-membership.pl $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
+%{__perl} -pi -e "s~%%app_user%%~%{APP_USER}~g" $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}/gl-membership.pl
+%{__perl} -pi -e "s~%app_path%~/usr/share/tuleap~g" $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}/gl-membership.pl
+%{__install} plugins/git/bin/restore-tar-repository.php $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
+%{__install} plugins/git/bin/gitolite3-suexec-wrapper.sh $RPM_BUILD_ROOT/%{APP_LIBBIN_DIR}
+%{__install} plugins/git/etc/sudoers.d/gitolite3-http $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite3_http
+%{__perl} -pi -e "s~%libbin_dir%~%{APP_LIBBIN_DIR}~g" $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite3_http
+%{__install} plugins/git/etc/sudoers.d/gitolite3-replace-authorized-keys $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite3_replace_authorized_keys
+%{__install} plugins/git/etc/logrotate.syslog.dist $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_git
+%{__perl} -pi -e "s~%PROJECT_NAME%~%{APP_NAME}~g" $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_git
+%{__perl} -pi -e "s~%%APP_USER%%~%{APP_USER}~g" $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_git
+%{__install} plugins/git/etc/sudoers.d/tuleap-git-postreceive $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_git_postreceive
+%{__install} plugins/git/etc/sudoers.d/tuleap-plugin-git $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_plugin_git
+%{__perl} -pi -e "s~%%app_user%%~%{APP_USER}~g" $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_plugin_git
+%{__perl} -pi -e "s~%app_path%~/usr/share/tuleap~g" $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_plugin_git
+
 #
 ##codendiadm > gitolite sudo
-#%{__install} plugins/git/etc/sudoers.d/gitolite $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite
-#%{__perl} -pi -e "s~%libbin_dir%~%{APP_LIBBIN_DIR}~g" $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite
+%{__install} plugins/git/etc/sudoers.d/gitolite $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite
+%{__perl} -pi -e "s~%libbin_dir%~%{APP_LIBBIN_DIR}~g" $RPM_BUILD_ROOT/etc/sudoers.d/tuleap_gitolite
 
 ## Plugin PullRequest
 #%{__install} -D plugins/pullrequest/etc/sudoers.d/gitolite-access-command $RPM_BUILD_ROOT/etc/sudoers.d/gitolite-access-command
@@ -616,6 +633,14 @@ done
 ## Plugin hudson_svn
 #%{__install} plugins/hudson_svn/etc/logrotate.syslog.dist $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_hudson_svn
 #
+## Plugin create_test_env
+#%{__install} plugins/create_test_env/etc/sudoers.d/tuleap_plugin_create_test_env $RPM_BUILD_ROOT/%{_sysconfdir}/sudoers.d
+#
+# Plugin LDAP
+%{__install} plugins/ldap/etc/logrotate.syslog.dist $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_ldap
+%{__perl} -pi -e "s~%PROJECT_NAME%~%{APP_NAME}~g" $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_ldap
+%{__perl} -pi -e "s~%%APP_USER%%~%{APP_USER}~g" $RPM_BUILD_ROOT/etc/logrotate.d/%{APP_NAME}_ldap
+
 ## Symlink for compatibility with older version
 #%{__ln_s} %{APP_DIR} $RPM_BUILD_ROOT/%{OLD_APP_DIR}
 #%{__ln_s} %{APP_LIB_DIR} $RPM_BUILD_ROOT/%{OLD_APP_LIB_DIR}
@@ -687,27 +712,24 @@ else
     true
 fi
 
-#%pre plugin-git-gitolite3
-#if [ "$1" -eq "1" ]; then
-#    # Install
-#    if ! grep -q "^gitolite:" /etc/group 2> /dev/null ; then
-#        /usr/sbin/groupadd -r gitolite 2> /dev/null || :
-#    fi
-#
-#    if id gitolite >/dev/null 2>&1; then
-#        /usr/sbin/usermod -c 'Git'    -d '/var/lib/gitolite' -g gitolite gitolite
-#    else
-#        /usr/sbin/useradd -c 'Git' -m -d '/var/lib/gitolite' -g gitolite gitolite
-#    fi
-#else
-#    true
-#fi
-#
-# echo 'source /opt/rh/rh-git29/enable' > /var/lib/gitolite/.profile
-# chown gitolite:gitolite /var/lib/gitolite/.profile
-#
-#chmod 750 /var/lib/gitolite
-#
+%pre plugin-git
+if [ "$1" -eq "1" ]; then
+    # Install
+    if ! grep -q "^gitolite:" /etc/group 2> /dev/null ; then
+        /usr/sbin/groupadd -r gitolite 2> /dev/null || :
+    fi
+
+    if id gitolite >/dev/null 2>&1; then
+        /usr/sbin/usermod -c 'Git'    -d '/var/lib/gitolite' -g gitolite gitolite
+    else
+        /usr/sbin/useradd -c 'Git' -m -d '/var/lib/gitolite' -g gitolite gitolite
+    fi
+else
+    true
+fi
+
+chmod 750 /var/lib/gitolite
+
 #
 #
 #
@@ -716,13 +738,14 @@ if [ $1 -eq 1 ]; then
     /usr/bin/systemctl enable \
         tuleap.service \
         tuleap-php-fpm.service &>/dev/null || :
+    /usr/bin/systemctl mask php56-php-fpm || :
 fi
 
 %post core-subversion
+/usr/bin/systemctl daemon-reload &>/dev/null || :
 if [ $1 -eq 1 ]; then
     /usr/bin/systemctl enable \
-        tuleap-svn-updater.service \
-        tuleap-svn-log-parser.service &>/dev/null || :
+        tuleap-svn-updater.service &>/dev/null || :
 fi
 
 # In any cases fix the context
@@ -731,106 +754,11 @@ fi
 
 #
 # Post install of git plugin
-#%post plugin-git
-#if [ ! -d "%{APP_DATA_DIR}/gitolite/admin" ]; then
-#    if [ -d '/var/lib/gitolite' ]; then
-#	GITOLITE_BASE_DIR=/var/lib/gitolite
-#    else
-#	GITOLITE_BASE_DIR=/usr/com/gitolite
-#    fi
-#
-#    # deploy gitolite.rc
-#    %{__install} -g gitolite -o gitolite -m 00644 %{APP_DIR}/plugins/git/etc/gitolite.rc.dist $GITOLITE_BASE_DIR/.gitolite.rc
-#
-#    # generate codendiadm ssh key for gitolite
-#    %{__install} -d "%{APP_HOME_DIR}/.ssh/" -g %{APP_USER} -o %{APP_USER} -m 00700
-#    ssh-keygen -q -t rsa -N "" -C "Tuleap / gitolite admin key" -f "%{APP_HOME_DIR}/.ssh/id_rsa_gl-adm"
-#    %{__chown}  %{APP_USER}:%{APP_USER}  "%{APP_HOME_DIR}/.ssh/id_rsa_gl-adm"
-#    %{__chown}  %{APP_USER}:%{APP_USER}  "%{APP_HOME_DIR}/.ssh/id_rsa_gl-adm.pub"
-#
-#    # deploy codendiadm ssh key for gitolite
-#    %{__cp} "%{APP_HOME_DIR}/.ssh/id_rsa_gl-adm.pub" /tmp/
-#    su -c 'git config --global user.name "gitolite"' - gitolite
-#    su -c 'git config --global user.email gitolite@localhost' - gitolite
-#    %{__install} -d -g gitolite -o gitolite -m 00700 $GITOLITE_BASE_DIR/.gitolite
-#    %{__install} -d -g gitolite -o gitolite -m 00700 $GITOLITE_BASE_DIR/.gitolite/conf
-#    %{__install} -g gitolite -o gitolite -m 00644 %{APP_DIR}/plugins/git/etc/gitolite.conf.dist $GITOLITE_BASE_DIR/.gitolite/conf/gitolite.conf
-#    su -c 'gl-setup /tmp/id_rsa_gl-adm.pub' - gitolite
-#
-#    # checkout
-#    %{__cat} "%{APP_DIR}/plugins/git/etc/ssh.config.dist" >> "%{APP_HOME_DIR}/.ssh/config"
-#    %{__chown}  %{APP_USER}:%{APP_USER}  "%{APP_HOME_DIR}/.ssh/config"
-#    su -c 'git config --global user.name "%{APP_USER}"' - %{APP_USER}
-#    su -c 'git config --global user.email %{APP_USER}@localhost' - %{APP_USER}
-#    su -c 'cd %{APP_DATA_DIR}/gitolite; git clone gitolite@gl-adm:gitolite-admin admin' - %{APP_USER}
-#    %{__chmod} 750 %{APP_DATA_DIR}/gitolite/admin
-#
-#    # uncomment gl-membership
-#    # Cannot be done before Tuleap setup. Otherwise previous clone command fails because gl-membership
-#    # doesn't have DB access .
-#    perl -pi -e 's/^# \$GL_GET_MEMBERSHIPS_PGM/\$GL_GET_MEMBERSHIPS_PGM/' $GITOLITE_BASE_DIR/.gitolite.rc
-#
-#    # add codendiadm to gitolite group
-#    if ! groups codendiadm | grep -q gitolite 2> /dev/null ; then
-#	usermod -a -G gitolite codendiadm
-#    fi
-#fi
-#%{__install} -g gitolite -o gitolite -m 00755 %{APP_DIR}/plugins/git/hooks/post-receive-gitolite /usr/share/gitolite/hooks/common/post-receive
-#
-#%post plugin-git-gitolite3
-#if [ ! -d "%{APP_DATA_DIR}/gitolite/admin" ]; then
-#    # Setup repositories in Tuleap area
-#    %{__ln_s} %{APP_DATA_DIR}/gitolite/repositories /var/lib/gitolite/repositories
-#
-#    # deploy gitolite.rc
-#    %{__install} -g gitolite -o gitolite -m 00644 %{APP_DIR}/plugins/git/etc/gitolite3.rc.dist /var/lib/gitolite/.gitolite.rc
-#
-#    # generate codendiadm ssh key for gitolite
-#    %{__install} -d "%{APP_HOME_DIR}/.ssh/" -g %{APP_USER} -o %{APP_USER} -m 00700
-#    ssh-keygen -q -t rsa -N "" -C "Tuleap / gitolite admin key" -f "%{APP_HOME_DIR}/.ssh/id_rsa_gl-adm"
-#    %{__chown}  %{APP_USER}:%{APP_USER}  "%{APP_HOME_DIR}/.ssh/id_rsa_gl-adm"
-#    %{__chown}  %{APP_USER}:%{APP_USER}  "%{APP_HOME_DIR}/.ssh/id_rsa_gl-adm.pub"
-#
-#    # deploy codendiadm ssh key for gitolite
-#    %{__cp} "%{APP_HOME_DIR}/.ssh/id_rsa_gl-adm.pub" /tmp/
-#    su -c 'git config --global user.name "gitolite"' - gitolite
-#    su -c 'git config --global user.email gitolite@localhost' - gitolite
-#    su -c 'gitolite setup -pk /tmp/id_rsa_gl-adm.pub' - gitolite
-#
-#    # checkout
-#    %{__cat} "%{APP_DIR}/plugins/git/etc/ssh.config.dist" >> "%{APP_HOME_DIR}/.ssh/config"
-#    %{__chown}  %{APP_USER}:%{APP_USER}  "%{APP_HOME_DIR}/.ssh/config"
-#    su -c 'git config --global user.name "%{APP_USER}"' - %{APP_USER}
-#    su -c 'git config --global user.email %{APP_USER}@localhost' - %{APP_USER}
-#    su -c 'cd %{APP_DATA_DIR}/gitolite; git clone gitolite@gl-adm:gitolite-admin admin' - %{APP_USER}
-#    %{__chmod} 750 %{APP_DATA_DIR}/gitolite/admin
-#
-#    # remove testing
-#    %{__install} -g codendiadm -o codendiadm -m 00644 %{APP_DIR}/plugins/git/etc/gitolite.conf.dist  %{APP_DATA_DIR}/gitolite/admin/conf/gitolite.conf
-#    su -c 'cd %{APP_DATA_DIR}/gitolite/admin && git add conf/gitolite.conf && git commit -m "Remove testing" && git push origin master' - %{APP_USER}
-#    %{__rm} -rf %{APP_DATA_DIR}/gitolite/repositories/testing.git
-#
-#    # uncomment gl-membership
-#    # Cannot be done before Tuleap setup. Otherwise previous clone command fails because gl-membership
-#    # doesn't have DB access .
-#    perl -pi -e 's/# GROUPLIST_PGM/GROUPLIST_PGM/' /var/lib/gitolite/.gitolite.rc
-#
-#    # SSH keys are managed by Tuleap
-#    sed -i "s/'ssh-authkeys',/#'ssh-authkeys',/" /var/lib/gitolite/.gitolite.rc
-#
-#    # add codendiadm to gitolite group
-#    if ! groups codendiadm | grep -q gitolite 2> /dev/null ; then
-#	usermod -a -G gitolite codendiadm
-#    fi
-#fi
-#%{__install} -g gitolite -o gitolite -m 00755 %{APP_DIR}/plugins/git/hooks/post-receive-gitolite /var/lib/gitolite/.gitolite/hooks/common/post-receive
-#if [ -f /usr/share/gitolite/hooks/common/post-receive ]; then
-#	%{__install} -g gitolite -o gitolite -m 00755 %{APP_DIR}/plugins/git/hooks/post-receive-gitolite /usr/share/gitolite/hooks/common/post-receive
-#fi
-
-#
-#
-#
+%post plugin-git
+# add codendiadm to gitolite group
+if ! groups codendiadm | grep -q gitolite 2> /dev/null ; then
+    usermod -a -G gitolite codendiadm
+fi
 
 %preun
 if [ $1 -eq 0 ]; then
@@ -846,19 +774,18 @@ if [ $1 -eq 0 ]; then
     /usr/bin/systemctl stop tuleap.service &>/dev/null || :
 
     /usr/bin/systemctl disable \
-        tuleap-svn-updater.service \
-        tuleap-svn-log-parser.service &>/dev/null || :
+        tuleap-svn-updater.service &>/dev/null || :
 fi
 
 %postun
+/usr/bin/systemctl unmask php56-php-fpm || :
 /usr/bin/systemctl daemon-reload &>/dev/null || :
 
 %postun core-subversion
 /usr/bin/systemctl daemon-reload &>/dev/null || :
 if [ $1 -eq 1 ]; then
     /usr/bin/systemctl restart \
-        tuleap-svn-updater.service \
-        tuleap-svn-log-parser.service &>/dev/null || :
+        tuleap-svn-updater.service&>/dev/null || :
 fi
 
 %clean
@@ -897,7 +824,10 @@ fi
 %{APP_DIR}/src/www/api/VERSION
 %{APP_DIR}/src/www/api/.htaccess
 %{APP_DIR}/src/www/api/reference
-%{APP_DIR}/src/www/assets
+%dir %{APP_DIR}/src/www/assets
+%{APP_DIR}/src/www/assets/*.js
+%{APP_DIR}/src/www/assets/manifest.json
+%{APP_DIR}/src/www/assets/admindelegation
 %{APP_DIR}/src/www/codendi.css
 %{APP_DIR}/src/www/cvs
 %{APP_DIR}/src/www/export
@@ -936,7 +866,6 @@ fi
 # Plugins dir
 %dir %{APP_DIR}/plugins
 %{APP_DIR}/plugins/admindelegation
-%{APP_DIR}/plugins/docman
 %{APP_DIR}/plugins/graphontrackers
 %{APP_DIR}/plugins/pluginsadministration
 %{APP_DIR}/plugins/projectlinks
@@ -945,7 +874,7 @@ fi
 %{APP_DIR}/plugins/userlog
 
 # Data dir
-#%dir %{APP_DATA_DIR}
+%dir %attr(755,%{APP_USER},%{APP_USER}) %{APP_DATA_DIR}
 #%dir %{APP_DATA_DIR}/user
 #%dir %{APP_DATA_DIR}/images
 
@@ -953,8 +882,8 @@ fi
 %attr(00755,%{APP_USER},%{APP_USER}) %{_bindir}/tuleap
 
 # Executables (/usr/lib/tuleap/bin)
-#%attr(755,%{APP_USER},%{APP_USER}) %dir %{APP_LIB_DIR}
-#%attr(755,%{APP_USER},%{APP_USER}) %dir %{APP_LIBBIN_DIR}
+%attr(755,%{APP_USER},%{APP_USER}) %dir %{APP_LIB_DIR}
+%attr(755,%{APP_USER},%{APP_USER}) %dir %{APP_LIBBIN_DIR}
 #%attr(00755,%{APP_USER},%{APP_USER}) %{APP_LIBBIN_DIR}/gotohell
 #%attr(00740,root,root) %{APP_LIBBIN_DIR}/backup_job
 #%attr(04755,%{APP_USER},%{APP_USER}) %{APP_LIBBIN_DIR}/log_accum
@@ -987,15 +916,13 @@ fi
 # Run dir
 %attr(00755,%{APP_USER},%{APP_USER}) %dir %{_localstatedir}/run/tuleap
 
+# Unit files
 %attr(00644,root,root) %{_unitdir}/tuleap.service
 %attr(00644,root,root) %{_unitdir}/tuleap-php-fpm.service
-
-#
-# Install
-#
-%files install
-%defattr(-,root,root,-)
-#%{_datadir}/tuleap-install
+%attr(00644,root,root) %{_unitdir}/tuleap-process-system-events-default.timer
+%attr(00644,root,root) %{_unitdir}/tuleap-process-system-events-default.service
+%attr(00644,root,root) %{_unitdir}/tuleap-launch-system-check.timer
+%attr(00644,root,root) %{_unitdir}/tuleap-launch-system-check.service
 
 #
 # Core
@@ -1008,7 +935,6 @@ fi
 %defattr(-,root,root,-)
 %{perl_vendorlib}/Apache/Tuleap.pm
 %attr(00644,root,root) %{_unitdir}/tuleap-svn-updater.service
-%attr(00644,root,root) %{_unitdir}/tuleap-svn-log-parser.service
 
 %files core-cvs
 %defattr(-,root,root,-)
@@ -1026,39 +952,22 @@ fi
 %files plugin-git
 %defattr(-,root,root,-)
 %{APP_DIR}/plugins/git
-# %dir %{APP_DATA_DIR}/gitroot
-# %dir %{APP_DATA_DIR}/gitolite
-# %attr(00770,gitolite,gitolite)  %{APP_DATA_DIR}/gitolite/repositories
-# %attr(00775,gitolite,gitolite)  %{APP_DATA_DIR}/gitolite/grokmirror
-# %attr(00660,gitolite,gitolite)  %{APP_DATA_DIR}/gitolite/projects.list
-# %attr(-,root,root) /gitroot
-# %attr(00755,%{APP_USER},%{APP_USER}) %{APP_CACHE_DIR}/smarty
-# %attr(06755,%{APP_USER},%{APP_USER}) %{APP_LIBBIN_DIR}/gl-membership.pl
-# %attr(00755,%{APP_USER},%{APP_USER}) %{APP_LIBBIN_DIR}/gitolite-suexec-wrapper.sh
-# %attr(00755,root,root) %{APP_LIBBIN_DIR}/restore-tar-repository.php
-# %attr(00644,root,root) /etc/logrotate.d/%{APP_NAME}_git
-# %attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_gitolite2_http
-# %attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_gitolite
-# %attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_git_postreceive
-
-# %files plugin-git-gitolite3
-# %defattr(-,root,root,-)
-# %{APP_DIR}/plugins/git
-# %dir %{APP_DATA_DIR}/gitroot
-# %dir %{APP_DATA_DIR}/gitolite
-# %attr(00770,gitolite,gitolite)  %{APP_DATA_DIR}/gitolite/repositories
-# %attr(00775,gitolite,gitolite)  %{APP_DATA_DIR}/gitolite/grokmirror
-# %attr(00660,gitolite,gitolite)  %{APP_DATA_DIR}/gitolite/projects.list
-# %attr(-,root,root) /gitroot
-# %attr(00755,%{APP_USER},%{APP_USER}) %{APP_CACHE_DIR}/smarty
-# %attr(06755,%{APP_USER},%{APP_USER}) %{APP_LIBBIN_DIR}/gl-membership.pl
-# %attr(00755,root,root) %{APP_LIBBIN_DIR}/gitolite3-suexec-wrapper.sh
-# %attr(00755,root,root) %{APP_LIBBIN_DIR}/restore-tar-repository.php
-# %attr(00644,root,root) %{_sysconfdir}/logrotate.d/%{APP_NAME}_git
-# %attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_gitolite3_http
-# %attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_gitolite
-# %attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_git_postreceive
-# %attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_gitolite3_replace_authorized_keys
+%dir %{APP_DATA_DIR}/gitolite
+%attr(00770,gitolite,gitolite)  %{APP_DATA_DIR}/gitolite/repositories
+%attr(00775,gitolite,gitolite)  %{APP_DATA_DIR}/gitolite/grokmirror
+#%attr(00660,gitolite,gitolite)  %{APP_DATA_DIR}/gitolite/projects.list
+%attr(00755,%{APP_USER},%{APP_USER}) %{APP_CACHE_DIR}/smarty
+%attr(06755,%{APP_USER},%{APP_USER}) %{APP_LIBBIN_DIR}/gl-membership.pl
+%attr(00755,root,root) %{APP_LIBBIN_DIR}/gitolite3-suexec-wrapper.sh
+%attr(00755,root,root) %{APP_LIBBIN_DIR}/restore-tar-repository.php
+%attr(00644,root,root) %{_sysconfdir}/logrotate.d/%{APP_NAME}_git
+%attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_gitolite3_http
+%attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_gitolite
+%attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_git_postreceive
+%attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_gitolite3_replace_authorized_keys
+%attr(00440,root,root) %{_sysconfdir}/sudoers.d/tuleap_plugin_git
+%attr(00644,root,root) %{_unitdir}/tuleap-process-system-events-git.timer
+%attr(00644,root,root) %{_unitdir}/tuleap-process-system-events-git.service
 
 %files plugin-pullrequest
 %defattr(-,root,root,-)
@@ -1069,6 +978,8 @@ fi
 %files plugin-ldap
 %defattr(-,root,root,-)
 %{APP_DIR}/plugins/ldap
+%attr(00644,root,root) /etc/logrotate.d/%{APP_NAME}_ldap
+%config(noreplace) /etc/logrotate.d/%{APP_NAME}_ldap
 
 %files plugin-hudson
 %defattr(-,root,root,-)
@@ -1114,6 +1025,7 @@ fi
 %files plugin-cardwall
 %defattr(-,root,root,-)
 %{APP_DIR}/plugins/cardwall
+%{APP_DIR}/src/www/assets/cardwall
 
 %files plugin-agiledashboard
 %defattr(-,root,root,-)
@@ -1185,6 +1097,16 @@ fi
 %defattr(-,root,root,-)
 %{APP_DIR}/plugins/bugzilla_reference
 #%attr(00644,root,root) /etc/logrotate.d/%{APP_NAME}_bugzilla_reference
+
+%files plugin-create-test-env
+%defattr(-,root,root,-)
+%{APP_DIR}/plugins/create_test_env
+#%attr(00400,root,root) %{_sysconfdir}/sudoers.d/tuleap_plugin_create_test_env
+%{APP_DIR}/src/www/assets/create_test_env
+
+%files plugin-docman
+%defattr(-,root,root,-)
+%{APP_DIR}/plugins/docman
 
 %files api-explorer
 %defattr(-,root,root,-)

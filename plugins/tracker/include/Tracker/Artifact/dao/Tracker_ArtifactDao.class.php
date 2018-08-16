@@ -92,7 +92,7 @@ class Tracker_ArtifactDao extends DataAccessObject {
 
         if (!$user_is_admin) {
             $ugroups = $this->da->escapeIntImplode($ugroups);
-            $from   .= " LEFT JOIN permissions ON (permissions.object_id = CAST(artifact.id AS CHAR) AND permissions.permission_type = 'PLUGIN_TRACKER_ARTIFACT_ACCESS')";
+            $from   .= " LEFT JOIN permissions ON (permissions.object_id = CAST(artifact.id AS CHAR CHARACTER SET utf8) AND permissions.permission_type = 'PLUGIN_TRACKER_ARTIFACT_ACCESS')";
             $where  .= " AND (artifact.use_artifact_permissions = 0 OR  (permissions.ugroup_id IN (". $ugroups.")))";
         }
 
@@ -407,36 +407,67 @@ class Tracker_ArtifactDao extends DataAccessObject {
 
     public function create($tracker_id, $submitted_by, $submitted_on, $use_artifact_permissions)
     {
+        for ($tentative = 0; $tentative < self::MAX_RETRY_CREATION; $tentative++) {
+            $this->startTransaction();
+
+            $id_sharing  = new TrackerIdSharingDao();
+            $artifact_id = $id_sharing->generateArtifactId();
+
+            try {
+                $artifact_id = $this->createWithId(
+                    $artifact_id,
+                    $tracker_id,
+                    $submitted_by,
+                    $submitted_on,
+                    $use_artifact_permissions
+                );
+
+                $this->commit();
+                return $artifact_id;
+            } catch (DataAccessException $exception) {
+                $this->rollBack();
+                continue;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @throws DataAccessException
+     * @throws DataAccessQueryException
+     */
+    public function createWithId(
+        $artifact_id,
+        $tracker_id,
+        $submitted_by,
+        $submitted_on,
+        $use_artifact_permissions
+    ) {
+        $artifact_id              = $this->da->escapeInt($artifact_id);
         $tracker_id               = $this->da->escapeInt($tracker_id);
         $use_artifact_permissions = $this->da->escapeInt($use_artifact_permissions);
         $submitted_on             = $this->da->escapeInt($submitted_on);
         $submitted_by             = $this->da->escapeInt($submitted_by);
 
-        for ($tentative = 0; $tentative < self::MAX_RETRY_CREATION; $tentative++) {
-            $this->startTransaction();
-            $sql            = "SELECT IFNULL(MAX(per_tracker_artifact_id), 0) + 1 as per_tracker_artifact_id
-                               FROM tracker_artifact
-                               WHERE tracker_id = $tracker_id";
-            $row            = $this->retrieveFirstRow($sql);
-            $per_tracker_id = $row['per_tracker_artifact_id'];
+        $sql            = "SELECT IFNULL(MAX(per_tracker_artifact_id), 0) + 1 as per_tracker_artifact_id
+                           FROM tracker_artifact
+                           WHERE tracker_id = $tracker_id";
+        $row            = $this->retrieveFirstRow($sql);
+        $per_tracker_id = $row['per_tracker_artifact_id'];
 
-            $id_sharing = new TrackerIdSharingDao();
-            $id         = $id_sharing->generateArtifactId();
-            if ($id && $this->getPriorityDao()->putArtifactAtTheEndWithoutTransaction($id)) {
-                // We do not keep trace of the history change here because it doesn't have any sense to say
-                // the newly created artifact has less priority than the one at the bottom of the priority chain.
-                $sql = "INSERT INTO $this->table_name
-                    (id, tracker_id, per_tracker_artifact_id, submitted_by, submitted_on, use_artifact_permissions)
-                    VALUES ($id, $tracker_id, $per_tracker_id, $submitted_by, $submitted_on, $use_artifact_permissions)";
-                if ($this->update($sql)) {
-                    $this->commit();
-                    return $id;
-                }
+        if ($artifact_id && $this->getPriorityDao()->putArtifactAtTheEndWithoutTransaction($artifact_id)) {
+            // We do not keep trace of the history change here because it doesn't have any sense to say
+            // the newly created artifact has less priority than the one at the bottom of the priority chain.
+            $sql = "INSERT INTO $this->table_name
+                (id, tracker_id, per_tracker_artifact_id, submitted_by, submitted_on, use_artifact_permissions)
+                VALUES ($artifact_id, $tracker_id, $per_tracker_id, $submitted_by, $submitted_on, $use_artifact_permissions)";
+            if ($this->update($sql)) {
+                return $artifact_id;
             }
-            $this->rollBack();
         }
 
-        return false;
+        throw new DataAccessException();
     }
 
     public function save($id, $tracker_id, $use_artifact_permissions) {
@@ -1014,7 +1045,6 @@ class Tracker_ArtifactDao extends DataAccessObject {
                     INNER JOIN tracker_artifact                     linked_art ON (linked_art.id = artlink.artifact_id $additional_artifacts_sql)
                     INNER JOIN tracker_artifact_priority_rank                       ON (tracker_artifact_priority_rank.artifact_id = linked_art.id)
                      $exclude
-                        -- only those with open status
                     INNER JOIN tracker AS T ON (linked_art.tracker_id = T.id)
                     INNER JOIN groups AS G ON (G.group_id = T.group_id)
                     INNER JOIN tracker_changeset AS C ON (linked_art.last_changeset_id = C.id)
@@ -1023,9 +1053,20 @@ class Tracker_ArtifactDao extends DataAccessObject {
                         INNER JOIN tracker_semantic_title as ST ON (CV2.field_id = ST.field_id)
                         INNER JOIN tracker_changeset_value_text AS CVT ON (CV2.id = CVT.changeset_value_id)
                     ) ON (C.id = CV2.changeset_id)
+                    -- only those with open status
+                    LEFT JOIN (
+                        tracker_semantic_status as SS
+                        INNER JOIN tracker_changeset_value AS CV3       ON (SS.field_id = CV3.field_id)
+                        INNER JOIN tracker_changeset_value_list AS CVL2 ON (CV3.id = CVL2.changeset_value_id)
+                    ) ON (T.id = SS.tracker_id AND C.id = CV3.changeset_id)
                 WHERE parent_art.id = $artifact_id
                     $submile_null
                     AND linked_art.tracker_id IN ($tracker_ids)
+                    AND (
+                        SS.field_id IS NULL -- Use the status semantic only if it is defined
+                        OR
+                        CVL2.bindvalue_id = SS.open_value_id
+                    )
                 GROUP BY (linked_art.id)
                 ORDER BY tracker_artifact_priority_rank.rank ASC
                 LIMIT $limit OFFSET $offset";
@@ -1178,16 +1219,8 @@ class Tracker_ArtifactDao extends DataAccessObject {
         return array();
     }
 
-    public function getUnsubscribersIds($artifact_id) {
-        $artifact_id = $this->da->escapeInt($artifact_id);
-        $sql = "SELECT user_id
-                FROM tracker_artifact_unsubscribe
-                WHERE artifact_id = $artifact_id";
-
-        return $this->retrieve($sql);
-    }
-
-    public function doesUserHaveUnsubscribedFromNotifications($artifact_id, $user_id) {
+    public function doesUserHaveUnsubscribedFromArtifactNotifications($artifact_id, $user_id)
+    {
         $artifact_id = $this->da->escapeInt($artifact_id);
         $user_id     = $this->da->escapeInt($user_id);
 
@@ -1216,6 +1249,16 @@ class Tracker_ArtifactDao extends DataAccessObject {
         $sql = "DELETE FROM tracker_artifact_unsubscribe
                 WHERE artifact_id = $artifact_id
                     AND user_id = $user_id";
+
+        $this->update($sql);
+    }
+
+    public function deleteUnsubscribeNotificationForArtifact($artifact_id)
+    {
+        $artifact_id = $this->da->escapeInt($artifact_id);
+
+        $sql = "DELETE FROM tracker_artifact_unsubscribe
+                WHERE artifact_id = $artifact_id";
 
         $this->update($sql);
     }

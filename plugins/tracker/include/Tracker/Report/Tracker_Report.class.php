@@ -29,7 +29,8 @@ use Tuleap\Tracker\Report\AdditionalCriteria\CommentCriterionPresenter;
 use Tuleap\Tracker\Report\AdditionalCriteria\CommentCriterionValueRetriever;
 use Tuleap\Tracker\Report\AdditionalCriteria\CommentCriterionValueSaver;
 use Tuleap\Tracker\Report\AdditionalCriteria\CommentDao;
-use Tuleap\Tracker\Report\Event\trackerReportDeleted;
+use Tuleap\Tracker\Report\Event\TrackerReportDeleted;
+use Tuleap\Tracker\Report\Event\TrackerReportSetToPrivate;
 use Tuleap\Tracker\Report\ExpertModePresenter;
 use Tuleap\Tracker\Report\Query\Advanced\ExpertQueryValidator;
 use Tuleap\Tracker\Report\Query\Advanced\Grammar\Parser;
@@ -617,6 +618,9 @@ class Tracker_Report implements Tracker_Dispatchable_Interface {
             if ($dropdown_type === self::TYPE_CRITERIA && ! $field->canBeUsedAsReportCriterion()) {
                 continue;
             }
+            if ($dropdown_type === self::TYPE_TABLE && ! $field->canBeUsedAsReportColumn()) {
+                continue;
+            }
 
             if ($field->userCanRead() && $field->isUsed()) {
                 $fields_for_criteria[$field->getId()] = $field;
@@ -762,8 +766,6 @@ class Tracker_Report implements Tracker_Dispatchable_Interface {
     }
 
     public function display(Tracker_IDisplayTrackerLayout $layout, $request, $current_user) {
-        Tuleap\Instrument\Collect::startTiming('tracker.'.$this->tracker_id.'.report.'.$this->getId());
-
         $link_artifact_id       = (int)$request->get('link-artifact-id');
         $report_can_be_modified = !$link_artifact_id;
 
@@ -929,7 +931,6 @@ class Tracker_Report implements Tracker_Dispatchable_Interface {
             $html .= '</div>';
             echo $html;
 
-            Tuleap\Instrument\Collect::endTiming('tracker.'.$this->tracker_id.'.report.'.$this->getId());
             if ($report_can_be_modified) {
                 $this->getTracker()->displayFooter($layout);
                 exit();
@@ -1372,14 +1373,20 @@ class Tracker_Report implements Tracker_Dispatchable_Interface {
             case self::ACTION_SCOPE:
                 if ($this->getTracker()->userIsAdmin($current_user) && (!$this->user_id || $this->user_id == $current_user->getId())) {
                     if ($request->exist('report_scope_public')) {
+                        $is_scope_public = $request->get('report_scope_public');
                         $old_user_id = $this->user_id;
-                        if ($request->get('report_scope_public') && $this->user_id == $current_user->getId()) {
+                        if ($is_scope_public && $this->user_id == $current_user->getId()) {
                             $this->user_id = null;
-                        } else if (!$request->get('report_scope_public') && !$this->user_id) {
+                        } else if (! $is_scope_public && !$this->user_id) {
                             $this->user_id = $current_user->getId();
                         }
                         if ($this->user_id != $old_user_id) {
                             Tracker_ReportFactory::instance()->save($this);
+
+                            if (! $is_scope_public) {
+                                $event = new TrackerReportSetToPrivate($this);
+                                EventManager::instance()->processEvent($event);
+                            }
                         }
                     }
                 }
@@ -1691,7 +1698,7 @@ class Tracker_Report implements Tracker_Dispatchable_Interface {
     public function getAdditionalCriteria() {
         $session_additional_criteria = null;
         if (isset($this->report_session)) {
-            $session_additional_criteria = &$this->report_session->getAdditionalCriteria();
+            $session_additional_criteria = $this->report_session->getAdditionalCriteria();
         }
 
         $additional_criteria = array();
@@ -1731,9 +1738,17 @@ class Tracker_Report implements Tracker_Dispatchable_Interface {
      */
     private function getCommentCriterionValueFromDatabase()
     {
-        $retriever = new CommentCriterionValueRetriever(new CommentDao());
+        $retriever = $this->getCommentCriterionValueRetriever();
 
         return $retriever->getValueForReport($this);
+    }
+
+    /**
+     * @return CommentCriterionValueRetriever
+     */
+    protected function getCommentCriterionValueRetriever()
+    {
+        return new CommentCriterionValueRetriever(new CommentDao());
     }
 
     /**

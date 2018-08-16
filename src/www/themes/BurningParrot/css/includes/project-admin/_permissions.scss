@@ -44,6 +44,11 @@
     text-transform: none;
 }
 
+.permission-per-group-load-button {
+    display: flex;
+    justify-content: center;
+}
+
 @media screen and (max-width: 1200px) {
     .project-admin-permission-per-group {
         flex-direction: column;
@@ -61,4 +66,34 @@
 .permission-per-group-loader {
     height: 100px;
     background: url('/themes/BurningParrot/images/spinner.gif') no-repeat center center;
+}
+
+.permission-per-group-table > tbody > tr > td {
+    @each $badge in $badge-names {
+        > .#{$badge} {
+            margin: 1px 2px 1px 0;
+        }
+    }
+}
+
+.permission-per-group-double-column-table {
+    > th:first-child {
+        width: 33%;
+    }
+
+    > th:last-child {
+        width: 66%;
+    }
+}
+
+.permission-per-group-triple-column-table {
+    > th {
+        width: 33%;
+    }
+}
+
+.permission-per-group-sextuple-column-table {
+    > th {
+        width: 16.667%;
+    }
 }

@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright Enalean (c) 2017-2018. All rights reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright Enalean (c) 2017. All rights reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,9 +20,15 @@
  */
 
 use Tuleap\Tracker\Notifications\GlobalNotificationsAddressesBuilder;
+use Tuleap\Tracker\Notifications\GlobalNotificationSubscribersFilter;
 use Tuleap\Tracker\Notifications\NotificationCustomisationSettingsPresenter;
+use Tuleap\Tracker\Notifications\NotificationLevelExtractor;
 use Tuleap\Tracker\Notifications\NotificationListBuilder;
+use Tuleap\Tracker\Notifications\NotificationsForceUsageUpdater;
 use Tuleap\Tracker\Notifications\PaneNotificationListPresenter;
+use Tuleap\Tracker\Notifications\Settings\UserNotificationSettingsDAO;
+use Tuleap\Tracker\Notifications\ConfigNotificationEmailCustomSender;
+use Tuleap\Tracker\Notifications\ConfigNotificationEmailCustomSenderDao;
 use Tuleap\Tracker\Notifications\UgroupsToNotifyDao;
 use Tuleap\Tracker\Notifications\UsersToNotifyDao;
 use Tuleap\User\InvalidEntryInAutocompleterCollection;
@@ -30,6 +36,7 @@ use Tuleap\User\RequestFromAutocompleter;
 
 class Tracker_NotificationsManager {
 
+    /** @var Tracker */
     protected $tracker;
 
     /**
@@ -56,46 +63,87 @@ class Tracker_NotificationsManager {
      * @var NotificationListBuilder
      */
     private $notification_list_builder;
+    /**
+     * @var UserNotificationSettingsDAO
+     */
+    private $user_notification_settings_dao;
+    /**
+     * @var GlobalNotificationSubscribersFilter
+     */
+    private $subscribers_filter;
+    /**
+     * @var NotificationLevelExtractor
+     */
+    private $notification_level_extractor;
+    /**
+     * @var TrackerDao
+     */
+    private $tracker_dao;
+    /**
+     * @var ProjectHistoryDao
+     */
+    private $project_history_dao;
+    /**
+     * @var NotificationsForceUsageUpdater
+     */
+    private $force_usage_updater;
 
     public function __construct(
         $tracker,
         NotificationListBuilder $notification_list_builder,
         UsersToNotifyDao $user_to_notify_dao,
         UgroupsToNotifyDao $ugroup_to_notify_dao,
+        UserNotificationSettingsDAO $user_notification_settings_dao,
         GlobalNotificationsAddressesBuilder $addresses_builder,
         UserManager $user_manager,
-        UGroupManager $ugroup_manager
+        UGroupManager $ugroup_manager,
+        GlobalNotificationSubscribersFilter $subscribers_filter,
+        NotificationLevelExtractor $notification_level_extractor,
+        TrackerDao $tracker_dao,
+        ProjectHistoryDao $project_history_dao,
+        NotificationsForceUsageUpdater $force_usage_updater
     ) {
-        $this->tracker                       = $tracker;
-        $this->user_to_notify_dao            = $user_to_notify_dao;
-        $this->ugroup_to_notify_dao          = $ugroup_to_notify_dao;
-        $this->addresses_builder             = $addresses_builder;
-        $this->user_manager                  = $user_manager;
-        $this->ugroup_manager                = $ugroup_manager;
-        $this->notification_list_builder     = $notification_list_builder;
+        $this->tracker                        = $tracker;
+        $this->user_to_notify_dao             = $user_to_notify_dao;
+        $this->ugroup_to_notify_dao           = $ugroup_to_notify_dao;
+        $this->user_notification_settings_dao = $user_notification_settings_dao;
+        $this->addresses_builder              = $addresses_builder;
+        $this->user_manager                   = $user_manager;
+        $this->ugroup_manager                 = $ugroup_manager;
+        $this->notification_list_builder      = $notification_list_builder;
+        $this->subscribers_filter             = $subscribers_filter;
+        $this->notification_level_extractor   = $notification_level_extractor;
+        $this->tracker_dao                    = $tracker_dao;
+        $this->project_history_dao            = $project_history_dao;
+        $this->force_usage_updater            = $force_usage_updater;
     }
 
-    public function process(TrackerManager $tracker_manager, HTTPRequest $request, $current_user)
+    public function displayTrackerAdministratorSettings(HTTPRequest $request, CSRFSynchronizerToken $csrf_token)
     {
-        if ($request->exist('stop_notification')) {
-            if ($this->tracker->stop_notification != $request->get('stop_notification')) {
-                $this->tracker->stop_notification = $request->get('stop_notification') ? 1 : 0;
-                $dao                              = new TrackerDao();
-                if ($dao->save($this->tracker)) {
-                    $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_tracker_admin_notification', 'successfully_updated'));
-                }
-            }
+        $this->displayAdminNotifications($csrf_token);
+        (new Tracker_DateReminderRenderer($this->tracker))->displayDateReminders($request, $csrf_token);
+    }
+
+    public function processUpdate(HTTPRequest $request)
+    {
+        if ($this->requestProvidesNewNotificationLevel($request)) {
+            $this->updateNotificationLevel($request);
         }
 
-        if ($request->isPost())
-        {
-            $config_notification_assigned_to = new ConfigNotificationAssignedTo(new ConfigNotificationAssignedToDao());
+        $config_notification_assigned_to = new ConfigNotificationAssignedTo(new ConfigNotificationAssignedToDao());
 
-            if ($request->exist('enable-assigned-to-me')) {
-                $config_notification_assigned_to->enableAssignedToInSubject($this->tracker);
-            } else {
-                $config_notification_assigned_to->disableAssignedToInSubject($this->tracker);
-            }
+        if ($request->exist('enable-assigned-to-me')) {
+            $config_notification_assigned_to->enableAssignedToInSubject($this->tracker);
+        } else {
+            $config_notification_assigned_to->disableAssignedToInSubject($this->tracker);
+        }
+
+        $config_notification_custom_email_from = new ConfigNotificationEmailCustomSender(new ConfigNotificationEmailCustomSenderDao());
+
+        $email_custom_enabled = $request->get('email-custom-enabled');
+        $email_custom_from = $request->get('email-custom-from');
+        if ($request->exist('email-custom-from')) {
+            $config_notification_custom_email_from->setCustomSender($this->tracker, $email_custom_from, $email_custom_enabled);
         }
 
         $new_global_notification = $request->get('new_global_notification');
@@ -105,23 +153,20 @@ class Tracker_NotificationsManager {
 
         if ($remove_global) {
             $this->deleteGlobalNotification($remove_global);
-            $this->redirectOnNotifications();
         } else if ($new_global_notification && $new_global_notification['addresses']) {
             $this->createNewGlobalNotification($new_global_notification);
-            $this->redirectOnNotifications();
         } else if ($global_notification && $notification_id) {
             $this->updateGlobalNotification($notification_id, $global_notification[$notification_id]);
-            $this->redirectOnNotifications();
         }
 
-        $this->displayAdminNotifications($tracker_manager, $request, $current_user);
-        $reminderRenderer = new Tracker_DateReminderRenderer($this->tracker);
-
-        if ($this->tracker->userIsAdmin($current_user)) {
-            $reminderRenderer->displayDateReminders($request);
+        $new_unsubscribers = $request->get('new_unsubscriber');
+        if ($new_unsubscribers !== false) {
+            $this->addUnsubscribers($new_unsubscribers);
         }
-
-        $reminderRenderer->displayFooter($tracker_manager);
+        $remove_unsubscribers = $request->get('remove_unsubscribers');
+        if ($remove_unsubscribers !== false) {
+            $this->deleteUnsubscribers($remove_unsubscribers);
+        }
     }
 
     private function createNewGlobalNotification($global_notification_data)
@@ -183,85 +228,112 @@ class Tracker_NotificationsManager {
         }
     }
 
-    protected function displayAdminNotifications(TrackerManager $tracker_manager, $request, $current_user) {
-        $this->tracker->displayAdminItemHeader($tracker_manager, 'editnotifications');
-        echo '<fieldset><form id="tracker-admin-notifications-form" action="'.TRACKER_BASE_URL.'/?tracker='. (int)$this->tracker->id .'&amp;func=admin-notifications" method="POST">';
+    private function addUnsubscribers($new_unsubcribers)
+    {
+        $invalid_entries = new InvalidEntryInAutocompleterCollection();
+        $autocompleter   = $this->getAutocompleter($new_unsubcribers, $invalid_entries);
+        $invalid_entries->generateWarningMessageForInvalidEntries();
+
+        $users_to_add_as_unsubcribers = $autocompleter->getUsers();
+        if (empty($users_to_add_as_unsubcribers)) {
+            return;
+        }
+
+        foreach ($users_to_add_as_unsubcribers as $new_unsubcriber) {
+            $this->user_notification_settings_dao->enableNoNotificationAtAllMode(
+                $new_unsubcriber->getId(),
+                $this->tracker->getId()
+            );
+        }
+
+        $GLOBALS['Response']->addFeedback(
+            Feedback::INFO,
+            dgettext('tuleap-tracker', 'The unsubscribe list has been successfully updated.')
+        );
+    }
+
+    private function deleteUnsubscribers(array $unsubscribers)
+    {
+        foreach ($unsubscribers as $user_id => $value) {
+            $this->user_notification_settings_dao->enableNoGlobalNotificationMode($user_id, $this->tracker->getId());
+        }
+        $GLOBALS['Response']->addFeedback(
+            Feedback::INFO,
+            dgettext('tuleap-tracker', 'The unsubscribe list has been successfully updated.')
+        );
+    }
+
+    private function displayAdminNotifications(CSRFSynchronizerToken $csrf_token)
+    {
+        echo '<fieldset><form id="tracker-admin-notifications-form" method="POST">' . $csrf_token->fetchHTMLInput();
 
         $this->displayAdminNotifications_Toggle();
+        if ($this->tracker->getNotificationsLevel() !== Tracker::NOTIFICATIONS_LEVEL_DISABLED) {
+            $this->displayAdminNotifications_Global();
+            $this->displayAdminNotificationUnsubcribers();
+        }
         $this->displayAdminNotificationAssignedToMeFlag();
-        $this->displayAdminNotifications_Global($request);
 
         echo '</form></fieldset>';
     }
 
-    protected function displayAdminNotifications_Toggle() {
-        if ($this->tracker->userIsAdmin()) {
-            echo '<h3><a name="ToggleEmailNotification"></a>'.$GLOBALS['Language']->getText('plugin_tracker_include_type','toggle_notification').' '.
-            help_button('tracker.html#e-mail-notification').'</h3>';
-            echo '
-                <p>'.$GLOBALS['Language']->getText('plugin_tracker_include_type','toggle_notif_note').'<br>
-                <br><input type="hidden" name="stop_notification" value="0" /> 
-                <label class="checkbox"><input id="toggle_stop_notification" type="checkbox" name="stop_notification" value="1" '.(($this->tracker->stop_notification)?'checked="checked"':'').' /> '.
-                $GLOBALS['Language']->getText('plugin_tracker_include_type','stop_notification') .'</label>';
-        } else if ($this->tracker->stop_notification) {
-            echo '<h3><a name="ToggleEmailNotification"></a>'.$GLOBALS['Language']->getText('plugin_tracker_include_type','notification_suspended').' '.
-            help_button('tracker.html#e-mail-notification').'</h3>';
-            echo '
-            <P><b>'.$GLOBALS['Language']->getText('plugin_tracker_include_type','toggle_notif_warn').'</b><BR>';
-        }
-
-        echo '<input class="btn" type="submit" value="'.$GLOBALS['Language']->getText('plugin_tracker_include_artifact','submit').'"/>';
+    protected function displayAdminNotifications_Toggle()
+    {
+        $renderer = $this->getNotificationsRenderer();
+        $notifications_level = $this->tracker->getNotificationsLevel();
+        $renderer->renderToPage(
+            'admin-notifications-level',
+            [
+                'disabled_value'              => Tracker::NOTIFICATIONS_LEVEL_DISABLED,
+                'default_value'               => Tracker::NOTIFICATIONS_LEVEL_DEFAULT,
+                'status_change_value'         => Tracker::NOTIFICATIONS_LEVEL_STATUS_CHANGE,
+                'is_default'                  => $notifications_level === Tracker::NOTIFICATIONS_LEVEL_DEFAULT,
+                'is_disabled'                 => $notifications_level === Tracker::NOTIFICATIONS_LEVEL_DISABLED,
+                'is_status_change'            => $notifications_level === Tracker::NOTIFICATIONS_LEVEL_STATUS_CHANGE,
+                'has_status_semantic_defined' => $this->tracker->hasSemanticsStatus()
+            ]
+        );
     }
 
     private function displayAdminNotificationAssignedToMeFlag()
     {
         $config_notification_assigned_to = new ConfigNotificationAssignedTo(new ConfigNotificationAssignedToDao());
+        $config_notification_custom_sender
+            = new ConfigNotificationEmailCustomSender(new ConfigNotificationEmailCustomSenderDao());
         $is_assigned_to_enabled          = $config_notification_assigned_to->isAssignedToSubjectEnabled($this->tracker);
+
+        $custom_email_sender = $config_notification_custom_sender->getCustomSender($this->tracker);
 
         $renderer = $this->getNotificationsRenderer();
         $renderer->renderToPage(
             'admin-subject-customisation',
-            new NotificationCustomisationSettingsPresenter($is_assigned_to_enabled)
+            new NotificationCustomisationSettingsPresenter($is_assigned_to_enabled, $custom_email_sender)
         );
     }
 
-    protected function displayAdminNotifications_Global(HTTPRequest $request) {
+    private function displayAdminNotifications_Global()
+    {
         echo '<h3><a name="GlobalEmailNotification"></a>'.$GLOBALS['Language']->getText('plugin_tracker_include_type','global_mail_notif').' '.
         help_button('tracker.html#e-mail-notification').'</h3>';
 
-        $notifs    = $this->getGlobalNotifications();
-        $nb_notifs = count($notifs);
-        if ($this->tracker->userIsAdmin()) {
-            $renderer = $this->getNotificationsRenderer();
-            $renderer->renderToPage(
-                'notifications',
-                new PaneNotificationListPresenter(
-                    $this->tracker->getGroupId(),
-                    $this->notification_list_builder->getNotificationsPresenter($notifs, $this->addresses_builder)
-                )
-            );
-            $GLOBALS['Response']->includeFooterJavascriptFile('/scripts/tuleap/user-and-ugroup-autocompleter.js');
-        } else {
-            $ok = false;
-            if ( $nb_notifs ) {
-                reset($notifs);
-                while(!$ok && (list($id,) = each($notifs))) {
-                    $ok = $notifs[$id]->getAddresses();
-                }
-            }
-            if ($ok) {
-                echo $GLOBALS['Language']->getText('plugin_tracker_include_type','admin_conf');
-                foreach($notifs as $key => $nop) {
-                    if ($notifs[$key]->getAddresses()) {
-                        echo '<div>'. $notifs[$key]->getAddresses() .'&nbsp;&nbsp;&nbsp; ';
-                        echo $GLOBALS['Language']->getText('plugin_tracker_include_type','send_all_or_not',($notifs[$key]->isAllUpdates()?$GLOBALS['Language']->getText('global','yes'):$GLOBALS['Language']->getText('global','no')));
-                        echo '</div>';
-                    }
-                }
-            } else {
-                echo $GLOBALS['Language']->getText('plugin_tracker_include_type','admin_not_conf');
-            }
-        }
+        $notifs   = $this->getGlobalNotifications();
+        $renderer = $this->getNotificationsRenderer();
+        $renderer->renderToPage(
+            'notifications',
+            new PaneNotificationListPresenter(
+                $this->tracker->getGroupId(),
+                $this->tracker->getId(),
+                $this->notification_list_builder->getNotificationsPresenter($notifs, $this->addresses_builder)
+            )
+        );
+        $GLOBALS['Response']->includeFooterJavascriptFile('/scripts/tuleap/user-and-ugroup-autocompleter.js');
+    }
+
+    private function displayAdminNotificationUnsubcribers()
+    {
+        $unsubscriber_list_presenter = $this->notification_list_builder->getUnsubscriberListPresenter($this->tracker);
+        $renderer                    = $this->getNotificationsRenderer();
+        $renderer->renderToPage('admin-notifications-unsubscribers', $unsubscriber_list_presenter);
     }
 
     /**
@@ -317,6 +389,18 @@ class Tracker_NotificationsManager {
     {
         $users           = $autocompleter->getUsers();
         $users_not_added = array();
+        $user_ids        = [];
+        foreach ($users as $user) {
+            $user_ids[] = $user->getId();
+        }
+        $user_ids_filtered = $this->subscribers_filter->filterInvalidUserIDs($this->tracker, $user_ids);
+        array_filter($users, function (PFUser $user) use ($user_ids_filtered, &$users_not_added) {
+            if (! in_array($user->getId(), $user_ids_filtered)) {
+                $users_not_added[] = $user;
+                return false;
+            }
+            return true;
+        });
         foreach ($users as $user) {
             if (! $this->user_to_notify_dao->insert($notification_id, $user->getId())) {
                 $users_not_added[] = $user->getName();
@@ -458,11 +542,6 @@ class Tracker_NotificationsManager {
         return empty($emails) && empty($ugroups) && empty($users);
     }
 
-    private function redirectOnNotifications()
-    {
-        $GLOBALS['Response']->redirect(TRACKER_BASE_URL . '/?tracker=' . $this->tracker->getId() . '&func=notifications');
-    }
-
     private function addFeedbackCorrectlySaved()
     {
         $GLOBALS['Response']->addFeedback(
@@ -548,5 +627,74 @@ class Tracker_NotificationsManager {
                 'No element selected.'
             )
         );
+    }
+
+
+    private function getNotificationLevelLabel($notification_level)
+    {
+        switch ($notification_level) {
+            case Tracker::NOTIFICATIONS_LEVEL_DISABLED:
+                return dgettext('plugin-tracker', 'No notifications');
+                break;
+            case Tracker::NOTIFICATIONS_LEVEL_STATUS_CHANGE:
+                return dgettext('plugin-tracker', 'Status change notifications');
+                break;
+            default:
+                return dgettext('plugin-tracker', 'Default Tuleap notifications');
+                break;
+        }
+    }
+
+    /**
+     * @param HTTPRequest $request
+     */
+    private function updateNotificationLevel(HTTPRequest $request)
+    {
+        if (! $this->notificationLevelMustBeUpdated($request)) {
+            return;
+        }
+
+        $new_notifications_level = $this->notification_level_extractor->extractNotificationLevel($request);
+
+        if ($request->exist('submit_and_force_notifications_level')) {
+            $this->force_usage_updater->forceUserPreferences($this->tracker, $new_notifications_level);
+        }
+
+        $this->tracker->setNotificationsLevel($new_notifications_level);
+        if ($this->tracker_dao->save($this->tracker)) {
+            if ($request->exist('submit_and_force_notifications_level')) {
+                $this->project_history_dao->groupAddHistory(
+                    'global_notification_update_with_force',
+                    $this->getNotificationLevelLabel($new_notifications_level),
+                    $this->tracker->getGroupId(),
+                    [$this->tracker->getName()]
+                );
+            } else {
+                $this->project_history_dao->groupAddHistory(
+                    'global_notification_update',
+                    $this->getNotificationLevelLabel($new_notifications_level),
+                    $this->tracker->getGroupId(),
+                    [$this->tracker->getName()]
+                );
+            }
+
+            $this->addFeedbackCorrectlySaved();
+        }
+    }
+
+    private function notificationLevelMustBeUpdated(HTTPRequest $request)
+    {
+        return ((int)$this->tracker->getNotificationsLevel() !== (int)$request->get('notifications_level')) ||
+            $request->exist('disable_notifications');
+    }
+
+    /**
+     * @return bool
+     */
+    private function requestProvidesNewNotificationLevel(HTTPRequest $request)
+    {
+        return $request->exist('notifications_level') ||
+            $request->exist('disable_notifications') ||
+            $request->exist('enable_notifications');
     }
 }

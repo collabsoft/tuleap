@@ -1,9 +1,17 @@
 #!/bin/bash
 
-set -ex
+set -euxo pipefail
 
 if [ -z "$MYSQL_DAEMON" ]; then
     MYSQL_DAEMON=mysqld
+fi
+
+if [ -z "$FPM_DAEMON" ] || [ "$FPM_DAEMON" = "rh-php56-php-fpm" ] ; then
+    FPM_DAEMON='php56-php-fpm'
+fi
+
+if [ -z "$PHP_CLI" ]; then
+    PHP_CLI='/opt/remi/php56/root/usr/bin/php'
 fi
 
 setup_tuleap() {
@@ -65,6 +73,14 @@ setup_database() {
     mysql -e "GRANT SELECT ON $MYSQL_DBNAME.user_group to dbauthuser@'localhost';"
     mysql -e "GRANT SELECT,UPDATE ON $MYSQL_DBNAME.svn_token to dbauthuser@'localhost';"
     mysql -e "FLUSH PRIVILEGES;"
+
+    echo "Execute additional setup scripts"
+    for setup_script in $(find /usr/share/tuleap/plugins/*/tests/rest/setup_db.sh -maxdepth 1 -type f)
+    do
+        if [ -x "$setup_script" ]; then
+            $setup_script "$MYSQL" "$MYSQL_DBNAME"
+        fi
+    done
 }
 
 load_project() {
@@ -74,20 +90,21 @@ load_project() {
     if [ ! -f $base_dir/user_map.csv ]; then
         user_mapping="--automap=no-email,create:A"
     fi
-    /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/src/utils/import_project_xml.php \
+    PHP="$PHP_CLI" /usr/share/tuleap/src/utils/tuleap import-project-xml \
         -u admin \
         -i $base_dir \
         $user_mapping
 }
 
 seed_data() {
-    su -c "/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php tracker" -l codendiadm
-    su -c "/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php cardwall" -l codendiadm
-    su -c "/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php agiledashboard" -l codendiadm
-    su -c "/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php frs" -l codendiadm
-    su -c "/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php svn" -l codendiadm
-    su -c "/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php git" -l codendiadm
-    su -c "/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php crosstracker" -l codendiadm
+    su -c "PHP='$PHP_CLI' /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php tracker" -l codendiadm
+    su -c "PHP='$PHP_CLI' /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php cardwall" -l codendiadm
+    su -c "PHP='$PHP_CLI' /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php agiledashboard" -l codendiadm
+    su -c "PHP='$PHP_CLI' /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php frs" -l codendiadm
+    su -c "PHP='$PHP_CLI' /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php svn" -l codendiadm
+    su -c "PHP='$PHP_CLI' /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php git" -l codendiadm
+    su -c "PHP='$PHP_CLI' /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php crosstracker" -l codendiadm
+    su -c "PHP='$PHP_CLI' /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/tools/utils/admin/activate_plugin.php create_test_env" -l codendiadm
 
     load_project /usr/share/tuleap/tests/rest/_fixtures/01-private-member
     load_project /usr/share/tuleap/tests/rest/_fixtures/02-private
@@ -101,12 +118,20 @@ seed_data() {
     load_project /usr/share/tuleap/tests/rest/_fixtures/10-permissions-on-artifacts
 
     echo "Load initial data"
-    /opt/rh/rh-php56/root/usr/bin/php -d include_path=/usr/share/tuleap/src/www/include:/usr/share/tuleap/src /usr/share/tuleap/tests/rest/bin/init_data.php
+    "$PHP_CLI" -d include_path=/usr/share/tuleap/src/www/include:/usr/share/tuleap/src /usr/share/tuleap/tests/rest/bin/init_data.php
 
     seed_plugin_data
 }
 
 seed_plugin_data() {
+    echo "Execute additional setup scripts"
+    for setup_script in $(find /usr/share/tuleap/plugins/*/tests/rest/setup.sh -maxdepth 1 -type f)
+    do
+        if [ -x "$setup_script" ]; then
+            $setup_script
+        fi
+    done
+
     for fixture_dir in $(find /usr/share/tuleap/plugins/*/tests/rest/_fixtures/* -maxdepth 1 -type d)
     do
         if [ -f "$fixture_dir/project.xml" ] && [ -f "$fixture_dir/users.xml" ]  && [ -f "$fixture_dir/user_map.csv" ]; then
@@ -115,12 +140,20 @@ seed_plugin_data() {
     done
 
     echo "Load plugins initial data"
-    /opt/rh/rh-php56/root/usr/bin/php -d include_path=/usr/share/tuleap/src/www/include:/usr/share/tuleap/src /usr/share/tuleap/tests/rest/bin/init_data_plugins.php
+    "$PHP_CLI" -d include_path=/usr/share/tuleap/src/www/include:/usr/share/tuleap/src /usr/share/tuleap/tests/rest/bin/init_data_plugins.php
 }
 
 setup_tuleap
-/usr/share/tuleap/tools/utils/php56/run.php --modules=nginx,fpm
-service rh-php56-php-fpm start
+if [ "$FPM_DAEMON" == 'php72-php-fpm' ]; then
+    echo "Deploy PHP FPM 7.2"
+    "$PHP_CLI" /usr/share/tuleap/tools/utils/php72/run.php --modules=nginx,fpm
+else
+    echo "Deploy PHP FPM 5.6"
+    "$PHP_CLI" /usr/share/tuleap/tools/utils/php56/run.php --modules=nginx,fpm
+fi
+service "$FPM_DAEMON" start
 service nginx start
 setup_database
 seed_data
+service "$FPM_DAEMON" restart
+service nginx reload

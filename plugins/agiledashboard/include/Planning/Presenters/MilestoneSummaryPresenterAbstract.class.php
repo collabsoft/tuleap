@@ -18,8 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-abstract class Planning_Presenter_MilestoneSummaryPresenterAbstract {
+use Tuleap\AgileDashboard\Milestone\Pane\Details\DetailsPaneInfo;
 
+abstract class Planning_Presenter_MilestoneSummaryPresenterAbstract
+{
     /** @var Planning_Milestone */
     public $milestone;
 
@@ -29,45 +31,71 @@ abstract class Planning_Presenter_MilestoneSummaryPresenterAbstract {
     /** @var string */
     public $has_cardwall;
 
-    public function __construct(Planning_Milestone $milestone, $plugin_path, $has_cardwall) {
+    public function __construct(Planning_Milestone $milestone, $plugin_path, $has_cardwall)
+    {
         $this->milestone    = $milestone;
         $this->plugin_path  = $plugin_path;
         $this->has_cardwall = $has_cardwall;
     }
 
-    public function content() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard','details_pane_title');
+    public function content()
+    {
+        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'details_pane_title');
     }
 
-    public function cardwall() {
+    public function cardwall()
+    {
         return $GLOBALS['Language']->getText('plugin_agiledashboard', 'cardwall');
     }
 
-    public function breadcrumbs() {
-        $breadcrumbs_merger = new BreadCrumb_Merger();
-        foreach(array_reverse($this->milestone->getAncestors()) as $milestone) {
-            $breadcrumbs_merger->push(new BreadCrumb_Milestone($this->plugin_path, $milestone));
+    public function breadcrumbs()
+    {
+        $breadcrumbs = [];
+        foreach (array_reverse($this->milestone->getAncestors()) as $milestone) {
+            $breadcrumbs[] = $this->getMilestoneBreadcrumb($milestone);
         }
 
-        return $breadcrumbs_merger->getCrumbs();
+        return $breadcrumbs;
     }
 
-    public function milestone_title() {
+    private function getMilestoneBreadcrumb(Planning_Milestone $milestone)
+    {
+        $hp             = Codendi_HTMLPurifier::instance();
+        $tracker        = $milestone->getArtifact()->getTracker();
+        $url_parameters = [
+            'planning_id' => $milestone->getPlanningId(),
+            'pane'        => DetailsPaneInfo::IDENTIFIER,
+            'action'      => 'show',
+            'group_id'    => $milestone->getGroupId(),
+            'aid'         => $milestone->getArtifactId()
+        ];
+
+        return [
+            'url'          => $this->plugin_path . '/?' . http_build_query($url_parameters),
+            'title'        => $hp->purify($milestone->getArtifactTitle()),
+            'default_name' => $hp->purify($tracker->getName() . ' #' . $milestone->getArtifactId()),
+        ];
+    }
+
+    public function milestone_title()
+    {
         return $this->milestone->getArtifactTitle();
     }
 
     public abstract function has_burndown();
 
-    public function planning_id() {
+    public function planning_id()
+    {
         return $this->milestone->getPlanningId();
     }
 
-    public function artifact_id() {
+    public function artifact_id()
+    {
         return $this->milestone->getArtifactId();
     }
 
-    public function edit_base_link() {
+    public function edit_base_link()
+    {
         return '/plugins/tracker/?aid=';
     }
 }
-?>

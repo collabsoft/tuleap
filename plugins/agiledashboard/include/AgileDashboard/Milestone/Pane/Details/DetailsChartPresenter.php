@@ -33,6 +33,14 @@ class DetailsChartPresenter
     public $burnup_label;
     public $burnup_presenter;
     public $has_charts = false;
+    /**
+     * @var array
+     */
+    public $escaped_charts;
+    /**
+     * @var bool
+     */
+    public $has_escaped_charts;
 
     public function __construct(
         $has_burndown,
@@ -40,7 +48,8 @@ class DetailsChartPresenter
         $has_burnup,
         $burnup_label,
         BurndownFieldPresenter $burndown_presenter = null,
-        BurnupFieldPresenter $burnup_presenter = null
+        BurnupFieldPresenter $burnup_presenter = null,
+        array $escaped_charts = null
     ) {
         $this->has_burndown       = $has_burndown;
         $this->burndown_label     = $burndown_label;
@@ -49,6 +58,9 @@ class DetailsChartPresenter
         $this->burnup_label       = $burnup_label;
         $this->burnup_presenter   = $burnup_presenter;
 
-        $this->has_charts = $this->has_burndown || $this->has_burnup;
+        $this->escaped_charts     = $escaped_charts;
+        $this->has_escaped_charts = count($escaped_charts) > 0;
+
+        $this->has_charts = $this->has_burndown || $this->has_burnup || $this->has_escaped_charts;
     }
 }

@@ -23,13 +23,13 @@ use Tuleap\BurningParrotCompatiblePageDetector;
 use Tuleap\Request\CurrentPage;
 use Tuleap\TimezoneRetriever;
 
-if (version_compare(PHP_VERSION, '5.6', '<') || version_compare(PHP_VERSION, '7', '>=')) {
-    die('Tuleap must be run on a PHP 5.6 (or greater) engine.  PHP 7 is not yet supported.');
+if (PHP_VERSION_ID < 50600) {
+    die('Tuleap must be run on a PHP 5.6 (or greater) engine.');
 }
 
-require_once('common/constants.php');
-require_once('common/autoload.php');
-require_once('common/autoload_libs.php');
+require_once __DIR__ . '/../../common/constants.php';
+require_once __DIR__ . '/../../common/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 date_default_timezone_set(TimezoneRetriever::getServerTimezone());
 
@@ -48,8 +48,6 @@ if (isset($GLOBALS['DEBUG_MODE'])) {
 ForgeConfig::loadFromDatabase();
 ForgeConfig::loadFromFile(ForgeConfig::get('rabbitmq_config_file'));
 ForgeConfig::loadFromFile(ForgeConfig::get('redis_config_file'));
-
-Tuleap\Instrument\Collect::startTiming('pre.'.php_sapi_name());
 
 bindtextdomain('tuleap-core', ForgeConfig::get('sys_incdir'));
 textdomain('tuleap-core');
@@ -141,6 +139,7 @@ $loader_scheduler = new LoaderScheduler($cookie_manager, $plugin_manager);
 $loader_scheduler->loadPluginsThenStartSession(IS_SCRIPT);
 
 if (!IS_SCRIPT) {
+    header('X-UA-Compatible: IE=Edge');
     header('Referrer-Policy: no-referrer-when-downgrade, strict-origin, same-origin');
 
     // Protection against clickjacking
@@ -180,7 +179,6 @@ require_once('utils.php');
 
 //database abstraction
 require_once('database.php');
-db_connect();
 
 //security library
 require_once('session.php');
@@ -203,6 +201,9 @@ require_once('exit.php');
 //various html libs like button bar, themable
 require_once('html.php');
 
+// Permission stuff that need to cripple each and every hit
+require_once __DIR__.'/../project/admin/permissions.php';
+
 $event_manager = EventManager::instance();
 $event_manager->processEvent(
     Event::HIT,
@@ -220,13 +221,18 @@ $event_manager->processEvent(
 */
 date_default_timezone_set(TimezoneRetriever::getUserTimezone($current_user));
 
-$theme_manager = new ThemeManager(
-    new BurningParrotCompatiblePageDetector(
-        new CurrentPage(),
-        new Admin_Homepage_Dao()
-    )
-);
-$HTML = $theme_manager->getTheme($current_user);
+if (! defined('FRONT_ROUTER')) {
+    $theme_manager = new ThemeManager(
+        new BurningParrotCompatiblePageDetector(
+            new CurrentPage(),
+            new Admin_Homepage_Dao(),
+            new User_ForgeUserGroupPermissionsManager(
+                new User_ForgeUserGroupPermissionsDao()
+            )
+        )
+    );
+    $HTML = $theme_manager->getTheme($current_user);
+}
 
 // Check if anonymous user is allowed to browse the site
 // Bypass the test for:
@@ -236,9 +242,13 @@ $HTML = $theme_manager->getTheme($current_user);
 // Check URL for valid hostname and valid protocol
 
 if (!IS_SCRIPT) {
-    $urlVerifFactory = new URLVerificationFactory();
-    $urlVerif = $urlVerifFactory->getURLVerification($_SERVER);
-    $urlVerif->assertValidUrl($_SERVER, $request);
+    if (! defined('FRONT_ROUTER')) {
+        $urlVerifFactory = new URLVerificationFactory($event_manager);
+        $urlVerif = $urlVerifFactory->getURLVerification($_SERVER);
+        $urlVerif->assertValidUrl($_SERVER, $request);
+
+        \Tuleap\Request\RequestInstrumentation::incrementLegacy();
+    }
 
     if (! $current_user->isAnonymous()) {
         header('X-Tuleap-Username: '.$current_user->getUserName());
@@ -254,4 +264,6 @@ if (ForgeConfig::get('DEBUG_MODE')) {
     $GLOBALS['DEBUG_TIME_IN_PRE'] = microtime(1) - $GLOBALS['debug_time_start'];
 }
 
-Tuleap\Instrument\Collect::endTiming('pre.'.php_sapi_name());
+if ($request->isAjax()) {
+    header("Cache-Control: no-store, no-cache, must-revalidate");
+}

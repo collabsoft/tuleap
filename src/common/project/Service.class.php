@@ -35,7 +35,8 @@ class Service {
     const WIKI      = 'wiki';
     const TRACKERV3 = 'tracker';
 
-    const SCOPE_SYSTEM = 'system';
+    const SCOPE_SYSTEM  = 'system';
+    const SCOPE_PROJECT = 'project';
 
     public $data;
     
@@ -117,7 +118,7 @@ class Service {
     }
     
     public function displayHeader($title, $breadcrumbs, $toolbar, $params = array()) {
-        Tuleap\Instrument\Collect::increment('service.project.'.strtolower($this->getShortName()).'.accessed');
+        \Tuleap\Project\ServiceInstrumentation::increment(strtolower($this->getShortName()));
 
         $GLOBALS['HTML']->setRenderedThroughService(true);
         $GLOBALS['HTML']->addBreadcrumbs($breadcrumbs);

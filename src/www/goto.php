@@ -155,7 +155,11 @@ if ($request->isAjax()) {
             $rev_id = $request->get('val');
             $result = svn_data_get_revision_detail($group_id, 0, $rev_id);
             $date = format_date($GLOBALS['Language']->getText('system', 'datefmt'), db_result($result, 0, 'date'));
-            $list_log = util_line_wrap(db_result($result, 0, 'description'), $group_id);
+
+            $description = db_result($result, 0, 'description');
+            $description = htmlspecialchars_decode($description, ENT_QUOTES);
+            $list_log    = util_line_wrap($description);
+
             echo '<table>';
             echo ' <tr>';
             echo '  <td><strong>' . $GLOBALS['Language']->getText('svn_utils','date') . ':</strong></td>';
@@ -218,12 +222,14 @@ if ($request->isAjax()) {
             }
             break;
         default:
-            $event_manager->processEvent('ajax_reference_tooltip', array(
-                'reference'=> $ref,
-                'keyword'  => $keyword,
-                'group_id' => $group_id,
-                'val'      => $request->get('val')
-            ));
+            $event = new \Tuleap\Reference\ReferenceGetTooltipContentEvent($ref, $project, $request->getCurrentUser(), $keyword, $request->get('val'));
+            $event_manager->processEvent($event);
+            $output = $event->getOutput();
+            if ($output) {
+                echo $output;
+            } elseif ($ref->getNature() === ReferenceManager::REFERENCE_NATURE_OTHER) {
+                echo (new \Tuleap\Reference\ReferenceOpenGraph($html_purifier, $ref))->getContent();
+            }
             break;
     }
 } else {
@@ -232,9 +238,3 @@ if ($request->isAjax()) {
     header($location);
     exit;
 }
-
-// For emacs users
-// Local Variables:
-// mode: php
-// End:
-?>

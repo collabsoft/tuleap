@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -38,24 +38,30 @@ class WidgetKanbanCreator
      * @param Codendi_Request $request
      * @param $owner_id
      * @param $owner_type
-     * @return int
-     * @throws \RuntimeException
      */
     public function create(Codendi_Request $request, $owner_id, $owner_type)
     {
-        $kanban         = $request->get('kanban');
-        if ($kanban === false) {
-            throw new \RuntimeException('Missing parameter: kanban');
-        }
-        if (! isset($kanban['id'])) {
-            throw new \RuntimeException('Missing parameter: kanban[id]');
-        }
-        if (! isset($kanban['title'])) {
-            throw new \RuntimeException('Missing parameter: kanban[title]');
-        }
-        $kanban_id      = $kanban['id'];
-        $kanban_title   = $kanban['title'];
+        $kanban            = $request->get('kanban');
+        $kanban_id         = $kanban['id'];
+        $kanban_title      = $kanban['title'];
+        $tracker_report_id = (int) $request->get('tracker_report_id');
 
-        return $this->widget_kanban_dao->create($owner_id, $owner_type, $kanban_id, $kanban_title);
+        return $this->createKanbanWidget($owner_id, $owner_type, $kanban_id, $kanban_title, $tracker_report_id);
+    }
+
+    public function createKanbanWidget(
+        $owner_id,
+        $owner_type,
+        $kanban_id,
+        $kanban_title,
+        $tracker_report_id
+    ) {
+        return $this->widget_kanban_dao->createKanbanWidget(
+            $owner_id,
+            $owner_type,
+            $kanban_id,
+            $kanban_title,
+            $tracker_report_id
+        );
     }
 }

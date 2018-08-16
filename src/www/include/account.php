@@ -1,6 +1,6 @@
 <?php
 //
-// Copyright (c) Enalean, 2015-2016. All Rights Reserved.
+// Copyright (c) Enalean, 2015-2018. All Rights Reserved.
 // SourceForge: Breaking Down the Barriers to Open Source Development
 // Copyright 1999-2000 (c) The SourceForge Crew
 // http://sourceforge.net
@@ -9,16 +9,6 @@
 //
 // adduser.php - All the forms and functions to manage unix users
 //
-
-// ***** function account_pwvalid()
-// ***** check for valid password
-function account_pwvalid($pw, &$errors) {
-    $password_strategy = new PasswordStrategy();
-    include($GLOBALS['Language']->getContent('account/password_strategy'));
-    $valid = $password_strategy->validate($pw);
-    $errors = $password_strategy->errors;
-    return $valid;
-}
 
 // Add user to an existing project
 function account_add_user_to_group ($group_id, &$user_unix_name)
@@ -117,11 +107,11 @@ function account_send_add_user_to_group_email($group_id,$user_id) {
             // $message is defined in the content file
             include($Language->getContent('include/add_user_to_group_email'));
 
-            $mail = new Mail();
+            $mail = new Codendi_Mail();
             $mail->setTo($email_address);
             $mail->setFrom($GLOBALS['sys_noreply']);
             $mail->setSubject($Language->getText('include_account','welcome',array($GLOBALS['sys_name'],$group_name)));
-            $mail->setBody($message);
+            $mail->setBodyText($message);
             $result = $mail->send();
             if (!$result) {
                 $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global', 'mail_failed', array($GLOBALS['sys_email_admin'])), CODENDI_PURIFIER_DISABLED);

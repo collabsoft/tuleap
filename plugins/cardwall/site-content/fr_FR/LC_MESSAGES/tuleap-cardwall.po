@@ -1,0 +1,111 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: Marie Ange Garnier <marie-ange.garnier@enalean.com>\n"
+"Language-Team: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.3\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+
+#, php-format
+msgid "<b>%s</b> field will determine background color."
+msgstr "Le champ <b>%s</b> va définir la couleur de fond des cartes."
+
+msgid "A card will be displayed for each available background color."
+msgstr "Pour chaque couleur de fond disponible, une carte sera affichée."
+
+msgid "Add a field to the cards"
+msgstr "Ajouter un champ aux cartes"
+
+msgid "Background color"
+msgstr "Couleur de fond"
+
+msgid "Card design is the same as Kanban."
+msgstr "Le design des cartes est le même que celui de Kanban."
+
+msgid "Choose a field to define card background color"
+msgstr "Choisissez un champ pour définir la couleur de fond des cartes"
+
+msgid "Choose a field..."
+msgstr "Coisissez un champ..."
+
+msgid "Field not found"
+msgstr "Champ non trouvé"
+
+msgid "Fields"
+msgstr "Champs"
+
+msgid ""
+"If a color corresponds to multiple values, the preview will display only one "
+"card with this background color."
+msgstr ""
+"Si une couleur correspond à plusieurs valeurs, l'aperçu va afficher "
+"seulement une carte pour ce fond."
+
+msgid ""
+"No field can be chosen for card color background. Only selectbox and "
+"radiobutton bind on static values with no value linked to the old color "
+"picker can be used."
+msgstr ""
+"Aucun champ ne peut être choisi comme couleur de fond. Seules les listes "
+"déroulante et les boutons radio basés sur des valeurs statiques qui n'ont "
+"aucune de leur valeurs liées à l'ancienne palette de couleur peuvent être "
+"utilisés."
+
+msgid "No field is chosen to determine backgorund color"
+msgstr "Aucun champ n'a été choisi pour définir la couleur de fond des cartes."
+
+msgid ""
+"Only static fields with values bound to new color picker can be chosen as "
+"background color"
+msgstr ""
+"Seuls les champs statiques avec des valeurs liées à la nouvelle palette de "
+"couleur peuvent être choisis comme couleur de fond des cartes"
+
+msgid "Preview of the card"
+msgstr "Aperçu des cartes"
+
+msgid "Remove background color"
+msgstr "Supprimer la couleur de fond"
+
+msgid "Submit"
+msgstr "Soumettre"
+
+msgid ""
+"The field used to determine background color has been removed with success."
+msgstr ""
+"Le champs choisi pour déterminer la couleur du fond des cartes a été "
+"supprimé avec succès."
+
+#, php-format
+msgid "The field used to determine background color is now %s"
+msgstr ""
+"Le champs choisi pour déterminer la couleur du fond des cartes est "
+"maintenant %s"
+
+msgid "The following fields are added to the cards"
+msgstr "Les champs suivants sont ajoutés aux cartes"
+
+msgid "The preview respects the following rules:"
+msgstr "L'aperçu suit les règles suivantes :"
+
+msgid "There aren't any fields added to cards yet."
+msgstr "Aucun champ n'est ajouté aux cartes pour l'instant"
+
+msgid "There is no more field that can be added to the cards."
+msgstr "Il n'y a plus de champs pouveant être ajoutés aux cartes"
+
+msgid "This is an example title"
+msgstr "Ceci est un exemple de titre"
+
+msgid "go back to semantic overview"
+msgstr "retour à l'administration de la sémantique"
+
+msgid "or"
+msgstr "ou"

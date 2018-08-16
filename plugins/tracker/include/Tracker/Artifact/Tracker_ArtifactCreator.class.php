@@ -18,6 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\ArtifactInstrumentation;
 use Tuleap\Tracker\RecentlyVisited\VisitRecorder;
 
 /**
@@ -61,7 +62,7 @@ class Tracker_ArtifactCreator {
      * @return Tracker_Artifact or false if an error occured
      */
     public function createBare(Tracker $tracker, PFUser $user, $submitted_on) {
-        $artifact = $this->getBareArtifact($tracker, $user, $submitted_on);
+        $artifact = $this->getBareArtifact($tracker, $submitted_on, $user->getId(), 0);
         $success = $this->insertArtifact($tracker, $user, $artifact, $submitted_on, 0);
         if(!$success) {
             return false;
@@ -86,7 +87,6 @@ class Tracker_ArtifactCreator {
         }
 
         return $this->createFirstChangesetNoValidation(
-            $tracker,
             $artifact,
             $fields_data,
             $user,
@@ -99,7 +99,6 @@ class Tracker_ArtifactCreator {
      * already have checked them. This function is private
      */
     private function createFirstChangesetNoValidation(
-        Tracker $tracker,
         Tracker_Artifact $artifact,
         array $fields_data,
         PFUser $user,
@@ -120,7 +119,7 @@ class Tracker_ArtifactCreator {
         );
 
         if ($send_notification) {
-            $changeset->notify();
+            $changeset->executePostCreationActions();
         }
 
         return $artifact;
@@ -138,7 +137,7 @@ class Tracker_ArtifactCreator {
         $submitted_on,
         $send_notification
     ) {
-        $artifact = $this->getBareArtifact($tracker, $user, $submitted_on);
+        $artifact = $this->getBareArtifact($tracker, $submitted_on, $user->getId(), 0);
 
         if(!$this->fields_validator->validate($artifact, $fields_data)) {
             return false;
@@ -148,7 +147,7 @@ class Tracker_ArtifactCreator {
             return false;
         }
 
-        if (! $this->createFirstChangesetNoValidation($tracker, $artifact, $fields_data, $user, $submitted_on, $send_notification)) {
+        if (! $this->createFirstChangesetNoValidation($artifact, $fields_data, $user, $submitted_on, $send_notification)) {
             $this->revertBareArtifactInsertion($artifact);
             return false;
         }
@@ -181,17 +180,54 @@ class Tracker_ArtifactCreator {
         if (!$id) {
             return false;
         }
+        ArtifactInstrumentation::increment(ArtifactInstrumentation::TYPE_CREATED);
 
         $artifact->setId($id);
         return true;
     }
 
-    private function getBareArtifact(Tracker $tracker, PFUser $user, $submitted_on) {
+    /**
+     * @throws DataAccessException
+     * @throws DataAccessQueryException
+     */
+    private function insertArtifactWithAllData(
+        Tracker $tracker,
+        Tracker_Artifact $artifact,
+        $submitted_on,
+        $submitted_by
+    ) {
+        $use_artifact_permissions = 0;
+
+        return $this->artifact_dao->createWithId(
+            $artifact->getId(),
+            $tracker->id,
+            $submitted_by,
+            $submitted_on,
+            $use_artifact_permissions
+        );
+    }
+
+    /**
+     * @return Tracker_Artifact|false if an error occured
+     */
+    public function createBareWithAllData(Tracker $tracker, $artifact_id, $submitted_on, $submitted_by)
+    {
+        try {
+            $artifact = $this->getBareArtifact($tracker, $submitted_on, $submitted_by, $artifact_id);
+            $this->insertArtifactWithAllData($tracker, $artifact, $submitted_on, $submitted_by);
+
+            return $artifact;
+        } catch (DataAccessException $exception) {
+            return false;
+        }
+    }
+
+    private function getBareArtifact(Tracker $tracker, $submitted_on, $submitted_by, $artifact_id) {
         $artifact = $this->artifact_factory->getInstanceFromRow(
             array(
-                'id'                       => 0,
+                'id'                       => $artifact_id,
                 'tracker_id'               => $tracker->id,
-                'submitted_by'             => $user->getId(),
+                'submitted_by'             => $submitted_by,
                 'submitted_on'             => $submitted_on,
                 'use_artifact_permissions' => 0,
             )

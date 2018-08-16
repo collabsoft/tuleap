@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011 - 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-class GitRepositoryFactory {
+class GitRepositoryFactory
+{
     /**
      * @var GitDao
      */
@@ -46,8 +46,8 @@ class GitRepositoryFactory {
         if ($id == GitRepositoryGitoliteAdmin::ID) {
             return new GitRepositoryGitoliteAdmin();
         }
-        $dar = $this->dao->searchProjectRepositoryById($id);
-        return $this->getRepositoryFromDar($dar);
+        $row = $this->dao->searchProjectRepositoryById($id);
+        return $this->getRepositoryFromRow($row);
     }
 
     /**
@@ -61,7 +61,7 @@ class GitRepositoryFactory {
         }
 
         $dar        = $this->dao->searchProjectRepositoryById($id);
-        $repository = $this->getRepositoryFromDar($dar);
+        $repository = $this->getRepositoryFromRow($dar);
 
         if ($repository === null) {
             throw new GitRepoNotFoundException();
@@ -111,16 +111,42 @@ class GitRepositoryFactory {
         return $repositories;
     }
 
-    public function getPagninatedRepositoriesUserCanSee(Project $project, PFuser $user, $limit, $offset) {
-        $repositories = array();
-        $repository_list = $this->dao->getPaginatedOpenRepositories($project->getID(), $limit, $offset);
+    /**
+     * @param Project $project
+     * @param PFuser $user
+     * @param string $scope
+     * @param int $owner_id
+     * @param int $limit
+     * @param int $offset
+     * @param int $total_number_repositories
+     * @return GitRepository[]
+     */
+    public function getPaginatedRepositoriesUserCanSee(
+        Project $project,
+        PFuser $user,
+        $scope,
+        $owner_id,
+        $limit,
+        $offset,
+        &$total_number_repositories
+    ) {
+        $repositories    = [];
+        $repository_list = $this->dao->getPaginatedOpenRepositories(
+            $project->getID(),
+            $scope,
+            $owner_id,
+            $limit,
+            $offset
+        );
+        $total_number_repositories = $this->dao->foundRows();
         foreach ($repository_list as $row) {
-            $repository = new GitRepository();
-            $this->dao->hydrateRepositoryObject($repository, $row);
+            $repository = $this->getRepositoryFromRow($row);
             if ($repository->userCanRead($user)) {
                 $repositories[] = $repository;
             }
         }
+
+
         return $repositories;
     }
 
@@ -132,8 +158,8 @@ class GitRepositoryFactory {
      * @return GitRepository the repository or null if not found
      */
     public function getDeletedRepository($id) {
-        $dar = $this->dao->searchDeletedRepositoryById($id);
-        return $this->getRepositoryFromDar($dar);
+        $row = $this->dao->searchDeletedRepositoryById($id);
+        return $this->getRepositoryFromRow($row);
     }
 
     /**
@@ -144,8 +170,8 @@ class GitRepositoryFactory {
      * @return GitRepository the repository or null if not found
      */
     public function getRepositoryByPath($project_id, $path) {
-        $dar = $this->dao->searchProjectRepositoryByPath($project_id, $path);
-        return $this->getRepositoryFromDar($dar);
+        $row = $this->dao->searchProjectRepositoryByPath($project_id, $path);
+        return $this->getRepositoryFromRow($row);
     }
 
     /**
@@ -263,14 +289,14 @@ class GitRepositoryFactory {
     }
 
     /**
-     * @param DataAccessResult $dar
-     * @return GitRepository
+     * @return GitRepository|null
      */
-    private function getRepositoryFromDar(DataAccessResult $dar) {
-        if ($dar->rowCount() == 1) {
-            return $this->instanciateFromRow($dar->getRow());
+    private function getRepositoryFromRow($row)
+    {
+        if (empty($row)) {
+            return null;
         }
-        return null;
+        return $this->instanciateFromRow($row);
     }
 
     public function instanciateFromRow(array $row) {
@@ -285,7 +311,14 @@ class GitRepositoryFactory {
      * @return GitRepository[]
      */
     public function getAllRepositoriesOfProject(Project $project) {
-        return $this->dao->getAllGitoliteRespositories($project->getId())->instanciateWith(array($this, 'instanciateFromRow'));
+        $repositories = [];
+
+        $rows = $this->dao->getAllGitoliteRespositories($project->getID());
+        foreach ($rows as $row) {
+            $repositories[] = $this->instanciateFromRow($row);
+        }
+
+        return $repositories;
     }
 
     /**

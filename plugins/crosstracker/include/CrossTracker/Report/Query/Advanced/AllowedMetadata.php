@@ -22,15 +22,34 @@ namespace Tuleap\CrossTracker\Report\Query\Advanced;
 
 class AllowedMetadata
 {
-    const TITLE        = '@title';
-    const DESCRIPTION  = '@description';
-    const STATUS       = '@status';
-    const SUBMITTED_ON = '@submitted_on';
+    const TITLE            = '@title';
+    const DESCRIPTION      = '@description';
+    const STATUS           = '@status';
+    const SUBMITTED_ON     = '@submitted_on';
+    const LAST_UPDATE_DATE = '@last_update_date';
+    const SUBMITTED_BY     = '@submitted_by';
+    const LAST_UPDATE_BY   = '@last_update_by';
+    const ASSIGNED_TO      = '@assigned_to';
 
-    public static $NAMES = array(
+    const NAMES = [
         self::TITLE,
         self::DESCRIPTION,
         self::STATUS,
         self::SUBMITTED_ON,
-    );
+        self::LAST_UPDATE_DATE,
+        self::SUBMITTED_BY,
+        self::LAST_UPDATE_BY,
+        self::ASSIGNED_TO
+    ];
+
+    const DATES = [
+        self::SUBMITTED_ON,
+        self::LAST_UPDATE_DATE
+    ];
+
+    const USERS = [
+        self::SUBMITTED_BY,
+        self::LAST_UPDATE_BY,
+        self::ASSIGNED_TO
+    ];
 }

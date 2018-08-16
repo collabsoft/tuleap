@@ -17,23 +17,30 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-use Tuleap\Layout\IncludeAssets;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupPaneCollector;
-use Tuleap\Queue\WorkerEvent;
+use Tuleap\Project\Event\GetProjectWithTrackerAdministrationPermission;
 use Tuleap\BurningParrotCompatiblePageEvent;
-use Tuleap\Dashboard\Project\ProjectDashboardController;
+use Tuleap\CLI\CLICommandsCollector;
 use Tuleap\Dashboard\User\AtUserCreationDefaultWidgetsCreator;
-use Tuleap\Dashboard\User\UserDashboardController;
 use Tuleap\Glyph\GlyphLocation;
 use Tuleap\Glyph\GlyphLocationsCollector;
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupDisplayEvent;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupPaneCollector;
 use Tuleap\Project\Admin\TemplatePresenter;
 use Tuleap\project\Event\ProjectRegistrationActivateService;
 use Tuleap\Project\HeartbeatsEntryCollection;
+use Tuleap\Project\PaginatedProjects;
 use Tuleap\Project\XML\Export\NoArchive;
+use Tuleap\Queue\WorkerEvent;
 use Tuleap\Request\CurrentPage;
 use Tuleap\Service\ServiceCreator;
 use Tuleap\Tracker\Admin\ArtifactLinksUsageDao;
 use Tuleap\Tracker\Admin\ArtifactLinksUsageDuplicator;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactDeletor;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactsDeletionDAO;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactsDeletionRemover;
+use Tuleap\Tracker\Artifact\Changeset\PostCreation\AsynchronousSupervisor;
+use Tuleap\Tracker\Artifact\Changeset\PostCreation\ActionsRunnerDao;
 use Tuleap\Tracker\Artifact\LatestHeartbeatsCollector;
 use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfig;
 use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfigDao;
@@ -48,26 +55,40 @@ use Tuleap\Tracker\FormElement\SystemEvent\SystemEvent_BURNDOWN_GENERATE;
 use Tuleap\Tracker\Import\Spotter;
 use Tuleap\Tracker\Legacy\Inheritor;
 use Tuleap\Tracker\Notifications\CollectionOfUgroupToBeNotifiedPresenterBuilder;
-use Tuleap\Tracker\Notifications\CollectionOfUserToBeNotifiedPresenterBuilder;
+use Tuleap\Tracker\Notifications\CollectionOfUserInvolvedInNotificationPresenterBuilder;
 use Tuleap\Tracker\Notifications\GlobalNotificationsAddressesBuilder;
+use Tuleap\Tracker\Notifications\GlobalNotificationSubscribersFilter;
+use Tuleap\Tracker\Notifications\NotificationLevelExtractor;
 use Tuleap\Tracker\Notifications\NotificationListBuilder;
+use Tuleap\Tracker\Notifications\NotificationsForceUsageUpdater;
 use Tuleap\Tracker\Notifications\NotificationsForProjectMemberCleaner;
+use Tuleap\Tracker\Notifications\RecipientsManager;
+use Tuleap\Tracker\Notifications\Settings\NotificationsAdminSettingsDisplayController;
+use Tuleap\Tracker\Notifications\Settings\NotificationsAdminSettingsUpdateController;
+use Tuleap\Tracker\Notifications\Settings\UserNotificationSettingsDAO;
+use Tuleap\Tracker\Notifications\Settings\UserNotificationSettingsRetriever;
+use Tuleap\Tracker\Notifications\TrackerForceNotificationsLevelCommand;
 use Tuleap\Tracker\Notifications\UgroupsToNotifyDao;
 use Tuleap\Tracker\Notifications\UgroupsToNotifyUpdater;
+use Tuleap\Tracker\Notifications\UnsubscribersNotificationDAO;
+use Tuleap\Tracker\Notifications\UserNotificationOnlyStatusChangeDAO;
 use Tuleap\Tracker\Notifications\UsersToNotifyDao;
 use Tuleap\Tracker\PermissionsPerGroup\ProjectAdminPermissionPerGroupPresenterBuilder;
-use Tuleap\Tracker\ProjectDeletion;
 use Tuleap\Tracker\ProjectDeletionEvent;
+use Tuleap\Tracker\Reference\ReferenceCreator;
 use Tuleap\Tracker\Service\ServiceActivator;
+use Tuleap\Tracker\Webhook\Actions\WebhookCreateController;
+use Tuleap\Tracker\Webhook\Actions\WebhookDeleteController;
+use Tuleap\Tracker\Webhook\Actions\WebhookEditController;
+use Tuleap\Tracker\Webhook\Actions\WebhookURLValidator;
+use Tuleap\Tracker\Webhook\WebhookDao;
+use Tuleap\Tracker\Webhook\WebhookFactory;
 use Tuleap\User\History\HistoryRetriever;
 use Tuleap\Widget\Event\GetPublicAreas;
-use Tuleap\Tracker\Artifact\Changeset\Notification\AsynchronousSupervisor;
-use Tuleap\Tracker\Artifact\Changeset\Notification\NotifierDao;
 
-require_once('common/plugin/Plugin.class.php');
-require_once 'constants.php';
-require_once 'autoload.php';
-require_once dirname(__FILE__) . '/../include/manual_autoload.php';
+require_once __DIR__ . '/constants.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../include/manual_autoload.php';
 
 /**
  * trackerPlugin
@@ -91,7 +112,7 @@ class trackerPlugin extends Plugin {
         $this->addHook(Event::GET_ARTIFACT_REFERENCE_GROUP_ID,'get_artifact_reference_group_id',   false);
         $this->addHook(Event::SET_ARTIFACT_REFERENCE_GROUP_ID);
         $this->addHook(Event::BUILD_REFERENCE,                'build_reference',                   false);
-        $this->addHook('ajax_reference_tooltip',              'ajax_reference_tooltip',            false);
+        $this->addHook(\Tuleap\Reference\ReferenceGetTooltipContentEvent::NAME);
         $this->addHook(Event::SERVICE_CLASSNAMES,             'service_classnames',                false);
         $this->addHook(Event::JAVASCRIPT,                     'javascript',                        false);
         $this->addHook(Event::TOGGLE,                         'toggle',                            false);
@@ -142,6 +163,7 @@ class trackerPlugin extends Plugin {
         $this->addHook(BurningParrotCompatiblePageEvent::NAME);
         $this->addHook(Event::BURNING_PARROT_GET_STYLESHEETS);
         $this->addHook(Event::BURNING_PARROT_GET_JAVASCRIPT_FILES);
+        $this->addHook(PermissionPerGroupDisplayEvent::NAME);
         $this->addHook(Event::SYSTEM_EVENT_GET_TYPES_FOR_DEFAULT_QUEUE);
         $this->addHook(User_ForgeUserGroupPermissionsFactory::GET_PERMISSION_DELEGATION);
 
@@ -158,6 +180,13 @@ class trackerPlugin extends Plugin {
 
         $this->addHook(WorkerEvent::NAME);
         $this->addHook(PermissionPerGroupPaneCollector::NAME);
+
+        $this->addHook(\Tuleap\user\UserAutocompletePostSearchEvent::NAME);
+
+        $this->addHook(\Tuleap\Request\CollectRoutesEvent::NAME);
+
+        $this->addHook(CLICommandsCollector::NAME);
+        $this->addHook(GetProjectWithTrackerAdministrationPermission::NAME);
     }
 
     public function getHooksAndCallbacks() {
@@ -222,7 +251,7 @@ class trackerPlugin extends Plugin {
     {
         return new AsynchronousSupervisor(
             $logger,
-            new NotifierDao()
+            new ActionsRunnerDao()
         );
     }
 
@@ -298,8 +327,12 @@ class trackerPlugin extends Plugin {
             $this->isInDashboard() ||
             $this->isInTrackerGlobalAdmin()
         ) {
-            $variant = $params['variant'];
-            $params['stylesheets'][] = $this->getThemePath() .'/css/style-'. $variant->getName() .'.css';
+            $theme_include_assets    = new IncludeAssets(
+                __DIR__ . '/../www/themes/BurningParrot/assets',
+                $this->getThemePath() . '/assets'
+            );
+            $variant                 = $params['variant'];
+            $params['stylesheets'][] = $theme_include_assets->getFileURL('style-' . $variant->getName() . '.css');
         }
     }
 
@@ -322,22 +355,16 @@ class trackerPlugin extends Plugin {
         if ($this->isInTrackerGlobalAdmin()) {
             $params['javascript_files'][] = $this->getPluginPath() .'/scripts/global-admin.js';
         }
-
-        if ($this->isInPermissionsPerGroupProjectAdmin()) {
-            $include_assets = new IncludeAssets(
-                TRACKER_BASE_DIR . '/../www/assets',
-                $this->getPluginPath() . '/assets'
-            );
-
-            $GLOBALS['HTML']->includeFooterJavascriptFile(
-                $include_assets->getFileURL('tracker-permissions-per-group.js')
-            );
-        }
     }
 
-    private function isInPermissionsPerGroupProjectAdmin()
+    public function permissionPerGroupDisplayEvent(PermissionPerGroupDisplayEvent $event)
     {
-        return strpos($_SERVER['REQUEST_URI'], '/project/admin/permission_per_group') === 0;
+        $include_assets = new IncludeAssets(
+            TRACKER_BASE_DIR . '/../www/assets',
+            $this->getPluginPath() . '/assets'
+        );
+
+        $event->addJavascript($include_assets->getFileURL('tracker-permissions-per-group.js'));
     }
 
     /**
@@ -652,25 +679,27 @@ class trackerPlugin extends Plugin {
         );
     }
 
-    public function ajax_reference_tooltip($params) {
-        if ($params['reference']->getServiceShortName() == $this->getServiceShortname()) {
-            if ($params['reference']->getNature() == Tracker_Artifact::REFERENCE_NATURE) {
-                $user = UserManager::instance()->getCurrentUser();
-                $aid = $params['val'];
-                if ($artifact = Tracker_ArtifactFactory::instance()->getArtifactByid($aid)) {
-                    if ($artifact && $artifact->getTracker()->isActive()) {
-                        echo $artifact->fetchTooltip($user);
-                    } else {
-                        echo $GLOBALS['Language']->getText('plugin_tracker_common_type', 'artifact_not_exist');
-                    }
+    public function referenceGetTooltipContentEvent(Tuleap\Reference\ReferenceGetTooltipContentEvent $event)
+    {
+        if ($event->getReference()->getServiceShortName() === self::SERVICE_SHORTNAME && $event->getReference()->getNature() === Tracker_Artifact::REFERENCE_NATURE) {
+            $aid = (int) $event->getValue();
+            if ($artifact = Tracker_ArtifactFactory::instance()->getArtifactById($aid)) {
+                if ($artifact && $artifact->getTracker()->isActive()) {
+                    $event->setOutput($artifact->fetchTooltip($event->getUser()));
+                } else {
+                    $event->setOutput($GLOBALS['Language']->getText('plugin_tracker_common_type', 'artifact_not_exist'));
                 }
             }
         }
     }
 
-    public function url_verification_instance($params) {
-        if (strpos($_SERVER['REQUEST_URI'], $this->getPluginPath()) === 0) {
-            include_once 'Tracker/Tracker_URLVerification.class.php';
+    public function url_verification_instance($params)
+    {
+        $request_uri = $_SERVER['REQUEST_URI'];
+        if (strpos($request_uri, $this->getPluginPath()) === 0 &&
+            strpos($request_uri, $this->getPluginPath().'/notifications/') !== 0 &&
+            strpos($request_uri, $this->getPluginPath().'/webhooks/') !== 0
+        ) {
             $params['url_verification'] = new Tracker_URLVerification();
         }
     }
@@ -775,8 +804,22 @@ class trackerPlugin extends Plugin {
     public function project_registration_activate_service(ProjectRegistrationActivateService $event)
     {
         $this->getServiceActivator()->forceUsageOfService($event->getProject(), $event->getTemplate(), $event->getLegacy());
+        $this->getReferenceCreator()->insertArtifactsReferencesFromLegacy($event->getProject());
     }
 
+    /**
+     * @return ReferenceCreator
+     */
+    private function getReferenceCreator()
+    {
+        return new ReferenceCreator(
+            ServiceManager::instance(), TrackerV3::instance(), new ReferenceDao()
+        );
+    }
+
+    /**
+     * @return ServiceActivator
+     */
     private function getServiceActivator()
     {
         return new ServiceActivator(ServiceManager::instance(), TrackerV3::instance(), new ServiceCreator());
@@ -826,6 +869,8 @@ class trackerPlugin extends Plugin {
             SystemEvent::OWNER_APP
         );
 
+        $this->dailyCleanup();
+
         return $trackerManager->sendDateReminder();
     }
 
@@ -843,7 +888,8 @@ class trackerPlugin extends Plugin {
             'tracker_date_reminder_edit',
             'tracker_date_reminder_delete',
             'tracker_date_reminder_sent',
-            Tracker_FormElement::PROJECT_HISTORY_UPDATE
+            Tracker_FormElement::PROJECT_HISTORY_UPDATE,
+            ArtifactDeletor::PROJECT_HISTORY_ARTIFACT_DELETED
         );
     }
 
@@ -1008,7 +1054,8 @@ class trackerPlugin extends Plugin {
     /**
      * @see REST_GET_PROJECT_TRACKERS
      */
-    public function rest_get_project_trackers($params) {
+    public function rest_get_project_trackers($params)
+    {
         $user             = UserManager::instance()->getCurrentUser();
         $tracker_resource = $this->buildRightVersionOfProjectTrackersResource($params['version']);
         $project          = $params['project'];
@@ -1019,6 +1066,7 @@ class trackerPlugin extends Plugin {
             $user,
             $project,
             $params['representation'],
+            $params['query'],
             $params['limit'],
             $params['offset']
         );
@@ -1402,11 +1450,12 @@ class trackerPlugin extends Plugin {
      * @return Tracker_NotificationsManager
      */
     private function getTrackerNotificationManager() {
-        $user_to_notify_dao   = $this->getUserToNotifyDao();
-        $ugroup_to_notify_dao = $this->getUgroupToNotifyDao();
-        $notification_list_builder = new NotificationListBuilder(
+        $user_to_notify_dao             = $this->getUserToNotifyDao();
+        $ugroup_to_notify_dao           = $this->getUgroupToNotifyDao();
+        $unsubscribers_notification_dao = new UnsubscribersNotificationDAO;
+        $notification_list_builder      = new NotificationListBuilder(
             new UGroupDao(),
-            new CollectionOfUserToBeNotifiedPresenterBuilder($user_to_notify_dao),
+            new CollectionOfUserInvolvedInNotificationPresenterBuilder($user_to_notify_dao, $unsubscribers_notification_dao),
             new CollectionOfUgroupToBeNotifiedPresenterBuilder($ugroup_to_notify_dao)
         );
         return new Tracker_NotificationsManager(
@@ -1414,9 +1463,15 @@ class trackerPlugin extends Plugin {
             $notification_list_builder,
             $user_to_notify_dao,
             $ugroup_to_notify_dao,
+            new UserNotificationSettingsDAO,
             new GlobalNotificationsAddressesBuilder(),
             UserManager::instance(),
-            new UGroupManager()
+            new UGroupManager(),
+            new GlobalNotificationSubscribersFilter($unsubscribers_notification_dao),
+            new NotificationLevelExtractor(),
+            new \TrackerDao(),
+            new \ProjectHistoryDao(),
+            $this->getForceUsageUpdater()
         );
     }
 
@@ -1485,8 +1540,8 @@ class trackerPlugin extends Plugin {
 
     public function workerEvent(WorkerEvent $event)
     {
-        $async_notifier = new \Tuleap\Tracker\Artifact\Changeset\Notification\AsynchronousNotifier();
-        $async_notifier->addListener($event);
+        $async_actions_runner = new \Tuleap\Tracker\Artifact\Changeset\PostCreation\AsynchronousActionsRunner();
+        $async_actions_runner->addListener($event);
     }
 
     public function permissionPerGroupPaneCollector(PermissionPerGroupPaneCollector $event)
@@ -1504,7 +1559,6 @@ class trackerPlugin extends Plugin {
         $selected_ugroup_id = $event->getSelectedUGroupId();
         $presenter          = $presenter_builder->buildPresenter(
             $request->getProject(),
-            $request->getCurrentUser(),
             $selected_ugroup_id
         );
 
@@ -1522,5 +1576,175 @@ class trackerPlugin extends Plugin {
         )->getRank();
 
         $event->addPane($admin_permission_pane, $rank_in_project);
+    }
+
+    private function dailyCleanup()
+    {
+        $deletions_remover = new ArtifactsDeletionRemover(new ArtifactsDeletionDAO());
+        $deletions_remover->deleteOutdatedArtifactsDeletions();
+    }
+
+    /**
+     * @see \Tuleap\user\UserAutocompletePostSearchEvent
+     */
+    public function userAutocompletePostSearch(\Tuleap\user\UserAutocompletePostSearchEvent $event)
+    {
+        $additional_information = $event->getAdditionalInformation();
+        if (! isset($additional_information['tracker_id'])) {
+            return;
+        }
+        $tracker_factory = TrackerFactory::instance();
+        $tracker         = $tracker_factory->getTrackerById($additional_information['tracker_id']);
+        if ($tracker === null) {
+            return;
+        }
+
+        $autocompleted_user_list                = $event->getUserList();
+        $autocompleted_user_id_list             = [];
+        foreach ($autocompleted_user_list as $autocompleted_user) {
+            $autocompleted_user_id_list[] = $autocompleted_user['user_id'];
+        }
+        $global_notification_subscribers_filter = new GlobalNotificationSubscribersFilter(new UnsubscribersNotificationDAO);
+        $autocompleted_user_id_list_filtered    = $global_notification_subscribers_filter->filterInvalidUserIDs(
+            $tracker,
+            $autocompleted_user_id_list
+        );
+
+        $autocompleted_user_list_filtered = [];
+        foreach ($autocompleted_user_list as $autocompleted_user) {
+            if (in_array($autocompleted_user['user_id'], $autocompleted_user_id_list_filtered)) {
+                $autocompleted_user_list_filtered[] = $autocompleted_user;
+            }
+        }
+
+        $event->setUserList($autocompleted_user_list_filtered);
+    }
+
+    public function collectRoutesEvent(\Tuleap\Request\CollectRoutesEvent $event)
+    {
+        $event->getRouteCollector()->addGroup(TRACKER_BASE_URL, function(FastRoute\RouteCollector $r) {
+            $r->addRoute(['GET', 'POST'],'[/[index.php]]',  function () {
+                return new \Tuleap\Tracker\TrackerPluginDefaultController(new TrackerManager);
+            });
+            $r->get('/notifications/{id:\d+}/', function () {
+                return new  NotificationsAdminSettingsDisplayController(
+                    $this->getTrackerFactory(),
+                    new TrackerManager,
+                    $this->getUserManager()
+
+                );
+            });
+            $r->post('/notifications/{id:\d+}/', function () {
+                return new  NotificationsAdminSettingsUpdateController(
+                    $this->getTrackerFactory(),
+                    $this->getUserManager()
+                );
+            });
+            $r->get('/notifications/my/{id:\d+}/', function () {
+                return new  \Tuleap\Tracker\Notifications\Settings\NotificationsUserSettingsDisplayController(
+                    TemplateRendererFactory::build()->getRenderer(TRACKER_TEMPLATE_DIR . '/notifications/'),
+                    $this->getTrackerFactory(),
+                    new TrackerManager,
+                    new UserNotificationSettingsRetriever(
+                        new Tracker_GlobalNotificationDao,
+                        new UnsubscribersNotificationDAO,
+                        new UserNotificationOnlyStatusChangeDAO
+                    )
+                );
+            });
+            $r->post('/notifications/my/{id:\d+}/', function () {
+                return new  \Tuleap\Tracker\Notifications\Settings\NotificationsUserSettingsUpdateController(
+                    $this->getTrackerFactory(),
+                    new UserNotificationSettingsDAO,
+                    new ProjectHistoryDao
+                );
+            });
+
+            $r->post('/webhooks/delete', function () {
+                return new WebhookDeleteController(
+                    new WebhookFactory(new WebhookDao()),
+                    $this->getTrackerFactory(),
+                    new WebhookDao()
+                );
+            });
+
+            $r->post('/webhooks/create', function () {
+                return new WebhookCreateController(
+                    new WebhookDao(),
+                    $this->getTrackerFactory(),
+                    new WebhookURLValidator()
+                );
+            });
+
+            $r->post(
+                '/webhooks/edit',
+                function () {
+                    return new WebhookEditController(
+                        new WebhookFactory(new WebhookDao()),
+                        TrackerFactory::instance(),
+                        new WebhookDao(),
+                        new WebhookURLValidator()
+                    );
+            }
+            );
+        });
+    }
+
+    public function collectCLICommands(CLICommandsCollector $commands_collector)
+    {
+        $commands_collector->addCommand(
+            new TrackerForceNotificationsLevelCommand(
+                $this->getForceUsageUpdater(),
+                ProjectManager::instance(),
+                new NotificationLevelExtractor(),
+                $this->getTrackerFactory(),
+                new TrackerDao()
+            )
+        );
+    }
+
+    /**
+     * @return NotificationsForceUsageUpdater
+     */
+    private function getForceUsageUpdater()
+    {
+        return new NotificationsForceUsageUpdater(
+            new RecipientsManager(
+                Tracker_FormElementFactory::instance(),
+                UserManager::instance(),
+                new UnsubscribersNotificationDAO(),
+                new UserNotificationSettingsRetriever(
+                    new Tracker_GlobalNotificationDao(),
+                    new UnsubscribersNotificationDAO(),
+                    new UserNotificationOnlyStatusChangeDAO()
+                ),
+                new UserNotificationOnlyStatusChangeDAO()
+            ),
+            new UserNotificationSettingsDAO()
+        );
+    }
+
+    public function getProjectWithTrackerAdministrationPermission(GetProjectWithTrackerAdministrationPermission $event)
+    {
+        $user = $event->getUser();
+        $dao  = new \Tuleap\Tracker\dao\ProjectDao(new TrackerManager);
+
+        $matching_projects_rows = $dao->searchProjectsForREST($user, $event->getLimit(), $event->getOffset());
+        $total_size             = $dao->foundRows();
+
+        $project_with_tracker_administration = [];
+        foreach ($matching_projects_rows as $project_row) {
+            $trackers = $this->getTrackerFactory()->getTrackersByProjectIdUserCanAdministration(
+                $project_row['group_id'],
+                $user
+            );
+
+            if (count($trackers) > 0) {
+                $project_with_tracker_administration[] = new Project($project_row);
+            }
+        }
+
+        $paginated_projects = new PaginatedProjects($project_with_tracker_administration, $total_size);
+        $event->setPaginatedProjects($paginated_projects);
     }
 }

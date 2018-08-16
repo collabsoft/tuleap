@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,24 +19,33 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\MessageFactoryBuilder;
+use Tuleap\Hudson\HudsonJobBuilder;
+
 /**
  * hudsonActions
  */
 class hudsonActions extends Actions {
     
-    function hudsonActions(&$controler, $view=null) {
-        $this->Actions($controler);
+    function __construct(&$controler, $view=null) {
+        parent::__construct($controler);
 
         $this->svn_paths_updater = new SVNPathsUpdater();
     }
 	
-    public function addJob() {
+    public function addJob()
+    {
         $request =& HTTPRequest::instance();
         $group_id = $request->get('group_id');
         $job_url = $request->get('hudson_job_url');
         try {
-            $http_client     = new Http_Client();
-            $job             = new HudsonJob($job_url, $http_client);
+            $minimal_job_factory = new MinimalHudsonJobFactory();
+            $job_builder         = new HudsonJobBuilder(MessageFactoryBuilder::build(), HttpClientFactory::createClient());
+            $job                 = $job_builder->getHudsonJob(
+                $minimal_job_factory->getMinimalHudsonJob($job_url, '')
+            );
+
             $use_svn_trigger = ($request->get('hudson_use_svn_trigger') === 'on');
             $use_cvs_trigger = ($request->get('hudson_use_cvs_trigger') === 'on');
             $token           = $request->get('hudson_trigger_token');

@@ -10,7 +10,7 @@
 function mail_header($params) {
   global $group_id, $Language;
 
-    Tuleap\Instrument\Collect::increment('service.project.mailinglists.accessed');
+    \Tuleap\Project\ServiceInstrumentation::increment('mailinglists');
 
 	//required for site_project_header
 	$params['group']=$group_id;

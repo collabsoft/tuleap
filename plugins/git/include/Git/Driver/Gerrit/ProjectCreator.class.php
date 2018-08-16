@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -146,7 +146,7 @@ class Git_Driver_Gerrit_ProjectCreator {
 
         $name = $driver->getGerritProjectName($repository);
         if ($driver->doesTheProjectExist($gerrit_server, $name)) {
-             throw new Git_Driver_Gerrit_ProjectCreator_ProjectAlreadyexistsException($name, $gerrit_server->getBaseUrl());
+             throw new Git_Driver_Gerrit_ProjectCreator_ProjectAlreadyExistsException($name, $gerrit_server->getBaseUrl());
         }
 
         $migrated_ugroups = $this->membership_manager->createArrayOfGroupsForServer($gerrit_server, $ugroups);
@@ -334,7 +334,9 @@ class Git_Driver_Gerrit_ProjectCreator {
 
         foreach ($ugroups_read as $ugroup_read) {
             $this->addToSection('refs/heads', 'read', "group $ugroup_read");
-            $this->addToSection('refs/heads', 'label-Code-Review', "-1..+1 group $ugroup_read");
+            if(!in_array($ugroup_read, $ugroups_write)) {
+                $this->addToSection('refs/heads', 'label-Code-Review', "-1..+1 group $ugroup_read");
+            }
         }
         foreach ($ugroups_write as $ugroup_write) {
             $this->addToSection('refs/heads', 'read', "group $ugroup_write");

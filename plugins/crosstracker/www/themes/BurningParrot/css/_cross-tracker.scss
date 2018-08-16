@@ -36,6 +36,10 @@
     margin: $tlp-spacing $tlp-spacing 0;
 }
 
+.cross-tracker-list-bind-user:not(:last-child)::after {
+    content: ', ';
+}
+
 .link-to-tracker-badge {
     margin: 0 5px 0 0;
 }

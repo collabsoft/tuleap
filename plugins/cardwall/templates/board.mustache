@@ -20,7 +20,14 @@
                     {{/has_swimline_header}}
                     {{#columns}}
                         <th class="cardwall-column-header">
-                            <div class="cardwall-column-header-color" style="background-color: {{bgcolor}}; color: {{fgcolor}}"></div>
+                            <div class="cardwall-column-header-color
+                                {{# isHeaderATLPColor }}
+                                    cardwall-column-header-color-{{ header_color }}
+                                {{/ isHeaderATLPColor }}"
+                                {{^ isHeaderATLPColor }}
+                                    style="background-color: {{ header_color }}"
+                                {{/isHeaderATLPColor}}
+                            ></div>
                             <div class="cardwall-column-header-container">
                                 {{label}}
                                 <div class="cardwall-column-header-controls">

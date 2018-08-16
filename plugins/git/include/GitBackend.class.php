@@ -1,21 +1,22 @@
 <?php
 /**
+  * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
   * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
   *
-  * This file is a part of Codendi.
+  * This file is a part of Tuleap.
   *
-  * Codendi is free software; you can redistribute it and/or modify
+  * Tuleap is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
   * the Free Software Foundation; either version 2 of the License, or
   * (at your option) any later version.
   *
-  * Codendi is distributed in the hope that it will be useful,
+  * Tuleap is distributed in the hope that it will be useful,
   * but WITHOUT ANY WARRANTY; without even the implied warranty of
   * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
   * GNU General Public License for more details.
   *
   * You should have received a copy of the GNU General Public License
-  * along with Codendi. If not, see <http://www.gnu.org/licenses/
+  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 require_once('common/backend/Backend.class.php');
 
@@ -257,7 +258,7 @@ class GitBackend extends Backend implements Git_Backend_Interface, GitRepository
      * Return URL to access the respository for remote git commands
      *
      * @param  GitRepository $repository
-     * @return String
+     * @return array
      */
     public function getAccessURL(GitRepository $repository) {
         $serverName  = $_SERVER['SERVER_NAME'];
@@ -297,7 +298,6 @@ class GitBackend extends Backend implements Git_Backend_Interface, GitRepository
      * @return String
      */
     public function getBackendStatistics(Statistics_Formatter $formatter) {
-        $dao = $this->getDao();
         $formatter->clearContent();
         $formatter->addEmptyLine();
         $formatter->addHeader('Git');
@@ -331,11 +331,12 @@ class GitBackend extends Backend implements Git_Backend_Interface, GitRepository
      *
      * @return Void
      */
-    private function fillBackendStatisticsByType(Statistics_Formatter $formatter, $type, $typeIndex, $typeArray, $keepedAlive) {
-        $dao = $this->getDao();
-        $dar = $dao->getBackendStatistics($type, $formatter->startDate, $formatter->endDate, $formatter->groupId, $keepedAlive);
-        if ($dar && !$dar->isError() && $dar->rowCount() > 0) {
-            foreach ($dar as $row) {
+    private function fillBackendStatisticsByType(Statistics_Formatter $formatter, $type, $typeIndex, $typeArray, $keepedAlive)
+    {
+        $dao  = $this->getDao();
+        $rows = $dao->getBackendStatistics($type, $formatter->startDate, $formatter->endDate, $formatter->groupId, $keepedAlive);
+        if (count($rows) > 0) {
+            foreach ($rows as $row) {
                 $typeIndex[] = $row['month']." ".$row['year'];
                 $typeArray[]      = intval($row['count']);
             }
@@ -360,22 +361,20 @@ class GitBackend extends Backend implements Git_Backend_Interface, GitRepository
         $gitRepo[]    = $GLOBALS['Language']->getText('plugin_statistics', 'scm_git_repositories');
 
         $gitLogDao = new Git_LogDao();
-        $dar       = $gitLogDao->totalPushes($formatter->startDate, $formatter->endDate, $formatter->groupId);
-        if ($dar && !$dar->isError() && $dar->rowCount() > 0) {
-            foreach ($dar as $row) {
-                $gitIndex[]   = $row['month']." ".$row['year'];
-                $gitPushes[]  = intval($row['pushes_count']);
-                $gitCommits[] = intval($row['commits_count']);
-                $gitUsers[]   = intval($row['users']);
-                $gitRepo[]    = intval($row['repositories']);
-            }
-            $formatter->addLine($gitIndex);
-            $formatter->addLine($gitPushes);
-            $formatter->addLine($gitCommits);
-            $formatter->addLine($gitUsers);
-            $formatter->addLine($gitRepo);
-            $formatter->addEmptyLine();
+        $rows      = $gitLogDao->totalPushes($formatter->startDate, $formatter->endDate, $formatter->groupId);
+        foreach ($rows as $row) {
+            $gitIndex[]   = $row['month']." ".$row['year'];
+            $gitPushes[]  = intval($row['pushes_count']);
+            $gitCommits[] = intval($row['commits_count']);
+            $gitUsers[]   = intval($row['users']);
+            $gitRepo[]    = intval($row['repositories']);
         }
+        $formatter->addLine($gitIndex);
+        $formatter->addLine($gitPushes);
+        $formatter->addLine($gitCommits);
+        $formatter->addLine($gitUsers);
+        $formatter->addLine($gitRepo);
+        $formatter->addEmptyLine();
     }
 
     private function retrieveReadAccessStatistics(Statistics_Formatter $formatter)

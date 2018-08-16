@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,6 +41,9 @@ abstract class Tracker_FormElement_Field_List_Bind implements
     protected $default_value_dao;
 
     protected $default_values;
+    /**
+     * @var Tracker_FormElement_Field_List_BindDecorator[]
+     */
     protected $decorators;
 
     /** @var Tracker_FormElement_Field */
@@ -79,6 +82,9 @@ abstract class Tracker_FormElement_Field_List_Bind implements
         return $rest_array;
     }
 
+    /**
+     * @return Tracker_FormElement_Field_List_BindDecorator[]
+     */
     public function getDecorators() {
         return $this->decorators;
     }
@@ -287,15 +293,22 @@ abstract class Tracker_FormElement_Field_List_Bind implements
         if ($criteria_value) {
             $a = 'A_'. $this->field->id;
             $b = 'B_'. $this->field->id;
-            if ($this->isSearchingNone($criteria_value)) {
-                $values_id = array_values($criteria_value);
 
-                return " $b.bindvalue_id IN (". implode(',', $values_id) .") OR $b.bindvalue_id IS NULL ";
+            $data_access = CodendiDataAccess::instance();
+
+            if ($this->isSearchingNone($criteria_value)) {
+                $values_id = $data_access->escapeIntImplode(array_values($criteria_value));
+
+                return " $b.bindvalue_id IN (". $values_id .") OR $b.bindvalue_id IS NULL ";
             }
 
-            $ids_to_search = $this->getIdsToSearch($criteria_value);
+            $ids_to_search = $data_access->escapeIntImplode($this->getIdsToSearch($criteria_value));
 
-            return " $b.bindvalue_id IN(". implode(',', $ids_to_search) .") ";
+            if ($ids_to_search === '') {
+                return '';
+            }
+
+            return " $b.bindvalue_id IN(". $ids_to_search .") ";
         }
         return '';
     }
@@ -401,15 +414,19 @@ abstract class Tracker_FormElement_Field_List_Bind implements
         return $html;
     }
 
-    public function getSelectOptionInlineStyle($value_id) {
+    public function getSelectOptionStyles($value_id) {
+        $default_styles = ['classes' => '', 'inline-styles' => ''];
+
         if (count($this->decorators)) {
             if (isset($this->decorators[$value_id])) {
-                return $this->decorators[$value_id]->decorateSelectOption();
+                return $this->decorators[$value_id]->decorateSelectOptionWithStyles();
             } else {
-                return 'padding-left: 16px;';
+                $default_styles[ 'classes' ] = 'select-option-not-colored';
+
+                return $default_styles;
             }
         } else {
-            return '';
+            return $default_styles;
         }
     }
 
@@ -435,7 +452,7 @@ abstract class Tracker_FormElement_Field_List_Bind implements
         if (isset($params['decorator'])) {
             foreach ($params['decorator'] as $value_id => $hexacolor) {
                 if ($hexacolor) {
-                    Tracker_FormElement_Field_List_BindDecorator::save($this->field->getId(), $value_id, $hexacolor);
+                    Tracker_FormElement_Field_List_BindDecorator::update($this->field->getId(), $value_id, $hexacolor);
                 } else {
                     Tracker_FormElement_Field_List_BindDecorator::delete($this->field->getId(), $value_id);
                 }
@@ -579,9 +596,10 @@ abstract class Tracker_FormElement_Field_List_Bind implements
      *
      * @return void
      */
-    public function saveObject() {
+    public function saveObject()
+    {
         if (is_array($this->default_values)) {
-            $t = array();
+            $t = [];
             foreach ($this->default_values as $value) {
                 $t[$value->getId()] = $value;
             }
@@ -592,11 +610,21 @@ abstract class Tracker_FormElement_Field_List_Bind implements
             }
         }
 
-        if (is_array($this->decorators) && !empty($this->decorators)) {
+        if (is_array($this->decorators) && ! empty($this->decorators)) {
             $values = $this->getBindValues();
-            foreach ( $this->decorators as $decorator) {
-                $hexacolor = ColorHelper::RGBtoHexa($decorator->r, $decorator->g, $decorator->b);
-                Tracker_FormElement_Field_List_BindDecorator::save($this->field->getId(), $values[$decorator->value_id]->getId(), $hexacolor);
+            foreach ($this->decorators as $decorator) {
+
+                if (! $decorator->isUsingOldPalette()) {
+                    $color = $decorator->tlp_color_name;
+                } else {
+                    $color = ColorHelper::RGBtoHexa($decorator->r, $decorator->g, $decorator->b);
+                }
+
+                Tracker_FormElement_Field_List_BindDecorator::save(
+                    $this->field->getId(),
+                    $values[$decorator->value_id]->getId(),
+                    $color
+                );
             }
         }
     }
@@ -679,7 +707,7 @@ abstract class Tracker_FormElement_Field_List_Bind implements
         return intval($value);
     }
 
-    public function addValue() {
+    public function addValue($new_value) {
         return;
     }
 

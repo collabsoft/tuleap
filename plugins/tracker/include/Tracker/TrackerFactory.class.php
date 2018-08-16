@@ -17,6 +17,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+use Tuleap\Tracker\Webhook\WebhookDao;
+use Tuleap\Tracker\Webhook\WebhookFactory;
+
 class TrackerFactory {
 
     const LEGACY_SUFFIX = '_from_tv3';
@@ -147,7 +150,7 @@ class TrackerFactory {
     }
 
     /**
-     * @return array of Tracker
+     * @return Tracker[]
      */
     public function getTrackersByGroupIdUserCanView($group_id, PFUser $user) {
         $trackers = array();
@@ -158,6 +161,23 @@ class TrackerFactory {
                 $trackers[$tracker_id] = $tracker;
             }
         }
+        return $trackers;
+    }
+
+    /**
+     * @return Tracker[]
+     */
+    public function getTrackersByProjectIdUserCanAdministration($project_id, PFUser $user)
+    {
+        $trackers = [];
+        foreach($this->getDao()->searchByGroupId($project_id) as $row) {
+            $tracker_id = $row['id'];
+            $tracker    = $this->getCachedInstanceFromRow($row);
+            if ($tracker->userIsAdmin($user)) {
+                $trackers[$tracker_id] = $tracker;
+            }
+        }
+
         return $trackers;
     }
 
@@ -224,7 +244,7 @@ class TrackerFactory {
                     $row['deletion_date'],
                     $row['instantiate_for_new_projects'],
                     $row['log_priority_changes'],
-                    $row['stop_notification'],
+                    $row['notifications_level'],
                     $row['color'],
                     $row['enable_emailgateway']
         );
@@ -482,13 +502,15 @@ class TrackerFactory {
                 $tracker = $this->getTrackerById($id);
 
                 // Process event that tracker is created
-                $em =& EventManager::instance();
+                $em = EventManager::instance();
                 $pref_params = array('atid_source' => $id_template,
                         'atid_dest'   => $id);
                 $em->processEvent('Tracker_created', $pref_params);
                 //Duplicate Permissions
                 $this->duplicatePermissions($id_template, $id, $ugroup_mapping, $field_mapping, $duplicate_type);
 
+                $source_tracker = $this->getTrackerById($id_template);
+                $this->duplicateWebhooks($source_tracker, $tracker);
 
                 $this->postCreateActions($tracker);
 
@@ -500,6 +522,19 @@ class TrackerFactory {
             }
         }
         return false;
+    }
+
+    private function duplicateWebhooks(Tracker $source_tracker, Tracker $tracker)
+    {
+        $this->getWebhookFactory()->duplicateWebhookFromSourceTracker($source_tracker, $tracker);
+    }
+
+    /**
+     * @return WebhookFactory
+     */
+    private function getWebhookFactory()
+    {
+        return new WebhookFactory(new WebhookDao());
     }
 
    /**
@@ -723,7 +758,7 @@ class TrackerFactory {
                 '',
                 $tracker->instantiate_for_new_projects,
                 $tracker->log_priority_changes,
-                $tracker->stop_notification,
+                $tracker->getNotificationsLevel(),
                 $tracker->color,
                 $tracker->isEmailgatewayEnabled()
         );
@@ -737,7 +772,7 @@ class TrackerFactory {
             //create formElements
             foreach ($tracker->formElements as $formElement) {
                 // these fields have no parent
-                Tracker_FormElementFactory::instance()->saveObject($trackerDB, $formElement, 0);
+                Tracker_FormElementFactory::instance()->saveObject($trackerDB, $formElement, 0, true, true);
             }
             //create report
             foreach ($tracker->reports as $report) {
@@ -756,6 +791,10 @@ class TrackerFactory {
             //create workflow
             if (isset($tracker->workflow)) {
                 WorkflowFactory::instance()->saveObject($tracker->workflow, $trackerDB);
+            }
+
+            if (count($tracker->webhooks) > 0) {
+                $this->getWebhookFactory()->saveWebhooks($tracker->webhooks, $tracker_id);
             }
 
             //tracker permissions

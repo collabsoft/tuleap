@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,6 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+use Tuleap\Cardwall\AccentColor\AccentColor;
+use Tuleap\Cardwall\BackgroundColor\BackgroundColor;
 
 require_once dirname(__FILE__) .'/bootstrap.php';
 require_once 'common/TreeNode/TreeNodeMapper.class.php';
@@ -72,16 +74,59 @@ class Cardwall_ArtifactNodeTreeProviderTest extends TuleapTestCase {
 
     }
 
-    public function itCreatesAnArtifactNodeForEveryArtifactId() {
+    public function testItCreatesAnArtifactNodeForEveryArtifactId()
+    {
         $swmiline_id = 7;
 
         $artifact4 = aMockArtifact()->withId(4)->build();
         $artifact5 = aMockArtifact()->withId(5)->build();
         $artifact6 = aMockArtifact()->withId(6)->build();
 
-        $node4 = new Cardwall_CardInCellPresenterNode(new Cardwall_CardInCellPresenter(new Cardwall_CardPresenter($artifact4, mock('Cardwall_CardFields'), '*', mock('Cardwall_UserPreferences_UserPreferencesDisplayUser'), 0, array()), 4));
-        $node5 = new Cardwall_CardInCellPresenterNode(new Cardwall_CardInCellPresenter(new Cardwall_CardPresenter($artifact5, mock('Cardwall_CardFields'), '*', mock('Cardwall_UserPreferences_UserPreferencesDisplayUser'), 0, array()), 5));
-        $node6 = new Cardwall_CardInCellPresenterNode(new Cardwall_CardInCellPresenter(new Cardwall_CardPresenter($artifact6, mock('Cardwall_CardFields'), '*', mock('Cardwall_UserPreferences_UserPreferencesDisplayUser'), 0, array()), 6));
+        $node4 = new Cardwall_CardInCellPresenterNode(
+            new Cardwall_CardInCellPresenter(
+                new Cardwall_CardPresenter(
+                    \Mockery::spy(PFUser::class),
+                    $artifact4,
+                    mock('Cardwall_CardFields'),
+                    mock(AccentColor::class),
+                    mock('Cardwall_UserPreferences_UserPreferencesDisplayUser'),
+                    0,
+                    array(),
+                    mock(BackgroundColor::class)
+                ),
+                4
+            )
+        );
+        $node5 = new Cardwall_CardInCellPresenterNode(
+            new Cardwall_CardInCellPresenter(
+                new Cardwall_CardPresenter(
+                    \Mockery::spy(PFUser::class),
+                    $artifact5,
+                    mock('Cardwall_CardFields'),
+                    mock(AccentColor::class),
+                    mock('Cardwall_UserPreferences_UserPreferencesDisplayUser'),
+                    0,
+                    array(),
+                    mock(BackgroundColor::class)
+                ),
+                5
+            )
+        );
+        $node6 = new Cardwall_CardInCellPresenterNode(
+            new Cardwall_CardInCellPresenter(
+                new Cardwall_CardPresenter(
+                    \Mockery::spy(PFUser::class),
+                    $artifact6,
+                    mock('Cardwall_CardFields'),
+                    mock(AccentColor::class),
+                    mock('Cardwall_UserPreferences_UserPreferencesDisplayUser'),
+                    0,
+                    array(),
+                    mock(BackgroundColor::class)
+                ),
+                6
+            )
+        );
 
         stub($this->artifact_factory)->getArtifactById(4)->returns($artifact4);
         stub($this->artifact_factory)->getArtifactById(5)->returns($artifact5);
@@ -101,8 +146,5 @@ class Cardwall_ArtifactNodeTreeProviderTest extends TuleapTestCase {
             $this->assertBetweenClosedInterval($artifact->getId(), 4, 6);
             $this->assertIsA($artifact, 'Tracker_Artifact');
         }
-
     }
-
 }
-?>

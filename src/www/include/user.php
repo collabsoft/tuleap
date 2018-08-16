@@ -1,11 +1,27 @@
 <?php
-//
-// SourceForge: Breaking Down the Barriers to Open Source Development
-// Copyright 1999-2000 (c) The SourceForge Crew
-// http://sourceforge.net
-//
-// 
+/**
+ * Copyright (c) Enalean, 2013-2018. All Rights Reserved.
+ * Copyright 1999-2000 (c) The SourceForge Crew
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
+
+use Tuleap\Password\Configuration\PasswordConfigurationDAO;
+use Tuleap\Password\Configuration\PasswordConfigurationRetriever;
 
 $USER_RES=array();
 
@@ -268,9 +284,13 @@ function user_display_choose_password($page,$user_id = false) {
     <div class="password_strategy">
         <p class="robustness"><?=$purifier->purify($GLOBALS['Language']->getText('account_check_pw', 'password_robustness'))?>
 			<span class="password_strategy_good"><?php echo $purifier->purify($GLOBALS['Language']->getText('account_check_pw', 'good')); ?></span>
-			<span class="password_strategy_bad"><?php echo $purifier->purify($GLOBALS['Language']->getText('account_check_pw', 'bad')); ?></span></p>
+			<span class="password_strategy_bad"><?php echo $purifier->purify($GLOBALS['Language']->getText('account_check_pw', 'bad')); ?></span>
+            <img class="password_validators_loading" src="/themes/common/images/ic/spinner-16.gif">
+        </p>
         <?php
-        $password_strategy = new PasswordStrategy();
+        $password_configuration_retriever = new PasswordConfigurationRetriever(new PasswordConfigurationDAO());
+        $password_configuration           = $password_configuration_retriever->getPasswordConfiguration();
+        $password_strategy                = new PasswordStrategy($password_configuration);
         include($GLOBALS['Language']->getContent('account/password_strategy'));
         foreach($password_strategy->validators as $key => $v) {
             echo '<p class="password_validator_msg_'. $purifier->purify($key) .'"><i class="icon-remove password_strategy_bad"></i> '. $purifier->purify($v->description()) .'</p>';

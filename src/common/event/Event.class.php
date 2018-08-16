@@ -68,16 +68,6 @@ class Event {
     const LIST_SSH_KEYS = 'list_ssh_keys';
 
     /**
-     * The user has just changed his email address.
-     *
-     * Parameters:
-     *  'user_id' => User ID
-     *
-     * No expected results
-     */
-    const USER_EMAIL_CHANGED = 'user_email_changed';
-
-    /**
      * Force aliases database update.
      *
      * No Parameters.
@@ -943,6 +933,9 @@ class Event {
      *
      * Expected result:
      *  'project_id' => int
+     *
+     * @deprecated
+     * @see \Tuleap\Request\DispatchableWithProject
      */
     const GET_PROJECTID_FROM_URL = 'get_projectid_from_url';
 
@@ -971,23 +964,6 @@ class Event {
      *    'can_access' => boolean
      */
     const HAS_USER_BEEN_DELEGATED_ACCESS = 'has_user_been_delegated_access';
-
-    /**
-     * Sends-out an event to see if the service handles access for
-     * restricted users to its resources independently.
-     * resources
-     * E.g. a git repo can be configured to specifically allow access
-     * to all users including restricted users
-     *
-     * Parameters:
-     *    'allow_restricted' => boolean
-     *    'user'             => PFUser
-     *    'uri'              => string
-     *
-     * Expected result:
-     *    'allow_restricted' => boolean
-     */
-    const IS_SCRIPT_HANDLED_FOR_RESTRICTED = 'is_script_handled_for_restricted';
 
     /**
      * Sends-out an event to get all services that handle independently restricted users
@@ -1039,6 +1015,7 @@ class Event {
      *     'limit'           => int
      *     'offset'          => int
      *     'fields'          => String
+     *     'query'           => String
      *     'total_git_repo'  => int
      */
     const REST_PROJECT_GET_GIT = 'rest_project_get_git';
@@ -1263,6 +1240,8 @@ class Event {
      * Parameters:
      *    - variant: ThemeVariantColor Theme variant color
      *    - stylesheets: String[] css paths to be added
+     *
+     * @deprecated
      */
     const BURNING_PARROT_GET_STYLESHEETS = 'burning_parrot_get_stylesheets';
 
@@ -1271,6 +1250,8 @@ class Event {
      *
      * Parameters:
      *    - javascript_files: String[] js paths to be added
+     *
+     * @deprecated
      */
     const BURNING_PARROT_GET_JAVASCRIPT_FILES = 'burning_parrot_get_javascript_files';
 

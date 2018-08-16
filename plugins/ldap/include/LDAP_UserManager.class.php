@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2008. All Rights Reserved.
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2008
  *
@@ -181,7 +181,7 @@ class LDAP_UserManager {
      */
     function getUserIdsFromUserList($userList) {
         $userIds = array();
-        $userList = array_map('trim', split('[,;]', $userList));
+        $userList = array_map('trim', preg_split('/[,;]/', $userList));
         foreach($userList as $u) {
             $user = $this->getUserManager()->findUser($u);
             if($user) {
@@ -495,7 +495,7 @@ class LDAP_UserManager {
         }
         $percentage_users_to_suspend = ($nbr_users_to_suspend / $nbr_all_users) *100;
         $threshold_users_suspension  = $this->ldap->getLDAPParam('threshold_users_suspension');
-        $logger = new BackendLogger();
+        $logger = new \Tuleap\LDAP\LdapLogger();
         if($percentage_users_to_suspend <= $threshold_users_suspension) {
             $logger->info("[LDAP] Percentage of suspended users is ( ".$percentage_users_to_suspend."% ) and threshold is ( ".$threshold_users_suspension."% )");
             $logger->info("[LDAP] Number of suspended users is ( ".$nbr_users_to_suspend." ) and number of active users is ( ".$nbr_all_users." )");
@@ -521,7 +521,7 @@ class LDAP_UserManager {
         $attributes = $this->user_sync->getSyncAttributes($this->ldap);
         $ldapSearch = false;
 
-        foreach (split(';', $this->ldap->getLDAPParam('people_dn')) as $people_dn) {
+        foreach (explode(';', $this->ldap->getLDAPParam('people_dn')) as $people_dn) {
             $ldapSearch = $this->ldap->search($people_dn, $ldap_query, LDAP::SCOPE_ONELEVEL, $attributes);
             if (count($ldapSearch) == 1 && $ldapSearch != false) {
                 break;

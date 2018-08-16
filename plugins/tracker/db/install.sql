@@ -107,7 +107,7 @@ CREATE TABLE tracker(
     deletion_date INT( 11 ) default NULL ,
     instantiate_for_new_projects INT( 11 ) NOT NULL default '0',
     log_priority_changes TINYINT(1) NOT NULL default '0',
-    stop_notification INT( 11 ) NOT NULL default '0',
+    notifications_level INT( 11 ) NOT NULL default '0',
     from_tv3_id INT(11) NULL,
     color varchar(64) NOT NULL DEFAULT 'inca_silver',
     enable_emailgateway TINYINT(1) NOT NULL DEFAULT '0',
@@ -246,7 +246,8 @@ CREATE TABLE tracker_field_list_bind_static_value(
     rank INT(11) NOT NULL,
     is_hidden TINYINT(1) NOT NULL,
     original_value_id INT(11) NOT NULL DEFAULT '0',
-    INDEX field_id_idx(field_id)
+    INDEX field_id_idx(field_id),
+    INDEX idx_original_value_id (original_value_id, id)
 ) ENGINE=InnoDB AUTO_INCREMENT=101;
 
 CREATE TABLE IF NOT EXISTS tracker_field_burndown (
@@ -524,11 +525,13 @@ DROP TABLE IF EXISTS  tracker_field_list_bind_decorator;
 CREATE TABLE tracker_field_list_bind_decorator(
     field_id INT(11) NOT NULL,
     value_id INT(11) NOT NULL,
-    red TINYINT UNSIGNED NOT NULL,
-    green TINYINT UNSIGNED NOT NULL,
-    blue TINYINT UNSIGNED NOT NULL,
+    red TINYINT UNSIGNED NULL,
+    green TINYINT UNSIGNED NULL,
+    blue TINYINT UNSIGNED NULL,
+    tlp_color_name VARCHAR (30) NULL,
     PRIMARY KEY idx(field_id, value_id)
 ) ENGINE=InnoDB;
+
 
 DROP TABLE IF EXISTS  tracker_artifact;
 CREATE TABLE tracker_artifact(
@@ -592,6 +595,18 @@ CREATE TABLE IF NOT EXISTS tracker_global_notification_ugroups (
     notification_id INT(11) UNSIGNED NOT NULL,
     ugroup_id INT(11) NOT NULL,
     PRIMARY KEY (notification_id, ugroup_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS tracker_global_notification_unsubscribers (
+    tracker_id INT(11) NOT NULL,
+    user_id INT(11) NOT NULL,
+    PRIMARY KEY (tracker_id, user_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS tracker_only_status_change_notification_subscribers (
+    tracker_id INT(11) NOT NULL,
+    user_id INT(11) NOT NULL,
+    PRIMARY KEY (tracker_id, user_id)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS    tracker_watcher;
@@ -806,6 +821,16 @@ CREATE TABLE plugin_tracker_notification_assigned_to (
     tracker_id INT(11) NOT NULL PRIMARY KEY
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS plugin_tracker_notification_email_custom_sender_format;
+CREATE TABLE plugin_tracker_notification_email_custom_sender_format(
+                    tracker_id int(11) NOT NULL,
+                    format text,
+                    enabled bool,
+                    PRIMARY KEY (tracker_id),
+                    FOREIGN KEY (tracker_id)
+                        REFERENCES tracker(id)
+                ) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS plugin_tracker_recently_visited;
 CREATE TABLE plugin_tracker_recently_visited (
     user_id INT(11) NOT NULL,
@@ -829,8 +854,8 @@ CREATE TABLE plugin_tracker_projects_unused_artifactlink_types (
     INDEX idx_artifactlink_types_unused_project_id(project_id)
 ) ENGINE=InnoDB;
 
-DROP TABLE IF EXISTS tracker_email_notification_log;
-CREATE TABLE IF NOT EXISTS tracker_email_notification_log (
+DROP TABLE IF EXISTS tracker_post_creation_event_log;
+CREATE TABLE IF NOT EXISTS tracker_post_creation_event_log (
     changeset_id INT(11) NOT NULL PRIMARY KEY,
     create_date int(11) NOT NULL,
     start_date int(11) NULL,
@@ -843,6 +868,30 @@ CREATE TABLE tracker_report_criteria_comment_value(
     report_id INT(11) NOT NULL PRIMARY KEY,
     comment VARCHAR(255)
 ) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_deleted_artifacts;
+CREATE TABLE plugin_tracker_deleted_artifacts(
+    timestamp int(11) NOT NULL,
+    user_id INT(11) NOT NULL,
+    nb_artifacts_deleted int(2) NOT NULL,
+    PRIMARY KEY (timestamp, user_id)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_webhook_url;
+CREATE TABLE IF NOT EXISTS plugin_tracker_webhook_url (
+    id int(11) unsigned PRIMARY KEY AUTO_INCREMENT,
+    tracker_id int(11) NOT NULL,
+    url TEXT NOT NULL,
+    INDEX idx_tracker_webhook_url_tracker_id (tracker_id)
+);
+
+DROP TABLE IF EXISTS plugin_tracker_webhook_log;
+CREATE TABLE IF NOT EXISTS plugin_tracker_webhook_log (
+    created_on int(11) NOT NULL,
+    webhook_id int(11) unsigned NOT NULL,
+    status TEXT NOT NULL,
+    INDEX idx(webhook_id)
+);
 
 -- Enable service for project 100
 INSERT INTO service(group_id, label, description, short_name, link, is_active, is_used, scope, rank)

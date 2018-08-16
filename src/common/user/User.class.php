@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -20,8 +20,6 @@
  */
 
 use Tuleap\user\ForgeUserGroupPermission\SiteAdministratorPermission;
-
-require_once 'www/project/admin/permissions.php';
 
 /**
  *
@@ -75,6 +73,8 @@ class PFUser implements PFO_User, IHaveAnSSHKey {
      * Should we disable the ie7 warning?
      */
     const PREFERENCE_DISABLE_IE7_WARNING = 'disable_ie7_warning';
+    const PREFERENCE_DISPLAY_DENSITY     = 'display_density';
+    const DISPLAY_DENSITY_CONDENSED      = 'condensed';
 
     /**
      * Seperator for ssh key concatenation
@@ -91,6 +91,8 @@ class PFUser implements PFO_User, IHaveAnSSHKey {
     const DEFAULT_CSV_DATEFORMAT = 'month_day_year';
 
     const EDITION_DEFAULT_FORMAT = 'user_edition_default_format';
+
+    const ACCESSIBILITY_MODE = 'accessibility_mode';
 
     /**
      * @var array of allowed separators for CSV export
@@ -482,22 +484,28 @@ class PFUser implements PFO_User, IHaveAnSSHKey {
     }
 
     var $_static_ugroups;
-    function getStaticUgroups($group_id) {
-        if (!isset($this->_static_ugroups)) {
-            $this->_static_ugroups = array();
-            if (!$this->isSuperUser()) {
+
+    public function getStaticUgroups($group_id)
+    {
+        if (! isset($this->_static_ugroups)) {
+            $this->_static_ugroups = [];
+        }
+
+        if (! isset($this->_static_ugroups[$group_id])) {
+            $this->_static_ugroups[$group_id] = [];
+            if (! $this->isSuperUser()) {
                 $res = ugroup_db_list_all_ugroups_for_user($group_id, $this->id);
                 while ($row = db_fetch_array($res)) {
-                    $this->_static_ugroups[] = $row['ugroup_id'];
+                    $this->_static_ugroups[$group_id][] = $row['ugroup_id'];
                 }
             }
         }
-        return $this->_static_ugroups;
+
+        return $this->_static_ugroups[$group_id];
     }
 
     var $_dynamics_ugroups;
     function getDynamicUgroups($group_id, $instances) {
-        include_once 'www/project/admin/ugroup_utils.php';
         $hash = md5(serialize($instances));
         if (!isset($this->_dynamics_ugroups)) {
             $this->_dynamics_ugroups = array();
@@ -1185,8 +1193,8 @@ class PFUser implements PFO_User, IHaveAnSSHKey {
         if (!isset($this->_preferences[$preference_name])) {
             $this->_preferences[$preference_name] = false;
             if (!$this->isAnonymous()) {
-                $dao =& $this->getPreferencesDao();
-                $dar =& $dao->search($this->getId(), $preference_name);
+                $dao = $this->getPreferencesDao();
+                $dar = $dao->search($this->getId(), $preference_name);
                 if ($row = $dar->getRow()) {
                     $this->_preferences[$preference_name] = $row['preference_value'];
                 }
@@ -1205,7 +1213,7 @@ class PFUser implements PFO_User, IHaveAnSSHKey {
     function setPreference($preference_name, $preference_value) {
         $this->_preferences[$preference_name] = false;
         if (!$this->isAnonymous()) {
-            $dao =& $this->getPreferencesDao();
+            $dao = $this->getPreferencesDao();
             if ($dao->set($this->getId(), $preference_name, $preference_value)) {
                 $this->_preferences[$preference_name] = $preference_value;
                 return true;

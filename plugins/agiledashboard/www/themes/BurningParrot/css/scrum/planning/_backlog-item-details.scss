@@ -31,16 +31,36 @@
     background: $tlp-ui-white;
     cursor: move;
 
-    @for $i from 1 through length($tlp-swatch-color-names) {
-        &.#{nth($tlp-swatch-color-names, $i)} {
-            > .backlog-item-details-type-border {
-                border-left-color: nth($tlp-swatch-color-primaries, $i);
+    @each $color-name, $colors in $tlp-swatch-color-map {
+        &.#{$color-name} {
+            border-top-color: map-get($colors, 'border');
+            border-right-color: map-get($colors, 'border');
+            border-bottom-color: map-get($colors, 'border');
+            background: map-get($colors, 'secondary');
+
+            .backlog-item-details-id,
+            .backlog-item-details-parent > a,
+            .extra-card-field-title {
+                color: map-get($colors, 'text');
             }
         }
     }
 
     &.closed {
-        opacity: .4;
+        border-color: transparentize($tlp-ui-border-normal, .5);
+        background: transparent;
+
+        .backlog-item-details-id {
+            color: transparentize($tlp-ui-dimmed, .4);
+        }
+
+        .backlog-item-details-type-border,
+        .backlog-item-details-title,
+        .backlog-item-details-parent,
+        .backlog-item-details-effort-container,
+        .extra-card-fields {
+            opacity: .5;
+        }
     }
 
     @keyframes blink {
@@ -88,8 +108,9 @@
 
         > .backlog-item-details-content {
             > .backlog-item-details-parent,
+            > .card-accessibility,
             > .backlog-item-details-effort-container {
-                left: -15px;
+                transform: translateX(-15px);
             }
         }
     }
@@ -104,21 +125,49 @@
     border-left-style: solid;
     border-top-left-radius: 2px;
     border-bottom-left-radius: 2px;
+
+    @each $color-name, $colors in $tlp-swatch-color-map {
+        &.#{$color-name} {
+            border-left-color: map-get($colors, 'primary');
+        }
+    }
 }
 
 .backlog-item-details-content {
     display: flex;
-    position: relative;
     flex: 1 0 auto;
     align-items: baseline;
     width: 100%;
-    padding: 5px 5px 5px $tlp-half-spacing;
+}
+
+.card-accessibility {
+    flex: 0 0 auto;
+    align-self: stretch;
+    width: 20px;
+    margin: 0 0 0 5px;
+    transition: transform 100ms ease-in-out 500ms;
+
+    @each $color-name, $colors in $tlp-swatch-color-map {
+        &.#{$color-name} {
+            opacity: .5;
+            background-color: map-get($colors, 'text');
+            // scss-lint:disable VendorPrefix
+            -webkit-mask-image: url(map-get($colors, 'pattern'));
+            mask-image: url(map-get($colors, 'pattern'));
+
+            @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+                background-color: transparent;
+                background-image: url(map-get($colors, 'pattern'));
+            }
+        }
+    }
 }
 
 .backlog-item-details-id {
     display: flex;
     flex: 0 0 auto;
     margin: 0 7px 0 0;
+    padding: $tlp-half-spacing;
     color: $tlp-ui-dimmed;
     font-size: 12px;
     white-space: nowrap;
@@ -139,9 +188,11 @@
 }
 
 .backlog-item-details-title {
+    display: block;
     flex: 1 1 auto;
+    padding: $tlp-half-spacing $tlp-half-spacing $tlp-half-spacing 0;
     font-size: 14px;
-    line-height: 24px;
+    line-height: 18px;
 }
 
 .backlog-item-details-parent {
@@ -149,8 +200,8 @@
     left: 0;
     flex: 0 1 auto;
     align-self: center;
-    margin: 0 5px;
-    transition: left 100ms ease-in-out 500ms;
+    margin: 0 5px 0 13px;
+    transition: transform 100ms ease-in-out 500ms;
     color: $tlp-theme-color;
     font-size: 12px;
     text-align: right;
@@ -160,8 +211,8 @@
     position: relative;
     left: 0;
     flex: 0 0 auto;
-    align-self: center;
     min-width: 40px;
-    transition: left 100ms ease-in-out 500ms;
+    margin: 0 5px;
+    transition: transform 100ms ease-in-out 500ms;
     text-align: right;
 }

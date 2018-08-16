@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -21,10 +21,13 @@
 
 require_once('common/include/Codendi_HTTPPurifier.class.php');
 
+use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessResultInterface;
 use Tuleap\Tracker\Admin\ArtifactLinksUsageDao;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NaturePresenterFactory;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureSelectorPresenter;
+use Tuleap\Tracker\Report\Renderer\Table\GetExportOptionsMenuItemsEvent;
+use Tuleap\Tracker\Report\Renderer\Table\ProcessExportEvent;
 use Tuleap\Tracker\Report\WidgetAdditionalButtonPresenter;
 
 class Tracker_Report_Renderer_Table extends Tracker_Report_Renderer implements Tracker_Report_Renderer_ArtifactLinkable {
@@ -119,7 +122,7 @@ class Tracker_Report_Renderer_Table extends Tracker_Report_Renderer implements T
                 }
             }
             $sort = $this->_sort;
-            if ($store_in_session) {
+            if ($store_in_session && isset($this->report_session)) {
                 foreach($sort as $field_id => $properties) {
                     $this->report_session->set("{$this->id}.sort.{$field_id}.is_desc", $properties['is_desc']);
                     $this->report_session->set("{$this->id}.sort.{$field_id}.rank", $properties['rank']);
@@ -239,8 +242,12 @@ class Tracker_Report_Renderer_Table extends Tracker_Report_Renderer implements T
             }
         }
     }
-    public function getAggregates() {
-        $session_renderer_table_functions = &$this->report_session->get("{$this->id}.aggregates");
+    public function getAggregates()
+    {
+        $session_renderer_table_functions = null;
+        if (isset($this->report_session)) {
+            $session_renderer_table_functions = &$this->report_session->get("{$this->id}.aggregates");
+        }
         if ( $session_renderer_table_functions ) {
             $aggregates = $session_renderer_table_functions;
             $ff = $this->report->getFormElementFactory();
@@ -266,9 +273,11 @@ class Tracker_Report_Renderer_Table extends Tracker_Report_Renderer implements T
                     }
                 }
             }
-            $aggregates = $this->_aggregates;
-            foreach($aggregates as $field_id => $agg) {
-                $this->report_session->set("{$this->id}.aggregates.{$field_id}", $agg);
+            if (isset($this->report_session)) {
+                $aggregates = $this->_aggregates;
+                foreach($aggregates as $field_id => $agg) {
+                    $this->report_session->set("{$this->id}.aggregates.{$field_id}", $agg);
+                }
             }
 
         }
@@ -517,8 +526,14 @@ class Tracker_Report_Renderer_Table extends Tracker_Report_Renderer implements T
         $my_items['export'] .= $GLOBALS['Language']->getText('plugin_tracker_include_report', 'export_all_columns');
         $my_items['export'] .= '</a>';
         $my_items['export'] .= '</li>';
+
+        $event = new GetExportOptionsMenuItemsEvent($this);
+        EventManager::instance()->processEvent($event);
+        $my_items['export'] .= $event->getItems();
+
         $my_items['export'] .= '</ul>';
         $my_items['export'] .= '</div>';
+        $my_items['export'] .= $event->getAdditionalContentThatGoesOutsideOfTheMenu();
 
         return $my_items + parent::getOptionsMenuItems();
     }
@@ -1306,7 +1321,7 @@ class Tracker_Report_Renderer_Table extends Tracker_Report_Renderer implements T
             if ($field->hasCustomFormatForAggregateResults()) {
                 $html .= $field->formatAggregateResult($function, $result);
             } else {
-                if (is_a($result, 'DataAccessResult')) {
+                if ($result instanceof LegacyDataAccessResultInterface) {
                     if ($row = $result->getRow()) {
                         if (isset($row[$result_key])) {
                             //this case is for multiple selectbox/count
@@ -1450,17 +1465,21 @@ class Tracker_Report_Renderer_Table extends Tracker_Report_Renderer implements T
      *
      * @return array of sql queries
      */
-    protected function buildOrderedQuery($matching_ids, $columns, $aggregates = false, $store_in_session = true)
+    public function buildOrderedQuery($matching_ids, $columns, $aggregates = false, $store_in_session = true)
     {
         if ($aggregates) {
             $select = " SELECT 1 ";
         } else {
             $select = " SELECT a.id AS id, c.id AS changeset_id ";
         }
+        $da = CodendiDataAccess::instance();
+
+        $artifact_ids  = $da->escapeIntImplode(explode(',', $matching_ids['id']));
+        $changeset_ids = $da->escapeIntImplode(explode(',', $matching_ids['last_changeset_id']));
 
         $from   = " FROM tracker_artifact AS a INNER JOIN tracker_changeset AS c ON (c.artifact_id = a.id) ";
-        $where  = " WHERE a.id IN (". $matching_ids['id'] .")
-                      AND c.id IN (". $matching_ids['last_changeset_id'] .") ";
+        $where  = " WHERE a.id IN (". $artifact_ids .")
+                      AND c.id IN (". $changeset_ids .") ";
         if ($aggregates) {
             $group_by = '';
             $ordering = false;
@@ -1868,6 +1887,8 @@ class Tracker_Report_Renderer_Table extends Tracker_Report_Renderer implements T
 
             //export
             if (isset($renderer_parameters['export'])) {
+                $event = new ProcessExportEvent($renderer_parameters, $this, $request->getCurrentUser(), $request->getServerUrl());
+                EventManager::instance()->processEvent($event);
                 $only_columns = isset($renderer_parameters['export_only_displayed_fields']) && $renderer_parameters['export_only_displayed_fields'];
                 $this->exportToCSV($only_columns);
             }
@@ -2123,13 +2144,21 @@ class Tracker_Report_Renderer_Table extends Tracker_Report_Renderer implements T
             $file_name = str_replace(' ', '_', 'artifact_' . $this->report->getTracker()->getItemName());
             header('Content-Disposition: filename='. $http->purify($file_name) .'_'. $this->report->getTracker()->getProject()->getUnixName(). '.csv');
             header('Content-type: text/csv');
+            $csv_file = fopen("php://output", "a");
+            $this->addBOMToCSVContent($csv_file);
             foreach ($lines as $line) {
-                fputcsv(fopen("php://output", "a"), $line, $separator, '"');
+                fputcsv($csv_file, $line, $separator, '"');
             }
             die();
         } else {
             $GLOBALS['Response']->addFeedback('error', 'Unable to export (too many fields?)');
         }
+    }
+
+    private function addBOMToCSVContent($csv_file)
+    {
+        $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF));
+        fputs($csv_file, $bom);
     }
 
     private function canFieldBeExportedToCSV(Tracker_FormElement_Field $field) {

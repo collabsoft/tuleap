@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -33,6 +33,7 @@ use User_ForgeUserGroupFactory;
 use ProjectUGroup;
 use ServiceFile;
 use TemplateRenderer;
+use UserManager;
 
 class PermissionController extends BaseFrsPresenter
 {
@@ -147,7 +148,7 @@ class PermissionController extends BaseFrsPresenter
         $toolbar_presenter->setPermissionIsActive();
         $toolbar_presenter->displaySectionNavigation();
 
-        $service->displayHeader($project, $title);
+        $service->displayFRSHeader($project, $title);
         $renderer->renderToPage('toolbar-presenter', $toolbar_presenter);
     }
 

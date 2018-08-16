@@ -52,7 +52,7 @@ class WikiPage {
     /*
      * Constructor
      */
-    function WikiPage($id=0, $pagename='') {
+    function __construct($id=0, $pagename='') {
         $this->empty = null;
 
         if($id != 0) {
@@ -254,7 +254,7 @@ class WikiPage {
         $referenced = false;
 
         //Check for Docman Perms
-        $eM =& EventManager::instance();
+        $eM = EventManager::instance();
         $eM->processEvent(
             'isWikiPageReferenced', array(
                 'referenced' => &$referenced,

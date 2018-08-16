@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,44 +21,67 @@
 
 namespace Tuleap\Git\REST\v1;
 
-use GitRepositoryFactory;
-use Tuleap\Git\REST\v1\GitRepositoryRepresentation;
-use Luracast\Restler\RestException;
-use Tuleap\REST\Header;
-use Tuleap\REST\v1\GitRepositoryRepresentationBase;
-use Tuleap\REST\AuthenticatedResource;
-use GitRepoNotReadableException;
-use GitRepoNotFoundException;
-use Exception;
-use UserManager;
-use GitPermissionsManager;
-use Git_PermissionsDao;
-use Git_SystemEventManager;
-use SystemEventManager;
 use EventManager;
-use PFUser;
-use GitRepository;
-use GitDao;
-use ProjectManager;
-use Git_RemoteServer_GerritServerFactory;
-use Git_RemoteServer_Dao;
-use Git_RemoteServer_NotFoundException;
+use Exception;
 use Git_Driver_Gerrit_GerritDriverFactory;
 use Git_Driver_Gerrit_ProjectCreatorStatus;
 use Git_Driver_Gerrit_ProjectCreatorStatusDao;
-use GitBackendLogger;
-use ProjectHistoryDao;
-use Tuleap\Git\Exceptions\RepositoryNotMigratedException;
-use Tuleap\Git\Exceptions\DeletePluginNotInstalledException;
-use Tuleap\Git\Exceptions\RepositoryCannotBeMigratedException;
-use Tuleap\Git\Exceptions\RepositoryAlreadyInQueueForMigrationException;
-use Tuleap\Git\Exceptions\RepositoryCannotBeMigratedOnRestrictedGerritServerException;
-use Tuleap\Git\RemoteServer\Gerrit\MigrationHandler;
-use Tuleap\Git\Permissions\FineGrainedDao;
 use Git_Exec;
-use Tuleap\Git\CIToken\Manager as CITokenManager;
+use Git_PermissionsDao;
+use Git_RemoteServer_Dao;
+use Git_RemoteServer_GerritServerFactory;
+use Git_RemoteServer_NotFoundException;
+use Git_SystemEventManager;
+use GitBackendLogger;
+use GitDao;
+use GitPermissionsManager;
+use GitRepoNotFoundException;
+use GitRepoNotReadableException;
+use GitRepository;
+use GitRepositoryAlreadyExistsException;
+use GitRepositoryFactory;
+use Luracast\Restler\RestException;
+use PFUser;
+use ProjectHistoryDao;
+use ProjectManager;
+use SystemEventManager;
 use Tuleap\Git\CIToken\Dao as CITokenDao;
+use Tuleap\Git\CIToken\Manager as CITokenManager;
+use Tuleap\Git\CommitStatus\CommitDoesNotExistException;
+use Tuleap\Git\CommitStatus\CommitStatusCreator;
+use Tuleap\Git\CommitStatus\CommitStatusDAO;
+use Tuleap\Git\CommitStatus\InvalidCommitReferenceException;
+use Tuleap\Git\Exceptions\DeletePluginNotInstalledException;
+use Tuleap\Git\Exceptions\RepositoryAlreadyInQueueForMigrationException;
+use Tuleap\Git\Exceptions\RepositoryCannotBeMigratedException;
+use Tuleap\Git\Exceptions\RepositoryCannotBeMigratedOnRestrictedGerritServerException;
+use Tuleap\Git\Exceptions\RepositoryNotMigratedException;
+use Tuleap\Git\Gitolite\GitoliteAccessURLGenerator;
+use Tuleap\Git\Gitolite\VersionDetector;
+use Tuleap\Git\Permissions\DefaultFineGrainedPermissionFactory;
+use Tuleap\Git\Permissions\FineGrainedDao;
+use Tuleap\Git\Permissions\FineGrainedPatternValidator;
+use Tuleap\Git\Permissions\FineGrainedPermissionFactory;
+use Tuleap\Git\Permissions\FineGrainedPermissionReplicator;
+use Tuleap\Git\Permissions\FineGrainedPermissionSaver;
+use Tuleap\Git\Permissions\FineGrainedPermissionSorter;
+use Tuleap\Git\Permissions\FineGrainedRegexpValidator;
 use Tuleap\Git\Permissions\FineGrainedRetriever;
+use Tuleap\Git\Permissions\HistoryValueFormatter;
+use Tuleap\Git\Permissions\PatternValidator;
+use Tuleap\Git\Permissions\RegexpFineGrainedDao;
+use Tuleap\Git\Permissions\RegexpFineGrainedEnabler;
+use Tuleap\Git\Permissions\RegexpFineGrainedRetriever;
+use Tuleap\Git\Permissions\RegexpRepositoryDao;
+use Tuleap\Git\Permissions\RegexpTemplateDao;
+use Tuleap\Git\RemoteServer\Gerrit\MigrationHandler;
+use Tuleap\Git\Repository\GitRepositoryNameIsInvalidException;
+use Tuleap\Git\Repository\RepositoryCreator;
+use Tuleap\Git\XmlUgroupRetriever;
+use Tuleap\REST\AuthenticatedResource;
+use Tuleap\REST\Header;
+use Tuleap\REST\v1\GitRepositoryRepresentationBase;
+use UserManager;
 
 include_once('www/project/admin/permissions.php');
 
@@ -68,6 +91,23 @@ class RepositoryResource extends AuthenticatedResource {
 
     const MIGRATE_PERMISSION_DEFAULT = 'default';
     const MIGRATE_NO_PERMISSION      = 'none';
+    /**
+     * @var RepositoryCreator
+     */
+    private $repository_creator;
+    /**
+     * @var GitPermissionsManager
+     */
+    private $git_permission_manager;
+    /**
+     * @var ProjectManager
+     */
+    private $project_manager;
+
+    /**
+     * @var UserManager
+     */
+    private $user_manager;
 
     /** @var GitRepositoryFactory */
     private $repository_factory;
@@ -81,7 +121,7 @@ class RepositoryResource extends AuthenticatedResource {
     /** @var Git_SystemEventManager */
     private $git_system_event_manager;
 
-    /** @var GerritMigrationHandler */
+    /** @var MigrationHandler */
     private $migration_handler;
 
     /**
@@ -90,12 +130,14 @@ class RepositoryResource extends AuthenticatedResource {
     private $ci_token_manager;
 
     public function __construct() {
-        $git_dao         = new GitDao();
-        $project_manager = ProjectManager::instance();
+        $git_dao               = new GitDao();
+        $this->project_manager = ProjectManager::instance();
+        $this->user_manager    = UserManager::instance();
+        $event_manager         = EventManager::instance();
 
         $this->repository_factory = new GitRepositoryFactory(
             $git_dao,
-            $project_manager
+            $this->project_manager
         );
 
         $this->git_system_event_manager = new Git_SystemEventManager(
@@ -107,13 +149,13 @@ class RepositoryResource extends AuthenticatedResource {
             new Git_RemoteServer_Dao(),
             $git_dao,
             $this->git_system_event_manager,
-            $project_manager
+            $this->project_manager
         );
 
         $fine_grained_dao       = new FineGrainedDao();
         $fine_grained_retriever = new FineGrainedRetriever($fine_grained_dao);
 
-        $git_permission_manager = new GitPermissionsManager(
+        $this->git_permission_manager = new GitPermissionsManager(
             new Git_PermissionsDao(),
             $this->git_system_event_manager,
             $fine_grained_dao,
@@ -121,19 +163,130 @@ class RepositoryResource extends AuthenticatedResource {
         );
 
         $this->representation_builder = new RepositoryRepresentationBuilder(
-            $git_permission_manager,
-            $this->gerrit_server_factory
+            $this->git_permission_manager,
+            $this->gerrit_server_factory,
+            new \Git_LogDao(),
+            $event_manager
         );
 
+        $project_history_dao     = new ProjectHistoryDao();
         $this->migration_handler = new MigrationHandler(
             $this->git_system_event_manager,
             $this->gerrit_server_factory,
             new Git_Driver_Gerrit_GerritDriverFactory (new GitBackendLogger()),
-            new ProjectHistoryDao(),
+            $project_history_dao,
             new Git_Driver_Gerrit_ProjectCreatorStatus(new Git_Driver_Gerrit_ProjectCreatorStatusDao())
         );
 
         $this->ci_token_manager = new CITokenManager(new CITokenDao());
+
+        $git_plugin         = \PluginFactory::instance()->getPluginByName('git');
+        $mirror_data_mapper = new \Git_Mirror_MirrorDataMapper(
+            new \Git_Mirror_MirrorDao(),
+            $this->user_manager,
+            $this->repository_factory,
+            $this->project_manager,
+            $this->git_system_event_manager,
+            new \Git_Gitolite_GitoliteRCReader(new VersionDetector()),
+            new \DefaultProjectMirrorDao()
+        );
+
+        $regexp_retriever     = new RegexpFineGrainedRetriever(
+            new RegexpFineGrainedDao(),
+            new RegexpRepositoryDao(),
+            new RegexpTemplateDao()
+        );
+        $ugroup_manager       = new \UGroupManager();
+        $normalizer           = new \PermissionsNormalizer();
+        $permissions_manager  = new \PermissionsManager(new \PermissionsDao());
+        $validator            = new PatternValidator(
+            new FineGrainedPatternValidator(),
+            new FineGrainedRegexpValidator(),
+            $regexp_retriever
+        );
+        $sorter               = new FineGrainedPermissionSorter();
+        $xml_ugroup_retriever = new XmlUgroupRetriever(new GitBackendLogger(), $ugroup_manager);
+
+        $fine_grained_permission_factory    = new FineGrainedPermissionFactory(
+            $fine_grained_dao,
+            $ugroup_manager,
+            $normalizer,
+            $permissions_manager,
+            $validator, $sorter,
+            $xml_ugroup_retriever
+        );
+        $fine_grained_replicator            = new FineGrainedPermissionReplicator(
+            $fine_grained_dao,
+            new DefaultFineGrainedPermissionFactory(
+                $fine_grained_dao,
+                $ugroup_manager,
+                $normalizer,
+                $permissions_manager,
+                $validator,
+                $sorter
+            ),
+            new FineGrainedPermissionSaver(
+                $fine_grained_dao
+            ),
+            $fine_grained_permission_factory,
+            new RegexpFineGrainedEnabler(
+                new RegexpFineGrainedDao(),
+                new RegexpRepositoryDao(),
+                new RegexpTemplateDao()
+            ),
+            $regexp_retriever,
+            $validator
+        );
+        $history_value_formatter            = new HistoryValueFormatter(
+            $permissions_manager,
+            $ugroup_manager,
+            $fine_grained_retriever,
+            new DefaultFineGrainedPermissionFactory(
+                $fine_grained_dao,
+                $ugroup_manager,
+                $normalizer,
+                $permissions_manager,
+                $validator,
+                $sorter
+            ),
+            $fine_grained_permission_factory
+        );
+
+        $url_manager              = new \Git_GitRepositoryUrlManager($git_plugin);
+        $this->repository_creator = new RepositoryCreator(
+            $this->repository_factory,
+            new \Git_Backend_Gitolite(
+                new \Git_GitoliteDriver(
+                    new GitBackendLogger(),
+                    $this->git_system_event_manager,
+                    $url_manager,
+                    $git_dao,
+                    new \Git_Mirror_MirrorDao(),
+                    $git_plugin
+                ),
+                new GitoliteAccessURLGenerator($git_plugin->getPluginInfo()),
+                new GitBackendLogger()
+            ),
+            $mirror_data_mapper,
+            new \GitRepositoryManager(
+                $this->repository_factory,
+                $this->git_system_event_manager,
+                $git_dao,
+                "",
+                new \GitRepositoryMirrorUpdater($mirror_data_mapper, $project_history_dao),
+                $mirror_data_mapper,
+                $fine_grained_replicator,
+                $project_history_dao,
+                $history_value_formatter,
+                $event_manager
+            ),
+            $this->git_permission_manager,
+            $fine_grained_replicator,
+            $project_history_dao,
+            $history_value_formatter,
+            $this->ci_token_manager,
+            $event_manager
+        );
     }
 
     /**
@@ -228,16 +381,73 @@ class RepositoryResource extends AuthenticatedResource {
     }
 
     /**
+     * Post
+     *
+     * @url    POST
+     *
+     * @access hybrid
+     *
+     *
+     * @param $project_id {@type int} {@from body} project id
+     * @param $name       {@type string} {@from body} Repository name
+     *
+     * @status 201
+     * @throws 400
+     * @throws 401
+     * @throws 404
+     * @throws 500
+     */
+    public function post($project_id, $name)
+    {
+        $this->checkAccess();
+
+        Header::allowOptionsPost();
+
+        $user    = $this->user_manager->getCurrentUser();
+        $project = $this->project_manager->getProject($project_id);
+        if ($project->isError()) {
+            throw new RestException(404, "Given project does not exist");
+        }
+
+        if (! $project->usesService(\GitPlugin::SERVICE_SHORTNAME)) {
+            throw new RestException(400, "Project does not use Git service");
+        }
+
+        if (! $this->git_permission_manager->userIsGitAdmin($user, $project)) {
+            throw new RestException(401, "User does not have permissions to create a Git Repository");
+        }
+        try {
+            $repository = $this->repository_creator->create($project, $user, $name);
+        } catch (GitRepositoryNameIsInvalidException $e) {
+            throw new RestException(400, $e->getMessage());
+        } catch (GitRepositoryAlreadyExistsException $e) {
+            throw new RestException(400, $e->getMessage());
+        } catch (Exception $e) {
+            throw new RestException(500, $e->getMessage());
+        }
+
+
+        return $this->get($repository->getId());
+    }
+
+    /**
+     * @url OPTIONS
+     */
+    public function options()
+    {
+        Header::allowOptionsPost();
+    }
+
+    /**
      * Post a build status
      *
-     * Format: { "status": "S|F|U", "branch": "master", "commit_reference": "0deadbeef", "token": "0000"}
+     * <b>This endpoint is deprecated, the route {id}/statuses/{commit_reference} must be used instead.</b>
      *
-     * <pre>
-     * /!\ REST route under construction and subject to changes /!\
-     * </pre>
      * @url POST {id}/build_status
      *
      * @access hybrid
+     *
+     * @deprecated
      *
      * @param int                       $id            Git repository id
      * @param BuildStatusPOSTRepresentation $build_data BuildStatus {@from body} {@type Tuleap\Git\REST\v1\BuildStatusPOSTRepresentation}
@@ -262,12 +472,7 @@ class RepositoryResource extends AuthenticatedResource {
         }
 
         $repo_ci_token = $this->ci_token_manager->getToken($repository);
-
-        if ($repo_ci_token === null) {
-            $repo_ci_token = '';
-        }
-
-        if (! \hash_equals($build_status_data->token, $repo_ci_token)) {
+        if ($repo_ci_token === null || ! \hash_equals($build_status_data->token, $repo_ci_token)) {
             throw new RestException(403, 'Invalid token');
         }
 
@@ -295,6 +500,73 @@ class RepositoryResource extends AuthenticatedResource {
                 'status'           => $build_status_data->status
             )
         );
+    }
+
+    /**
+     * @url OPTIONS {id}/statuses/{commit_reference}
+     *
+     * @param int $id Git repository id
+     * @param string $commit_reference Commit SHA-1
+     */
+    public function optionsCommitStatus($id, $commit_reference)
+    {
+        Header::allowOptionsPost();
+    }
+
+    /**
+     * Post a commit status
+     *
+     * <pre>
+     * /!\ REST route under construction and subject to changes /!\
+     * </pre>
+     * @url    POST {id_or_path}/statuses/{commit_reference}
+     *
+     * @access hybrid
+     *
+     * @param string $id_or_path       Git repository id or Git repository path
+     * @param string $commit_reference Commit SHA-1
+     * @param string $state            {@choice failure,success} {@from body}
+     * @param string $token            {@from body}
+     *
+     * @status 201
+     * @throws 403
+     * @throws 404
+     * @throws 400
+     */
+    public function postCommitStatus($id_or_path, $commit_reference, $state, $token)
+    {
+        if (ctype_digit($id_or_path)) {
+            $repository = $this->repository_factory->getRepositoryById((int)$id_or_path);
+        } else {
+            preg_match("/(.+?)\/(.+)/", $id_or_path, $path);
+            if (count($path) !== 3) {
+                throw new RestException(400, 'Bad repository path format');
+            }
+            $repository = $this->repository_factory->getByProjectNameAndPath($path[1], $path[2]);
+        }
+        if (! $repository) {
+            throw new RestException(404, 'Repository not found.');
+        }
+
+        $repo_ci_token = $this->ci_token_manager->getToken($repository);
+        if ($repo_ci_token === null || ! \hash_equals($token, $repo_ci_token)) {
+            throw new RestException(403, 'Invalid token');
+        }
+
+        $commit_status_creator = new CommitStatusCreator(new CommitStatusDAO);
+
+        try {
+            $commit_status_creator->createCommitStatus(
+                $repository,
+                Git_Exec::buildFromRepository($repository),
+                $commit_reference,
+                $state
+            );
+        } catch (CommitDoesNotExistException $exception) {
+            throw new RestException(404, $exception->getMessage());
+        } catch (InvalidCommitReferenceException $exception) {
+            throw new RestException(400, $exception->getMessage());
+        }
     }
 
     /**

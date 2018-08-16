@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,8 +31,14 @@ class WidgetKanbanDeletor
         $this->widget_kanban_dao = $widget_kanban_dao;
     }
 
+    /**
+     * @param $id
+     * @param $owner_id
+     * @param $owner_type
+     * @throws \Exception
+     */
     public function delete($id, $owner_id, $owner_type)
     {
-        $this->widget_kanban_dao->delete($id, $owner_id, $owner_type);
+        $this->widget_kanban_dao->deleteKanbanWidget($id, $owner_id, $owner_type);
     }
 }

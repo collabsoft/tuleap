@@ -6,9 +6,9 @@
 
         <section class="tlp-pane-section">
             <h2 class="tlp-pane-subtitle">{{# dgettext }} tuleap-svn | Global permissions {{/ dgettext }}</h2>
-            <table class="tlp-table">
+            <table class="tlp-table permission-per-group-table">
                 <thead>
-                <tr>
+                <tr class="permission-per-group-double-column-table">
                     <th> {{# dgettext }} tuleap-svn | Permission {{/ dgettext }}</th>
                     <th> {{# dgettext }} tuleap-svn | Granted groups {{/ dgettext }}</th>
                 </tr>
@@ -41,7 +41,6 @@
 
         <div id="svn-permission-per-group"
              data-project-id="{{ project_id }}"
-             data-locale="{{ locale }}"
         ></div>
     </div>
 </section>

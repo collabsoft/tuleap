@@ -53,7 +53,7 @@ function StartLoadDump(&$request, $title, $html = '')
     $tmpl = Template('html', array('TITLE' => $title,
                                    'HEADER' => $title,
                                    'CONTENT' => $html ? $html : '%BODY%'));
-    echo ereg_replace('%BODY%.*', '', $tmpl->getExpansion($html));
+    echo preg_replace('/%BODY%.*/D', '', $tmpl->getExpansion($html));
     $request->chunkOutput();
     
     // set marker for sendPageChangeNotification()
@@ -823,11 +823,11 @@ function LoadZip (&$request, $zipfile, $files = false, $exclude = false) {
 }
 
 class LimitedFileSet extends FileSet {
-    function LimitedFileSet($dirname, $_include, $exclude) {
+    function __construct($dirname, $_include, $exclude) {
         $this->_includefiles = $_include;
         $this->_exclude = $exclude;
         $this->_skiplist = array();
-        parent::FileSet($dirname);
+        parent::__construct($dirname);
     }
 
     function _filenameSelector($fn) {

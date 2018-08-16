@@ -18,6 +18,14 @@ CREATE TABLE IF NOT EXISTS plugin_pullrequest_review (
     INDEX idx_pr_repository_id(repository_id)
 );
 
+CREATE TABLE IF NOT EXISTS plugin_pullrequest_git_reference (
+    pr_id INT(11) PRIMARY KEY,
+    reference_id INT(11) NOT NULL,
+    repository_dest_id INT(11) NOT NULL,
+    status INT(11) NOT NULL,
+    UNIQUE (repository_dest_id, reference_id)
+);
+
 CREATE TABLE IF NOT EXISTS plugin_pullrequest_comments (
     id INT(11) PRIMARY KEY AUTO_INCREMENT,
     pull_request_id INT(11) NOT NULL,
@@ -50,6 +58,16 @@ CREATE TABLE IF NOT EXISTS plugin_pullrequest_label (
     pull_request_id INT(11) NOT NULL,
     label_id INT(11) UNSIGNED NOT NULL,
     PRIMARY KEY (label_id, pull_request_id)
+);
+
+CREATE TABLE IF NOT EXISTS plugin_pullrequest_merge_setting (
+    repository_id INT(10) UNSIGNED NOT NULL PRIMARY KEY,
+    merge_commit_allowed BOOLEAN NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS plugin_pullrequest_template_merge_setting (
+    project_id INT(11) NOT NULL PRIMARY KEY,
+    merge_commit_allowed BOOLEAN NOT NULL
 );
 
 INSERT INTO reference (id, keyword, description, link, scope, service_short_name, nature)

@@ -25,12 +25,26 @@
 
 require_once(dirname(__FILE__).'/../../constants.php');
 
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Tracker\Artifact\ActionButtons\ArtifactActionButtonPresenterBuilder;
+use Tuleap\Tracker\Artifact\ActionButtons\ArtifactCopyButtonPresenterBuilder;
+use Tuleap\Tracker\Artifact\ActionButtons\ArtifactGraphDependenciesButtonPresenterBuilder;
+use Tuleap\Tracker\Artifact\ActionButtons\ArtifactIncomingEmailButtonPresenterBuilder;
+use Tuleap\Tracker\Artifact\ActionButtons\ArtifactMoveButtonPresenterBuilder;
+use Tuleap\Tracker\Artifact\ActionButtons\ArtifactNotificationActionButtonPresenterBuilder;
+use Tuleap\Tracker\Admin\ArtifactDeletion\ArtifactsDeletionConfig;
+use Tuleap\Tracker\Admin\ArtifactDeletion\ArtifactsDeletionConfigDAO;
+use Tuleap\Tracker\Admin\ArtifactsDeletion\UserDeletionRetriever;
+use Tuleap\Tracker\Artifact\ArtifactInstrumentation;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactDeletionLimitRetriever;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactsDeletionDAO;
 use Tuleap\Tracker\Artifact\Changeset\NewChangesetFieldsWithoutRequiredValidationValidator;
 use Tuleap\Tracker\Artifact\PermissionsCache;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureIsChildLinkRetriever;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\SourceOfAssociationCollectionBuilder;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\SourceOfAssociationDetector;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\SubmittedValueConvertor;
+use Tuleap\Tracker\Notifications\UnsubscribersNotificationDAO;
 use Tuleap\Tracker\RecentlyVisited\RecentlyVisitedDao;
 use Tuleap\Tracker\RecentlyVisited\VisitRecorder;
 
@@ -41,15 +55,6 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
     const REFERENCE_NATURE  = 'plugin_tracker_artifact';
     const STATUS_OPEN       = 'open';
     const STATUS_CLOSED     = 'closed';
-
-    /**
-     * Allow listeners to add custom action buttons alongside [Enable notifications]
-     *
-     * Parameters:
-     *  - html     => (in/out) string           The buttons should be appended here
-     *  - artifact => (in)     Tracker_Artifact The current artifact
-     */
-    const ACTION_BUTTONS    = 'tracker_artifact_action_buttons';
 
     /**
      * Display the form to copy an artifact
@@ -101,9 +106,6 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
 
     /** @var Tracker_ArtifactFactory */
     private $artifact_factory;
-
-    /** @var Tracker_Artifact[] */
-    private $siblings;
 
     /** @var Tracker_Artifact[] */
     private $siblings_without_permission_checking;
@@ -386,74 +388,59 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
 
     public function fetchActionButtons()
     {
-        $html = '<div class="tracker-artifact-actions">';
-
-        $params = array(
-            'html'     => &$html,
-            "artifact" => $this
+        $renderer = TemplateRendererFactory::build()->getRenderer(
+            TRACKER_TEMPLATE_DIR
         );
-        EventManager::instance()->processEvent(self::ACTION_BUTTONS, $params);
 
-        $html .= $this->fetchIncomingMailButton() . ' ';
-        $html .= $this->fetchNotificationButton();
-        $html .= '</div>';
+        $builder = new ArtifactActionButtonPresenterBuilder(
+            new ArtifactNotificationActionButtonPresenterBuilder(
+                $this->getUnsubscribersNotificationDao(),
+                $this->getDao()
+            ),
+            new ArtifactIncomingEmailButtonPresenterBuilder(
+                Tracker_Artifact_Changeset_IncomingMailGoldenRetriever::instance()
+            ),
+            new ArtifactCopyButtonPresenterBuilder(),
+            new ArtifactMoveButtonPresenterBuilder(
+                new ArtifactDeletionLimitRetriever(
+                    new ArtifactsDeletionConfig(new ArtifactsDeletionConfigDAO()),
+                    new UserDeletionRetriever(new ArtifactsDeletionDAO())
+                ),
+                $this->getEventManager()
+            ),
+            new ArtifactGraphDependenciesButtonPresenterBuilder($this->getEventManager())
+        );
 
-        return $html;
+        $action_buttons_presenters = $builder->build($this->getCurrentUser(), $this);
+
+        $include_assets = new \Tuleap\Layout\IncludeAssets(
+            __DIR__ . '/../../../www/assets',
+            TRACKER_BASE_URL . '/assets'
+        );
+
+
+        $GLOBALS['HTML']->includeFooterJavascriptFile($include_assets->getFileURL('MoveArtifactModal.js'));
+
+        return $renderer->renderToString(
+            'action-buttons/action-buttons',
+            $action_buttons_presenters
+        );
     }
 
-    private function fetchNotificationButton() {
-        $alternate_text = $this->getUnsubscribeButtonAlternateText();
-
-        $html  = '<button type="button" class="btn btn-default tracker-artifact-notification" title="' . $alternate_text . '">';
-        $html .= '<i class="icon-bell-alt"></i> ' . $this->getUnsubscribeButtonLabel();
-        $html .= '</button>';
-
-        return $html;
+    private function doesUserHaveUnsubscribedFromArtifactNotification(PFUser $user)
+    {
+        return $this->getDao()->doesUserHaveUnsubscribedFromArtifactNotifications($this->id, $user->getId());
     }
 
-    private function getUnsubscribeButtonLabel() {
-        $user = $this->getCurrentUser();
-
-        if ($this->doesUserHaveUnsubscribedFromNotification($user)) {
-            return $GLOBALS['Language']->getText('plugin_tracker', 'enable_notifications');
-        }
-
-        return $GLOBALS['Language']->getText('plugin_tracker', 'disable_notifications');
-    }
-
-    private function fetchIncomingMailButton() {
-        if (! $this->getCurrentUser()->isSuperUser()) {
-            return '';
-        }
-
-        $retriever = Tracker_Artifact_Changeset_IncomingMailGoldenRetriever::instance();
-        $raw_mail  = $retriever->getRawMailThatCreatedArtifact($this);
-        if (! $raw_mail) {
-            return '';
-        }
-
-        $raw_email_button_title = $GLOBALS['Language']->getText('plugin_tracker', 'raw_email_button_title');
-        $raw_mail               = Codendi_HTMLPurifier::instance()->purify($raw_mail);
-
-        $html = '<button type="button" class="btn btn-default artifact-incoming-mail-button" data-raw-email="'. $raw_mail .'">
-                      <i class="icon-envelope"></i> '. $raw_email_button_title .'
-                 </button>';
-
-        return $html;
-    }
-
-    private function getUnsubscribeButtonAlternateText() {
-        $user = $this->getCurrentUser();
-
-        if ($this->doesUserHaveUnsubscribedFromNotification($user)) {
-            return $GLOBALS['Language']->getText('plugin_tracker', 'enable_notifications_alternate_text');
-        }
-
-        return $GLOBALS['Language']->getText('plugin_tracker', 'disable_notifications_alternate_text');
-    }
-
-    private function doesUserHaveUnsubscribedFromNotification(PFUser $user) {
-        return $this->getDao()->doesUserHaveUnsubscribedFromNotifications($this->id, $user->getId());
+    /**
+     * @return bool
+     */
+    private function doesUserHaveUnsubscribedFromTrackerNotification(PFUser $user)
+    {
+        return $this->getUnsubscribersNotificationDao()->doesUserIDHaveUnsubscribedFromTrackerNotifications(
+            $user->getId(),
+            $this->getTrackerId()
+        );
     }
 
     public function fetchHiddenTrackerId() {
@@ -463,9 +450,8 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
     public function getXRefAndTitle() {
         $hp = Codendi_HTMLPurifier::instance();
         return '<span class="'. $this->getTracker()->getColor() .' xref-in-title">' .
-                $this->getXRef() .
-                '<span> -</span>'.
-                '</span> '.
+                $this->getXRef()."\n".
+                '</span>'.
                 $hp->purify($this->getTitle());
     }
 
@@ -494,6 +480,33 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
         return $this->title;
     }
 
+    /**
+     * @return string the description of the artifact, or null if no description defined in semantics
+     */
+    public function getDescription()
+    {
+        $description_field = Tracker_Semantic_Description::load($this->getTracker())->getField();
+        if (! $description_field) {
+            return null;
+        }
+
+        if (! $description_field->userCanRead()) {
+            return null;
+        }
+
+        $last_changeset = $this->getLastChangeset();
+        if (! $last_changeset) {
+            return null;
+        }
+
+        $description_field_value = $last_changeset->getValue($description_field);
+        if (! $description_field_value) {
+            return null;
+        }
+
+        return $description_field_value->getContentAsText();
+    }
+
     public function getCachedTitle() {
         return $this->title;
     }
@@ -503,7 +516,7 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
      */
     public function getAssignedTo(PFUser $user) {
         $assigned_to_field = Tracker_Semantic_Contributor::load($this->getTracker())->getField();
-        if ($assigned_to_field && $assigned_to_field->userCanRead($user)) {
+        if ($assigned_to_field && $assigned_to_field->userCanRead($user) && $this->getLastChangeset()) {
             $field_value = $this->getLastChangeset()->getValue($assigned_to_field);
             if ($field_value) {
                 $user_manager   = $this->getUserManager();
@@ -760,9 +773,13 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
                 $renderer->display($request, $current_user);
                 break;
             case 'manage-subscription':
+                if ($this->doesUserHaveUnsubscribedFromTrackerNotification($this->getCurrentUser())) {
+                    break;
+                }
+
                 $artifact_subscriber = new Tracker_ArtifactNotificationSubscriber($this, $this->getDao());
 
-                if ($this->doesUserHaveUnsubscribedFromNotification($current_user)) {
+                if ($this->doesUserHaveUnsubscribedFromArtifactNotification($current_user)) {
                     $artifact_subscriber->subscribeUser($current_user, $request);
                     break;
                 }
@@ -771,10 +788,11 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
                 break;
 
             default:
-                Tuleap\Instrument\Collect::startTiming('tracker.'.$this->getTrackerId().'.artifact.view');
+                ArtifactInstrumentation::increment(ArtifactInstrumentation::TYPE_VIEWED);
                 if ($request->isAjax()) {
                     echo $this->fetchTooltip($current_user);
                 } else {
+                    header("Cache-Control: no-store, no-cache, must-revalidate");
                     $renderer = new Tracker_Artifact_ReadOnlyRenderer(
                         $this->getEventManager(),
                         $this, $this->getFormElementFactory(),
@@ -784,7 +802,6 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
                     );
                     $renderer->display($request, $current_user);
                 }
-                Tuleap\Instrument\Collect::endTiming('tracker.'.$this->getTrackerId().'.artifact.view');
                 break;
         }
     }
@@ -878,24 +895,6 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
 
     public function hasChildren() {
         return $this->getArtifactFactory()->hasChildren($this);
-    }
-
-    /**
-     * @see Tracker_CardPresenter::getAccentColor()
-     *
-     * @return string
-     */
-    public function getCardAccentColor(PFUser $current_user) {
-        $selectbox = $this->getFormElementFactory()->getSelectboxFieldByNameForUser(
-            $this->getTrackerId(),
-            Tracker::TYPE_FIELD_NAME,
-            $current_user
-        );
-        if (! $selectbox) {
-            return '';
-        }
-
-        return $selectbox->getCurrentDecoratorColor($this);
     }
 
     /**
@@ -1425,19 +1424,6 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
     }
 
     /**
-     * Returns ids of user who unsubscribed to artifact notification
-     *
-     * @return array
-     */
-    public function getUnsubscribersIds() {
-        $unsubscribers_ids = array();
-        foreach ($this->getDao()->getUnsubscribersIds($this->id) as $row) {
-            $unsubscribers_ids[] = $row['user_id'];
-        }
-        return $unsubscribers_ids;
-    }
-
-    /**
      * Return Workflow the artifact should respect
      *
      * @return Workflow
@@ -1572,10 +1558,29 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
     public function getLinkedArtifacts(PFUser $user) {
         $artifact_links      = array();
         $artifact_link_field = $this->getAnArtifactLinkField($user);
-        if ($artifact_link_field) {
-            $artifact_links = $artifact_link_field->getLinkedArtifacts($this->getLastChangeset(), $user);
+        $last_changeset      = $this->getLastChangeset();
+        if ($artifact_link_field && $last_changeset) {
+            $artifact_links = $artifact_link_field->getLinkedArtifacts($last_changeset, $user);
         }
+
         return $artifact_links;
+    }
+
+    /**
+     * Get artifacts linked to the current artifact and reverse linked artifacts
+     *
+     * @return Tracker_Artifact[]
+     */
+    public function getLinkedAndReverseArtifacts(PFUser $user) {
+        $linked_and_reverse_artifacts = [];
+        $artifact_link_field          = $this->getAnArtifactLinkField($user);
+        $last_changeset               = $this->getLastChangeset();
+
+        if ($artifact_link_field && $last_changeset) {
+            $linked_and_reverse_artifacts = $artifact_link_field->getLinkedAndReverseArtifacts($last_changeset, $user);
+        }
+
+        return $linked_and_reverse_artifacts;
     }
 
     /**
@@ -1716,29 +1721,6 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
     }
 
     /**
-     * Get artifacts that share same parent that mine (sista & bro)
-     *
-     * @param PFUser $user
-     *
-     * @return Tracker_Artifact[]
-     */
-    public function getSiblings(PFUser $user) {
-        if (! isset($this->siblings)) {
-            $this->siblings = array();
-            foreach ($this->getSiblingsWithoutPermissionChecking() as $artifact) {
-                if ($artifact->userCanView($user)) {
-                    $this->siblings[] = $artifact;
-                }
-            }
-        }
-        return $this->siblings;
-    }
-
-    public function setSiblings(array $artifacts) {
-        $this->siblings = $artifacts;
-    }
-
-    /**
      * Get all sista & bro regartheless if user can access them
      *
      * @return Tracker_Artifact[]
@@ -1837,27 +1819,6 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
         );
     }
 
-    public function delete(PFUser $user) {
-        $this->getDao()->startTransaction();
-        foreach($this->getChangesets() as $changeset) {
-            $changeset->delete($user);
-        }
-        $this->getPermissionsManager()->clearPermission(self::PERMISSION_ACCESS, $this->getId());
-        $this->getCrossReferenceManager()->deleteEntity($this->getId(), self::REFERENCE_NATURE, $this->getTracker()->getGroupId());
-        $this->getDao()->deleteArtifactLinkReference($this->getId());
-        // We do not keep trace of the history change here because it doesn't have any sense
-        $this->getPriorityManager()->deletePriority($this);
-        $this->getDao()->delete($this->getId());
-        $this->getDao()->commit();
-
-        EventManager::instance()->processEvent(
-            TRACKER_EVENT_ARTIFACT_DELETE,
-            array(
-                'artifact' => $this,
-            )
-        );
-    }
-
     /**
      * Return the authorised ugroups to see the artifact
      *
@@ -1907,12 +1868,12 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
         return new Tracker_ArtifactDao();
     }
 
-    protected function getPermissionsManager() {
-        return PermissionsManager::instance();
-    }
-
-    protected function getCrossReferenceManager() {
-        return new CrossReferenceManager();
+    /**
+     * @return UnsubscribersNotificationDAO
+     */
+    private function getUnsubscribersNotificationDao()
+    {
+        return new UnsubscribersNotificationDAO;
     }
 
     protected function getCrossReferenceFactory() {
@@ -1971,22 +1932,11 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
      */
     public function exportToXML(
         SimpleXMLElement $artifacts_node,
-        PFUser $user,
         Tuleap\Project\XML\Export\ArchiveInterface $archive,
-        UserXMLExporter $user_xml_exporter
+        Tracker_XML_Exporter_ArtifactXMLExporter $artifact_xml_exporter
     ) {
 
-        if (count($this->getChangesets() > 0)) {
-            $children_collector     = new Tracker_XML_Exporter_NullChildrenCollector();
-            $file_path_xml_exporter = new Tracker_XML_Exporter_InArchiveFilePathXMLExporter();
-
-            $artifact_xml_exporter = $this->getArtifactXMLExporter(
-                $children_collector,
-                $file_path_xml_exporter,
-                $user,
-                $user_xml_exporter
-            );
-
+        if (count($this->getChangesets()) > 0) {
             $artifact_xml_exporter->exportFullHistory($artifacts_node, $this);
 
             $attachment_exporter = $this->getArtifactAttachmentExporter();
@@ -1998,19 +1948,9 @@ class Tracker_Artifact implements Recent_Element_Interface, Tracker_Dispatchable
     /**
      * @return Tracker_XML_Exporter_ArtifactAttachmentExporter
      */
-    private function getArtifactAttachmentExporter() {
+    private function getArtifactAttachmentExporter()
+    {
         return new Tracker_XML_Exporter_ArtifactAttachmentExporter($this->getFormElementFactory());
-    }
-
-    private function getArtifactXMLExporter(
-        Tracker_XML_ChildrenCollector $children_collector,
-        Tracker_XML_Exporter_FilePathXMLExporter $file_path_xml_exporter,
-        PFUser $current_user,
-        UserXMLExporter $user_xml_exporter
-    ) {
-        $builder = new Tracker_XML_Exporter_ArtifactXMLExporterBuilder();
-
-        return $builder->build($children_collector, $file_path_xml_exporter, $current_user, $user_xml_exporter);
     }
 
     /** @return string */

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -22,6 +22,7 @@
 namespace Tuleap\Tracker\Report;
 
 use CSRFSynchronizerToken;
+use Tuleap\Tracker\Config\ReportPresenter;
 use Tuleap\Tracker\Config\SectionsPresenter;
 
 class TrackerReportConfigPresenter
@@ -49,8 +50,9 @@ class TrackerReportConfigPresenter
         $this->report_config_pane_title = $GLOBALS['Language']->getText('plugin_tracker_report_config', 'report_config_pane_title');
         $this->report_config_desc       = $GLOBALS['Language']->getText('plugin_tracker_report_config', 'report_config_desc');
         $this->query_limit_label        = $GLOBALS['Language']->getText('plugin_tracker_report_config', 'query_limit_label');
+        $this->artifacts_deletion_label = dgettext('tuleap-tracker', 'Artifacts deletion');
         $this->save_conf                = $GLOBALS['Language']->getText('admin_main', 'save_conf');
 
-        $this->sections = new SectionsPresenter();
+        $this->sections = new ReportPresenter();
     }
 }

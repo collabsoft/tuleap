@@ -1,7 +1,7 @@
 <?php
 /**
   * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
-  * Copyright (c) Enalean, 2011 - 2016. All Rights Reserved.
+  * Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
   *
   * This file is a part of Tuleap.
   *
@@ -21,21 +21,21 @@
 
 require_once('common/layout/Layout.class.php');
 
+use Tuleap\Git\Exceptions\DeletePluginNotInstalledException;
 use Tuleap\Git\GerritCanMigrateChecker;
+use Tuleap\Git\GitViews\RepoManagement\Pane;
 use Tuleap\Git\Notifications\UgroupsToNotifyDao;
 use Tuleap\Git\Notifications\UsersToNotifyDao;
+use Tuleap\Git\Permissions\FineGrainedPermissionSaver;
+use Tuleap\Git\Permissions\FineGrainedRetriever;
+use Tuleap\Git\Permissions\FineGrainedUpdater;
+use Tuleap\Git\Permissions\HistoryValueFormatter;
+use Tuleap\Git\Permissions\PermissionChangesDetector;
 use Tuleap\Git\Permissions\RegexpFineGrainedDisabler;
 use Tuleap\Git\Permissions\RegexpFineGrainedEnabler;
 use Tuleap\Git\Permissions\RegexpFineGrainedRetriever;
 use Tuleap\Git\Permissions\RegexpPermissionFilter;
 use Tuleap\Git\RemoteServer\Gerrit\MigrationHandler;
-use Tuleap\Git\Exceptions\DeletePluginNotInstalledException;
-use Tuleap\Git\GitViews\RepoManagement\Pane;
-use Tuleap\Git\Permissions\FineGrainedUpdater;
-use Tuleap\Git\Permissions\FineGrainedPermissionSaver;
-use Tuleap\Git\Permissions\FineGrainedRetriever;
-use Tuleap\Git\Permissions\HistoryValueFormatter;
-use Tuleap\Git\Permissions\PermissionChangesDetector;
 
 /**
  * GitActions
@@ -834,6 +834,19 @@ class GitActions extends PluginActions
         return $great_success;
     }
 
+    public function redirectToDefaultSettings($project_id, $pane)
+    {
+        $this->getController()->redirect(
+            GIT_BASE_URL . '/?' . http_build_query(
+                [
+                    'action'   => 'admin-default-settings',
+                    'group_id' => $project_id,
+                    'pane'     => $pane
+                ]
+            )
+        );
+    }
+
     public function redirectToRepoManagement($projectId, $repositoryId, $pane) {
         $redirect_url = GIT_BASE_URL .'/?'. http_build_query(
             array(
@@ -876,7 +889,7 @@ class GitActions extends PluginActions
                 return true;
             }
         }
-        $this->save($projectId, $repoId, $repoAccess, $repoDescription);
+        $this->save($projectId, $repoId, $repoAccess, $repoDescription, false, [], [], [], false);
         return true;
     }
 
@@ -926,7 +939,8 @@ class GitActions extends PluginActions
         $repository = $this->factory->getRepositoryById($repoId);
         if (! $repository) {
             $this->addError('actions_repo_not_found');
-            $controller->redirect('/plugins/git/?group_id='.$projectId);
+            $project = $repository->getProject();
+            $controller->redirect('/plugins/git/' . urlencode($project->getUnixNameLowerCase()) . '/');
             return false;
         }
         if (empty($repoAccess)) {
@@ -1307,7 +1321,8 @@ class GitActions extends PluginActions
 
     public function restoreRepository($repo_id, $project_id) {
         $repository = $this->factory->getDeletedRepository($repo_id);
-        $url        = '/admin/show_pending_documents.php?group_id='.$project_id.'&focus=git_repository';
+        $url        = '/admin/show_pending_documents.php?group_id='.$project_id;
+        (new CSRFSynchronizerToken($url))->check();
 
         if (! $repository) {
             $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git', 'restore_invalid_id'));
@@ -1321,7 +1336,7 @@ class GitActions extends PluginActions
             $this->git_system_event_manager->queueRepositoryRestore($repository);
             $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_git', 'restore_event_created').' : '.$repository->getName());
         }
-        $GLOBALS['Response']->redirect($url);
+        $GLOBALS['Response']->redirect($url . '&focus=git_repository');
     }
 
     public function updateDefaultMirroring(Project $project, array $selected_mirror_ids) {

@@ -41,7 +41,7 @@ class WikiService extends Controler {
   /**
    * Constructor
    */
-  function WikiService($id) {
+  function __construct($id) {
       global $LANG, $is_wiki_page;
       
       //used so the search box will add the necessary element to the pop-up box
@@ -139,9 +139,6 @@ class WikiService extends Controler {
         $this->view = 'empty'; 
 
     if(isset($_REQUEST['action'])) {
-        if($_REQUEST['action'] == 'pdf') 
-            $this->view = 'empty';
-        
         if($_REQUEST['action'] == 'ziphtml') 
             $this->view = 'empty';
         

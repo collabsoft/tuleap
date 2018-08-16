@@ -1,6 +1,7 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) 2010 Christopher Han
  *
  * This file is a part of Tuleap.
  *
@@ -18,97 +19,113 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Git\GitPHP\Config;
+use Tuleap\Git\GitPHP\Controller;
+use Tuleap\Git\GitPHP\Controller_Message;
+use Tuleap\Git\GitPHP\DiffExe;
+use Tuleap\Git\GitPHP\MessageException;
+use Tuleap\Git\GitPHP\ProjectList;
+use Tuleap\Git\GitPHP\Resource;
+
 class GitViews_GitPhpViewer {
     /**
      * @var GitRepository
      */
     private $repository;
-
     /**
-     * @var string
+     * @var PFUser
      */
-    private $gitphp_path = '/usr/share/gitphp-tuleap';
+    private $current_user;
 
-    public function __construct(GitRepository $repository, $gitphp_path) {
-        $this->repository  = $repository;
-        $this->gitphp_path = file_exists($gitphp_path) ? $gitphp_path : $this->gitphp_path;
+    public function __construct(GitRepository $repository, PFUser $current_user)
+    {
+        $this->repository   = $repository;
+        $this->current_user = $current_user;
     }
 
     public function getContent($is_download)
     {
-        ob_start();
-        $this->getView($is_download);
-        return ob_get_clean();
-    }
-
-    private function getView($is_download) {
-        if ( empty($_REQUEST['a']) )  {
-            $_REQUEST['a'] = 'summary';
-        } else if ($_REQUEST['a'] === 'blobdiff' && isset($_REQUEST['jenkins']) && $_REQUEST['jenkins'] === 'true') {
-            $this->inverseURLArgumentsForGitPhpDiff();
-        }
         set_time_limit(300);
-        $_GET['a'] = $_REQUEST['a'];
-        $_REQUEST['group_id']      = $this->repository->getProjectId();
-        $_REQUEST['repo_id']       = $this->repository->getId();
-        $_REQUEST['repo_name']     = $this->repository->getFullName();
-        $_GET['p']                 = $_REQUEST['repo_name'].'.git';
-        $_REQUEST['repo_path']     = $this->repository->getPath();
-        $_REQUEST['project_dir']   = $this->repository->getProject()->getUnixName();
-        $_REQUEST['git_root_path'] = $this->repository->getGitRootPath();
-        $_REQUEST['action']        = 'view';
-        $this->preSanitizeRequestForGitphp();
         if (! $is_download) {
             echo '<div id="gitphp" class="plugin_git_gitphp">';
         }
 
-        include($this->getGitPhpIndexPath());
+        $this->displayGitPHP();
 
         if (! $is_download) {
             echo '</div>';
         }
     }
 
-    private function preSanitizeRequestForGitphp() {
-        $hp = Codendi_HTMLPurifier::instance();
-        foreach(array('h', 'hb', 'hp') as $parameter) {
-            if (isset($_REQUEST[$parameter])) {
-                $_GET[$parameter] = $hp->purify($_REQUEST[$parameter]);
+    private function displayGitPHP()
+    {
+        Resource::Instantiate($this->current_user->getLanguageID());
+
+        try {
+            $this->setupGitPHPConfiguration();
+            /*
+             * Use the default language in the config if user has no preference
+             * with en_US as the fallback
+             */
+            if (! Resource::Instantiated()) {
+                 Resource::Instantiate( Config::GetInstance()->GetValue('locale', 'en_US'));
             }
+
+            /*
+             * Check for required executables
+             */
+            if (!function_exists('xdiff_string_diff')) {
+                $exe = new DiffExe();
+                if (!$exe->Valid()) {
+                    throw new MessageException(sprintf(Tuleap\Git\GitPHP\__('Could not run the diff executable "%1$s".  You may need to set the "%2$s" config value.'),
+                        $exe->GetBinary(), 'diffbin'), true, 500);
+                }
+            }
+            unset($exe);
+
+            ProjectList::Instantiate($this->repository);
+
+            $controller = Controller::GetController((isset($_GET['a']) ? $_GET['a'] : null));
+            if ($controller) {
+                $controller->RenderHeaders();
+                $controller->Render();
+            }
+
+        } catch (Exception $e) {
+            if (! Resource::Instantiated()) {
+                /*
+                 * In case an error was thrown before instantiating
+                 * the resource manager
+                 */
+                Resource::Instantiate('en_US');
+            }
+
+            $controller = new Controller_Message();
+            $controller->SetParam('message', $e->getMessage());
+            if ($e instanceof MessageException) {
+                $controller->SetParam('error', $e->Error);
+                $controller->SetParam('statuscode', $e->StatusCode);
+            } else {
+                $controller->SetParam('error', true);
+            }
+            $controller->RenderHeaders();
+            $controller->Render();
+
         }
     }
 
-    /**
-     * inverse the source and destination params in the URL to match the Git PHP
-     * template
-     */
-    private function inverseURLArgumentsForGitPhpDiff() {
-        $old_src  = $_GET['h'];
-        $old_dest = $_GET['hp'];
-
-        $_GET['h']  = $old_dest;
-        $_GET['hp'] = $old_src;
-    }
-
-    /**
-     * Return path to GitPhp index file
-     *
-     * @return String
-     */
-    private function getGitPhpIndexPath() {
-        $gitphp_path = $this->gitphp_path;
-        if ($gitphp_path) {
-            $this->initGitPhpEnvironement();
-        } else {
-            $gitphp_path = GIT_BASE_DIR .'/../gitphp';
-        }
-        return $gitphp_path.'/index.php';
-    }
-
-    private function initGitPhpEnvironement() {
-        if (! defined('GITPHP_CONFIGDIR')) {
-            define('GITPHP_CONFIGDIR', GIT_BASE_DIR .'/../etc/');
-            ini_set('include_path', '/usr/share/gitphp-tuleap:'.ini_get('include_path'));
-        }
+    private function setupGitPHPConfiguration()
+    {
+        $config = Config::GetInstance();
+        $config->SetValue('diffbin', '/usr/bin/diff');
+        $config->SetValue('gittmp', '/tmp/');
+        $config->SetValue('title', 'Tuleap');
+        $config->SetValue('compressformat', \Tuleap\Git\GitPHP\Archive::COMPRESS_BZ2);
+        $config->SetValue('compresslevel', 9);
+        $config->SetValue('geshi', true);
+        $config->SetValue('filemimetype', true);
+        $config->SetValue('magicdb', '/usr/share/misc/magic.mgc');
+        $config->SetValue('search', true);
+        $config->SetValue('smarty_tmp', '/tmp/gitphp-tuleap/smarty');
     }
 }

@@ -1,3 +1,5 @@
+import { setAccessibilityMode } from "./user-accessibility-mode.js";
+
 export default MainCtrl;
 
 MainCtrl.$inject = [
@@ -42,6 +44,14 @@ function MainCtrl(
         const tracker_reports = Object.values(JSON.parse(kanban_init_data.trackerReports));
         FilterTrackerReportService.initTrackerReports(tracker_reports);
 
+        let selected_report = tracker_reports.find(({ selected }) => selected === true);
+
+        if (! selected_report) {
+            selected_report = { id: 0 };
+        }
+
+        SharedPropertiesService.setSelectedTrackerReportId(selected_report.id);
+
         const language = kanban_init_data.language;
         gettextCatalog.setCurrentLanguage(language);
         amMoment.changeLocale(language);
@@ -51,5 +61,7 @@ function MainCtrl(
         SharedPropertiesService.setNodeServerVersion("2.0.0");
         const nodejs_server = kanban_init_data.nodejsServer;
         SharedPropertiesService.setNodeServerAddress(nodejs_server);
+
+        setAccessibilityMode(JSON.parse(kanban_init_data.userAccessibilityMode));
     }
 }

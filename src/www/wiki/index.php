@@ -24,7 +24,7 @@ require_once('pre.php');
 PHPWikiPluginRedirector::redirect();
 require_once('common/wiki/WikiService.class.php');
 
-Tuleap\Instrument\Collect::increment('service.project.phpwiki.accessed');
+\Tuleap\Project\ServiceInstrumentation::increment('phpwiki');
 
 $wiki = new WikiService($request->get('group_id'));
 

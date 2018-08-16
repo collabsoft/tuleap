@@ -346,7 +346,7 @@ class SemanticDone extends Tracker_Semantic
         foreach ($selected_values as $selected_value_id) {
             $value = $field->getBind()->getValue($selected_value_id);
 
-            if ($value && $this->value_checker->isValueADoneValue($value, $this->semantic_status)) {
+            if ($value && $this->value_checker->isValueAPossibleDoneValue($value, $this->semantic_status)) {
                 $this->done_values[$selected_value_id] = $value;
             }
         }
@@ -413,7 +413,7 @@ class SemanticDone extends Tracker_Semantic
             return true;
         }
 
-        return $this->dao->updateForTracker(
+        return $this->dao->addForTracker(
             $this->tracker->getId(),
             $done_values_ids
         );
@@ -422,7 +422,7 @@ class SemanticDone extends Tracker_Semantic
     /**
      * @return array
      */
-    private function getDoneValuesIds()
+    public function getDoneValuesIds()
     {
         $done_values_ids = array();
         foreach ($this->done_values as $done_value) {
@@ -455,7 +455,7 @@ class SemanticDone extends Tracker_Semantic
         }
         $list_values = $status_value->getListValues();
         foreach ($list_values as $list_value) {
-            if ($this->value_checker->isValueADoneValue($list_value, $this->semantic_status)) {
+            if ($this->dao->isValueADoneValue($changeset->getTracker()->getId(), $list_value->getId())) {
                 return true;
             }
         }
@@ -493,7 +493,7 @@ class SemanticDone extends Tracker_Semantic
                 $value_id = $selected_value_row['value_id'];
                 $value    = $semantic_status_field->getBind()->getValue($value_id);
 
-                if ($value && $value_checker->isValueADoneValue($value, $semantic_status)) {
+                if ($value && $value_checker->isValueAPossibleDoneValue($value, $semantic_status)) {
                     $done_values[$value_id] = $value;
                 }
             }
@@ -502,5 +502,13 @@ class SemanticDone extends Tracker_Semantic
         self::$_instances[$tracker->getId()] = new SemanticDone($tracker, $semantic_status, $dao, $value_checker, $done_values);
 
         return self::$_instances[$tracker->getId()];
+    }
+
+    /**
+     * @return Tracker_Semantic_Status
+     */
+    public function getSemanticStatus()
+    {
+        return $this->semantic_status;
     }
 }

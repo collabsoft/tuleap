@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,18 +21,28 @@
 
 namespace Tuleap\Git\REST\v1;
 
-use Tuleap\REST\v1\GitRepositoryRepresentationBase;
-use Tuleap\REST\JsonCast;
 use GitRepository;
+use Tuleap\REST\JsonCast;
+use Tuleap\REST\v1\GitRepositoryRepresentationBase;
 
-class GitRepositoryRepresentation extends GitRepositoryRepresentationBase {
-
-    public function build(GitRepository $repository, $server_representation) {
-        $this->id          = JsonCast::toInt($repository->getId());
-        $this->uri         = self::ROUTE . '/' . $this->id;
-        $this->name        = $repository->getName();
-        $this->path        = $repository->getPath();
-        $this->description = $repository->getDescription();
-        $this->server      = $server_representation;
+class GitRepositoryRepresentation extends GitRepositoryRepresentationBase
+{
+    /**
+     * @param GitRepository $repository
+     * @param $server_representation
+     * @param string $last_update_date
+     */
+    public function build(GitRepository $repository, $server_representation, $last_update_date, array $additional_information)
+    {
+        $this->id                     = JsonCast::toInt($repository->getId());
+        $this->uri                    = self::ROUTE . '/' . $this->id;
+        $this->name                   = $repository->getName();
+        $this->path                   = $repository->getPath();
+        $this->description            = $repository->getDescription();
+        $this->server                 = $server_representation;
+        $this->html_url               = GIT_BASE_URL . '/' . urlencode($repository->getProject()->getUnixNameLowerCase()) . "/"
+            . urlencode($repository->getName());
+        $this->last_update_date       = JsonCast::toDate($last_update_date);
+        $this->additional_information = $additional_information;
     }
 }

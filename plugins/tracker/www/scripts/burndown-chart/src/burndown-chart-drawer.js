@@ -16,15 +16,21 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-import moment               from 'moment';
-import { sprintf }          from 'sprintf-js';
-import { extent, max }      from 'd3-array';
-import { select }           from 'd3-selection';
-import { gettext_provider } from './gettext-provider.js';
-import { buildGraphScales } from 'charts-builders/line-chart-scales-factory.js';
-import { buildChartLayout } from 'charts-builders/chart-layout-builder.js';
-import { TooltipFactory }   from 'charts-builders/chart-tooltip-factory.js';
-import { ColumnFactory }    from 'charts-builders/chart-column-factory.js';
+import moment                       from 'moment';
+import { sprintf }                  from 'sprintf-js';
+import { max }                      from 'd3-array';
+import { select }                   from 'd3-selection';
+import { gettext_provider }         from './gettext-provider.js';
+import { buildGraphScales }         from 'charts-builders/line-chart-scales-factory.js';
+import { buildChartLayout }         from 'charts-builders/chart-layout-builder.js';
+import { TooltipFactory }           from 'charts-builders/chart-tooltip-factory.js';
+import { ColumnFactory }            from 'charts-builders/chart-column-factory.js';
+import { TimeScaleLabelsFormatter } from "charts-builders/time-scale-labels-formatter.js";
+import { getDaysToDisplay }         from 'charts-builders/chart-dates-service.js';
+import { addTextCaption }           from "charts-builders/chart-text-legend-generator.js";
+import { addBadgeCaption }          from "charts-builders/chart-badge-legend-generator.js";
+import { addContentCaption }        from "charts-builders/chart-content-legend-generator.js";
+
 import {
     drawIdealLine,
     drawCurve
@@ -34,11 +40,6 @@ import {
     getLastDayData,
     getDisplayableData,
 } from './chart-data-service.js';
-
-import {
-    getDaysToDisplay,
-    getGranularity
-} from 'charts-builders/chart-dates-service.js';
 
 export { createBurndownChart };
 
@@ -80,20 +81,24 @@ function createBurndownChart({
         column_height: y_scale(0) - properties.margins.top
     });
 
-    const end_date              = x_axis_tick_values[x_axis_tick_values.length - 1];
-    const timeframe_granularity = getGranularity(x_axis_tick_values[0], end_date);
-
     const svg_burndown = buildChartLayout(
         chart_container,
         chart_props,
-        chart_legends,
-        getLayoutBadgeData(),
         {
             x_scale,
             y_scale
-        },
-        timeframe_granularity
+        }
     );
+
+    insertLegend();
+
+    const label_formatter = new TimeScaleLabelsFormatter({
+        layout    : svg_burndown,
+        first_date: x_axis_tick_values[0],
+        last_date : x_axis_tick_values[x_axis_tick_values.length - 1]
+    });
+
+    label_formatter.formatTicks();
 
     if (! burndown_data.points_with_date.length) {
         return;
@@ -195,21 +200,23 @@ function createBurndownChart({
         );
     }
 
-    function getLayoutBadgeData() {
-        if (
-            last_day_data.hasOwnProperty('remaining_effort') &&
-            last_day_data.remaining_effort !== null
-        ) {
-            return {
-                value: last_day_data.remaining_effort,
-                date : last_day_data.date
-            };
+    function getDateLegendContent() {
+        if (isThereARemainingEffort()) {
+            return sprintf(
+                chart_props.left_legend_title,
+                moment(last_day_data.date).format(chart_props.left_legend_date_format)
+            );
         }
 
-        return {
-            value: gettext_provider.gettext('n/k'),
-            date : moment()
-        };
+        return sprintf(
+            chart_props.left_legend_title,
+            moment().format(chart_props.left_legend_date_format)
+        );
+    }
+
+    function isThereARemainingEffort() {
+        return last_day_data.hasOwnProperty('remaining_effort')
+            && last_day_data.remaining_effort !== null;
     }
 
     function getMaxRemainingEffort({ points_with_date, capacity }) {
@@ -223,5 +230,33 @@ function createBurndownChart({
         }
 
         return DEFAULT_REMAINING_EFFORT;
+    }
+
+    function insertLegend() {
+        const legend_y_position   = chart_props.margins.top * 0.5;
+        const date_legend_content = getDateLegendContent();
+        const badge_value         = (isThereARemainingEffort())
+            ? last_day_data.remaining_effort
+            : chart_props.legend_badge_default;
+
+        addTextCaption({
+            layout : svg_burndown,
+            content: date_legend_content,
+            legend_y_position
+        });
+
+        addBadgeCaption({
+            layout: svg_burndown,
+            badge_value,
+            legend_y_position
+        });
+
+        addContentCaption({
+            legend_y_position,
+            layout              : svg_burndown,
+            chart_content_legend: chart_legends,
+            chart_width         : chart_props.graph_width,
+            chart_margin_right  : chart_props.margins.right
+        });
     }
 }

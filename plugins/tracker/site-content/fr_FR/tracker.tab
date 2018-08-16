@@ -92,7 +92,7 @@ plugin_tracker_import	upload_file	Télécharger le fichier&nbsp;:
 plugin_tracker_import	file_upload_instructions	(La taille maximum du fichier est de $1 Mb. Le fichier doit être encodé en UTF-8)
 plugin_tracker_import	submit_info	Charger les artefacts
 plugin_tracker_import	send_notifications	Envoyer les notifications&nbsp;:
-plugin_tracker_import	cannot_create	Le tracker '$1' ne peut être créé
+plugin_tracker_import	cannot_create	Le tracker '$1' ne peut être créé. Utilisez l'option '--update' pour mettre à jour un tracker.
 #
 #-----------------------------------------------
 # Script: SF/www/tracker/index.php
@@ -569,18 +569,13 @@ plugin_tracker_include_type	no_active_val	---- AUCUNE VALEUR ACTIVE ----
 plugin_tracker_include_type	active_val	---- VALEURS ACTIVES ----
 plugin_tracker_include_type	no_hidden_val	---- AUCUNE VALEUR CACHÉE ----
 plugin_tracker_include_type	hidden_val	---- VALEURS CACHÉES ----
-plugin_tracker_include_type	toggle_notification	Suspension des notifications
 plugin_tracker_include_type	notification_suspended	Notifications Suspendues
-plugin_tracker_include_type	toggle_notif_note	En tant qu'administrateur de l'outil de suivi, vous pouvez temporairement suspendre toutes les notifications par e-mail de cet outil de suivi, quels que soient les paramètres de notification spécifiés ci-dessous.
 plugin_tracker_include_type	toggle_notif_warn	L'administrateur de l'outi de suivi a temporairement suspendu les notifications par e-mail de cet outil de suivi. Les paramètres ci-dessous ne sont donc pas pris en compte.
-plugin_tracker_include_type	stop_notification	Suspendre les notifications par e-mail
 plugin_tracker_include_type	notification_customisation_title	Personnalisation du sujet de l'email
 plugin_tracker_include_type	assigned_to_me	Assigné à moi même
 plugin_tracker_include_type	assigned_to_me_description	Inclure un marqueur [Assigné à moi même] dans le sujet pour les personnes étant assignées à l'artefact
+plugin_tracker_include_type	custom_sender_description	Permettre la personnalisation des champs émetteurs pour les notifications per e-mail
 plugin_tracker_include_type	global_mail_notif	Notification e-mail globale
-plugin_tracker_include_type	admin_conf	<P>L'administrateur de l'outil de suivi a spécifié que les adresses e-mails suivantes reçoivent les notifications de soumissions (et éventuellement de modification) d'artefacts.<P><u>Destinataires</u>&nbsp;:
-plugin_tracker_include_type	send_all_or_not	(Envoyer à chaque modification&nbsp;: $1)
-plugin_tracker_include_type	admin_not_conf	<P>L'administrateur de l'outil de suivi n'a pas encore spécifié d'adresses e-mail qui recevront systématiquement une notification par e-mail des nouveaux artefacts soumis.
 plugin_tracker_include_type	perso_mail_notif	Notification e-mail personnelle
 plugin_tracker_include_type	users_to_watch	Utilisateurs à suivre
 plugin_tracker_include_type	backup_person	Vous pouvez demander à recevoir une copie de toutes les notifications envoyées à un ou plusieurs utilisateurs. Donner la liste des noms de login des utilisateurs à suivre, séparés par des virgules.</b>
@@ -1259,8 +1254,6 @@ plugin_tracker_admin	clean_confirm_text	<h3>Vous êtes sur le point de supprimer
 plugin_tracker_admin	clean_cancel_deleted	Suppression annulée
 plugin_tracker_admin	invalid_request	La requête n'est pas valide.
 
-plugin_tracker_admin_notification	successfully_updated	Notifications mises à jour avec succès.
-
 plugin_tracker_admin_semantic	semantic_intro	Les outils de suivi étant entièrement paramétrables, vous pourriez vouloir définir à quoi correspond le titre de l'artefact, ou comment considérer si un artefact est ouvert ou fermé. Cette information est utilisée à différents endroits dans l'application pour afficher un lien ou un résumé de l'artefact.
 plugin_tracker_admin_semantic	title_label	Titre
 plugin_tracker_admin_semantic	title_description	Définir le titre d'un artéfact
@@ -1624,6 +1617,9 @@ project_admin_utils	tracker_date_reminder_before_submittedOn	Impossible d'ajoute
 project_admin_utils	tracker_date_reminder_duplicated	Un rappel sur date avec les mêmes paramètres existe déjà, vous devez le mettre à jour
 project_admin_utils	tracker_date_reminder_optgroup_label_ugroup	Groupes d'utilisateurs
 project_admin_utils	tracker_date_reminder_optgroup_label_role	Rôles
+project_admin_utils	global_notification_update	Mise à jour des notifications globales pour l'outil de suivi $1.
+project_admin_utils	user_notification_update	L'utilisateur $1($2) a mis à jour la configuration de ses notifications pour l'outil de suivi $3
+project_admin_utils	global_notification_update_with_force	Mise à jour des notifications globales en écrasant les paramètres de notification des utilisateurs pour l'outil de suivi $1.
 plugin_tracker	info_same_ugroups	Le patron sélectionné a des permissions sur des groupes d'utilisateurs qui semblent avoir leur équivalent dans votre projet : $1 Veuillez notez que seulement le nom des groupes est vérifié, les appartenances effectives peuvent être différentes.
 plugin_tracker	missing_ugroups	Le patron sélectionné a des permissions sur des groupes d'utilisateurs qui ne sont pas définis dans votre projet : $1 Sans ces groupes, des champs peuvent être inutilisables et des transitions pourraient ne pas fonctionner correctement. Si vous créez quand même l'outil de suivi, nous vous suggérons de vérifier après coup : <ul><li>Les permissions d'accès à l'outil de suivi,</li><li>Les permissions sur les champs,</li><li>Ainsi que les transitions du workflow.</li></ul>
 
@@ -1762,6 +1758,7 @@ plugin_tracker	tracker_restore_warning	Les outils de suivi suivant ne peuvent ê
 plugin_tracker	file_has_been_removed_meantime	Ce fichier a été supprimé entre temps.
 
 project_admin_utils	tracker_formelement_update	Mise à jour du champ
+project_admin_utils	artifact_delete_log	Artéfact supprimé
 
 plugin_tracker	permission_delegation_name	Administrateur de trackers
 plugin_tracker	permission_delegation_description	Cette permission donne le droit d'administration sur tous les trackers

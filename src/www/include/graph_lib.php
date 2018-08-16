@@ -29,7 +29,7 @@ class Graph {
 	 * It sets up the geometry for the graph
 	 * as well as any data extents that need to be set.
 	 */
-	function Graph( $width = 640, $height = 480 ) {
+	function __construct( $width = 640, $height = 480 ) {
 
 		$this->xpad = 50;
 		$this->ypad = 40;
@@ -222,7 +222,7 @@ class Graph {
 	 * @param $verts The vertices for the polygon
 	 * @param $color The color you want the polygon to be
 	 */
-	function DrawShadowedPolygon ( $verts, $color, $color ) {
+	function DrawShadowedPolygon ( $verts, $color ) {
 
 		for ( $i = 0; $i < sizeof($verts); $i++ ) {
 			$this->translate( $verts[$i], $verts[$i+1], $verts[$i], $verts[++$i] );
@@ -396,7 +396,7 @@ class Graph {
 			$lasty = $this->data_set[$dataset]['y'][$i];
 
 			if ( $colortwo ) {
-				$this->DrawShadowedPolygon( $verts, $color, $colortwo);
+				$this->DrawShadowedPolygon( $verts, $colortwo );
 			} else {
 				$this->DrawFilledPolygon( $verts, $color );
 			}

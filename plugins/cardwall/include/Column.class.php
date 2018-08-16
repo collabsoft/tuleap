@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -36,12 +36,7 @@ class Cardwall_Column {
     /**
      * @var string
      */
-    public $bgcolor;
-
-    /**
-     * @var string
-     */
-    public $fgcolor;
+    public $header_color;
 
     /**
      * @var Boolean
@@ -54,14 +49,17 @@ class Cardwall_Column {
     private $autostack_preference = '';
 
     /**
-     * @param int    $id
-     * @param string $label
+     * @var bool
      */
-    public function __construct($id, $label, $bgcolor, $fgcolor) {
-        $this->id        = $id;
-        $this->label     = $label;
-        $this->bgcolor   = $bgcolor;
-        $this->fgcolor   = $fgcolor;
+    private $is_header_a_tlp_color;
+
+    public function __construct($id, $label, $header_color) {
+        $this->id           = $id;
+        $this->label        = $label;
+        $this->header_color = $header_color;
+
+        $this->is_header_a_tlp_color = strpos($header_color, 'rgb') === false
+            && strpos($header_color, '#') === false;
     }
 
     public function setAutostack($value) {
@@ -137,16 +135,15 @@ class Cardwall_Column {
     /**
      * @return string
      */
-    public function getBgcolor() {
-        return $this->bgcolor;
+    public function getHeadercolor() {
+        return $this->header_color;
     }
 
     /**
-     * @return string
+     * @return bool
      */
-    public function getFgcolor() {
-        return $this->fgcolor;
+    public function isHeaderATLPColor()
+    {
+        return $this->is_header_a_tlp_color;
     }
-
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-2018. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2004-2011. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -139,7 +139,7 @@ class Codendi_Mail implements Codendi_Mail_Interface {
      * @return Array of real_name and mail
      */
     private function validateCommaSeparatedListOfAddresses($comma_separeted_addresses) {
-        return $this->recipient_list_builder->getValidRecipientsFromAddresses(split('[;,]', $comma_separeted_addresses));
+        return $this->recipient_list_builder->getValidRecipientsFromAddresses(preg_split('/[;,]/D', $comma_separeted_addresses));
     }
 
     /**
@@ -154,7 +154,7 @@ class Codendi_Mail implements Codendi_Mail_Interface {
         $allowed = array('To', 'Cc', 'Bcc');
         if (in_array($recipient_type, $allowed)) {
             $headers = $this->message->getHeaders();
-            if ($headers->has('to')) {
+            if ($headers->has($recipient_type)) {
                 $recipient_header = $headers->get($recipient_type);
                 $list_addresses   = $recipient_header->getAddressList();
                 $addresses = array();
@@ -468,14 +468,6 @@ class Codendi_Mail implements Codendi_Mail_Interface {
      */
     public function send()
     {
-        if ($this->getTo() === '') {
-            return false;
-        }
-
-        $params = array('mail'   => $this,
-                        'header' => $this->message->getHeaders());
-        $em = EventManager::instance();
-        $em->processEvent('mail_sendmail', $params);
         $status = true;
 
         $mime_message = new MimeMessage();
@@ -484,10 +476,12 @@ class Codendi_Mail implements Codendi_Mail_Interface {
             $mime_message->addPart($attachment);
         }
         $this->message->setBody($mime_message);
+        \Tuleap\Mail\MailInstrumentation::increment();
         try {
             $this->transport->send($this->message);
         } catch (Exception $e) {
             $status = false;
+            \Tuleap\Mail\MailInstrumentation::incrementFailure();
             $GLOBALS['Response']->addFeedback('warning', $GLOBALS['Language']->getText('global', 'mail_failed', ForgeConfig::get('sys_email_admin')), CODENDI_PURIFIER_DISABLED);
         }
         $this->clearRecipients();

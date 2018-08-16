@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,6 @@ Mock::generate('UserManager');
 Mock::generate('Project');
 Mock::generate('ProjectManager');
 Mock::generate('GitRepositoryFactory');
-require_once 'common/plugin/PluginManager.class.php';
 
 class GitTest extends TuleapTestCase  {
 
@@ -38,7 +37,6 @@ class GitTest extends TuleapTestCase  {
         $git->setUserManager($usermanager);
         $git->setAction('del');
         $git->setPermittedActions(array('del'));
-        $git->setGroupId(101);
 
         $repository = mock('GitRepository');
         $factory    = stub('GitRepositoryFactory')->getRepositoryById()->returns($repository);
@@ -104,8 +102,9 @@ class GitTest extends TuleapTestCase  {
 
 abstract class Git_RouteBaseTestCase extends TuleapTestCase {
 
-    protected $repo_id  = 999;
-    protected $group_id = 101;
+    protected $repo_id           = 999;
+    protected $group_id          = 101;
+    protected $project_unix_name = 'gitproject';
     protected $repository;
 
     public function setUp() {
@@ -114,7 +113,6 @@ abstract class Git_RouteBaseTestCase extends TuleapTestCase {
         $this->admin        = mock('PFUser');
         $this->user_manager = mock('UserManager');
         $this->project_manager  = mock('ProjectManager');
-        $this->plugin_manager   = mock('PluginManager');
         $this->project_creator  = mock('Git_Driver_Gerrit_ProjectCreator');
         $this->template_factory = mock('Git_Driver_Gerrit_Template_TemplateFactory');
         $this->git_permissions_manager = mock('GitPermissionsManager');
@@ -126,9 +124,9 @@ abstract class Git_RouteBaseTestCase extends TuleapTestCase {
 
         $project = mock('Project');
         stub($project)->getId()->returns($this->group_id);
+        stub($project)->getUnixNameLowerCase()->returns($this->project_unix_name);
 
         stub($this->project_manager)->getProject()->returns($project);
-        stub($this->plugin_manager)->isPluginAllowedForProject()->returns(true);
         stub($this->project_creator)->checkTemplateIsAvailableForProject()->returns(true);
         stub($this->git_permissions_manager)->userIsGitAdmin($this->admin, $project)->returns(true);
 
@@ -149,7 +147,7 @@ abstract class Git_RouteBaseTestCase extends TuleapTestCase {
         $can_migrate_checker   = stub('Tuleap\Git\GerritCanMigrateChecker')->canMigrate()->returns(true);
 
         $git                   = partial_mock(
-            'Git',
+            Git::class,
             array('_informAboutPendingEvents', 'addAction', 'addView', 'addError', 'checkSynchronizerToken', 'redirect'),
             array(
                 mock('GitPlugin'),
@@ -161,7 +159,6 @@ abstract class Git_RouteBaseTestCase extends TuleapTestCase {
                 mock('GitRepositoryFactory'),
                 $this->user_manager,
                 $this->project_manager,
-                $this->plugin_manager,
                 aRequest()->with('group_id', $this->group_id)->build(),
                 $this->project_creator,
                 $template_factory,
@@ -191,18 +188,19 @@ abstract class Git_RouteBaseTestCase extends TuleapTestCase {
                 mock('Tuleap\Git\Permissions\RegexpPermissionFilter'),
                 mock('Tuleap\Git\Notifications\UsersToNotifyDao'),
                 mock('Tuleap\Git\Notifications\UgroupsToNotifyDao'),
-                mock('UGroupManager')
+                mock('UGroupManager'),
+                mock(\Tuleap\Git\GitViews\Header\HeaderRenderer::class)
             )
         );
         $git->setRequest($request);
         $git->setUserManager($this->user_manager);
-        $git->setGroupId($this->group_id);
         $git->setFactory($factory);
 
         return $git;
     }
 
-    protected function assertItIsForbiddenForNonProjectAdmins($factory) {
+    protected function assertItIsForbiddenForNonProjectAdmins($factory)
+    {
         stub($this->user_manager)->getCurrentUser()->returns($this->user);
         $request = aRequest()->with('repo_id', $this->repo_id)->build();
 
@@ -210,7 +208,7 @@ abstract class Git_RouteBaseTestCase extends TuleapTestCase {
 
         $git->expectOnce('addError', array('*'));
         $git->expectNever('addAction');
-        $git->expectOnce('redirect', array('/plugins/git/?group_id='. $this->group_id));
+        $git->expectOnce('redirect', array('/plugins/git/' . $this->project_unix_name . '/'));
 
         $git->request();
     }
@@ -226,7 +224,7 @@ abstract class Git_RouteBaseTestCase extends TuleapTestCase {
         $git->expectOnce('addError', array('*'));
         $git->expectNever('addAction');
 
-        $git->expectOnce('redirect', array('/plugins/git/?group_id='. $this->group_id));
+        $git->expectOnce('redirect', array('/plugins/git/' . $this->project_unix_name . '/'));
         $git->request();
     }
 }
@@ -323,7 +321,7 @@ class Gittest_MigrateToGerritRouteTest extends Git_RouteBaseTestCase
         $git->expectOnce('addError', array('*'));
         $git->expectNever('addAction');
 
-        $git->expectOnce('redirect', array('/plugins/git/?group_id='. $this->group_id));
+        $git->expectOnce('redirect', array('/plugins/git/' . $this->project_unix_name . '/'));
 
         $git->request();
     }
@@ -339,7 +337,7 @@ class Gittest_MigrateToGerritRouteTest extends Git_RouteBaseTestCase
         $request->set('remote_server_id', $server_id);
         $git = $this->getGit($request, $this->factory);
         $git->expectNever('addAction');
-        $git->expectOnce('redirect', array('/plugins/git/?group_id='. $this->group_id));
+        $git->expectOnce('redirect', array('/plugins/git/' . $this->project_unix_name . '/'));
 
         $git->request();
     }

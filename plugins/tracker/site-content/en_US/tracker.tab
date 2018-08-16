@@ -100,7 +100,7 @@ plugin_tracker_import	upload_file	Upload File:
 plugin_tracker_import	file_upload_instructions	(The maximum upload file size is $1 Mb. The file must be encoded in UTF-8)
 plugin_tracker_import	submit_info	Load artifacts
 plugin_tracker_import	send_notifications	Send Notifications:
-plugin_tracker_import	cannot_create	The tracker '$1' cannot be created
+plugin_tracker_import	cannot_create	The tracker '$1' cannot be created. Use '--update' to update an existing tracker.
 #
 #-----------------------------------------------
 # Script: SF/www/tracker/index.php
@@ -579,17 +579,14 @@ plugin_tracker_include_type	active_val	---- ACTIVE VALUES ----
 plugin_tracker_include_type	no_hidden_val	---- NO HIDDEN VALUES ----
 plugin_tracker_include_type	hidden_val	---- HIDDEN VALUES ----
 plugin_tracker_include_type	toggle_notification	Toggle Email Notification
-plugin_tracker_include_type	notification_suspended	Email Notifications Suspended
 plugin_tracker_include_type	toggle_notif_note	As a tracker administrator, you can temporarily suspend all the e-mail notifications in this tracker, regardless of the notification settings below.
 plugin_tracker_include_type	toggle_notif_warn	The tracker administrator has temporarily suspended email notifications in this tracker. The notification settings below are now ignored.
 plugin_tracker_include_type	stop_notification	Suspend Email Notification
 plugin_tracker_include_type	notification_customisation_title	Email subject customisation
 plugin_tracker_include_type	assigned_to_me	Assigned to me
 plugin_tracker_include_type	assigned_to_me_description	Include [Assigned to me] flag in subject for people who are assigned to the artifact
+plugin_tracker_include_type	custom_sender_description	Enable custom sender fields for email notifications
 plugin_tracker_include_type	global_mail_notif	Global Email Notification
-plugin_tracker_include_type	admin_conf	<P>The tracker administrators have configured the following email addresses to receive notification of new artifact submission (and possibly updates).<P><u>Recipients</u>:
-plugin_tracker_include_type	send_all_or_not	(Send on all updates: $1)
-plugin_tracker_include_type	admin_not_conf	<P>The tracker administrator hasn't yet specified email addresses that will systematically receive email notification of new artifacts.
 plugin_tracker_include_type	perso_mail_notif	Personal Email Notification
 plugin_tracker_include_type	users_to_watch	Users To Watch
 plugin_tracker_include_type	backup_person	You can receive a carbon copy of email notifications sent to certain users of this project. List the login name of any user you wish to watch, separated by commas.</b>
@@ -1626,6 +1623,9 @@ project_admin_utils	tracker_date_reminder_before_submittedOn	Unable to add Date 
 project_admin_utils	tracker_date_reminder_duplicated	A Date Reminder with the same params already exists, you should update it
 project_admin_utils	tracker_date_reminder_optgroup_label_ugroup	User groups
 project_admin_utils	tracker_date_reminder_optgroup_label_role	Roles
+project_admin_utils	global_notification_update	Update global notifications for tracker $1.
+project_admin_utils	user_notification_update	User $1($2) has updated the configuration of its notifications for tracker $3
+project_admin_utils	global_notification_update_with_force	Update global notifications and force tracker notification usage for users for tracker $1.
 plugin_tracker	info_same_ugroups	The selected template set permissions on user groups that seem to have their counterpart in your project: $1 Please note that only group names are verified, membership might be different.
 plugin_tracker	missing_ugroups	The selected template set permissions on user groups that are not defined in your project: $1 Without those groups, some fields might not be usable and some transitions might not work properly. If you create the tracker anyway, we suggest that you subsequently have a look at: <ul><li>Tracker permissions,</li><li>Fields permissions,</li><li>And workflow transitions.</li></ul>
 
@@ -1764,6 +1764,7 @@ plugin_tracker	tracker_restore_warning	The following trackers cannot be displaye
 plugin_tracker	file_has_been_removed_meantime	This file has been removed meantime.
 
 project_admin_utils	tracker_formelement_update	Update field
+project_admin_utils	tracker_artifact_delete	Artifact deleted
 
 plugin_tracker	permission_delegation_name	Global Tracker Administrator
 plugin_tracker	permission_delegation_description	This permission grants tracker administration rights on all trackers on all projects

@@ -33,18 +33,20 @@ describe("BacklogItemCollectionService -", () => {
 
             beforeEach(() => {
                 initial_item = {
-                    id         : 7088,
+                    id: 7088,
+                    background_color_name: '',
                     card_fields: [],
-                    children   : {
-                        data     : [],
+                    children: {
+                        data: [],
                         collapsed: true,
-                        loaded   : true
+                        loaded: true
                     },
-                    has_children  : false,
+                    has_children: false,
                     initial_effort: 8,
-                    label         : 'hexapod',
-                    status        : 'Review',
-                    updating      : false
+                    remaining_effort: 7,
+                    label: 'hexapod',
+                    status: 'Review',
+                    updating: false
                 };
 
                 BacklogItemCollectionService.items = {
@@ -55,21 +57,23 @@ describe("BacklogItemCollectionService -", () => {
             it("when I refresh it, then a promise will be resolved and the item will be fetched from the server and updated in the item collection", () => {
                 const updated_item = {
                     backlog_item: {
-                        id         : 7088,
+                        id: 7088,
+                        background_color_name: 'glossopalatine_sophic',
                         card_fields: [
                             {
                                 field_id: 35,
-                                label   : "Remaining Story Points",
-                                type    : "float",
-                                value   : 1.5
+                                label: 'Remaining Story Points',
+                                type: 'float',
+                                value: 1.5
                             }
                         ],
-                        has_children  : true,
+                        has_children: true,
                         initial_effort: 6,
-                        label         : 'unspeedy',
-                        status        : 'Closed',
-                        parent        : {
-                            id   : 504,
+                        remaining_effort: 3,
+                        label: 'unspeedy',
+                        status: 'Closed',
+                        parent: {
+                            id: 504,
                             label: 'pretangible'
                         }
                     }
@@ -84,26 +88,28 @@ describe("BacklogItemCollectionService -", () => {
                 expect(promise).toBeResolved();
                 expect(BacklogItemService.getBacklogItem).toHaveBeenCalledWith(7088);
                 expect(BacklogItemCollectionService.items[7088]).toEqual({
-                    id         : 7088,
+                    id: 7088,
+                    background_color_name: 'glossopalatine_sophic',
                     card_fields: [
                         {
                             field_id: 35,
-                            label   : "Remaining Story Points",
-                            type    : "float",
-                            value   : 1.5
+                            label: 'Remaining Story Points',
+                            type: 'float',
+                            value: 1.5
                         }
                     ],
                     children: {
-                        data     : [],
+                        data: [],
                         collapsed: true,
-                        loaded   : true
+                        loaded: true
                     },
-                    has_children  : true,
+                    has_children: true,
                     initial_effort: 6,
-                    label         : 'unspeedy',
-                    status        : 'Closed',
-                    parent        : {
-                        id   : 504,
+                    remaining_effort: 3,
+                    label: 'unspeedy',
+                    status: 'Closed',
+                    parent: {
+                        id: 504,
                         label: 'pretangible'
                     },
                     updating: false,

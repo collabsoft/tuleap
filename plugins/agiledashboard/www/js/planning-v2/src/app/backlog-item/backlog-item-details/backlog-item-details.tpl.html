@@ -1,4 +1,4 @@
-<div class="backlog-item-details-type-border"></div>
+<div class="backlog-item-details-type-border {{ details.backlog_item.color }}"></div>
 
 <div class="backlog-item-details-content">
     <div ng-if="details.backlog_item.accept.trackers.length > 0"
@@ -54,9 +54,11 @@
         filter-terms="{{ details.backlog_filter.terms }}"
     ></tuleap-card-link>
 
+    <div ng-if="details.user_has_accessibility_mode" class="card-accessibility {{ details.backlog_item.background_color_name }}"></div>
+
     <div class="backlog-item-details-effort-container">
         <span ng-if="details.backlog_item.initial_effort"
-            class="tlp-badge-{{ details.backlog_item.color }}"
+            ng-class="'tlp-badge-' + details.getCardColorName()"
             title="{{::'Initial effort' | translate }}"
             ng-bind-html="(details.backlog_item.initial_effort | tuleapHighlight:details.backlog_filter.terms)"
         ></span>
@@ -101,3 +103,8 @@
             }"></i>
     </span>
 </div>
+
+<item-progress color-name="{{ details.getCardColorName() }}"
+    value="details.backlog_item.remaining_effort"
+    max-value="details.backlog_item.initial_effort"
+></item-progress>

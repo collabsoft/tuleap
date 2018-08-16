@@ -1,31 +1,26 @@
 <?php
 /**
+ * Copyright Enalean (c) 2018. All rights reserved.
  * Copyright (c) STMicroelectronics, 2004-2009. All rights reserved
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/dao/include/DataAccessObject.class.php';
-
-class AdminDelegation_UserServiceDao extends DataAccessObject {
-
-    public function __construct(DataAccess $da) {
-        parent::__construct($da);
-    }
-
+class AdminDelegation_UserServiceDao extends DataAccessObject
+{
     public function searchAllUsers() {
         $sql = 'SELECT * FROM plugin_admindelegation_service_user';
         return $this->retrieve($sql);
@@ -78,13 +73,6 @@ class AdminDelegation_UserServiceDao extends DataAccessObject {
                ' VALUES ('.$this->da->escapeInt($serviceId).', '.$this->da->escapeInt($userId).')';
         return $this->update($sql);
     }
-
-    public function removeUserService($userId, $serviceId) {
-        $sql = 'DELETE FROM plugin_admindelegation_service_user'.
-               ' WHERE user_id = '.$this->da->escapeInt($userId).
-               ' AND service_id = '.$this->da->escapeInt($serviceId);
-        return $this->update($sql);
-    }
     
     public function removeUser($userId) {
         $sql = 'DELETE FROM plugin_admindelegation_service_user'.
@@ -92,5 +80,3 @@ class AdminDelegation_UserServiceDao extends DataAccessObject {
         return $this->update($sql);
     }
 }
-
-?>

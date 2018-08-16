@@ -10,6 +10,8 @@ else
 DOCKER_COMPOSE_FILE=-f docker-compose.yml
 endif
 
+get_ip_addr = `$(DOCKER_COMPOSE) ps -q $(1) | xargs docker inspect -f '{{.NetworkSettings.Networks.tuleap_default.IPAddress}}'`
+
 SUDO=
 DOCKER=$(SUDO) docker
 DOCKER_COMPOSE=$(SUDO) docker-compose $(DOCKER_COMPOSE_FILE)
@@ -19,7 +21,7 @@ AUTOLOAD_EXCLUDES=^tests|^template
 .DEFAULT_GOAL := help
 
 help:
-	@grep -E '^[a-zA-Z0-9_-\ ]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_\-\ ]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	@echo "(Other less used targets are available, open Makefile for details)"
 
 #
@@ -41,8 +43,9 @@ autoload:
 	@(cd tests/soap/lib; phpab  -q --compat -o autoload.php .)
 	@(cd tests/rest/lib; phpab  -q --compat -o autoload.php .)
 	@for path in `ls plugins | egrep -v "$(AUTOLOAD_EXCLUDES)"`; do \
+		test -f "plugins/$$path/composer.json" && continue; \
 		echo "Generate plugin $$path"; \
-		(cd "plugins/$$path/include"; phpab -q --compat -o autoload.php $$(cat phpab-options.txt 2> /dev/null) .) \
+		(cd "plugins/$$path/include"; phpab -q --compat -o autoload.php .) \
         done;
 
 autoload-with-userid:
@@ -53,8 +56,9 @@ autoload-with-userid:
 	@(cd tests/soap/lib; phpab  -q --compat -o autoload.php .)
 	@(cd tests/rest/lib; phpab  -q --compat -o autoload.php .)
 	@for path in `ls plugins | egrep -v "$(AUTOLOAD_EXCLUDES)"`; do \
+		test -f "plugins/$$path/composer.json" && continue; \
 		echo "Generate plugin $$path"; \
-		(cd "plugins/$$path/include"; phpab -q --compat -o autoload.php $$(cat phpab-options.txt 2> /dev/null) .; chown $(USER_ID):$(USER_ID) autoload.php) \
+		(cd "plugins/$$path/include"; phpab -q --compat -o autoload.php .; chown $(USER_ID):$(USER_ID) autoload.php) \
         done;
 
 autoload-docker: ## Generate autoload files
@@ -65,7 +69,12 @@ autoload-dev:
 
 .PHONY: composer
 composer:  ## Install PHP dependencies with Composer
-	composer install --working-dir=src/
+	@echo "Processing src/composer.json"
+	@composer install --working-dir=src/
+	@find plugins/ -mindepth 2 -maxdepth 2 -type f -name 'composer.json' \
+		-exec echo "Processing {}" \; -execdir composer install \;
+	@echo "Processing tools/Configuration/composer.json"
+	@composer install --working-dir=tools/Configuration/
 
 ## RNG generation
 
@@ -104,25 +113,49 @@ clean-rng:
 # Tests and all
 #
 
-post-checkout: composer generate-mo dev-clear-cache dev-forgeupgrade ## Clear caches, run forgeupgrade, build assets and generate language files
-	npm install
+post-checkout: composer generate-mo dev-clear-cache dev-forgeupgrade npm-build restart-services ## Clear caches, run forgeupgrade, build assets and generate language files
+
+npm-build:
+	npm ci
 	npm run build
-	@$(DOCKER) exec tuleap-web service rh-php56-php-fpm restart
+
+redeploy-nginx: ## Redeploy nginx configuration
+	@$(DOCKER_COMPOSE) exec web /usr/share/tuleap/tools/utils/php56/run.php --module=nginx
+	@$(DOCKER_COMPOSE) exec web service nginx restart
+
+restart-services: redeploy-nginx ## Restart nginx, apache and fpm
+	@$(DOCKER_COMPOSE) exec web service php56-php-fpm restart
+	@$(DOCKER_COMPOSE) exec web service httpd restart
 
 generate-po: ## Generate translatable strings
 	@tools/utils/generate-po.php `pwd`
 
-generate-mo: ## Compile tranlated strings into binary format
+generate-mo: ## Compile translated strings into binary format
 	@tools/utils/generate-mo.sh `pwd`
 
-tests_rest: ## Run all REST tests
-	$(DOCKER) run -ti --rm -v $(CURDIR):/usr/share/tuleap --mount type=tmpfs,destination=/tmp enalean/tuleap-test-rest:c6-php56-httpd24-mysql56
+tests_rest_56: ## Run all REST tests with PHP FPM 5.6
+	$(DOCKER) run -ti --rm -v $(CURDIR):/usr/share/tuleap --mount type=tmpfs,destination=/tmp enalean/tuleap-test-rest:c6-php56-mysql56
 
-tests_soap: ## Run all SOAP tests
-	$(DOCKER) run -ti --rm -v $(CURDIR):/usr/share/tuleap --mount type=tmpfs,destination=/tmp enalean/tuleap-test-soap:3
+tests_rest_72: ## Run all REST tests with PHP FPM 7.2
+	$(DOCKER) run -ti --rm -v $(CURDIR):/usr/share/tuleap --mount type=tmpfs,destination=/tmp enalean/tuleap-test-rest:c6-php72-mysql56
 
-tests_rest_setup: ## Start REST tests container to launch tests manually
-	$(DOCKER) run -ti --rm -v $(CURDIR):/usr/share/tuleap --mount type=tmpfs,destination=/tmp -w /usr/share/tuleap enalean/tuleap-test-rest:c6-php56-httpd24-mysql56 bash
+tests_soap_56: ## Run all SOAP tests in PHP 5.6
+	$(DOCKER) run -ti --rm -v $(CURDIR):/usr/share/tuleap:ro --mount type=tmpfs,destination=/tmp enalean/tuleap-test-soap:3
+
+tests_soap_72: ## Run all SOAP tests in PHP 7.2
+	$(DOCKER) run -ti --rm -v $(CURDIR):/usr/share/tuleap:ro --mount type=tmpfs,destination=/tmp enalean/tuleap-test-soap:4
+
+tests_cypress: ## Run Cypress tests
+	@tests/e2e/full/wrap.sh
+
+tests_cypress_dev: ## Start cypress container to launch tests manually
+	@tests/e2e/full/wrap_for_dev_context.sh
+
+tests_rest_setup_56: ## Start REST tests (PHP FPM 5.6) container to launch tests manually
+	$(DOCKER) run -ti --rm -v $(CURDIR):/usr/share/tuleap --mount type=tmpfs,destination=/tmp -w /usr/share/tuleap enalean/tuleap-test-rest:c6-php56-mysql56 bash
+
+tests_rest_setup_72: ## Start REST tests (PHP FPM 7.2) container to launch tests manually
+	$(DOCKER) run -ti --rm -v $(CURDIR):/usr/share/tuleap --mount type=tmpfs,destination=/tmp -w /usr/share/tuleap enalean/tuleap-test-rest:c6-php72-mysql56 bash
 
 phpunit-ci-run:
 	$(PHP) src/vendor/bin/phpunit \
@@ -140,35 +173,70 @@ run-as-owner:
 
 phpunit-ci-56:
 	mkdir -p $(WORKSPACE)/results/ut-phpunit-php-56
-	@docker run --rm -v $(CURDIR):/tuleap:ro -v $(WORKSPACE)/results/ut-phpunit-php-56:/tmp/results --entrypoint /bin/bash enalean/tuleap-test-phpunit:c6-php56 -c "make -C /tuleap run-as-owner TARGET=phpunit-ci-run PHP=/opt/rh/rh-php56/root/usr/bin/php"
+	@docker run --rm -v $(CURDIR):/tuleap:ro -v $(WORKSPACE)/results/ut-phpunit-php-56:/tmp/results --entrypoint /bin/bash enalean/tuleap-test-phpunit:c6-php56 -c "make -C /tuleap run-as-owner TARGET=phpunit-ci-run PHP=/opt/remi/php56/root/usr/bin/php"
 
-phpunit-ci-70:
-	mkdir -p $(WORKSPACE)/results/ut-phpunit-php-70
-	@docker run --rm -v $(CURDIR):/tuleap:ro -v $(WORKSPACE)/results/ut-phpunit-php-70:/tmp/results enalean/tuleap-test-phpunit:c6-php70 make -C /tuleap TARGET=phpunit-ci-run PHP=/opt/rh/rh-php70/root/usr/bin/php run-as-owner
+phpunit-ci-72:
+	mkdir -p $(WORKSPACE)/results/ut-phpunit-php-72
+	@docker run --rm -v $(CURDIR):/tuleap:ro -v $(WORKSPACE)/results/ut-phpunit-php-72:/tmp/results enalean/tuleap-test-phpunit:c6-php72 make -C /tuleap TARGET=phpunit-ci-run PHP=/opt/remi/php72/root/usr/bin/php run-as-owner
 
 phpunit-docker-56:
-	@docker run --rm -v $(CURDIR):/tuleap:ro enalean/tuleap-test-phpunit:c6-php56 scl enable rh-php56 "make -C /tuleap phpunit"
+	@docker run --rm -v $(CURDIR):/tuleap:ro enalean/tuleap-test-phpunit:c6-php56 scl enable php56 "make -C /tuleap phpunit"
 
-phpunit-docker-70:
-	@docker run --rm -v $(CURDIR):/tuleap:ro enalean/tuleap-test-phpunit:c6-php70 scl enable rh-php70 "make -C /tuleap phpunit"
+phpunit-docker-72:
+	@docker run --rm -v $(CURDIR):/tuleap:ro enalean/tuleap-test-phpunit:c6-php72 scl enable php72 "make -C /tuleap phpunit"
 
 phpunit:
 	src/vendor/bin/phpunit -c tests/phpunit/phpunit.xml
+
+simpletest-72-ci:
+	@mkdir -p $(WORKSPACE)/results/ut-simpletest-php-72
+	@docker run --rm -v $(CURDIR):/tuleap:ro -v $(WORKSPACE)/results/ut-simpletest-php-72:/output:rw -u $(id -u):$(id -g) enalean/tuleap-simpletest:c6-php72 /opt/remi/php72/root/usr/bin/php /tuleap/tests/bin/simpletest11x.php --log-junit=/output/results.xml run
+
+simpletest-72: ## Run SimpleTest with PHP 7.2
+	@docker run --rm -v $(CURDIR):/tuleap:ro -u $(id -u):$(id -g) enalean/tuleap-simpletest:c6-php72 /opt/remi/php72/root/usr/bin/php /tuleap/tests/bin/simpletest11x.php run
+
+simpletest-72-file: ## Run SimpleTest with PHP 7.2 on a given file or directory with FILE variable
+	@docker run --rm -v $(CURDIR):/tuleap:ro -u $(id -u):$(id -g) enalean/tuleap-simpletest:c6-php72 /opt/remi/php72/root/usr/bin/php /tuleap/tests/bin/simpletest11x.php run $(FILE)
+
+simpletest-72-update-compatibility-list: ## Run this to update the list of PHP7 ready tests
+	@echo "Collect tests"
+	@docker run --rm -v $(CURDIR):/tuleap:rw -u $(id -u):$(id -g) -w /tuleap enalean/tuleap-simpletest:c6-php72 /opt/remi/php72/root/usr/bin/php /tuleap/tests/bin/simpletest11x.php collect
+	@echo "Execute tests PHP 7.2"
+	@docker run --rm -v $(CURDIR):/tuleap:ro -v $(CURDIR):/output:rw -u $(id -u):$(id -g) enalean/tuleap-simpletest:c6-php72 /opt/remi/php72/root/usr/bin/php /tuleap/tests/bin/simpletest11x.php --log-junit=/output/ut-simpletest-php-72-results.xml run
+	@echo "Execute tests PHP 5.6"
+	@docker run --rm -v $(CURDIR):/tuleap:ro -u $(id -u):$(id -g) enalean/tuleap-simpletest:c6-php56 --nodb -x php7compatibletests.list > ut-simpletest-php-56-results.xml
+	@echo "Compare results"
+	@docker run --rm -v $(CURDIR):/tuleap:ro -u $(id -u):$(id -g) -w /tuleap enalean/tuleap-simpletest:c6-php72 /opt/remi/php72/root/usr/bin/php /tuleap/tests/bin/simpletest11x.php compare-results ut-simpletest-php-72-results.xml ut-simpletest-php-56-results.xml
+	@rm -f ut-simpletest-php-56-results.xml ut-simpletest-php-72-results.xml
+
+simpletest11x-56-ci:
+	@mkdir -p $(WORKSPACE)/results/ut-simpletest11x-php-56
+	@docker run --rm -v $(CURDIR):/tuleap:ro -v $(WORKSPACE)/results/ut-simpletest11x-php-56:/output:rw --entrypoint "" enalean/tuleap-simpletest:c6-php56 /opt/remi/php56/root/usr/bin/php /tuleap/tests/bin/simpletest11x.php --log-junit=/output/results.xml run  \
+	/tuleap/tests/simpletest \
+	/tuleap/plugins/ \
+	/tuleap/tests/integration \
+
+simpletest11x-56: ## Run SimpleTest 1.1.x with PHP 5.6 tests in CLI
+	@docker run --rm -v $(CURDIR):/tuleap:ro --entrypoint "" enalean/tuleap-simpletest:c6-php56 /opt/remi/php56/root/usr/bin/php /tuleap/tests/bin/simpletest11x.php run \
+	/tuleap/tests/simpletest \
+	/tuleap/plugins/ \
+	/tuleap/tests/integration \
+
+bash-web: ## Give a bash on web container
+	@docker exec -e COLUMNS="`tput cols`" -e LINES="`tput lines`" -ti `docker-compose ps -q web` bash
+
+#
+# Dev setup
+#
 
 deploy-githooks:
 	@if [ -e .git/hooks/pre-commit ]; then\
 		echo "pre-commit hook already exists";\
 	else\
-		hash phpcs 2>/dev/null && {\
+		{\
 			echo "Creating pre-commit hook";\
 			ln -s ../../tools/utils/githooks/hook-chain .git/hooks/pre-commit;\
-		} || {\
-			echo "You need to install phpcs before.";\
-			echo "For example on a debian-based environment:";\
-			echo "  sudo apt-get install php-pear";\
-			echo "  sudo pear install PHP_CodeSniffer";\
-			exit 1;\
-		};\
+		}
 	fi
 
 #
@@ -184,35 +252,52 @@ dev-setup: .env deploy-githooks ## Setup environment for Docker Compose (should 
 	@echo "RABBITMQ_DEFAULT_PASS=`env LC_CTYPE=C tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 32`" >> .env
 	@echo RABBITMQ_DEFAULT_USER=tuleap >> .env
 	@echo VIRTUAL_HOST=tuleap-web.tuleap-aio-dev.docker >> .env
+	@echo "REALTIME_KEY=$(head -c 64 /dev/urandom | base64 --wrap=88)" >> .env
 
 show-passwords: ## Display passwords generated for Docker Compose environment
 	@$(DOCKER_COMPOSE) exec web cat /data/root/.tuleap_passwd
 
+show-ips: ## Display ips of all running services
+	@$(DOCKER_COMPOSE) ps -q | while read cid; do\
+		name=`docker inspect -f '{{.Name}}' $$cid | sed -e 's/^\/tuleap_\(.*\)_1$$/\1/'`;\
+		ip=`docker inspect -f '{{.NetworkSettings.Networks.tuleap_default.IPAddress}}' $$cid`;\
+		echo "$$ip $$name";\
+	done
+
 dev-forgeupgrade: ## Run forgeupgrade in Docker Compose environment
-	@$(DOCKER) exec tuleap-web /usr/lib/forgeupgrade/bin/forgeupgrade --config=/etc/tuleap/forgeupgrade/config.ini update
+	@$(DOCKER_COMPOSE) exec web /usr/lib/forgeupgrade/bin/forgeupgrade --config=/etc/tuleap/forgeupgrade/config.ini update
 
 dev-clear-cache: ## Clear caches in Docker Compose environment
-	@$(DOCKER) exec tuleap-web /usr/share/tuleap/src/utils/tuleap --clear-caches
+	@$(DOCKER_COMPOSE) exec web /usr/share/tuleap/src/utils/tuleap --clear-caches
 
 start-php56 start: ## Start Tuleap web with php56 & nginx
 	@echo "Start Tuleap in PHP 5.6"
-	@./tools/docker/migrate_to_volume.sh
-	@$(DOCKER_COMPOSE) -f docker-compose.yml up -d web
-	@echo -n "tuleap-web ip address: "
-	@$(DOCKER) inspect -f '{{.NetworkSettings.Networks.tuleap_default.IPAddress}}' tuleap-web
+	@$(DOCKER_COMPOSE) -f docker-compose.yml up --build -d reverse-proxy
+	@echo "Update tuleap-web.tuleap-aio-dev.docker in /etc/hosts with: $(call get_ip_addr,reverse-proxy)"
 
 start-distlp:
 	@echo "Start Tuleap with reverse-proxy, backend web and backend svn"
-	@./tools/docker/migrate_to_volume.sh
 	-@$(DOCKER_COMPOSE) stop
-	@$(DOCKER_COMPOSE) -f docker-compose-distlp.yml up -d reverse-proxy
-	@ip=`$(DOCKER) inspect -f '{{.NetworkSettings.Networks.tuleap_default.IPAddress}}' tuleap_reverse-proxy_1`; \
-		echo "Add '$$ip tuleap-web.tuleap-aio-dev.docker' to /etc/hosts"; \
-		echo "Ensure $$ip is configured as sys_trusted_proxies in /etc/tuleap/conf/local.inc"
+	@$(DOCKER_COMPOSE) -f docker-compose-distlp.yml up -d reverse-proxy-distlp
+	@echo "Add '$(call get_ip_addr,reverse-proxy) tuleap-web.tuleap-aio-dev.docker' to /etc/hosts"
+	@echo "Ensure $(call get_ip_addr,reverse-proxy) is configured as sys_trusted_proxies in /etc/tuleap/conf/local.inc"
 	@echo "You can access :"
-	@echo "* Reverse proxy with: docker exec -ti tuleap_reverse-proxy_1 bash"
-	@echo "* Backend web with: docker exec -ti tuleap_backend-web_1 bash"
-	@echo "* Backend SVN with: docker exec -ti tuleap_backend-svn_1 bash"
+	@echo "* Reverse proxy with: docker-compose -f docker-compose.yml -f -f docker-compose-distlp.yml reverse-proxy-distlp bash"
+	@echo "* Backend web with: docker-compose -f docker-compose.yml -f -f docker-compose-distlp.yml backend-web bash"
+	@echo "* Backend SVN with: docker-compose -f docker-compose.yml -f -f docker-compose-distlp.yml backend-svn bash"
+
+start-mailhog: # Start mailhog to catch emails sent by your Tuleap dev platform
+	@echo "Start mailhog to catch emails sent by your Tuleap dev platform"
+	$(DOCKER_COMPOSE) up -d mailhog
+	$(DOCKER_COMPOSE) exec web make -C /usr/share/tuleap deploy-mailhog-conf
+	@echo "Open your browser at http://$(call get_ip_addr,mailhog):8025"
+
+deploy-mailhog-conf:
+	@if ! grep -q -F -e '^relayhost = mailhog:1025' /etc/postfix/main.cf; then \
+	    sed -i -e 's/^\(transport_maps.*\)$$/#\1/' /etc/postfix/main.cf && \
+	    echo 'relayhost = mailhog:1025' >> /etc/postfix/main.cf; \
+	    service postfix restart; \
+	 fi
 
 stop-distlp:
 	@$(SUDO) docker-compose -f docker-compose-distlp.yml stop
@@ -223,6 +308,15 @@ env-gerrit: .env
 start-gerrit: env-gerrit
 	@docker-compose up -d gerrit
 	@echo "Gerrit will be available soon at http://`grep GERRIT_SERVER_NAME .env | cut -d= -f2`:8080"
+
+start-jenkins:
+	@$(DOCKER_COMPOSE) up -d jenkins
+	@echo "Jenkins is running at http://$(call get_ip_addr,jenkins):8080"
+	@if $(DOCKER_COMPOSE) exec jenkins test -f /var/jenkins_home/secrets/initialAdminPassword; then \
+		echo "Admin credentials are admin `$(DOCKER_COMPOSE) exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword`"; \
+	else \
+		echo "Admin credentials will be prompted by jenkins during start-up"; \
+	fi
 
 start-all:
 	echo "Start all containers (Web, LDAP, DB, Elasticsearch)"

@@ -83,13 +83,19 @@ class Git_AdminMirrorController {
         $template_path = dirname(GIT_BASE_DIR).'/templates';
         $presenter     = null;
 
+
         switch ($request->get('action')) {
             case 'manage-allowed-projects':
+                $GLOBALS['HTML']->includeFooterJavascriptFile('/scripts/tuleap/manage-allowed-projects-on-resource.js');
+
                 $presenter     = $this->getManageAllowedProjectsPresenter($request);
                 $template_path = ForgeConfig::get('codendi_dir') . '/src/templates/resource_restrictor';
                 $this->renderAPresenter($title, $template_path, $presenter);
                 break;
             default:
+                $GLOBALS['HTML']->includeFooterJavascriptFile(GIT_BASE_URL . '/scripts/modal-add-mirror.js');
+                $GLOBALS['HTML']->includeFooterJavascriptFile(GIT_BASE_URL . '/scripts/modal-mirror-configuration.js');
+
                 $presenter = $this->getAllMirrorsPresenter($title);
                 $this->renderANoFramedPresenter($title, $template_path, $presenter);
                 break;
@@ -164,12 +170,12 @@ class Git_AdminMirrorController {
         $mirror      =  $mirror = $this->getMirrorFromRequest($request);
         $all_allowed = $request->get('all-allowed');
 
-        $this->checkSynchronizerToken('/plugins/git/admin/?view=mirrors_restriction&action=set-mirror-restriction&mirror_id=' . $mirror->id);
+        $this->checkSynchronizerToken(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=set-mirror-restriction&mirror_id=' . $mirror->id);
 
         if ($all_allowed) {
             if ($this->git_mirror_resource_restrictor->unsetMirrorRestricted($mirror)) {
                 $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_unset_restricted'));
-                $GLOBALS['Response']->redirect('/plugins/git/admin/?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
+                $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
             }
 
         } else {
@@ -178,12 +184,12 @@ class Git_AdminMirrorController {
                 $this->git_mirror_mapper->deleteFromDefaultMirrors($mirror->id)
             ) {
                 $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_set_restricted'));
-                $GLOBALS['Response']->redirect('/plugins/git/admin/?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
+                $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
             }
         }
 
         $GLOBALS['Response']->addFeedback(Feedback::ERROR, $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_restricted_error'));
-        $GLOBALS['Response']->redirect('/plugins/git/admin/?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
+        $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
     }
 
     private function askForAGitoliteDumpConf() {
@@ -191,7 +197,7 @@ class Git_AdminMirrorController {
 
         $this->git_system_event_manager->queueDumpOfAllMirroredRepositories();
         $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_git','dump_gitolite_conf_queued', array($this->getGitSystemEventsQueueURL())), CODENDI_PURIFIER_DISABLED);
-        $GLOBALS['Response']->redirect('/plugins/git/admin/?pane=mirrors_admin');
+        $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?pane=mirrors_admin');
     }
 
     private function getGitSystemEventsQueueURL() {
@@ -203,7 +209,7 @@ class Git_AdminMirrorController {
         $project_to_add        = $request->get('project-to-allow');
         $project_ids_to_remove = $request->get('project-ids-to-revoke');
 
-        $this->checkSynchronizerToken('/plugins/git/admin/?view=mirrors_restriction&action=update-allowed-project-list&mirror_id=' . $mirror->id);
+        $this->checkSynchronizerToken(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=update-allowed-project-list&mirror_id=' . $mirror->id);
 
         if ($request->get('allow-project') && ! empty($project_to_add)) {
             $this->allowProjectOnMirror($mirror, $project_to_add);
@@ -218,11 +224,11 @@ class Git_AdminMirrorController {
 
         if ($project && $this->git_mirror_resource_restrictor->allowProjectOnMirror($mirror, $project)) {
             $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_allow_project'));
-            $GLOBALS['Response']->redirect('/plugins/git/admin/?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
+            $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
         }
 
         $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_update_project_list_error'));
-        $GLOBALS['Response']->redirect('/plugins/git/admin/?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
+        $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
     }
 
     private function revokeProjectsFromMirror(Git_Mirror_Mirror $mirror, $project_ids) {
@@ -231,11 +237,11 @@ class Git_AdminMirrorController {
             $this->git_mirror_mapper->deleteFromDefaultMirrorsInProjects($mirror, $project_ids)
         ) {
             $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_revoke_projects'));
-            $GLOBALS['Response']->redirect('/plugins/git/admin/?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
+            $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
         }
 
         $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_update_project_list_error'));
-        $GLOBALS['Response']->redirect('/plugins/git/admin/?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
+        $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
     }
 
     private function checkSynchronizerToken($url) {
@@ -333,6 +339,6 @@ class Git_AdminMirrorController {
             $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git','admin_mirror_cannot_delete'));
         }
 
-        $GLOBALS['Response']->redirect('/plugins/git/admin/?pane=mirrors_admin');
+        $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?pane=mirrors_admin');
     }
 }

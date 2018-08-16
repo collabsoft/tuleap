@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Updater_ChangesetXMLUpdater {
+class Tracker_XML_Updater_ChangesetXMLUpdater
+{
 
     /**
      * @var Tracker_FormElementFactory
@@ -45,8 +46,7 @@ class Tracker_XML_Updater_ChangesetXMLUpdater {
         PFUser $user,
         $submitted_on
     ) {
-        $artifact_xml->changeset->submitted_on = date('c', $submitted_on);
-        $artifact_xml->changeset->submitted_by = $user->getId();
+        $this->addSubmittedInformation($artifact_xml->changeset, $user, $submitted_on);
 
         foreach ($artifact_xml->changeset->field_change as $field_change) {
             $field_name = (string)$field_change['field_name'];
@@ -60,5 +60,12 @@ class Tracker_XML_Updater_ChangesetXMLUpdater {
                 $this->visitor->update($field_change, $field, $submitted_value);
             }
         }
+    }
+
+    private function addSubmittedInformation(SimpleXMLElement $changeset_xml, PFUser $user, $submitted_on)
+    {
+        $changeset_xml->submitted_on           = date('c', $submitted_on);
+        $changeset_xml->submitted_by           = $user->getId();
+        $changeset_xml->submitted_by['format'] = 'id';
     }
 }

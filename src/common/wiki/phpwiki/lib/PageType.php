@@ -33,14 +33,14 @@ class TransformedText extends CacheableMarkup {
      * @param string $type_override  For markup of page using a different
      *        pagetype than that specified in its version meta-data.
      */
-    function TransformedText($page, $text, $meta, $type_override=false) {
+    function __construct($page, $text, $meta, $type_override=false) {
     	$pagetype = false;
         if ($type_override)
             $pagetype = $type_override;
         elseif (isset($meta['pagetype']))
             $pagetype = $meta['pagetype'];
 	$this->_type = PageType::GetPageType($pagetype);
-	$this->CacheableMarkup($this->_type->transform($page, $text, $meta),
+	parent::__construct($this->_type->transform($page, $text, $meta),
                                $page->getName());
     }
 
@@ -112,7 +112,6 @@ class PageType {
 
 class PageType_wikitext extends PageType {}
 class PageType_html extends PageType {}
-class PageType_pdf extends PageType {}
 
 class PageType_wikiblog extends PageType {}
 class PageType_comment extends PageType {}
@@ -128,7 +127,7 @@ function getInterwikiMap ($pagetext = false) {
 
 class PageType_interwikimap extends PageType
 {
-    function PageType_interwikimap($pagetext = false) {
+    function __construct($pagetext = false) {
         if (!$pagetext) {
             $dbi = $GLOBALS['request']->getDbh();
             $page = $dbi->getPage(_("InterWikiMap"));
@@ -167,7 +166,7 @@ class PageType_interwikimap extends PageType
     }
 
     function link ($link, $linktext = false) {
-        list ($moniker, $page) = split (":", $link, 2);
+        list ($moniker, $page) = preg_split ("/:/D", $link, 2);
         
         if (!isset($this->_map[$moniker])) {
             return HTML::span(array('class' => 'bad-interwiki'),
@@ -318,7 +317,7 @@ class PageFormatter {
      * @param WikiDB_Page $page
      * @param hash $meta Version meta-data.
      */
-    function PageFormatter(&$page, $meta) {
+    function __construct(&$page, $meta) {
         $this->_page = $page;
 	$this->_meta = $meta;
 	if (!empty($meta['markup']))
@@ -346,7 +345,7 @@ class PageFormatter {
 
 class PageFormatter_wikitext extends PageFormatter 
 {
-    function format(&$text) {
+    function format($text) {
 	return HTML::div(array('class' => 'wikitext'),
 			 $this->_transform($text));
     }
@@ -396,7 +395,7 @@ class PageFormatter_interwikimap extends PageFormatter
 }
 
 class FakePageRevision {
-    function FakePageRevision($meta) {
+    function __construct($meta) {
         $this->_meta = $meta;
     }
 
@@ -459,60 +458,6 @@ class PageFormatter_html extends PageFormatter
     }
     function format($text) {
     	return $text;
-    }
-}
-
-/**
- *  FIXME. not yet used
- */
-class PageFormatter_pdf extends PageFormatter
-{
-
-    function _transform($text) {
-	include_once('lib/BlockParser.php');
-	return TransformText($text, $this->_markup);
-    }
-
-    // one page or set of pages?
-    // here we try to format only a single page
-    function format($text) {
-        include_once('lib/Template.php');
-        global $request;
-        $tokens['page']    = $this->_page;
-        $tokens['CONTENT'] = $this->_transform($text);
-        $pagename = $this->_page->getName();
-
-        // This is a XmlElement tree, which must be converted to PDF
-
-        // We can make use of several pdf extensions. This one - fpdf
-        // - is pure php and very easy, but looks quite ugly and has a
-        // terrible interface, as terrible as most of the othes. 
-        // The closest to HTML is htmldoc which needs an external cgi
-        // binary.
-        // We use a custom HTML->PDF class converter from PHPWebthings
-        // to be able to use templates for PDF.
-        require_once('lib/fpdf.php');
-        require_once('lib/pdf.php');
-
-        $pdf = new PDF();
-        $pdf->SetTitle($pagename);
-        $pdf->SetAuthor($this->_page->get('author'));
-        $pdf->SetCreator(WikiURL($pagename,false,1));
-        $pdf->AliasNbPages();
-        $pdf->AddPage();
-        //TODO: define fonts
-        $pdf->SetFont('Times','',12);
-        //$pdf->SetFont('Arial','B',16);
-
-        // PDF pagelayout from a special template
-        $template = new Template('pdf', $request, $tokens);
-        $pdf->ConvertFromHTML($template);
-
-        // specify filename, destination
-        $pdf->Output($pagename.".pdf",'I'); // I for stdin or D for download
-
-        // Output([string name [, string dest]])
-        return $pdf;
     }
 }
 // $Log: PageType.php,v $

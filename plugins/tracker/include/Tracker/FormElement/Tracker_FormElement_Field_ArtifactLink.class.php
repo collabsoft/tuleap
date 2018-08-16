@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -297,7 +297,8 @@ class Tracker_FormElement_Field_ArtifactLink extends Tracker_FormElement_Field
         return $this->getFieldDataBuilder()->getDataLikeWebUI($new_values, $removed_values, $submitted_values);
     }
 
-    public function fetchArtifactForOverlay(Tracker_Artifact $artifact) {
+    public function fetchArtifactForOverlay(Tracker_Artifact $artifact, $submitted_values = [])
+    {
         $user_manager   = UserManager::instance();
         $user           = $user_manager->getCurrentUser();
         $parent_tracker = $this->getTracker()->getParent();
@@ -332,15 +333,17 @@ class Tracker_FormElement_Field_ArtifactLink extends Tracker_FormElement_Field
         return $this->fetchParentSelector($prefill_parent, $name, $parent_tracker, $current_user, $can_create);
     }
 
-    private function getArtifactLinkIdsOfLastChangeset(Tracker_Artifact $artifact = null) {
-        if ($artifact) {
-            return array_map(array($this, 'getArtifactLinkId'), $this->getChangesetValues($artifact->getLastChangeset()->getId()));
-        }
-        return array();
-    }
+    private function getArtifactLinkIdsOfLastChangeset(Tracker_Artifact $artifact = null)
+    {
+        $link_ids = [];
 
-    private function getArtifactLinkId(Tracker_ArtifactLinkInfo $link_info) {
-        return $link_info->getArtifactId();
+        if ($artifact) {
+            foreach ($this->getChangesetValues($artifact->getLastChangeset()->getId()) as $link_info) {
+                $link_ids[] = $link_info->getArtifactId();
+            }
+        }
+
+        return $link_ids;
     }
 
     /**
@@ -1249,13 +1252,31 @@ class Tracker_FormElement_Field_ArtifactLink extends Tracker_FormElement_Field
         );
     }
 
-
-    private function getReverseLinks($artifact_id) {
+    private function getReverseLinks($artifact_id)
+    {
         $links_data = $this->getValueDao()->searchReverseLinksById($artifact_id);
 
         return $this->getArtifactLinkInfos($links_data);
     }
 
+    /**
+     * @return array
+     */
+    private function getReverseLinksIds($artifact_id)
+    {
+        $reverse_links_infos = $this->getReverseLinks($artifact_id);
+
+        $reverse_links_ids = [];
+        foreach ($reverse_links_infos as $reverse_link_info) {
+            $reverse_links_ids[] = $reverse_link_info->getArtifactId();
+        }
+
+        return $reverse_links_ids;
+    }
+
+    /**
+     * @return Tracker_ArtifactLinkInfo[]
+     */
     private function getArtifactLinkInfos($data) {
         $artifact_links = array();
         while ($row = $data->getRow()) {
@@ -1318,7 +1339,12 @@ class Tracker_FormElement_Field_ArtifactLink extends Tracker_FormElement_Field
     /**
      * @see Tracker_FormElement_Field::hasChanges()
      */
-    public function hasChanges(Tracker_Artifact $artifact, Tracker_Artifact_ChangesetValue_ArtifactLink $old_value, $new_value) {
+    public function hasChanges(Tracker_Artifact $artifact, Tracker_Artifact_ChangesetValue $old_value, $new_value)
+    {
+        if (! $old_value instanceof Tracker_Artifact_ChangesetValue_ArtifactLink) {
+            return false;
+        }
+
         $source_of_association_collection_dev_null = new SourceOfAssociationCollection();
         $submitted_value = $this->getSubmittedValueConvertor()->convert(
             $new_value,
@@ -1649,6 +1675,27 @@ class Tracker_FormElement_Field_ArtifactLink extends Tracker_FormElement_Field
                 $this->addArtifactUserCanViewFromId($artifacts, $id, $user);
             }
         }
+        return $artifacts;
+    }
+
+    /**
+     * Retrieve linked artifacts and reverse linked artifacts according to user's permissions
+     *
+     * @return Tracker_Artifact[]
+     */
+    public function getLinkedAndReverseArtifacts(Tracker_Artifact_Changeset $changeset, PFUser $user) {
+        $artifacts        = [];
+        $changeset_value  = $changeset->getValue($this);
+        $all_artifact_ids = $this->getReverseLinksIds($changeset->getArtifact()->getId());
+
+        if ($changeset_value) {
+            $all_artifact_ids = array_unique(array_merge($all_artifact_ids, $changeset_value->getArtifactIds()));
+        }
+
+        foreach ($all_artifact_ids as $id) {
+            $this->addArtifactUserCanViewFromId($artifacts, $id, $user);
+        }
+
         return $artifacts;
     }
 

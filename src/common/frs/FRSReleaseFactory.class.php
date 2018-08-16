@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean 2017. All rights reserved
+ * Copyright (c) Enalean 2017 - 2018. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,6 +19,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessResultInterface;
 use Tuleap\FRS\FRSReleasePaginatedCollection;
 use Tuleap\FRS\UploadedLinkDeletor;
 use Tuleap\FRS\UploadedLinksDao;
@@ -30,7 +31,6 @@ require_once ('common/dao/FRSReleaseDao.class.php');
 require_once ('common/frs/FRSFileFactory.class.php');
 require_once ('common/frs/FRSPackageFactory.class.php');
 require_once ('common/frs/FileModuleMonitorFactory.class.php');
-require_once('www/project/admin/ugroup_utils.php');
 require_once ('common/frs/FRSLog.class.php');
 
 /**
@@ -43,7 +43,7 @@ class FRSReleaseFactory {
     var $STATUS_HIDDEN  = FRSRelease::STATUS_HIDDEN;
     private static $instance;
 
-    function FRSReleaseFactory() {
+    function __construct() {
     }
 
     public static function instance(){
@@ -81,7 +81,7 @@ class FRSReleaseFactory {
 	 */
 	function  getFRSReleaseFromDb($release_id, $group_id=null, $package_id=null, $extraFlags = 0) {
 		$_id = (int) $release_id;
-		$dao = & $this->_getFRSReleaseDao();
+		$dao = $this->_getFRSReleaseDao();
 		if($group_id && $package_id){
 			$_group_id = (int) $group_id;
 			$_package_id = (int) $package_id;
@@ -102,7 +102,7 @@ class FRSReleaseFactory {
 			return;
 		}
 
-		$data_array = & $dar->current();
+		$data_array = $dar->current();
 
 		return (FRSReleaseFactory :: getFRSReleaseFromArray($data_array));
 	}
@@ -135,7 +135,7 @@ class FRSReleaseFactory {
     /**
      * @return FRSRelease[]
      */
-    private function instantiateActivePackagesFromDar($package_id, $group_id, DataAccessResult $dar, PFUser $user)
+    private function instantiateActivePackagesFromDar($package_id, $group_id, LegacyDataAccessResultInterface $dar, PFUser $user)
     {
         $releases = array();
         foreach ($dar as $data_array) {
@@ -208,7 +208,7 @@ class FRSReleaseFactory {
      */
     public function getReleaseIdByName($release_name, $package_id){
     	$_id = (int) $package_id;
-        $dao =& $this->_getFRSReleaseDao();
+        $dao = $this->_getFRSReleaseDao();
         $dar = $dao->searchReleaseByName($release_name, $_id);
 
         if($dar->isError()){

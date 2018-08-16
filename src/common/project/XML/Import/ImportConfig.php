@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,8 @@ namespace Tuleap\Project\XML\Import;
 
 class ImportConfig
 {
-
     private $force = array();
+    private $update = false;
 
     public function setForce($force)
     {
@@ -32,5 +32,15 @@ class ImportConfig
     public function isForce($value)
     {
         return isset($this->force[$value]);
+    }
+
+    public function isUpdate()
+    {
+        return $this->update;
+    }
+
+    public function setUpdate($update)
+    {
+        $this->update = $update;
     }
 }

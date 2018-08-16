@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+@import '../../../../../../../src/www/themes/common/tlp/src/scss/variables/colors/common-colors';
 
 .cards {
     margin: 0;
@@ -30,6 +31,7 @@
 .card {
     position: relative;
     min-width: 200px;
+    height: 100%;
     margin-bottom: 1em;
     padding: 0 0 0 5px;
     border: 1px solid #b2b39d;
@@ -42,9 +44,82 @@
     }
 }
 
+.card,
+.card-preview {
+    @each $color-name, $colors in $tlp-swatch-color-map {
+        &.card-style-#{$color-name} {
+            border-color: map-get($colors, 'border');
+            background: map-get($colors, 'secondary');
+
+            > .card-container {
+                background: map-get($colors, 'secondary');
+            }
+
+            .card-accessibility {
+                opacity: .5;
+                background-color: map-get($colors, 'text');
+                // scss-lint:disable VendorPrefix
+                -webkit-mask-image: url(map-get($colors, 'pattern'));
+                mask-image: url(map-get($colors, 'pattern'));
+
+                @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+                    background-color: transparent;
+                    background-image: url(map-get($colors, 'pattern'));
+                }
+            }
+
+            .card-actions {
+                // scss-lint:disable QualifyingElement
+                a.dropdown-toggle {
+                    color: map-get($colors, 'text');
+                }
+
+                .caret {
+                    border-top-color: map-get($colors, 'text');
+                }
+            }
+
+            .card-details {
+                > .toggler,
+                > .toggler-hide,
+                > .toggler-hide-noajax,
+                > .toggler-noajax,
+                tr td:first-child {
+                    color: map-get($colors, 'text');
+                }
+            }
+        }
+    }
+}
+
+@each $color-name, $colors in $tlp-swatch-color-map {
+    // Specificity added to win over .card.card-style-$color
+    div.card.card-accent-#{$color-name} {
+        background: map-get($colors, 'primary');
+    }
+
+    .card-type-border-#{$color-name} {
+        flex: 0 0 auto;
+        width: 4px;
+        border-top-left-radius: 2px;
+        border-bottom-left-radius: 2px;
+        background: map-get($colors, 'primary');
+    }
+}
+
+.card-accessibility {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 100%;
+}
+
 .card-container {
+    position: relative;
+    height: 100%;
     min-height: 50px;
-    padding: .25em .5em;
+    padding: .25em 20px .25em .5em;
     border-top-right-radius: 3px;
     border-bottom-right-radius: 3px;
     background: #ffffbb;
@@ -55,11 +130,11 @@
     a.dropdown-toggle {
         color: #7d7d7d;
         font-size: .9em;
-    }
 
-    a.dropdown-toggle:hover {
-        color: #333333;
-        text-decoration: none;
+        &:hover {
+            opacity: .7;
+            text-decoration: none;
+        }
     }
 
     ul {
@@ -67,14 +142,8 @@
         list-style: none;
     }
 
-    .caret {
-        margin-top: 6px;
-        margin-left: 0;
-    }
-
     &:hover .caret {
         opacity: .7;
-        filter: alpha(opacity = 70);
     }
 
     .dropdown.open .dropdown-toggle {
@@ -99,6 +168,15 @@
         background-image: none;
         color: #808080;
         font-size: .9em;
+    }
+
+    .toggler,
+    .toggler-noajax,
+    .toggler-hide,
+    .toggler-hide-noajax {
+        &::before {
+            content: '';
+        }
     }
 
     > .toggler:hover,

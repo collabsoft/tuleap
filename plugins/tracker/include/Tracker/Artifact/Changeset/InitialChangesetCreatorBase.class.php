@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -35,7 +35,13 @@ abstract class Tracker_Artifact_Changeset_InitialChangesetCreatorBase extends Tr
         Tracker_ArtifactFactory                    $artifact_factory,
         EventManager                               $event_manager
     ) {
-        parent::__construct($fields_validator, $formelement_factory, $artifact_factory, $event_manager);
+        parent::__construct(
+            $fields_validator,
+            $formelement_factory,
+            $artifact_factory,
+            $event_manager
+        );
+
         $this->changeset_dao = $changeset_dao;
     }
 
@@ -134,18 +140,15 @@ abstract class Tracker_Artifact_Changeset_InitialChangesetCreatorBase extends Tr
         PFUser $submitter
     ) {
         $workflow = $artifact->getWorkflow();
-        if ($workflow) {
-            $workflow->before($fields_data, $submitter, $artifact);
-            $augmented_data = $this->field_initializator->process($artifact, $fields_data);
+        $workflow->before($fields_data, $submitter, $artifact);
+        $augmented_data = $this->field_initializator->process($artifact, $fields_data);
 
-            try {
-                $workflow->checkGlobalRules($augmented_data, $this->formelement_factory);
-            } catch (Tracker_Workflow_GlobalRulesViolationException $e) {
-                return false;
-            }
+        try {
+            $workflow->checkGlobalRules($augmented_data, $this->formelement_factory);
+            return true;
+        } catch (Tracker_Workflow_GlobalRulesViolationException $e) {
+            return false;
         }
-
-        return true;
     }
 
     private function initializeAFakeChangesetSoThatListAndWorkflowEncounterAnEmptyState(Tracker_Artifact $artifact) {

@@ -35,7 +35,7 @@ use Tuleap\Docman\Notifications\UgroupsUpdater;
 use Tuleap\Docman\Notifications\UsersRetriever;
 use Tuleap\Docman\Notifications\UsersToNotifyDao;
 use Tuleap\Docman\Notifications\UsersUpdater;
-use Tuleap\Docman\PerGroup\PermissionPerGroupDocmanServicePaneBuilder;
+use Tuleap\Docman\PermissionsPerGroup\PermissionPerGroupDocmanServicePaneBuilder;
 use Tuleap\Layout\PaginationPresenter;
 use Tuleap\Mail\MailFilter;
 use Tuleap\Mail\MailLogger;
@@ -43,9 +43,9 @@ use Tuleap\Project\Admin\Navigation\NavigationDropdownItemPresenter;
 use Tuleap\project\Admin\Navigation\NavigationDropdownQuickLinksCollector;
 use Tuleap\project\Admin\Navigation\NavigationPermissionsDropdownPresenterBuilder;
 use Tuleap\Project\Admin\Navigation\NavigationPresenter;
-use Tuleap\Project\Admin\PerGroup\PermissionPerGroupUGroupFormatter;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupPaneCollector;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupUGroupRetriever;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupFormatter;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupPaneCollector;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupRetriever;
 use Tuleap\Widget\Event\GetPublicAreas;
 
 require_once 'autoload.php';
@@ -98,7 +98,7 @@ class DocmanPlugin extends Plugin
         $this->addHook('isWikiPageEditable',                'isWikiPageEditable',                false);
         $this->addHook('userCanAccessWikiDocument',         'userCanAccessWikiDocument',         false);
         $this->addHook('getPermsLabelForWiki',              'getPermsLabelForWiki',              false);
-        $this->addHook('ajax_reference_tooltip',            'ajax_reference_tooltip',            false);
+        $this->addHook(\Tuleap\Reference\ReferenceGetTooltipContentEvent::NAME);
         $this->addHook('project_export_entry',              'project_export_entry',              false);
         $this->addHook('project_export',                    'project_export',                    false);
         $this->addHook('SystemEvent_PROJECT_RENAME',        'renameProject',                     false);
@@ -282,8 +282,11 @@ class DocmanPlugin extends Plugin
     }
 
     function logsDaily($params) {
-        $controler = $this->getHTTPController();
-        $controler->logsDaily($params);
+        $project = $this->getProject($params['group_id']);
+        if ($project->usesService($this->getServiceShortname())) {
+            $controler = $this->getHTTPController();
+            $controler->logsDaily($params);
+        }
     }
 
     public function service_public_areas(GetPublicAreas $event) {
@@ -431,15 +434,18 @@ class DocmanPlugin extends Plugin
         $this->getWikiController($request)->process();
     }
 
-    function ajax_reference_tooltip($params) {
-        if ($params['reference']->getServiceShortName() == 'docman') {
+    public function referenceGetTooltipContentEvent(Tuleap\Reference\ReferenceGetTooltipContentEvent $event)
+    {
+        if ($event->getReference()->getServiceShortName() === 'docman') {
             $request = new Codendi_Request(array(
-                'id'       => $params['val'],
-                'group_id' => $params['group_id'],
+                'id'       => $event->getValue(),
+                'group_id' => $event->getProject()->getID(),
                 'action'   => 'ajax_reference_tooltip'
             ));
-            $controler = $this->getHTTPController($request);
-            $controler->process();
+            $controller = $this->getHTTPController($request);
+            ob_start();
+            $controller->process();
+            $event->setOutput(ob_get_clean());
         }
     }
 
@@ -598,7 +604,7 @@ class DocmanPlugin extends Plugin
                 <section class="tlp-pane-section">
                     <h2 class="tlp-pane-subtitle">'. $GLOBALS['Language']->getText('plugin_docman', 'deleted_version') .'</h2>';
         if (isset($res) && $res) {
-            $html .= $this->showPendingVersions($res['versions'], $params['group_id'], $res['nbVersions'], $offsetVers, $limit);
+            $html .= $this->showPendingVersions($params['csrf_token'], $res['versions'], $params['group_id'], $res['nbVersions'], $offsetVers, $limit);
         } else {
             $html .= '<table class="tlp-table">
                 <thead>
@@ -636,7 +642,7 @@ class DocmanPlugin extends Plugin
         $html .= '<section class="tlp-pane-section">
                 <h2 class="tlp-pane-subtitle">'. $GLOBALS['Language']->getText('plugin_docman','deleted_item') .'</h2>';
         if (isset($res) && $res) {
-            $html .= $this->showPendingItems($res['items'], $params['group_id'], $res['nbItems'], $offsetItem, $limit);
+            $html .= $this->showPendingItems($params['csrf_token'], $res['items'], $params['group_id'], $res['nbItems'], $offsetItem, $limit);
         } else {
             $html .= '<table class="tlp-table">
                 <thead>
@@ -666,7 +672,7 @@ class DocmanPlugin extends Plugin
         $params['html'][]= $html;
     }
 
-    function showPendingVersions($versions, $groupId, $nbVersions, $offset, $limit) {
+    function showPendingVersions(CSRFSynchronizerToken $csrf_token, $versions, $groupId, $nbVersions, $offset, $limit) {
         $hp = Codendi_HTMLPurifier::instance();
 
         $html ='';
@@ -696,12 +702,16 @@ class DocmanPlugin extends Plugin
                 '<td>'.html_time_ago($row['date']).'</td>'.
                 '<td>'.format_date($GLOBALS['Language']->getText('system', 'datefmt'), $purgeDate).'</td>'.
                 '<td class="tlp-table-cell-actions">
-                        <a href="/plugins/docman/restore_documents.php?group_id='.$groupId.'&func=confirm_restore_version&id='.$row['id'].'&item_id='.$row['item_id'].'"
-                            class="tlp-table-cell-actions-button tlp-button-small tlp-button-outline tlp-button-primary"
-                            onClick="return confirm(\'Confirm restore of this version\')"
-                        >
-                            <i class="fa fa-repeat tlp-button-icon"></i> Restore
-                        </a>
+                        <form method="post" action="/plugins/docman/restore_documents.php" onsubmit="return confirm(\'Confirm restore of this version\')">
+                            ' . $csrf_token->fetchHTMLInput() . '
+                            <input type="hidden" name="id" value="' . $hp->purify($row['id']) . '">
+                            <input type="hidden" name="item_id" value="' . $hp->purify($row['item_id']) . '">
+                            <input type="hidden" name="group_id" value="' . $hp->purify($groupId) . '">
+                            <input type="hidden" name="func" value="confirm_restore_version">
+                            <button class="tlp-table-cell-actions-button tlp-button-small tlp-button-primary tlp-button-outline">
+                                <i class="fa fa-repeat tlp-button-icon"></i> Restore
+                            </button>
+                        </form>
                     </td>
                 </tr>';
             }
@@ -740,7 +750,7 @@ class DocmanPlugin extends Plugin
         return $html;
     }
 
-    function showPendingItems($res, $groupId, $nbItems, $offset, $limit) {
+    function showPendingItems(CSRFSynchronizerToken $csrf_token, $res, $groupId, $nbItems, $offset, $limit) {
         $hp = Codendi_HTMLPurifier::instance();
         require_once('Docman_ItemFactory.class.php');
         $itemFactory = new Docman_ItemFactory($groupId);
@@ -775,12 +785,15 @@ class DocmanPlugin extends Plugin
                 '<td>'.html_time_ago($row['date']).'</td>'.
                 '<td>'.format_date($GLOBALS['Language']->getText('system', 'datefmt'), $purgeDate).'</td>'.
                 '<td class="tlp-table-cell-actions">
-                        <a href="/plugins/docman/restore_documents.php?group_id='.$groupId.'&func=confirm_restore_item&id='.$row['id'].'"
-                            class="tlp-table-cell-actions-button tlp-button-small tlp-button-outline tlp-button-primary"
-                            onClick="return confirm(\'Confirm restore of this item\')"
-                        >
+                    <form method="post" action="/plugins/docman/restore_documents.php" onsubmit="return confirm(\'Confirm restore of this item\')">
+                        ' . $csrf_token->fetchHTMLInput() . '
+                        <input type="hidden" name="id" value="' . $hp->purify($row['id']) . '">
+                        <input type="hidden" name="group_id" value="' . $hp->purify($groupId) . '">
+                        <input type="hidden" name="func" value="confirm_restore_item">
+                        <button class="tlp-table-cell-actions-button tlp-button-small tlp-button-primary tlp-button-outline">
                             <i class="fa fa-repeat tlp-button-icon"></i> Restore
-                        </a>
+                        </button>
+                    </form>
                     </td>
                 </tr>';
             }

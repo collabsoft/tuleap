@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean 2011 - 2017. All rights reserved
+ * Copyright (c) Enalean 2011 - 2018. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -25,26 +25,10 @@ class BackendAliasesTest extends TuleapTestCase {
     private $alias_file;
 
     public function setUp() {
+        parent::setUp();
+        ForgeConfig::store();
         $GLOBALS['alias_file'] = $this->getTmpDir() . '/aliases.codendi';
         $this->alias_file      = $GLOBALS['alias_file'];
-
-        $udao = mock('UserDao');
-        stub($udao)
-            ->searchByStatus()
-            ->returnsDar(
-                array(
-                    "user_name"=> "user1",
-                    "email"    => "user1@domain1.com"
-                ),
-                array(
-                    "user_name"=> "user2",
-                    "email"    => "user1@domain2.com"
-                ),
-                array(
-                    "user_name"=> "user3",
-                    "email"    => "user1@domain3.com"
-                )
-            );
 
         $listdao = mock('MailingListDao');
         stub($listdao)
@@ -53,18 +37,18 @@ class BackendAliasesTest extends TuleapTestCase {
                 array("list_name"=> "list1"),
                 array("list_name"=> "list2"),
                 array("list_name"=> "list3"),
-                array("list_name"=> "list4")
+                array("list_name"=> "list4"),
+                array("list_name"=> 'list with an unexpected quote "'),
+                array("list_name"=> "list with an unexpected newline\n")
             );
 
         $this->backend = partial_mock(
             'BackendAliases',
             array(
-                'getUserDao',
                 'getMailingListDao',
                 'system'
             )
         );
-        stub($this->backend)->getUserDao()->returns($udao);
         stub($this->backend)->getMailingListDao()->returns($listdao);
         stub($this->backend)->system()->returns(true);
 
@@ -83,6 +67,8 @@ class BackendAliasesTest extends TuleapTestCase {
         //clear the cache between each tests
         Backend::clearInstances();
         EventManager::clearInstance();
+        ForgeConfig::restore();
+        parent::tearDown();
     }
 
     public function itReturnsTrueInCaseOfSuccess() {
@@ -103,25 +89,21 @@ class BackendAliasesTest extends TuleapTestCase {
     public function itGenerateSiteWideAliases() {
         $this->backend->update();
         $aliases = file_get_contents($this->alias_file);
-        $this->assertPattern("/codendi-contact/", $aliases, "Codendi-wide aliases not set");
+        $this->assertPattern('/codendi-contact/', $aliases, "Codendi-wide aliases not set");
     }
 
     public function itGeneratesMailingListAliases() {
         $this->backend->update();
         $aliases = file_get_contents($this->alias_file);
-        $this->assertPattern("/list1-bounces:/", $aliases, "ML aliases not set");
-    }
-
-    public function itGeneratesUserAliases() {
-        $this->backend->update();
-        $aliases = file_get_contents($this->alias_file);
-        $this->assertPattern("/user3:/", $aliases, "User aliases not set");
+        $this->assertPattern('/"list1-bounces":/', $aliases, "ML aliases not set");
+        $this->assertPattern('/"listwithanunexpectedquote":/', $aliases);
+        $this->assertPattern('/"listwithanunexpectednewline":/', $aliases);
     }
 
     public function itGeneratesUserAliasesGivenByPlugins() {
         $this->backend->update();
         $aliases = file_get_contents($this->alias_file);
-        $this->assertPattern("/forge__tracker:/", $aliases, "Alias of plugins not set");
+        $this->assertPattern('/"forge__tracker":/', $aliases, "Alias of plugins not set");
     }
 }
 

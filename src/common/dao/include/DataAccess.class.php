@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -23,9 +23,10 @@ if(!defined('CODENDI_DB_NULL')) define('CODENDI_DB_NULL', 0);
 if(!defined('CODENDI_DB_NOT_NULL')) define('CODENDI_DB_NOT_NULL', 1);
 
 /**
- *  A simple class for querying MySQL
+ *  @deprecated See \Tuleap\DB\DBFactory
  */
-class DataAccess {
+class DataAccess implements \Tuleap\DB\Compat\Legacy2018\LegacyDataAccessInterface
+{
     /**
      * Max number of reconnect attempt when client loose connexion to server
      */
@@ -33,6 +34,7 @@ class DataAccess {
 
     /**
      * @access protected
+     * @deprecated
      * $db stores a database resource
      */
     var $db;
@@ -57,6 +59,7 @@ class DataAccess {
      * Constucts a new DataAccess object
      *
      * @param DataAccessCredentials $credentials
+     * @deprecated
      */
     public function __construct(DataAccessCredentials $credentials, $opt=0) {
         $this->credentials = $credentials;
@@ -70,6 +73,7 @@ class DataAccess {
      * Connect to Mysql server
      *
      * @throws DataAccessException
+     * @deprecated
      */
     protected function reconnect() {
         $this->db = $this->connect();
@@ -97,6 +101,8 @@ class DataAccess {
     /**
      * Open a *new* connection to a RDBMS
      *
+     * @deprecated
+     *
      * @return resource Returns a link identifier on success, or FALSE on failure.
      */
     protected function connect() {
@@ -111,7 +117,8 @@ class DataAccess {
     /**
      * Fetches a query resources and stores it in a local member
      * @param $sql string the database query to run
-     * @return object DataAccessResult
+     * @deprecated
+     * @return object MySQLDataAccessResultInterface
      */
     public function query($sql, $params = array()) {
         $time = microtime(1);
@@ -146,8 +153,9 @@ class DataAccess {
     /**
      * Parameterised query implementation for MySQL (similar PostgreSQL's PHP function pg_query_params)
      * Example: mysql_query_params( "SELECT * FROM my_table WHERE col1=$1 AND col2=$2", array( 42, "It's ok" ) );
+     * @deprecated
      */
-    function mysql_query_params($sql, $params) {
+    private function mysql_query_params($sql, $params) {
 	if(!empty($params)) {
 		for ($i=1 ; $i <= count($params) ; $i++) {
 	   		$args[] = "$". $i;	
@@ -162,6 +170,8 @@ class DataAccess {
     /**
      * Return ID generated from the previous INSERT operation.
      *
+     * @deprecated
+     *
      * @return int, or 0 if the previous query does not generate an AUTO_INCREMENT value, or FALSE if no MySQL connection was established
      */
     public function lastInsertId() {
@@ -175,6 +185,8 @@ class DataAccess {
     /**
      * Return number of rows affected by the last INSERT, UPDATE or DELETE.
      *
+     * @deprecated
+     *
      * @return int
      */
     public function affectedRows() {
@@ -187,6 +199,7 @@ class DataAccess {
 
     /**
      * Returns any MySQL errors
+     * @deprecated
      * @return string a MySQL error
      */
     public function isError() {
@@ -203,6 +216,9 @@ class DataAccess {
         return $error;
     }
 
+    /**
+     * @deprecated
+     */
     public function getErrorMessage() {
         return mysql_error($this->db).' - '.mysql_errno($this->db);
     }
@@ -210,7 +226,9 @@ class DataAccess {
     /**
      * Quote variable to make safe
      * @see http://php.net/mysql-real-escape-string
-     * 
+     *
+     * @deprecated
+     *
      * @return string
      */
     public function quoteSmart($value, $params = array()) {
@@ -226,6 +244,8 @@ class DataAccess {
     /**
      * Quote schema name to make safe
      * @see http://php.net/mysql-real-escape-string
+     *
+     * @deprecated
      *
      * @return string
      */
@@ -244,9 +264,10 @@ class DataAccess {
 
     /**
      * Safe implode function to use with SQL queries
+     * @deprecated
      * @static
      */
-    function quoteSmartImplode($glue, $pieces, $params = array()) {
+    public function quoteSmartImplode($glue, $pieces, $params = array()) {
         $lem = array_keys($pieces);
         $str='';
         $after_first=false;
@@ -263,6 +284,8 @@ class DataAccess {
     /**
      * cast to int
      *
+     * @deprecated
+     *
      * @return int
      */
     public function escapeInt($v, $null = CODENDI_DB_NOT_NULL) {
@@ -276,6 +299,9 @@ class DataAccess {
         return '0';
     }
 
+    /**
+     * @deprecated
+     */
     public function escapeFloat($value) {
         if ($value === "") {
             return "NULL";
@@ -288,6 +314,8 @@ class DataAccess {
      * Escape the ints, and implode them.
      * 
      * @param array $ints
+     *
+     * @deprecated
      * 
      * $return string
      */
@@ -303,6 +331,8 @@ class DataAccess {
      * Example escape chain:
      * $this->getDa()->quoteSmart($this->getDa()->escapeLikeValue($value));
      *
+     * @deprecated
+     *
      * @return string
      */
     public function escapeLikeValue($value)
@@ -311,6 +341,7 @@ class DataAccess {
     }
 
     /**
+     * @deprecated
      * @return string
      */
     public function quoteLikeValueSurround($value)
@@ -319,6 +350,7 @@ class DataAccess {
     }
 
     /**
+     * @deprecated
      * @return string
      */
     public function quoteLikeValueSuffix($value)
@@ -327,6 +359,7 @@ class DataAccess {
     }
 
     /**
+     * @deprecated
      * @return string
      */
     public function quoteLikeValuePrefix($value)
@@ -339,6 +372,8 @@ class DataAccess {
      *
      * @param resource $result The result resource that is being evaluated. This result comes from a call to query().
      *
+     * @deprecated
+     *
      * @return int The number of rows in a result set on success, or FALSE on failure. 
      */
     public function numRows($result) {
@@ -349,6 +384,8 @@ class DataAccess {
      * Fetch a result row as an associative array
      *
      * @param resource $result The result resource that is being evaluated. This result comes from a call to query().
+     *
+     * @deprecated
      *
      * @return array Returns an associative array of strings that corresponds to the fetched row, or FALSE if there are no more rows. 
      */
@@ -372,7 +409,9 @@ class DataAccess {
      * Move internal result pointer
      *
      * @param resource $result     The result resource that is being evaluated. This result comes from a call to query().
-     * @param int      $row_number The desired row number of the new result pointer. 
+     * @param int      $row_number The desired row number of the new result pointer.
+     *
+     * @deprecated
      *
      * @return boolean Returns TRUE on success or FALSE on failure.
      */
@@ -382,23 +421,25 @@ class DataAccess {
 
     /**
      * Start a sql transaction
+     * @deprecated
      */
     public function startTransaction() {
-        return $this->query('START TRANSACTION');
+        return (bool) $this->query('START TRANSACTION');
     }
 
     /**
      * Rollback a sql transaction
+     * @deprecated
      */
     public function rollback() {
-        return $this->query('ROLLBACK');
+        return (bool) $this->query('ROLLBACK');
     }
 
     /**
      * Commit a sql transaction
+     * @deprecated
      */
     public function commit() {
-        return $this->query('COMMIT');
+        return (bool) $this->query('COMMIT');
     }
 }
-?>

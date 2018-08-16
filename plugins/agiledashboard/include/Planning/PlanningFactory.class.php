@@ -438,6 +438,8 @@ class PlanningFactory {
             $p->setBacklogTrackers($this->getBacklogTrackers($p));
             return $p;
         }
+
+        return null;
     }
 
     public function isTrackerIdUsedInAPlanning($tracker_id) {
@@ -746,5 +748,22 @@ class PlanningFactory {
             $planning_tracker = array_shift($children);
             return $this->getPlanningByPlanningTracker($planning_tracker);
         }
+    }
+
+    /**
+     * @return Planning[]
+     */
+    public function getSubPlannings(Planning $base_planning, PFUser $user)
+    {
+        $all_plannings = $this->getOrderedPlanningsWithBacklogTracker($user, $base_planning->getGroupId());
+        $sub_plannings = [];
+        foreach ($all_plannings as $key => $planning) {
+            if ($planning->getId() == $base_planning->getId()) {
+                $sub_plannings = array_slice($all_plannings, $key+1);
+                break;
+            }
+        }
+
+        return $sub_plannings;
     }
 }

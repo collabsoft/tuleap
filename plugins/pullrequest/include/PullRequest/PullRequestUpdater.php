@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,16 +21,12 @@
 namespace Tuleap\PullRequest;
 
 use \GitRepository;
-use Git_Command_Exception;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceUpdater;
 use Tuleap\PullRequest\InlineComment\InlineComment;
 use Tuleap\PullRequest\InlineComment\InlineCommentUpdater;
 use \Tuleap\PullRequest\InlineComment\Dao as InlineCommentDao;
 use Tuleap\PullRequest\Timeline\TimelineEventCreator;
 use PFUser;
-use ForgeConfig;
-use RecursiveIteratorIterator;
-use RecursiveDirectoryIterator;
-use FileSystemIterator;
 use GitRepositoryFactory;
 
 class PullRequestUpdater
@@ -57,14 +53,22 @@ class PullRequestUpdater
     private $inline_comment_updater;
 
     /**
+     * @var FileUniDiffBuilder
+     */
+    private $diff_builder;
+
+    /**
      * TimelineEventCreator
      */
     private $timeline_event_creator;
-
     /**
      * GitRepositoryFactory
      */
     private $git_repository_factory;
+    /**
+     * @var GitPullRequestReferenceUpdater
+     */
+    private $git_pull_request_reference_updater;
 
     public function __construct(
         Factory $pull_request_factory,
@@ -73,16 +77,17 @@ class PullRequestUpdater
         InlineCommentUpdater $inline_comment_updater,
         FileUniDiffBuilder $diff_builder,
         TimelineEventCreator $timeline_event_creator,
-        GitRepositoryFactory $git_repository_factory
-    )
-    {
-        $this->pull_request_factory   = $pull_request_factory;
-        $this->pull_request_merger    = $pull_request_merger;
-        $this->inline_comment_dao     = $inline_comment_dao;
-        $this->inline_comment_updater = $inline_comment_updater;
-        $this->diff_builder           = $diff_builder;
-        $this->timeline_event_creator = $timeline_event_creator;
-        $this->git_repository_factory = $git_repository_factory;
+        GitRepositoryFactory $git_repository_factory,
+        GitPullRequestReferenceUpdater $git_pull_request_reference_updater
+    ) {
+        $this->pull_request_factory               = $pull_request_factory;
+        $this->pull_request_merger                = $pull_request_merger;
+        $this->inline_comment_dao                 = $inline_comment_dao;
+        $this->inline_comment_updater             = $inline_comment_updater;
+        $this->diff_builder                       = $diff_builder;
+        $this->timeline_event_creator             = $timeline_event_creator;
+        $this->git_repository_factory             = $git_repository_factory;
+        $this->git_pull_request_reference_updater = $git_pull_request_reference_updater;
     }
 
     public function updatePullRequests(PFUser $user, GitExec $git_exec, GitRepository $repository, $branch_name, $new_rev)
@@ -91,38 +96,57 @@ class PullRequestUpdater
         foreach ($prs as $pr) {
             $this->pull_request_factory->updateSourceRev($pr, $new_rev);
 
-            $merge_status = $this->pull_request_merger->detectMergeabilityStatus($git_exec, $pr, $new_rev, $repository);
-            $this->pull_request_factory->updateMergeStatus($pr, $merge_status);
-
-            $ancestor_rev = $this->getCommonAncestorRev($git_exec, $pr);
-            if ($ancestor_rev != $pr->getSha1Dest()) {
+            $ancestor_rev = $git_exec->getCommonAncestor($new_rev, $pr->getBranchDest());
+            if ($ancestor_rev !== $pr->getSha1Dest()) {
                 $this->pull_request_factory->updateDestRev($pr, $ancestor_rev);
             }
+
+            $repository_destination          = $this->git_repository_factory->getRepositoryById($pr->getRepoDestId());
+            $executor_repository_destination = GitExec::buildFromRepository($repository_destination);
+
+            $updated_pr = new PullRequest(
+                $pr->getId(),
+                $pr->getTitle(),
+                $pr->getDescription(),
+                $pr->getRepositoryId(),
+                $pr->getUserId(),
+                $pr->getCreationDate(),
+                $pr->getBranchSrc(),
+                $new_rev,
+                $pr->getRepoDestId(),
+                $pr->getBranchDest(),
+                $ancestor_rev,
+                $pr->getLastBuildDate(),
+                $pr->getLastBuildStatus(),
+                $pr->getStatus(),
+                $pr->getMergeStatus()
+            );
+
+            $this->git_pull_request_reference_updater->updatePullRequestReference(
+                $updated_pr,
+                $git_exec,
+                $executor_repository_destination,
+                $repository_destination
+            );
+
+            $merge_status = $this->pull_request_merger->detectMergeabilityStatus($git_exec, $new_rev, $ancestor_rev);
+            $this->pull_request_factory->updateMergeStatus($pr, $merge_status);
+
             $this->updateInlineCommentsWhenSourceChanges($git_exec, $pr, $ancestor_rev, $new_rev);
-            $this->timeline_event_creator->storeUpdateEvent($pr, $user, $new_rev);
+            $this->timeline_event_creator->storeUpdateEvent($pr, $user);
         }
 
         $prs = $this->pull_request_factory->getOpenedByDestinationBranch($repository, $branch_name);
         foreach ($prs as $pr) {
             $pr_repository = $this->git_repository_factory->getRepositoryById($pr->getRepositoryId());
             $pr_git_exec   = new GitExec($pr_repository->getFullPath(), $pr_repository->getFullPath());
-            $merge_status  = $this->pull_request_merger->detectMergeabilityStatus($pr_git_exec, $pr, $pr->getSha1Src(), $pr_repository);
+            $merge_status  = $this->pull_request_merger->detectMergeabilityStatus(
+                $pr_git_exec,
+                $pr->getSha1Src(),
+                $branch_name
+            );
             $this->pull_request_factory->updateMergeStatus($pr, $merge_status);
         }
-    }
-
-    private function getCommonAncestorRev(GitExec $git_exec, PullRequest $pr)
-    {
-        if ($pr->getRepositoryId() != $pr->getRepoDestId()) {
-            $git_exec->fetchRemote($pr->getRepoDestId());
-            $base_ref   = 'refs/heads/' . $pr->getBranchSrc();
-            $merged_ref = 'refs/remotes/' . $pr->getRepoDestId() . '/' . $pr->getBranchDest();
-        } else {
-            $base_ref   = $pr->getBranchSrc();
-            $merged_ref = $pr->getBranchDest();
-        }
-        $ancestor_rev = $git_exec->getCommonAncestor($base_ref, $merged_ref);
-        return $ancestor_rev;
     }
 
     private function updateInlineCommentsWhenSourceChanges(GitExec $git_exec, PullRequest $pull_request, $new_dest_rev, $new_src_rev)
@@ -146,7 +170,12 @@ class PullRequestUpdater
                 }
 
                 $comments_to_update = $this->inline_comment_updater->updateWhenSourceChanges(
-                    $comments, $original_diff, $changes_diff, $dest_changes_diff, $target_diff);
+                    $comments,
+                    $original_diff,
+                    $changes_diff,
+                    $dest_changes_diff,
+                    $target_diff
+                );
                 $this->saveInDb($comments_to_update);
             }
         }

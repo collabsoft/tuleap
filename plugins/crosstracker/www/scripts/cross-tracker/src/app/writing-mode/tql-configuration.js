@@ -17,22 +17,42 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-import {
-    buildModeDefinition
-} from 'plugin-tracker-TQL/configuration.js';
+import { buildModeDefinition } from 'plugin-tracker-TQL/configuration.js';
 
 const TQL_cross_tracker_autocomplete_keywords = [
     'AND',
     'OR',
     'OPEN()',
+    'NOW()',
+    'BETWEEN(',
+    'IN(',
+    'NOT',
+    'MYSELF()',
     '@title',
     '@description',
     '@status',
-    '@submitted_on'
+    '@last_update_date',
+    '@last_update_by',
+    '@submitted_on',
+    '@submitted_by',
+    '@assigned_to'
 ];
 
-const cross_tracker_allowed_keywords    = { additional_keywords: ['@title', '@description', '@status', '@submitted_on']};
-const TQL_cross_tracker_mode_definition = buildModeDefinition(cross_tracker_allowed_keywords);
+const cross_tracker_allowed_keywords = {
+    additional_keywords: [
+        '@title',
+        '@description',
+        '@status',
+        '@last_update_date',
+        '@last_update_by',
+        '@submitted_on',
+        '@submitted_by',
+        '@assigned_to'
+    ]
+};
+const TQL_cross_tracker_mode_definition = buildModeDefinition(
+    cross_tracker_allowed_keywords
+);
 
 export {
     TQL_cross_tracker_autocomplete_keywords,

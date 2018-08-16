@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -42,6 +42,17 @@ class Cardwall_OnTop_ColumnDao extends DataAccessObject {
         return $this->updateAndGetLastId($sql);
     }
 
+    public function createWithTLPColor($tracker_id, $label, $tlp_color_name) {
+        $tracker_id     = $this->da->escapeInt($tracker_id);
+        $label          = $this->da->quoteSmart($label);
+        $tlp_color_name = $this->da->quoteSmart($tlp_color_name);
+
+        $sql = "INSERT INTO plugin_cardwall_on_top_column (tracker_id, label, bg_red, bg_green, bg_blue, tlp_color_name)
+                VALUES ($tracker_id, $label, null, null, null, $tlp_color_name)";
+
+        return $this->updateAndGetLastId($sql);
+    }
+
     public function create($tracker_id, $label) {
         $tracker_id = $this->da->escapeInt($tracker_id);
         $label      = $this->da->quoteSmart($label);
@@ -63,7 +74,8 @@ class Cardwall_OnTop_ColumnDao extends DataAccessObject {
                 SET label = $label,
                     bg_red = $red,
                     bg_green = $green,
-                    bg_blue = $blue
+                    bg_blue = $blue,
+                    tlp_color_name = null
                 WHERE tracker_id = $tracker_id
                   AND id = $id";
         if ($this->update($sql)) {
@@ -80,7 +92,8 @@ class Cardwall_OnTop_ColumnDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function duplicate($from_tracker_id, $to_tracker_id, &$mapping) {
+    public function duplicate($from_tracker_id, $to_tracker_id, &$mapping)
+    {
         $from_tracker_id = $this->da->escapeInt($from_tracker_id);
         $to_tracker_id   = $this->da->escapeInt($to_tracker_id);
         $sql = "SELECT id
@@ -88,18 +101,36 @@ class Cardwall_OnTop_ColumnDao extends DataAccessObject {
                 WHERE tracker_id = $from_tracker_id
                 ORDER BY id ASC";
         $mapping['plugin_cardwall_column_mapping'] = array();
-        $at_least_on_column = false;
         foreach ($this->retrieve($sql) as $row) {
             $from_column_id = $row['id'];
-            $sql = "INSERT INTO plugin_cardwall_on_top_column (tracker_id, label, bg_red, bg_green, bg_blue)
-                    SELECT $to_tracker_id, label, bg_red, bg_green, bg_blue
+            $sql = "INSERT INTO plugin_cardwall_on_top_column (tracker_id, label, bg_red, bg_green, bg_blue, tlp_color_name)
+                    SELECT $to_tracker_id, label, bg_red, bg_green, bg_blue, tlp_color_name
                     FROM plugin_cardwall_on_top_column
                     WHERE id = $from_column_id";
+
             if ($to_column_id = $this->updateAndGetLastId($sql)) {
-                $at_least_on_column = true;
                 $mapping['plugin_cardwall_column_mapping'][$from_column_id] = $to_column_id;
             }
         }
     }
+
+    public function saveTlpColor($tracker_id, $id, $label, $tlp_color_name)
+    {
+        $id             = $this->da->escapeInt($id);
+        $tracker_id     = $this->da->escapeInt($tracker_id);
+        $label          = $this->da->quoteSmart($label);
+        $tlp_color_name = $this->da->quoteSmart($tlp_color_name);
+
+        $sql = "UPDATE plugin_cardwall_on_top_column
+                SET label = $label,
+                    bg_red = null,
+                    bg_green = null,
+                    bg_blue = null,
+                    tlp_color_name = $tlp_color_name
+                WHERE tracker_id = $tracker_id
+                  AND id = $id";
+        if ($this->update($sql)) {
+            return $this->da->affectedRows();
+        }
+    }
 }
-?>

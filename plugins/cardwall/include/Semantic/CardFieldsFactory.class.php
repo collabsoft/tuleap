@@ -1,6 +1,6 @@
 <?php
 /**
-* Copyright Enalean (c) 2013. All rights reserved.
+* Copyright Enalean (c) 2013 - 2018. All rights reserved.
 * Tuleap and Enalean names and logos are registrated trademarks owned by
 * Enalean SAS. All other trademarks or names are properties of their respective
 * owners.
@@ -20,6 +20,8 @@
 * You should have received a copy of the GNU General Public License
 * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
 */
+
+use Tuleap\Cardwall\Semantic\CardFieldXmlExtractor;
 
 class Cardwall_Semantic_CardFieldsFactory implements Tracker_Semantic_IRetrieveSemantic {
 
@@ -57,15 +59,15 @@ class Cardwall_Semantic_CardFieldsFactory implements Tracker_Semantic_IRetrieveS
      *
      * @return Cardwall_Semantic_CardFields The semantic object
      */
-    public function getInstanceFromXML($xml, &$xml_mapping, $tracker) {
-        $fields = array();
-        foreach ($xml->field as $field) {
-            $att = $field->attributes();
-            $fields[] = $xml_mapping[(string)$att['REF']];
-        }
+    public function getInstanceFromXML($xml, &$xml_mapping, $tracker)
+    {
+        $extractor        = new CardFieldXmlExtractor();
+        $fields           = $extractor->extractFieldFromXml($xml, $xml_mapping);
+        $background_color = $extractor->extractBackgroundColorFromXml($xml, $xml_mapping);
 
-        $semantic = new Cardwall_Semantic_CardFields($tracker);
+        $semantic = Cardwall_Semantic_CardFields::load($tracker);
         $semantic->setFields($fields);
+        $semantic->setBackgroundColorField($background_color);
 
         return $semantic;
     }
@@ -92,6 +94,4 @@ class Cardwall_Semantic_CardFieldsFactory implements Tracker_Semantic_IRetrieveS
         $duplicator = new Tracker_Semantic_CollectionOfFieldsDuplicator($this->getDao());
         $duplicator->duplicate($from_tracker_id, $to_tracker_id, $field_mapping);
     }
-
 }
-?>

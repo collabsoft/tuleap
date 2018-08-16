@@ -22,15 +22,34 @@ require_once 'common/plugin/Plugin.class.php';
 require_once 'constants.php';
 require_once 'autoload.php';
 
+use Tuleap\Cardwall\AccentColor\AccentColorBuilder;
+use Tuleap\Cardwall\Agiledashboard\CardwallPaneInfo;
+use Tuleap\Cardwall\AllowedFieldRetriever;
+use Tuleap\Cardwall\BackgroundColor\BackgroundColorBuilder;
+use Tuleap\Cardwall\Semantic\BackgroundColorDao;
+use Tuleap\Cardwall\Semantic\BackgroundColorSemanticFactory;
+use Tuleap\Cardwall\Semantic\FieldUsedInSemanticObjectChecker;
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Tracker\Events\AllowedFieldTypeChangesRetriever;
+use Tuleap\Tracker\Events\IsFieldUsedInASemanticEvent;
+use Tuleap\Tracker\FormElement\Field\ListFields\Bind\BindDecoratorRetriever;
+
 /**
  * CardwallPlugin
  */
-class cardwallPlugin extends Plugin {
-
+class cardwallPlugin extends Plugin
+{
     /**
      * @var Cardwall_OnTop_ConfigFactory
      */
     private $config_factory;
+
+    public function __construct($id)
+    {
+        parent::__construct($id);
+
+        bindTextDomain('tuleap-cardwall', CARDWALL_BASE_DIR . '/../site-content');
+    }
 
     public function getConfigFactory() {
         if (!$this->config_factory) {
@@ -56,10 +75,12 @@ class cardwallPlugin extends Plugin {
             $this->addHook(TRACKER_EVENT_REDIRECT_AFTER_ARTIFACT_CREATION_OR_UPDATE);
             $this->addHook(Event::JAVASCRIPT);
             $this->addHook(Event::IMPORT_XML_PROJECT_TRACKER_DONE);
+            $this->addHook(AllowedFieldTypeChangesRetriever::NAME);
             $this->addHook(TRACKER_EVENT_MANAGE_SEMANTICS);
             $this->addHook(TRACKER_EVENT_SEMANTIC_FROM_XML);
             $this->addHook(TRACKER_EVENT_GET_SEMANTIC_FACTORIES);
             $this->addHook(TRACKER_EVENT_EXPORT_FULL_XML);
+            $this->addHook(IsFieldUsedInASemanticEvent::NAME);
 
             if (defined('AGILEDASHBOARD_BASE_DIR')) {
                 $this->addHook(AGILEDASHBOARD_EVENT_ADDITIONAL_PANES_ON_MILESTONE);
@@ -188,21 +209,31 @@ class cardwallPlugin extends Plugin {
         return $this->pluginInfo;
     }
 
-    public function cssfile($params) {
-        if ($this->canIncludeStylsheets()) {
-            echo '<link rel="stylesheet" type="text/css" href="'. $this->getThemePath() .'/css/style.css" />';
+    public function cssfile($params)
+    {
+        if ($this->canIncludeStylesheets()) {
+            echo '<link rel="stylesheet" type="text/css" href="' . $this->getCSSURL() . '" />';
         }
     }
 
     /** @see \Event::BURNING_PARROT_GET_STYLESHEETS */
     public function burning_parrot_get_stylesheets(array $params)
     {
-        if ($this->canIncludeStylsheets()) {
-            $params['stylesheets'][] = $this->getThemePath().'/css/style.css';
+        if ($this->canIncludeStylesheets()) {
+            $params['stylesheets'][] = $this->getCSSURL();
         }
     }
 
-    private function canIncludeStylsheets()
+    private function getCSSURL()
+    {
+        $theme_include_assets = new IncludeAssets(
+            __DIR__ . '/../../../src/www/assets/cardwall/FlamingParrot',
+            '/assets/cardwall/FlamingParrot'
+        );
+        return $theme_include_assets->getFileURL('style.css');
+    }
+
+    private function canIncludeStylesheets()
     {
         return $this->isAgileDashboardOrTrackerUrl()
             || strpos($_SERVER['REQUEST_URI'], '/my/') === 0
@@ -235,6 +266,17 @@ class cardwallPlugin extends Plugin {
         $semantics->add(Cardwall_Semantic_CardFields::load($tracker));
     }
 
+    public function isFieldUsedInASemanticEvent(IsFieldUsedInASemanticEvent $event)
+    {
+        $checker = new FieldUsedInSemanticObjectChecker(
+            new BackgroundColorDao()
+        );
+
+        $event->setIsUsed(
+            $checker->isUsedInBackgroundColorSemantic($event->getField())
+        );
+    }
+
     /**
      * @see TRACKER_EVENT_SEMANTIC_FROM_XML
      */
@@ -254,6 +296,7 @@ class cardwallPlugin extends Plugin {
      */
     public function tracker_event_get_semantic_factories($params) {
         $params['factories'][] = Cardwall_Semantic_CardFieldsFactory::instance();
+        $params['factories'][] = new BackgroundColorSemanticFactory(new BackgroundColorDao());
     }
 
     private function isAgileDashboardOrTrackerUrl() {
@@ -303,7 +346,7 @@ class cardwallPlugin extends Plugin {
             return;
         }
 
-        if ($params['request']->get('pane') == Cardwall_PaneInfo::IDENTIFIER) {
+        if ($params['request']->get('pane') == CardwallPaneInfo::IDENTIFIER) {
             $pane_info->setActive(true);
             $params['active_pane'] = $this->getCardwallPane($pane_info, $params['milestone'], $params['user'], $params['milestone_factory']);
         }
@@ -317,18 +360,18 @@ class cardwallPlugin extends Plugin {
             return;
         }
 
-        return new Cardwall_PaneInfo($milestone, $this->getThemePath());
+        return new CardwallPaneInfo($milestone, $this->getThemePath());
     }
 
     public function agiledashboard_event_index_page($params) {
         // Only display a cardwall if there is something to display
         if ($params['milestone'] && $params['milestone']->getPlannedArtifacts() && count($params['milestone']->getPlannedArtifacts()->getChildren()) > 0) {
-            $pane_info = new Cardwall_PaneInfo($params['milestone'], $this->getThemePath());
+            $pane_info = new CardwallPaneInfo($params['milestone'], $this->getThemePath());
             $params['pane'] = $this->getCardwallPane($pane_info, $params['milestone'], $params['user'], $params['milestone_factory']);
         }
     }
 
-    protected function getCardwallPane(Cardwall_PaneInfo $info, Planning_Milestone $milestone, PFUser $user, Planning_MilestoneFactory $milestone_factory) {
+    protected function getCardwallPane(CardwallPaneInfo $info, Planning_Milestone $milestone, PFUser $user, Planning_MilestoneFactory $milestone_factory) {
         $config = $this->getConfigFactory()->getOnTopConfigByPlanning($milestone->getPlanning());
         if ($config) {
             return new Cardwall_Pane(
@@ -544,6 +587,7 @@ class cardwallPlugin extends Plugin {
                 break;
 
             case 'get-card':
+                $bind_decorator_retriever = new BindDecoratorRetriever();
                 try {
                     $single_card_builder = new Cardwall_SingleCardBuilder(
                         $this->getConfigFactory(),
@@ -552,7 +596,9 @@ class cardwallPlugin extends Plugin {
                             Tracker_FormElementFactory::instance()
                         ),
                         Tracker_ArtifactFactory::instance(),
-                        PlanningFactory::build()
+                        PlanningFactory::build(),
+                        new BackgroundColorBuilder($bind_decorator_retriever),
+                        new AccentColorBuilder(Tracker_FormElementFactory::instance(), $bind_decorator_retriever)
                     );
                     $controller = new Cardwall_CardController(
                         $request,
@@ -579,8 +625,14 @@ class cardwallPlugin extends Plugin {
         $injector->populate($params['restler']);
     }
 
-    private function getIncFile() {
-        return $this->getPluginEtcRoot() . '/config.inc';
-    }
+    public function semanticAllowedFieldTypeRetriever(AllowedFieldTypeChangesRetriever $event_retriever)
+    {
+        $retriever     = new AllowedFieldRetriever(
+            Tracker_FormElementFactory::instance(),
+            new FieldUsedInSemanticObjectChecker(new BackgroundColorDao())
+        );
+        $allowed_types = $retriever->retrieveAllowedFieldType($event_retriever->getField());
 
+        $event_retriever->setAllowedTypes($allowed_types);
+    }
 }

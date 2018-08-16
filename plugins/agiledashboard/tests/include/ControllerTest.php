@@ -18,6 +18,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\AgileDashboard\AdminController;
+use Tuleap\AgileDashboard\BreadCrumbDropdown\AdministrationCrumbBuilder;
+use Tuleap\AgileDashboard\BreadCrumbDropdown\AgileDashboardCrumbBuilder;
 use Tuleap\AgileDashboard\Planning\ScrumPlanningFilter;
 
 require_once(dirname(__FILE__).'/../../../tracker/tests/builders/all.php');
@@ -25,18 +28,10 @@ require_once(dirname(__FILE__).'/../../../tracker/tests/builders/all.php');
 require_once TRACKER_BASE_DIR .'/Tracker/TrackerManager.class.php';
 require_once dirname(__FILE__).'/../bootstrap.php';
 
-Mock::generate('Tracker_ArtifactFactory');
-Mock::generate('Tracker_Artifact');
-Mock::generate('Tracker_HierarchyFactory');
-Mock::generate('PlanningFactory');
-Mock::generate('Planning');
-Mock::generatePartial('Planning_Controller', 'MockPlanning_Controller', array('renderToString'));
-Mock::generate('ProjectManager');
-Mock::generate('Project');
-
-abstract class Planning_Controller_BaseTest extends TuleapTestCase {
-
-    public function setUp() {
+abstract class Planning_Controller_BaseTest extends TuleapTestCase
+{
+    public function setUp()
+    {
         parent::setUp();
         ForgeConfig::store();
         ForgeConfig::set('codendi_dir', AGILEDASHBOARD_BASE_DIR .'/../../..');
@@ -44,10 +39,16 @@ abstract class Planning_Controller_BaseTest extends TuleapTestCase {
         $this->project                = stub('Project')->getID()->returns($this->group_id);
         $this->project_manager        = stub('ProjectManager')->getProject($this->group_id)->returns($this->project);
         $this->current_user           = stub('PFUser')->getId()->returns(666);
-        $this->request                = aRequest()->withProjectManager($this->project_manager)->with('group_id', "$this->group_id")->withUser($this->current_user)->build();
-        $this->planning_factory       = new MockPlanningFactory();
+        $this->request                = aRequest()->withProjectManager($this->project_manager)->with(
+            'group_id',
+            "$this->group_id"
+        )->withUser($this->current_user)->build();
+        $this->planning_factory       = mock(PlanningFactory::class);
         $this->mono_milestone_checker = mock('Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker');
         $this->scrum_planning_filter  = mock('Tuleap\AgileDashboard\Planning\ScrumPlanningFilter');
+        $service_crumb_builder        = mock(AgileDashboardCrumbBuilder::class);
+        $admin_crumb_builder          = mock(AdministrationCrumbBuilder::class);
+
         $this->planning_controller    = new Planning_Controller(
             $this->request,
             $this->planning_factory,
@@ -64,7 +65,9 @@ abstract class Planning_Controller_BaseTest extends TuleapTestCase {
             $this->mono_milestone_checker,
             $this->scrum_planning_filter,
             mock('TrackerFactory'),
-            mock('Tracker_FormElementFactory')
+            mock('Tracker_FormElementFactory'),
+            $service_crumb_builder,
+            $admin_crumb_builder
         );
 
 
@@ -76,16 +79,17 @@ abstract class Planning_Controller_BaseTest extends TuleapTestCase {
         stub($configuration_manager)->scrumIsActivatedForProject()->returns(true);
         stub($configuration_manager)->kanbanIsActivatedForProject()->returns(true);
 
-        $this->controller = new AgileDashboard_Controller(
+        $this->controller = new AdminController(
             $this->request,
             $this->planning_factory,
             mock('AgileDashboard_KanbanManager'),
             mock('AgileDashboard_KanbanFactory'),
             $configuration_manager,
             mock('TrackerFactory'),
-            mock('AgileDashboard_PermissionsManager'),
             $this->mono_milestone_checker,
-            $this->event_manager
+            $this->event_manager,
+            $service_crumb_builder,
+            $admin_crumb_builder
         );
 
         stub($this->mono_milestone_checker)->isMonoMilestoneEnabled()->returns(false);
@@ -162,20 +166,6 @@ class Planning_ControllerNonEmptyAdminTest extends Planning_ControllerAdminTest 
     }
 }
 
-
-class MockBaseLanguage_Planning_ControllerNewTest extends MockBaseLanguage {
-    function getText($key1, $key2, $args = array()) {
-        if ($key1 == 'plugin_agiledashboard' && $key2 == 'planning-allows-assignment-intro') {
-            return 'This planning allows assignment of';
-        }
-
-        if ($key1 == 'plugin_agiledashboard' && $key2 == 'planning-allows-assignment-to') {
-            return 'to';
-        }
-
-        return parent::getText($key1, $key2, $args);
-    }
-}
 class Planning_ControllerNewTest extends TuleapTestCase {
 
     private $available_backlog_trackers;
@@ -186,7 +176,8 @@ class Planning_ControllerNewTest extends TuleapTestCase {
         ForgeConfig::store();
         ForgeConfig::set('codendi_dir', TRACKER_BASE_DIR .'/../../..');
         $this->group_id               = 123;
-        $this->request                = aRequest()->with('group_id', "$this->group_id")->build();
+        $project_manager              = Mockery::spy(ProjectManager::class, ['getProject' => aMockProject()->withId($this->group_id)->build()]);
+        $this->request                = aRequest()->withProjectManager($project_manager)->with('group_id', "$this->group_id")->build();
         $this->planning_factory       = mock('PlanningFactory');
         $this->tracker_factory        = mock('TrackerFactory');
         $hierarchy_checker            = mock('AgileDashboard_HierarchyChecker');
@@ -210,10 +201,12 @@ class Planning_ControllerNewTest extends TuleapTestCase {
             $scrum_mono_milestone_checker,
             new ScrumPlanningFilter($scrum_mono_milestone_checker, $this->planning_factory),
             mock('TrackerFactory'),
-            mock('Tracker_FormElementFactory')
+            mock('Tracker_FormElementFactory'),
+            mock(AgileDashboardCrumbBuilder::class),
+            mock(AdministrationCrumbBuilder::class)
         );
 
-        $GLOBALS['Language'] = new MockBaseLanguage_Planning_ControllerNewTest();
+        stub($GLOBALS['Language'])->getText()->returns('');
 
         $this->available_backlog_trackers = array(
             aTracker()->withId(101)->withName('Stories')->build(),
@@ -328,13 +321,20 @@ class Planning_Controller_EditTest extends Planning_Controller_BaseTest {
         $planning_id      = 456;
         $planning         = aPlanning()->withGroupId($group_id)
                                        ->withId($planning_id)->build();
-        $request          = aRequest()->with('planning_id', $planning_id)
-                                      ->with('action', 'edit')->build();
+        $project_manager              = Mockery::spy(ProjectManager::class, ['getProject' => aMockProject()->withId($group_id)->build()]);
+        $request          = aRequest()
+            ->withProjectManager($project_manager)
+            ->with('planning_id', $planning_id)
+            ->with('action', 'edit')
+            ->build();
         $planning_factory = mock('PlanningFactory');
         $planning_filter  = mock('Tuleap\AgileDashboard\Planning\ScrumPlanningFilter');
         stub($planning_factory)->getPlanning($planning_id)->returns($planning);
         stub($planning_filter)->getPlanningTrackersFiltered()->returns(array());
         stub($planning_filter)->getBacklogTrackersFiltered()->returns(array());
+
+        stub($planning_factory)->getAvailablePlanningTrackers()->returns([]);
+        stub($planning_factory)->getAvailableBacklogTrackers()->returns([]);
 
         $kanban_factory = stub('AgileDashboard_KanbanFactory')->getKanbanTrackerIds()->returns(array());
 
@@ -357,7 +357,9 @@ class Planning_Controller_EditTest extends Planning_Controller_BaseTest {
                 mock('Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker'),
                 $planning_filter,
                 mock('TrackerFactory'),
-                mock('Tracker_FormElementFactory')
+                mock('Tracker_FormElementFactory'),
+                mock(AgileDashboardCrumbBuilder::class),
+                mock(AdministrationCrumbBuilder::class)
             )
         );
 

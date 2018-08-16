@@ -21,13 +21,17 @@
 namespace Tuleap\CrossTracker\Report\Query\Advanced;
 
 use Tracker;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\BetweenComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\EqualComparisonFromWhereBuilder;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\GreaterThanComparisonFromWhereBuilder;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\GreaterThanOrEqualComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\InComparisonFromWhereBuilder;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\LesserThanComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\LesserThanOrEqualComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\NotEqualComparisonFromWhereBuilder;
+use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\NotInComparisonFromWhereBuilder;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\SearchableVisitor;
 use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\SearchableVisitorParameters;
-use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\EqualComparisonFromWhereBuilder;
-use Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata\NotEqualComparisonFromWhereBuilder;
 use Tuleap\CrossTracker\Report\Query\IProvideParametrizedFromAndWhereSQLFragments;
 use Tuleap\CrossTracker\Report\Query\ParametrizedAndFromWhere;
 use Tuleap\CrossTracker\Report\Query\ParametrizedOrFromWhere;
@@ -51,20 +55,33 @@ class QueryBuilderVisitor implements Visitor
 {
     /** @var EqualComparisonFromWhereBuilder */
     private $equal_comparison_from_where_builder;
+
     /** @var SearchableVisitor */
     private $searchable_visitor;
+
     /** @var NotEqualComparisonFromWhereBuilder */
     private $not_equal_comparison_from_where_builder;
 
     /** @var GreaterThanComparisonFromWhereBuilder */
     private $greater_than_comparison_from_where_builder;
-    /**
-     * @var GreaterThanOrEqualComparisonFromWhereBuilder
-     */
+
+    /** @var GreaterThanOrEqualComparisonFromWhereBuilder */
     private $greater_than_or_equal_comparison_from_where_builder;
 
     /** @var LesserThanComparisonFromWhereBuilder */
     private $lesser_than_comparison_from_where_builder;
+
+    /** @var LesserThanOrEqualComparisonFromWhereBuilder */
+    private $lesser_than_or_equal_comparison_from_where_builder;
+
+    /** @var BetweenComparisonFromWhereBuilder */
+    private $between_comparison_from_where_builder;
+
+    /** @var InComparisonFromWhereBuilder */
+    private $in_comparison_from_where_builder;
+
+    /** @var NotInComparisonFromWhereBuilder */
+    private $not_in_comparison_from_where_builder;
 
     public function __construct(
         SearchableVisitor $searchable_visitor,
@@ -72,7 +89,11 @@ class QueryBuilderVisitor implements Visitor
         NotEqualComparisonFromWhereBuilder $not_equal_comparison_from_where_builder,
         GreaterThanComparisonFromWhereBuilder $greater_than_comparison_from_where_builder,
         GreaterThanOrEqualComparisonFromWhereBuilder $greater_than_or_equal_comparison_from_where_builder,
-        LesserThanComparisonFromWhereBuilder $lesser_than_comparison_from_where_builder
+        LesserThanComparisonFromWhereBuilder $lesser_than_comparison_from_where_builder,
+        LesserThanOrEqualComparisonFromWhereBuilder $lesser_than_or_equal_comparison_from_where_builder,
+        BetweenComparisonFromWhereBuilder $between_comparison_from_where_builder,
+        InComparisonFromWhereBuilder $in_comparison_from_where_builder,
+        NotInComparisonFromWhereBuilder $not_in_comparison_from_where_builder
     ) {
         $this->searchable_visitor                                  = $searchable_visitor;
         $this->equal_comparison_from_where_builder                 = $equal_comparison_from_where_builder;
@@ -80,6 +101,10 @@ class QueryBuilderVisitor implements Visitor
         $this->greater_than_comparison_from_where_builder          = $greater_than_comparison_from_where_builder;
         $this->greater_than_or_equal_comparison_from_where_builder = $greater_than_or_equal_comparison_from_where_builder;
         $this->lesser_than_comparison_from_where_builder           = $lesser_than_comparison_from_where_builder;
+        $this->lesser_than_or_equal_comparison_from_where_builder  = $lesser_than_or_equal_comparison_from_where_builder;
+        $this->between_comparison_from_where_builder               = $between_comparison_from_where_builder;
+        $this->in_comparison_from_where_builder                    = $in_comparison_from_where_builder;
+        $this->not_in_comparison_from_where_builder                = $not_in_comparison_from_where_builder;
     }
 
     /**
@@ -116,8 +141,10 @@ class QueryBuilderVisitor implements Visitor
         );
     }
 
-    public function visitLesserThanComparison(LesserThanComparison $comparison, QueryBuilderVisitorParameters $parameters)
-    {
+    public function visitLesserThanComparison(
+        LesserThanComparison $comparison,
+        QueryBuilderVisitorParameters $parameters
+    ) {
         return $comparison->getSearchable()->accept(
             $this->searchable_visitor,
             new SearchableVisitorParameters(
@@ -128,8 +155,10 @@ class QueryBuilderVisitor implements Visitor
         );
     }
 
-    public function visitGreaterThanComparison(GreaterThanComparison $comparison, QueryBuilderVisitorParameters $parameters)
-    {
+    public function visitGreaterThanComparison(
+        GreaterThanComparison $comparison,
+        QueryBuilderVisitorParameters $parameters
+    ) {
         return $comparison->getSearchable()->accept(
             $this->searchable_visitor,
             new SearchableVisitorParameters(
@@ -140,12 +169,24 @@ class QueryBuilderVisitor implements Visitor
         );
     }
 
-    public function visitLesserThanOrEqualComparison(LesserThanOrEqualComparison $comparison, QueryBuilderVisitorParameters $parameters)
-    {
+    public function visitLesserThanOrEqualComparison(
+        LesserThanOrEqualComparison $comparison,
+        QueryBuilderVisitorParameters $parameters
+    ) {
+        return $comparison->getSearchable()->accept(
+            $this->searchable_visitor,
+            new SearchableVisitorParameters(
+                $comparison,
+                $this->lesser_than_or_equal_comparison_from_where_builder,
+                $parameters->getTrackers()
+            )
+        );
     }
 
-    public function visitGreaterThanOrEqualComparison(GreaterThanOrEqualComparison $comparison, QueryBuilderVisitorParameters $parameters)
-    {
+    public function visitGreaterThanOrEqualComparison(
+        GreaterThanOrEqualComparison $comparison,
+        QueryBuilderVisitorParameters $parameters
+    ) {
         return $comparison->getSearchable()->accept(
             $this->searchable_visitor,
             new SearchableVisitorParameters(
@@ -158,14 +199,38 @@ class QueryBuilderVisitor implements Visitor
 
     public function visitBetweenComparison(BetweenComparison $comparison, QueryBuilderVisitorParameters $parameters)
     {
+        return $comparison->getSearchable()->accept(
+            $this->searchable_visitor,
+            new SearchableVisitorParameters(
+                $comparison,
+                $this->between_comparison_from_where_builder,
+                $parameters->getTrackers()
+            )
+        );
     }
 
     public function visitInComparison(InComparison $comparison, QueryBuilderVisitorParameters $parameters)
     {
+        return $comparison->getSearchable()->accept(
+            $this->searchable_visitor,
+            new SearchableVisitorParameters(
+                $comparison,
+                $this->in_comparison_from_where_builder,
+                $parameters->getTrackers()
+            )
+        );
     }
 
     public function visitNotInComparison(NotInComparison $comparison, QueryBuilderVisitorParameters $parameters)
     {
+        return $comparison->getSearchable()->accept(
+            $this->searchable_visitor,
+            new SearchableVisitorParameters(
+                $comparison,
+                $this->not_in_comparison_from_where_builder,
+                $parameters->getTrackers()
+            )
+        );
     }
 
     public function visitAndExpression(AndExpression $and_expression, QueryBuilderVisitorParameters $parameters)

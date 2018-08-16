@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -109,7 +109,7 @@ class PHP56Centos6
 
         $configs = [];
         if (in_array('fpm', $modules)) {
-            $configs[] = new FPM\TuleapWeb($this->logger, $variables->getApplicationUser(), $for_development);
+            $configs[] = FPM\TuleapWeb::buildForPHP56($this->logger, $variables->getApplicationUser(), $for_development);
         }
         if (in_array('nginx', $modules)) {
             $configs[] = new Nginx\TuleapWeb(

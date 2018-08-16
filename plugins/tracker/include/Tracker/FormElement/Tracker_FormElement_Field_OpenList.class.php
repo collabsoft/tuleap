@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001 - 2009. All rights reserved
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -520,7 +520,8 @@ class Tracker_FormElement_Field_OpenList extends Tracker_FormElement_Field_List 
     /**
      * @see Tracker_FormElement_Field::fetchCardValue()
      */
-    public function fetchCardValue(Tracker_Artifact $artifact, Tracker_CardDisplayPreferences $display_preferences) {
+    public function fetchCardValue(Tracker_Artifact $artifact, Tracker_CardDisplayPreferences $display_preferences = null)
+    {
         $value = $artifact->getLastChangeset()->getValue($this);
         return $this->fetchTooltipValue($artifact, $value);
     }
@@ -595,21 +596,19 @@ class Tracker_FormElement_Field_OpenList extends Tracker_FormElement_Field_List 
                     $bindvalues[] = $v->getId();
                 }
             }
-            $openvalues = implode(',', $openvalues);
-            $bindvalues = implode(',', $bindvalues);
             //Only filter query if criteria is valuated
             if ($openvalues || $bindvalues) {
                 $a = 'A_'. $this->id;
                 $b = 'B_'. $this->id;
                 $statement = '';
                 if ($openvalues) {
-                    $statement .= "$b.openvalue_id IN ($openvalues)";
+                    $statement .= "$b.openvalue_id IN (". $this->getCriteriaDao()->getDa()->escapeIntImplode($openvalues).")";
                 }
                 if ($bindvalues) {
                     if ($statement) {
                         $statement .= ' OR ';
                     }
-                    $statement .= "$b.bindvalue_id IN ($bindvalues)";
+                    $statement .= "$b.bindvalue_id IN (". $this->getCriteriaDao()->getDa()->escapeIntImplode($bindvalues) . ")";
                 }
                 return " INNER JOIN tracker_changeset_value AS $a 
                          ON ($a.changeset_id = c.id 
@@ -633,6 +632,17 @@ class Tracker_FormElement_Field_OpenList extends Tracker_FormElement_Field_List 
      */
     public function getQueryFrom() {
         return $this->getBind()->getQueryFrom('tracker_changeset_value_openlist');
+    }
+
+    /**
+     * Get the "from" statement to retrieve field values
+     * You can join on artifact AS a, tracker_changeset AS c
+     * which tables used to retrieve the last changeset of matching artifacts.
+     * @return string
+     */
+    public function getQueryFromWithDecorator()
+    {
+        return $this->getBind()->getQueryFromWithDecorator('tracker_changeset_value_openlist');
     }
 
     /**

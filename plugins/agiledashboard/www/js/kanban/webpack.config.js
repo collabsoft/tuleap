@@ -1,144 +1,65 @@
-/* eslint-disable */
-var path                  = require('path');
-var webpack               = require('webpack');
-var WebpackAssetsManifest = require('webpack-assets-manifest');
-var babel_preset_env      = require('babel-preset-env');
-var babel_plugin_istanbul = require('babel-plugin-istanbul');
+const path = require("path");
+const webpack_configurator = require("../../../../../tools/utils/scripts/webpack-configurator.js");
 
-var manifest_data   = Object.create(null);
-var assets_dir_path = path.resolve(__dirname, './dist');
+const assets_dir_path = path.resolve(__dirname, "./dist");
+const path_to_tlp = path.resolve(__dirname, "../../../../../src/www/themes/common/tlp/");
+const manifest_plugin = webpack_configurator.getManifestPlugin();
 
-var babel_preset_env_ie_config = [babel_preset_env, {
-    targets: {
-        ie: 11
+const webpack_config_for_kanban = {
+    entry: {
+        kanban: "./src/app/app.js"
     },
-    modules: false
-}];
-
-var babel_preset_env_chrome_config = [babel_preset_env, {
-    targets: {
-        browsers: ['last 2 Chrome versions']
-    },
-    modules: false,
-    useBuiltIns: true,
-    shippedProposals: true
-}];
-
-var babel_options   = {
-    env: {
-        watch: {
-            presets: [babel_preset_env_ie_config]
-        },
-        production: {
-            presets: [babel_preset_env_ie_config]
-        },
-        test: {
-            presets: [babel_preset_env_chrome_config]
-        },
-        coverage: {
-            presets: [babel_preset_env_chrome_config],
-            plugins: [
-                [babel_plugin_istanbul.default, {
-                    exclude: ['**/*.spec.js']
-                }]
-            ]
-        }
-    }
-};
-
-var webpack_config_for_kanban = {
-    entry : {
-        kanban: './src/app/app.js',
-    },
-    output: {
-        path    : assets_dir_path,
-        filename: '[name]-[chunkhash].js',
+    context: path.resolve(__dirname),
+    output: webpack_configurator.configureOutput(assets_dir_path),
+    externals: {
+        tlp: "tlp",
+        angular: "angular",
+        jquery: "jQuery"
     },
     resolve: {
-        modules: [
-            // This ensures that dependencies resolve their imported modules in kanban's node_modules
-            path.resolve(__dirname, 'node_modules'),
-            'node_modules'
-        ],
-        alias: {
-            // Our own components and their dependencies
-            'angular-artifact-modal' : path.resolve(__dirname, '../../../../tracker/www/scripts/angular-artifact-modal/index.js'),
-            'cumulative-flow-diagram': path.resolve(__dirname, '../cumulative-flow-diagram/index.js'),
-            'angular-tlp'            : path.resolve(__dirname, '../../../../../src/www/themes/common/tlp/angular-tlp'),
-            'card-fields'            : path.resolve(__dirname, '../card-fields')
-        }
-    },
-    externals: {
-        tlp:     'tlp',
-        angular: 'angular'
+        alias: webpack_configurator.extendAliases(
+            webpack_configurator.angular_artifact_modal_aliases,
+            {
+                "cumulative-flow-diagram": path.resolve(
+                    __dirname,
+                    "../cumulative-flow-diagram/index.js"
+                ),
+                "card-fields": path.resolve(__dirname, "../card-fields"),
+                "angular-tlp": path.join(path_to_tlp, "angular-tlp"),
+                // cumulative-flow-chart
+                d3$: path.resolve(__dirname, "node_modules/d3"),
+                lodash$: path.resolve(__dirname, "node_modules/lodash"),
+                moment$: path.resolve(__dirname, "node_modules/moment"),
+                // angular-tlp
+                angular$: path.resolve(__dirname, "node_modules/angular"),
+                "angular-mocks$": path.resolve(__dirname, "node_modules/angular-mocks"),
+                // card-fields dependencies
+                "angular-sanitize$": path.resolve(__dirname, "node_modules/angular-sanitize"),
+                he$: path.resolve(__dirname, "node_modules/he"),
+                striptags$: path.resolve(__dirname, "node_modules/striptags"),
+                "escape-string-regexp$": path.resolve(
+                    __dirname,
+                    "node_modules/escape-string-regexp"
+                )
+            }
+        )
     },
     module: {
         rules: [
-            {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                use: [
-                    {
-                        loader: 'babel-loader',
-                        options: babel_options
-                    }
-                ]
-            }, {
-                test: /\.html$/,
-                exclude: /node_modules/,
-                use: [
-                    {
-                        loader: 'ng-cache-loader',
-                        query: '-url'
-                    }
-                ]
-            }, {
-                test: /\.po$/,
-                exclude: /node_modules/,
-                use: [
-                    {
-                        loader: 'angular-gettext-loader',
-                        query: 'browserify=true'
-                    }
-                ]
-            }
+            webpack_configurator.configureBabelRule(webpack_configurator.babel_options_karma),
+            webpack_configurator.rule_ng_cache_loader,
+            webpack_configurator.rule_angular_gettext_loader
         ]
     },
-    plugins: [
-        new WebpackAssetsManifest({
-            output: 'manifest.json',
-            assets: manifest_data
-        }),
-        // This ensure we only load moment's fr locale. Otherwise, every single locale is included !
-        new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /fr/)
-    ]
+    plugins: [manifest_plugin, webpack_configurator.getMomentLocalePlugin()]
 };
 
-var webpack_config_for_angular = {
-    entry : {
-        angular: 'angular'
+const webpack_config_for_angular = {
+    entry: {
+        angular: "angular"
     },
-    output: {
-        path    : assets_dir_path,
-        filename: '[name]-[chunkhash].js',
-    },
-    plugins: [
-        new WebpackAssetsManifest({
-            output: 'manifest.json',
-            assets: manifest_data,
-            merge: true,
-            writeToDisk: true
-        })
-    ]
+    output: webpack_configurator.configureOutput(assets_dir_path),
+    plugins: [manifest_plugin]
 };
 
-if (process.env.NODE_ENV === 'production') {
-    webpack_config_for_kanban.plugins = webpack_config_for_kanban.plugins.concat([
-        new webpack.optimize.ModuleConcatenationPlugin()
-    ]);
-}
-
-module.exports = [
-    webpack_config_for_kanban,
-    webpack_config_for_angular
-];
+module.exports = [webpack_config_for_kanban, webpack_config_for_angular];

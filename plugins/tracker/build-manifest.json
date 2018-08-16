@@ -7,13 +7,17 @@
                 "www/themes/default/css/ieStyle.scss",
                 "www/themes/default/css/print.scss"
             ],
+            "watched_includes": [
+                "www/themes/default/css/**/_*.scss"
+            ],
             "target_dir": "www/themes/default/css"
         },
         "FlamingParrot": {
             "files": [
                 "www/themes/FlamingParrot/css/style.scss",
                 "www/themes/FlamingParrot/css/print.scss",
-                "www/themes/FlamingParrot/css/burndown-chart.scss"
+                "www/themes/FlamingParrot/css/burndown-chart.scss",
+                "www/themes/FlamingParrot/css/colorpicker.scss"
             ],
             "includes": [
                 "../../src/www/themes/FlamingParrot/css/utils"
@@ -54,7 +58,7 @@
         "www/scripts/TrackerBinds.js",
         "www/scripts/ReorderColumns.js",
         "www/scripts/TrackerTextboxLists.js",
-        "www/scripts/TrackerAdminFields.js",
+        "www/scripts/TrackerAdminFieldWorkflow.js",
         "www/scripts/TrackerArtifact.js",
         "www/scripts/TrackerArtifactEmailActions.js",
         "www/scripts/TrackerArtifactLink.js",
@@ -72,11 +76,11 @@
         "www/scripts/FixAggregatesHeaderHeight.js",
         "www/scripts/TrackerSettings.js",
         "www/scripts/TrackerCollapseFieldset.js",
-        "www/scripts/TrackerArtifactReferences.js",
         "www/scripts/CopyArtifact.js",
         "www/scripts/tracker-report-nature-column.js",
         "www/scripts/tracker-admin-notifications.js",
-        "www/scripts/tracker-admin-notifications-popover.js"
+        "www/scripts/tracker-admin-notifications-popover.js",
+        "www/scripts/tracker-webhooks.js"
     ],
     "gettext-js": {
         "burndown-chart": {
@@ -88,8 +92,14 @@
             "po" : "www/scripts/permissions-per-group/po"
         }
     },
+    "gettext-vue": {
+        "artifact-action-buttons": {
+            "scripts": "www/scripts/artifact-action-buttons/src",
+            "po" : "www/scripts/artifact-action-buttons/po"
+        }
+    },
     "components": [
-        "plugins/tracker/grammar/",
-        "plugins/tracker/www/scripts/"
+        "grammar/",
+        "www/scripts/"
     ]
 }

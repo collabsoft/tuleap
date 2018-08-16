@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,14 +21,18 @@
 
 namespace Tuleap\Git\REST\v1;
 
-use PFUser;
-use Tuleap\Git\REST\v1\GitRepositoryRepresentation;
-use GitPermissionsManager;
-use GitRepository;
+use DateTime;
+use Git_LogDao;
 use Git_RemoteServer_GerritServerFactory;
 use Git_RemoteServer_NotFoundException;
+use GitPermissionsManager;
+use GitRepository;
+use PFUser;
+use Tuleap\Git\Repository\AdditionalInformationRepresentationCache;
+use Tuleap\Git\Repository\AdditionalInformationRepresentationRetriever;
 
-class RepositoryRepresentationBuilder {
+class RepositoryRepresentationBuilder
+{
 
     /**
      * @var Git_RemoteServer_GerritServerFactory
@@ -40,29 +44,102 @@ class RepositoryRepresentationBuilder {
      */
     private $permissions_manger;
 
+    /**
+     * @var Git_LogDao
+     */
+    private $log_dao;
+
+    /**
+     * @var \EventManager
+     */
+    private $event_manager;
+
+    private $remote_server;
+
     public function __construct(
         GitPermissionsManager $permissions_manger,
-        Git_RemoteServer_GerritServerFactory $gerrit_server_factory
+        Git_RemoteServer_GerritServerFactory $gerrit_server_factory,
+        Git_LogDao $log_dao,
+        \EventManager $event_manager
     ) {
         $this->permissions_manger    = $permissions_manger;
         $this->gerrit_server_factory = $gerrit_server_factory;
+        $this->log_dao               = $log_dao;
+        $this->event_manager         = $event_manager;
+    }
+
+    /**
+     * @param PFUser $user
+     * @param GitRepository[] $repositories
+     * @param $fields
+     * @return \Generator
+     */
+    public function buildWithList(PFUser $user, array $repositories, $fields)
+    {
+        if (count($repositories) > 0) {
+            $this->cacheRepositoriesMetadata($repositories);
+            foreach ($repositories as $repository) {
+                yield $this->build($user, $repository, $fields);
+            }
+        }
+    }
+
+    private function cacheRepositoriesMetadata(array $repositories)
+    {
+        $repo_ids = array_map(
+            function (GitRepository $repository) {
+                $this->remote_server[$repository->getRemoteServerId()] = null;
+                return $repository->getId();
+            },
+            $repositories
+        );
+
+        $this->cacheGerritServers();
+        $this->cacheAdditionalInformations($repo_ids);
+    }
+
+    private function cacheGerritServers()
+    {
+        if (count($this->remote_server) > 0) {
+            foreach ($this->gerrit_server_factory->getServers() as $remote) {
+                $this->remote_server[$remote->getId()] = $remote;
+            }
+        }
+    }
+
+    private function cacheAdditionalInformations(array $repo_ids)
+    {
+        $this->event_manager->processEvent(new AdditionalInformationRepresentationCache($repo_ids));
     }
 
     /**
      *
      * @param PFUser $user
      * @param GitRepository $repository
-     * @param type $fields
+     * @param string $fields
      *
      * @return GitRepositoryRepresentation
      */
-    public function build(PFUser $user, GitRepository $repository, $fields) {
+    public function build(PFUser $user, GitRepository $repository, $fields)
+    {
         $server_representation = $this->getGerritServerRepresentation($repository);
 
-        $repository_representation = new GitRepositoryRepresentation();
-        $repository_representation->build($repository, $server_representation);
+        $additional_information = new AdditionalInformationRepresentationRetriever($repository);
+        $this->event_manager->processEvent($additional_information);
 
-        if ($fields == GitRepositoryRepresentation::FIELDS_ALL && $this->permissions_manger->userIsGitAdmin($user, $repository->getProject())) {
+        $repository_representation = new GitRepositoryRepresentation();
+        $last_update_date          = $this->getLastUpdateDate($repository);
+        $repository_representation->build(
+            $repository,
+            $server_representation,
+            $last_update_date,
+            $additional_information->getAdditionalInformation()
+        );
+
+        if ($fields == GitRepositoryRepresentation::FIELDS_ALL && $this->permissions_manger->userIsGitAdmin(
+            $user,
+            $repository->getProject()
+        )) {
             $permission_representation = new GitRepositoryPermissionRepresentation();
             $permission_representation->build($repository);
 
@@ -75,10 +152,17 @@ class RepositoryRepresentationBuilder {
     /**
      * @return GerritServerRepresentation | null
      */
-    private function getGerritServerRepresentation(GitRepository $repository) {
-        $remote_server_id = $repository->getRemoteServerId();
-        if (! $remote_server_id) {
+    private function getGerritServerRepresentation(GitRepository $repository)
+    {
+        if (! $repository->isMigratedToGerrit()) {
             return null;
+        }
+
+        $remote_server_id = $repository->getRemoteServerId();
+        if ($this->remote_server[$remote_server_id] !== null) {
+            $server_representation = new GerritServerRepresentation();
+            $server_representation->build($this->remote_server[$remote_server_id]);
+            return $server_representation;
         }
 
         try {
@@ -90,5 +174,23 @@ class RepositoryRepresentationBuilder {
         } catch (Git_RemoteServer_NotFoundException $ex) {
             return null;
         }
+    }
+
+    /**
+     * @param GitRepository $repository
+     * @return string
+     */
+    private function getLastUpdateDate(GitRepository $repository)
+    {
+        $last_push = $repository->getLastPushDate();
+        if ($last_push !== null) {
+            return $last_push;
+        }
+        $row = $this->log_dao->getLastPushForRepository($repository->getId());
+        if ($row) {
+            return $row['push_date'];
+        }
+        return (new DateTime($repository->getCreationDate()))->getTimestamp();
+
     }
 }

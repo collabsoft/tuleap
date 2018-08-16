@@ -25,6 +25,9 @@ use Luracast\Restler\RestException;
 use Project_AccessException;
 use Project_AccessProjectNotFoundException;
 use ProjectHistoryDao;
+use Tuleap\Git\CommitStatus\CommitStatusDAO;
+use Tuleap\Git\CommitStatus\CommitStatusRetriever;
+use Tuleap\Git\Gitolite\GitoliteAccessURLGenerator;
 use Tuleap\Git\Permissions\FineGrainedDao;
 use Tuleap\Git\Permissions\FineGrainedRetriever;
 use Tuleap\Label\Label;
@@ -42,6 +45,13 @@ use Tuleap\PullRequest\Comment\Comment;
 use Tuleap\PullRequest\Comment\Dao as CommentDao;
 use Tuleap\PullRequest\Comment\Factory as CommentFactory;
 use Tuleap\PullRequest\Exception\UserCannotReadGitRepositoryException;
+use Tuleap\PullRequest\GitReference\GitPullRequestReference;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceCreator;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceDAO;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceNamespaceAvailabilityChecker;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceNotFoundException;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceRetriever;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceUpdater;
 use Tuleap\PullRequest\InlineComment\Dao as InlineCommentDao;
 use Tuleap\PullRequest\Exception\PullRequestCannotBeAbandoned;
 use Tuleap\PullRequest\Exception\PullRequestCannotBeMerged;
@@ -54,6 +64,9 @@ use Tuleap\PullRequest\Exception\UnknownBranchNameException;
 use Tuleap\PullRequest\Exception\UnknownReferenceException;
 use Tuleap\PullRequest\Label\PullRequestLabelDao;
 use Tuleap\PullRequest\Label\LabelsCurlyCoatedRetriever;
+use Tuleap\PullRequest\MergeSetting\MergeSettingDAO;
+use Tuleap\PullRequest\MergeSetting\MergeSettingRetriever;
+use Tuleap\PullRequest\PullRequestWithGitReference;
 use Tuleap\PullRequest\Timeline\Factory as TimelineFactory;
 use Tuleap\PullRequest\Dao as PullRequestDao;
 use Tuleap\PullRequest\Factory as PullRequestFactory;
@@ -144,6 +157,14 @@ class PullRequestsResource extends AuthenticatedResource
      * @var AccessControlVerifier
      */
     private $access_control_verifier;
+    /**
+     * @var GitPullRequestReferenceRetriever
+     */
+    private $git_pull_request_reference_retriever;
+    /**
+     * @var GitPullRequestReferenceUpdater
+     */
+    private $git_pull_request_reference_updater;
 
     public function __construct()
     {
@@ -173,12 +194,18 @@ class PullRequestsResource extends AuthenticatedResource
 
         $this->user_manager         = UserManager::instance();
         $this->event_manager        = EventManager::instance();
-        $this->pull_request_merger  = new PullRequestMerger($this->git_repository_factory);
+        $this->pull_request_merger  = new PullRequestMerger(
+            new MergeSettingRetriever(new MergeSettingDAO())
+        );
         $this->pull_request_creator = new PullRequestCreator(
             $this->pull_request_factory,
             $pull_request_dao,
             $this->pull_request_merger,
-            $this->event_manager
+            $this->event_manager,
+            new GitPullRequestReferenceCreator(
+                new GitPullRequestReferenceDAO,
+                new GitPullRequestReferenceNamespaceAvailabilityChecker
+            )
         );
         $this->pull_request_closer  = new PullRequestCloser($this->pull_request_factory, $this->pull_request_merger);
         $this->logger               = new BackendLogger();
@@ -202,6 +229,13 @@ class PullRequestsResource extends AuthenticatedResource
         $this->permission_checker = new PullRequestPermissionChecker(
             $this->git_repository_factory,
             new URLVerification()
+        );
+
+        $git_pull_request_reference_dao             = new GitPullRequestReferenceDAO;
+        $this->git_pull_request_reference_retriever = new GitPullRequestReferenceRetriever($git_pull_request_reference_dao);
+        $this->git_pull_request_reference_updater   = new GitPullRequestReferenceUpdater(
+            $git_pull_request_reference_dao,
+            new GitPullRequestReferenceNamespaceAvailabilityChecker()
         );
     }
 
@@ -239,16 +273,25 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkAccess();
         $this->sendAllowHeadersForPullRequests();
 
-        $pull_request    = $this->getReadablePullRequest($id);
-        $user            = $this->user_manager->getCurrentUser();
-        $repository_src  = $this->getRepository($pull_request->getRepositoryId());
-        $repository_dest = $this->getRepository($pull_request->getRepoDestId());
+        $pull_request_with_git_reference = $this->getReadablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
+        $user                            = $this->user_manager->getCurrentUser();
+        $repository_src                  = $this->getRepository($pull_request->getRepositoryId());
+        $repository_dest                 = $this->getRepository($pull_request->getRepoDestId());
 
+        $pr_representation_factory = new PullRequestRepresentationFactory(
+            $this->access_control_verifier,
+            new CommitStatusRetriever(new CommitStatusDAO),
+            $this->getGitoliteAccessURLGenerator()
+        );
 
-        $executor                  = $this->getExecutor($repository_src);
-        $pr_representation_factory = new PullRequestRepresentationFactory($executor, $this->access_control_verifier);
-
-        return $pr_representation_factory->getPullRequestRepresentation($pull_request, $repository_src, $repository_dest, $user);
+        return $pr_representation_factory->getPullRequestRepresentation(
+            $pull_request_with_git_reference,
+            $repository_src,
+            $repository_dest,
+            GitExec::buildFromRepository($repository_dest),
+            $user
+        );
     }
 
     /**
@@ -286,7 +329,8 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkAccess();
         $this->sendAllowHeadersForLabels();
 
-        $pull_request = $this->getReadablePullRequest($id);
+        $pull_request_with_git_reference = $this->getReadablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
 
         $collection = $this->labels_retriever->getPaginatedLabelsForPullRequest($pull_request, $limit, $offset);
         $labels_representation = array_map(
@@ -367,8 +411,9 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkAccess();
         $this->sendAllowHeadersForLabels();
 
-        $pull_request    = $this->getWriteablePullRequest($id);
-        $repository_dest = $this->getRepository($pull_request->getRepoDestId());
+        $pull_request_with_git_reference = $this->getWritablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
+        $repository_dest                 = $this->getRepository($pull_request->getRepoDestId());
 
         try {
             $this->labels_updater->update($repository_dest->getProjectId(), $pull_request, $body);
@@ -409,9 +454,10 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkAccess();
         $this->sendAllowHeadersForPullRequests();
 
-        $pull_request   = $this->getReadablePullRequest($id);
-        $git_repository = $this->getRepository($pull_request->getRepositoryId());
-        $executor       = $this->getExecutor($git_repository);
+        $pull_request_with_git_reference = $this->getReadablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
+        $git_repository_destination      = $this->getRepository($pull_request->getRepositoryId());
+        $executor                        = $this->getExecutor($git_repository_destination);
 
         $file_representation_factory = new PullRequestFileRepresentationFactory($executor);
 
@@ -452,12 +498,13 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkAccess();
         $this->sendAllowHeadersForPullRequests();
 
-        $pull_request   = $this->getReadablePullRequest($id);
-        $git_repository = $this->getRepository($pull_request->getRepositoryId());
+        $pull_request_with_git_reference = $this->getReadablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
+        $git_repository_destination      = $this->getRepository($pull_request->getRepoDestId());
 
-        $executor     = $this->getExecutor($git_repository);
-        $dest_content = $this->getDestinationContent($pull_request, $executor, $path);
-        $src_content  = $this->getSourceContent($pull_request, $executor, $path);
+        $executor_repo_destination = $this->getExecutor($git_repository_destination);
+        $dest_content              = $this->getDestinationContent($pull_request, $executor_repo_destination, $path);
+        $src_content               = $this->getSourceContent($pull_request, $executor_repo_destination, $path);
 
         if ($src_content === null && $dest_content === null) {
             throw new RestException(404, 'The file does not exist');
@@ -470,14 +517,19 @@ class PullRequestsResource extends AuthenticatedResource
             $inline_comments = array();
         } else {
             $unidiff_builder = new FileUniDiffBuilder();
-            $executor        = $this->getExecutor($git_repository);
-            $diff            = $unidiff_builder->buildFileUniDiffFromCommonAncestor($executor, $path, $pull_request->getSha1Dest(), $pull_request->getSha1Src());
+            $diff            = $unidiff_builder->buildFileUniDiffFromCommonAncestor(
+                $executor_repo_destination,
+                $path,
+                $pull_request->getSha1Dest(),
+                $pull_request->getSha1Src()
+            );
 
             $inline_comment_builder = new PullRequestInlineCommentRepresentationBuilder(
                 new \Tuleap\PullRequest\InlineComment\Dao(),
                 $this->user_manager
             );
-            $inline_comments = $inline_comment_builder->getForFile($pull_request, $path, $git_repository->getProjectId());
+            $git_repository_source = $this->getRepository($pull_request->getRepositoryId());
+            $inline_comments       = $inline_comment_builder->getForFile($pull_request, $path, $git_repository_source->getProjectId());
         }
 
         return PullRequestFileUniDiffRepresentation::build($diff, $inline_comments, $mime_type, $charset);
@@ -507,11 +559,13 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkAccess();
         $this->sendAllowHeadersForInlineComments();
 
-        $pull_request   = $this->getReadablePullRequest($id);
-        $git_repository = $this->getRepository($pull_request->getRepositoryId());
-        $user           = $this->user_manager->getCurrentUser();
+        $pull_request_with_git_reference = $this->getReadablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
+        $git_repository_source           = $this->getRepository($pull_request->getRepositoryId());
+        $git_repository_destination      = $this->getRepository($pull_request->getRepoDestId());
+        $user                            = $this->user_manager->getCurrentUser();
 
-        $executor     = $this->getExecutor($git_repository);
+        $executor     = $this->getExecutor($git_repository_destination);
         $dest_content = $this->getDestinationContent($pull_request, $executor, $comment_data->file_path);
         $src_content  = $this->getSourceContent($pull_request, $executor, $comment_data->file_path);
 
@@ -520,7 +574,7 @@ class PullRequestsResource extends AuthenticatedResource
         }
 
         $post_date = time();
-        $this->inline_comment_creator->insert($pull_request, $user, $comment_data, $post_date, $git_repository->getProjectId());
+        $this->inline_comment_creator->insert($pull_request, $user, $comment_data, $post_date, $git_repository_source->getProjectId());
 
         $user_representation = new MinimalUserRepresentation();
         $user_representation->build($this->user_manager->getUserById($user->getId()));
@@ -530,7 +584,7 @@ class PullRequestsResource extends AuthenticatedResource
             $user_representation,
             $post_date,
             $comment_data->content,
-            $git_repository->getProjectId()
+            $git_repository_source->getProjectId()
         );
     }
 
@@ -701,14 +755,15 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkAccess();
         $this->sendAllowHeadersForPullRequests();
 
-        $user            = $this->user_manager->getCurrentUser();
-        $pull_request    = $this->getWriteablePullRequest($id);
-        $repository_src  = $this->getRepository($pull_request->getRepositoryId());
-        $repository_dest = $this->getRepository($pull_request->getRepoDestId());
+        $user                            = $this->user_manager->getCurrentUser();
+        $pull_request_with_git_reference = $this->getWritablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
+        $repository_src                  = $this->getRepository($pull_request->getRepositoryId());
+        $repository_dest                 = $this->getRepository($pull_request->getRepoDestId());
 
         $status = $body->status;
         if ($status !== null) {
-            $this->patchStatus($user, $pull_request, $repository_src, $status);
+            $this->patchStatus($user, $pull_request, $status);
         } else {
             $this->patchInfo(
                 $user,
@@ -719,13 +774,22 @@ class PullRequestsResource extends AuthenticatedResource
         }
         $updated_pull_request = $this->pull_request_factory->getPullRequestById($id);
 
-        $executor                  = $this->getExecutor($repository_src);
-        $pr_representation_factory = new PullRequestRepresentationFactory($executor, $this->access_control_verifier);
+        $pr_representation_factory = new PullRequestRepresentationFactory(
+            $this->access_control_verifier,
+            new CommitStatusRetriever(new CommitStatusDAO),
+            $this->getGitoliteAccessURLGenerator()
+        );
 
-        return $pr_representation_factory->getPullRequestRepresentation($updated_pull_request, $repository_src, $repository_dest, $user);
+        return $pr_representation_factory->getPullRequestRepresentation(
+            new PullRequestWithGitReference($updated_pull_request, $pull_request_with_git_reference->getGitReference()),
+            $repository_src,
+            $repository_dest,
+            GitExec::buildFromRepository($repository_dest),
+            $user
+        );
     }
 
-    private function patchStatus(PFUser $user, PullRequest $pull_request, $git_repository, $status)
+    private function patchStatus(PFUser $user, PullRequest $pull_request, $status)
     {
         switch ($status) {
             case PullRequestRepresentation::STATUS_ABANDON:
@@ -811,9 +875,10 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkLimit($limit);
         $this->sendAllowHeadersForTimeline();
 
-        $pull_request   = $this->getReadablePullRequest($id);
-        $git_repository = $this->getRepository($pull_request->getRepositoryId());
-        $project_id     = $git_repository->getProjectId();
+        $pull_request_with_git_reference = $this->getReadablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
+        $git_repository                  = $this->getRepository($pull_request->getRepositoryId());
+        $project_id                      = $git_repository->getProjectId();
 
         $paginated_timeline_representation = $this->paginated_timeline_representation_builder->getPaginatedTimelineRepresentation(
             $id,
@@ -862,9 +927,10 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkLimit($limit);
         $this->sendAllowHeadersForComments();
 
-        $pull_request   = $this->getReadablePullRequest($id);
-        $git_repository = $this->getRepository($pull_request->getRepositoryId());
-        $project_id     = $git_repository->getProjectId();
+        $pull_request_with_git_reference = $this->getReadablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
+        $git_repository                  = $this->getRepository($pull_request->getRepositoryId());
+        $project_id                      = $git_repository->getProjectId();
 
         $paginated_comments_representations = $this->paginated_comments_representations_builder->getPaginatedCommentsRepresentations(
             $id,
@@ -903,10 +969,11 @@ class PullRequestsResource extends AuthenticatedResource
         $this->checkAccess();
         $this->sendAllowHeadersForComments();
 
-        $user           = $this->user_manager->getCurrentUser();
-        $pull_request   = $this->getReadablePullRequest($id);
-        $git_repository = $this->getRepository($pull_request->getRepositoryId());
-        $project_id     = $git_repository->getProjectId();
+        $user                            = $this->user_manager->getCurrentUser();
+        $pull_request_with_git_reference = $this->getReadablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
+        $git_repository                  = $this->getRepository($pull_request->getRepositoryId());
+        $project_id                      = $git_repository->getProjectId();
 
         $current_time   = time();
         $comment        = new Comment(0, $id, $user->getId(), $current_time, $comment_data->content);
@@ -930,29 +997,32 @@ class PullRequestsResource extends AuthenticatedResource
 
     /**
      * @param $id
-     * @return PullRequest
+     * @return PullRequestWithGitReference
      */
-    private function getWriteablePullRequest($id)
+    private function getWritablePullRequestWithGitReference($id)
     {
-        $pull_request = $this->getReadablePullRequest($id);
+        $pull_request_with_git_reference = $this->getReadablePullRequestWithGitReference($id);
+        $pull_request                    = $pull_request_with_git_reference->getPullRequest();
 
         $current_user    = $this->user_manager->getCurrentUser();
         $repository_dest = $this->getRepository($pull_request->getRepoDestId());
         $this->checkUserCanWrite($current_user, $repository_dest, $pull_request->getBranchDest());
 
-        return $pull_request;
+        return $pull_request_with_git_reference;
     }
 
     /**
      * @param $id
-     * @return PullRequest
+     * @return PullRequestWithGitReference
      */
-    private function getReadablePullRequest($id)
+    private function getReadablePullRequestWithGitReference($id)
     {
         try {
             $pull_request = $this->pull_request_factory->getPullRequestById($id);
             $current_user = $this->user_manager->getCurrentUser();
             $this->permission_checker->checkPullRequestIsReadableByUser($pull_request, $current_user);
+
+            $git_reference = $this->git_pull_request_reference_retriever->getGitReferenceFromPullRequest($pull_request);
         } catch (PullRequestNotFoundException $exception) {
             throw new RestException(404);
         } catch (\GitRepoNotFoundException $exception) {
@@ -963,9 +1033,35 @@ class PullRequestsResource extends AuthenticatedResource
             throw new RestException(403, $exception->getMessage());
         } catch (UserCannotReadGitRepositoryException $exception) {
             throw new RestException(403, 'User is not able to READ the git repository');
+        } catch (GitPullRequestReferenceNotFoundException $exception) {
+            throw new RestException(404);
         }
 
-        return $pull_request;
+        if ($git_reference->isGitReferenceBroken()) {
+            throw new RestException(
+                410,
+                dgettext('tuleap-pullrequest', 'The pull request is not accessible anymore')
+            );
+        }
+
+        $this->updateGitReferenceIfNeeded($pull_request, $git_reference);
+
+        return new PullRequestWithGitReference($pull_request, $git_reference);
+    }
+
+    private function updateGitReferenceIfNeeded(PullRequest $pull_request, GitPullRequestReference $git_reference)
+    {
+        if (! $git_reference->isGitReferenceNeedToBeCreatedInRepository()) {
+            return;
+        }
+        $repository_source      = $this->getRepository($pull_request->getRepositoryId());
+        $repository_destination = $this->getRepository($pull_request->getRepoDestId());
+        $this->git_pull_request_reference_updater->updatePullRequestReference(
+            $pull_request,
+            GitExec::buildFromRepository($repository_source),
+            GitExec::buildFromRepository($repository_destination),
+            $repository_destination
+        );
     }
 
     private function getRepository($repository_id)
@@ -1035,5 +1131,14 @@ class PullRequestsResource extends AuthenticatedResource
     private function getExecutor(GitRepository $git_repository)
     {
         return new GitExec($git_repository->getFullPath(), $git_repository->getFullPath());
+    }
+
+    /**
+     * @return GitoliteAccessURLGenerator
+     */
+    private function getGitoliteAccessURLGenerator()
+    {
+        $git_plugin = \PluginFactory::instance()->getPluginByName('git');
+        return new GitoliteAccessURLGenerator($git_plugin->getPluginInfo());
     }
 }

@@ -7,6 +7,8 @@
 //
 //
 
+use Tuleap\Layout\IncludeAssets;
+
 require_once('pre.php');
 require_once('account.php');
 require_once('proj_email.php');
@@ -15,7 +17,10 @@ require_once('www/admin/admin_utils.php');
 $request = HTTPRequest::instance();
 $request->checkUserIsSuperUser();
 
-$GLOBALS['HTML']->includeFooterJavascriptFile('/scripts/admin/pending-users.js');
+$assets_path    = ForgeConfig::get('tuleap_dir') . '/src/www/assets';
+$include_assets = new IncludeAssets($assets_path, '/assets');
+
+$GLOBALS['HTML']->includeFooterJavascriptFile($include_assets->getFileURL('site-admin-pending-users.js'));
 
 define('ADMIN_APPROVE_PENDING_PAGE_PENDING', 'pending');
 define('ADMIN_APPROVE_PENDING_PAGE_VALIDATED', 'validated');
@@ -159,31 +164,30 @@ $expiry_date = 0;
             }
         } else if ($action_select === 'resend_email') {
             $csrf_token->check();
-            if (ForgeConfig::get('sys_user_approval') == 0) {
-                $user_manager = UserManager::instance();
-                foreach ($users_array as $user_id) {
-                    $user = $user_manager->getUserById($user_id);
-                    if ($user === null) {
-                        continue;
-                    }
-                    if ($user->getStatus() !== PFUser::STATUS_PENDING && $user->getStatus() !== PFUser::STATUS_VALIDATED &&
-                        $user->getStatus() !== PFUser::STATUS_VALIDATED_RESTRICTED) {
-                        continue;
-                    }
+            $user_manager = UserManager::instance();
+            foreach ($users_array as $user_id) {
+                $user = $user_manager->getUserById($user_id);
+                if ($user === null) {
+                    continue;
+                }
+                if ($user->getStatus() !== PFUser::STATUS_PENDING && $user->getStatus() !== PFUser::STATUS_VALIDATED &&
+                    $user->getStatus() !== PFUser::STATUS_VALIDATED_RESTRICTED) {
+                    continue;
+                }
 
-                    $is_mail_sent = send_new_user_email($user->getEmail(), $user->getUserName(), $user->getConfirmHash());
+                $is_mail_sent = send_new_user_email($user->getEmail(), $user->getUserName(), $user->getConfirmHash());
 
-                    if ($is_mail_sent) {
-                        $GLOBALS['Response']->addFeedback(
-                            Feedback::INFO,
-                            $Language->getText('admin_approve_pending_users', 'resend_mail_success', array($user->getEmail()))
-                        );
-                    } else {
-                        $GLOBALS['Response']->addFeedback(
-                            Feedback::INFO,
-                            $Language->getText('admin_approve_pending_users', 'resend_mail_error', array($user->getEmail()))
-                        );
-                    }
+                if ($is_mail_sent) {
+                    $GLOBALS['Response']->addFeedback(
+                        Feedback::INFO,
+                        $Language->getText('admin_approve_pending_users', 'resend_mail_success',
+                            array($user->getEmail()))
+                    );
+                } else {
+                    $GLOBALS['Response']->addFeedback(
+                        Feedback::INFO,
+                        $Language->getText('admin_approve_pending_users', 'resend_mail_error', array($user->getEmail()))
+                    );
                 }
             }
         }

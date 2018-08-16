@@ -29,11 +29,11 @@ use Tuleap\Mediawiki\ForgeUserGroupPermission\MediawikiAdminAllProjects;
 use Tuleap\Mediawiki\Maintenance\CleanUnused;
 use Tuleap\Mediawiki\Maintenance\CleanUnusedDao;
 use Tuleap\Mediawiki\Migration\MoveToCentralDbDao;
-use Tuleap\Mediawiki\PerGroup\PermissionPerGroupPaneBuilder;
+use Tuleap\Mediawiki\PermissionsPerGroup\PermissionPerGroupPaneBuilder;
 use Tuleap\Project\Admin\Navigation\NavigationDropdownItemPresenter;
 use Tuleap\project\Admin\Navigation\NavigationDropdownQuickLinksCollector;
-use Tuleap\Project\Admin\PerGroup\PermissionPerGroupUGroupFormatter;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupPaneCollector;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupFormatter;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupPaneCollector;
 use Tuleap\Project\Admin\ProjectUGroup\UserAndProjectUGroupRelationshipEvent;
 use Tuleap\Project\Admin\ProjectUGroup\UserBecomesForumAdmin;
 use Tuleap\Project\Admin\ProjectUGroup\UserBecomesNewsAdministrator;
@@ -45,6 +45,9 @@ use Tuleap\Project\Admin\ProjectUGroup\UserIsNoLongerNewsAdministrator;
 use Tuleap\Project\Admin\ProjectUGroup\UserIsNoLongerNewsWriter;
 use Tuleap\Project\Admin\ProjectUGroup\UserIsNoLongerProjectAdmin;
 use Tuleap\Project\Admin\ProjectUGroup\UserIsNoLongerWikiAdmin;
+use Tuleap\MediaWiki\MediawikiMaintenanceWrapper;
+use Tuleap\MediaWiki\XMLMediaWikiExporter;
+use Tuleap\Request\RestrictedUsersAreHandledByPluginEvent;
 
 require_once 'common/plugin/Plugin.class.php';
 require_once 'constants.php';
@@ -54,81 +57,82 @@ class MediaWikiPlugin extends Plugin {
 
     const SERVICE_SHORTNAME = 'plugin_mediawiki';
 
-    function __construct ($id=0) {
-            $this->Plugin($id) ;
-            $this->name = "mediawiki" ;
-            $this->text = "Mediawiki" ; // To show in the tabs, use...
-            $this->addHook('cssfile');
-            $this->addHook(Event::SERVICE_ICON);
-            $this->addHook(Event::SERVICES_ALLOWED_FOR_PROJECT);
-            $this->addHook(Event::PROCCESS_SYSTEM_CHECK);
+    public function __construct ($id=0) {
+        parent::__construct($id);
+        $this->name = "mediawiki" ;
+        $this->text = "Mediawiki" ; // To show in the tabs, use...
+        $this->addHook('cssfile');
+        $this->addHook(Event::SERVICE_ICON);
+        $this->addHook(Event::SERVICES_ALLOWED_FOR_PROJECT);
+        $this->addHook(Event::PROCCESS_SYSTEM_CHECK);
 
-            $this->addHook('permission_get_name');
-            $this->addHook(Event::SERVICE_IS_USED);
-            $this->addHook(Event::REGISTER_PROJECT_CREATION);
+        $this->addHook('permission_get_name');
+        $this->addHook(Event::SERVICE_IS_USED);
+        $this->addHook(Event::REGISTER_PROJECT_CREATION);
 
-            $this->addHook(Event::SERVICE_REPLACE_TEMPLATE_NAME_IN_LINK);
-            $this->addHook(Event::RENAME_PROJECT, 'rename_project');
-            $this->addHook('project_is_deleted');
+        $this->addHook(Event::SERVICE_REPLACE_TEMPLATE_NAME_IN_LINK);
+        $this->addHook(Event::RENAME_PROJECT, 'rename_project');
+        $this->addHook('project_is_deleted');
 
-            $this->addHook(Event::GET_SYSTEM_EVENT_CLASS, 'getSystemEventClass');
-            $this->addHook(Event::SYSTEM_EVENT_GET_TYPES_FOR_DEFAULT_QUEUE);
+        $this->addHook(Event::GET_SYSTEM_EVENT_CLASS, 'getSystemEventClass');
+        $this->addHook(Event::SYSTEM_EVENT_GET_TYPES_FOR_DEFAULT_QUEUE);
 
-            //User permissions
-            $this->addHook('project_admin_remove_user');
-            $this->addHook('project_admin_change_user_permissions');
-            $this->addHook('SystemEvent_USER_RENAME', 'systemevent_user_rename');
-            $this->addHook('project_admin_ugroup_remove_user');
-            $this->addHook('project_admin_remove_user_from_project_ugroups');
-            $this->addHook('project_admin_ugroup_deletion');
-            $this->addHook(Event::HAS_USER_BEEN_DELEGATED_ACCESS, 'has_user_been_delegated_access');
-            $this->addHook(Event::IS_SCRIPT_HANDLED_FOR_RESTRICTED);
-            $this->addHook(Event::GET_SERVICES_ALLOWED_FOR_RESTRICTED);
+        //User permissions
+        $this->addHook('project_admin_remove_user');
+        $this->addHook('project_admin_change_user_permissions');
+        $this->addHook('SystemEvent_USER_RENAME', 'systemevent_user_rename');
+        $this->addHook('project_admin_ugroup_remove_user');
+        $this->addHook('project_admin_remove_user_from_project_ugroups');
+        $this->addHook('project_admin_ugroup_deletion');
+        $this->addHook(Event::HAS_USER_BEEN_DELEGATED_ACCESS, 'has_user_been_delegated_access');
+        $this->addHook(RestrictedUsersAreHandledByPluginEvent::NAME);
+        $this->addHook(Event::GET_SERVICES_ALLOWED_FOR_RESTRICTED);
 
-            // Search
-            $this->addHook(Event::LAYOUT_SEARCH_ENTRY);
-            $this->addHook(Event::SEARCH_TYPES_PRESENTERS);
-            $this->addHook(Event::SEARCH_TYPE);
+        // Search
+        $this->addHook(Event::LAYOUT_SEARCH_ENTRY);
+        $this->addHook(Event::SEARCH_TYPES_PRESENTERS);
+        $this->addHook(Event::SEARCH_TYPE);
 
-            $this->addHook('plugin_statistics_service_usage');
+        $this->addHook('plugin_statistics_service_usage');
 
-            $this->addHook(Event::SERVICE_CLASSNAMES);
-            $this->addHook(Event::GET_PROJECTID_FROM_URL);
+        $this->addHook(Event::SERVICE_CLASSNAMES);
+        $this->addHook(Event::GET_PROJECTID_FROM_URL);
 
-            // Stats plugin
-            $this->addHook('plugin_statistics_disk_usage_collect_project');
-            $this->addHook('plugin_statistics_disk_usage_service_label');
-            $this->addHook('plugin_statistics_color');
+        // Stats plugin
+        $this->addHook('plugin_statistics_disk_usage_collect_project');
+        $this->addHook('plugin_statistics_disk_usage_service_label');
+        $this->addHook('plugin_statistics_color');
 
-            // Site admin link
-            $this->addHook('site_admin_option_hook', 'site_admin_option_hook', false);
-            $this->addHook(BurningParrotCompatiblePageEvent::NAME);
+        // Site admin link
+        $this->addHook('site_admin_option_hook', 'site_admin_option_hook', false);
+        $this->addHook(BurningParrotCompatiblePageEvent::NAME);
 
-            $this->addHook(Event::PROJECT_ACCESS_CHANGE);
-            $this->addHook(Event::SITE_ACCESS_CHANGE);
+        $this->addHook(Event::PROJECT_ACCESS_CHANGE);
+        $this->addHook(Event::SITE_ACCESS_CHANGE);
 
-            $this->addHook(Event::IMPORT_XML_PROJECT, 'importXmlProject', false);
-            $this->addHook(Event::BURNING_PARROT_GET_STYLESHEETS);
-            $this->addHook(Event::BURNING_PARROT_GET_JAVASCRIPT_FILES);
-            $this->addHook(User_ForgeUserGroupPermissionsFactory::GET_PERMISSION_DELEGATION);
-            $this->addHook(NavigationDropdownQuickLinksCollector::NAME);
-            $this->addHook(UserBecomesProjectAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
-            $this->addHook(UserIsNoLongerProjectAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
-            $this->addHook(UserBecomesWikiAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
-            $this->addHook(UserIsNoLongerWikiAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
-            $this->addHook(UserBecomesForumAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
-            $this->addHook(UserIsNoLongerForumAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
-            $this->addHook(UserBecomesNewsWriter::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
-            $this->addHook(UserIsNoLongerNewsWriter::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
-            $this->addHook(UserBecomesNewsAdministrator::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
-            $this->addHook(UserIsNoLongerNewsAdministrator::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(Event::IMPORT_XML_PROJECT, 'importXmlProject', false);
+        $this->addHook(Event::BURNING_PARROT_GET_STYLESHEETS);
+        $this->addHook(Event::BURNING_PARROT_GET_JAVASCRIPT_FILES);
+        $this->addHook(User_ForgeUserGroupPermissionsFactory::GET_PERMISSION_DELEGATION);
+        $this->addHook(NavigationDropdownQuickLinksCollector::NAME);
+        $this->addHook(UserBecomesProjectAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(UserIsNoLongerProjectAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(UserBecomesWikiAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(UserIsNoLongerWikiAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(UserBecomesForumAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(UserIsNoLongerForumAdmin::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(UserBecomesNewsWriter::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(UserIsNoLongerNewsWriter::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(UserBecomesNewsAdministrator::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(UserIsNoLongerNewsAdministrator::NAME, 'updateUserGroupMappingFromUserAndProjectUGroupRelationshipEvent');
+        $this->addHook(Event::EXPORT_XML_PROJECT);
 
         $this->addHook(PermissionPerGroupPaneCollector::NAME);
 
         /**
-             * HACK
-             */
-            require_once MEDIAWIKI_BASE_DIR . '/../fusionforge/compat/load_compatibilities_method.php';
+         * HACK
+         */
+        require_once MEDIAWIKI_BASE_DIR . '/../fusionforge/compat/load_compatibilities_method.php';
 
         bindtextdomain('tuleap-mediawiki', __DIR__ . '/../site-content');
     }
@@ -156,8 +160,41 @@ class MediaWikiPlugin extends Plugin {
         }
     }
 
-    public function loaded()
+    private function getMediaWikiDataDir()
     {
+        return forge_get_config('mwdata_path', 'mediawiki');
+    }
+
+    public function export_xml_project($params)
+    {
+        if (! isset($params['options']['all']) || $params['options']['all'] === false) {
+            return;
+        }
+
+        $this->getMediaWikiExporter($params['project']->getID())->exportToXml(
+            $params['into_xml'],
+            $params['archive'],
+            'export_mw_' . $params['project']->getID() . time() . '.xml',
+            $params['temporary_dump_path_on_filesystem'],
+            $this->getMediaWikiDataDir()
+        );
+    }
+
+    private function getMediaWikiExporter($group_id)
+    {
+        $sys_command = new System_Command();
+        return new XMLMediaWikiExporter(
+            $sys_command,
+            ProjectManager::instance()->getProject($group_id),
+            new MediawikiManager(new MediawikiDao()),
+            new UGroupManager(),
+            new ProjectXMLExporterLogger(),
+            new MediawikiMaintenanceWrapper($sys_command),
+            new MediawikiLanguageManager(new MediawikiLanguageDao())
+        );
+    }
+
+        public function loaded() {
             parent::loaded();
             if(is_dir("/usr/share/mediawiki")){
                 forge_define_config_item('src_path','mediawiki', "/usr/share/mediawiki");
@@ -279,6 +316,7 @@ class MediaWikiPlugin extends Plugin {
                 && ! $project->userIsMember()
                 && ! $user->isSuperUser()
                 && ! $this->doesUserHavePermission($user)
+                && ! $this->getMediawikiManager()->userCanRead($user, $project)
             ) {
                 exit;
             }
@@ -378,13 +416,10 @@ class MediaWikiPlugin extends Plugin {
         );
     }
 
-    /**
-     * @see Event::IS_SCRIPT_HANDLED_FOR_RESTRICTED
-     */
-    public function is_script_handled_for_restricted($params) {
-        $uri = $params['uri'];
-        if (strpos($uri, $this->getPluginPath()) === 0) {
-            $params['allow_restricted'] = true;
+    public function restrictedUsersAreHandledByPluginEvent(RestrictedUsersAreHandledByPluginEvent $event)
+    {
+        if (strpos($event->getUri(), $this->getPluginPath()) === 0) {
+            $event->setPluginHandleRestricted();
         }
     }
 
@@ -744,15 +779,11 @@ class MediaWikiPlugin extends Plugin {
     private function getMediawikiMLEBExtensionManager() {
         return new MediawikiMLEBExtensionManager(
             $this->getMediawikiMigrator(),
-            $this->getMediawikiMLEBExtensionDao(),
+            new \Tuleap\Mediawiki\MediawikiExtensionDAO(),
             $this->getProjectManager(),
             $this->getMediawikiVersionManager(),
             $this->getMediawikiLanguageManager()
         );
-    }
-
-    private function getMediawikiMLEBExtensionDao() {
-        return new MediawikiMLEBExtensionDao();
     }
 
     /**

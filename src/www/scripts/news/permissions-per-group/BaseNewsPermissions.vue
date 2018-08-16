@@ -25,12 +25,13 @@
             {{ rest_error }}
         </div>
 
-        <button class="tlp-button-primary tlp-button-outline"
-                v-on:click="loadAll"
-                v-if="! is_loaded"
-        >
-            {{ load_all_label }}
-        </button>
+        <div class="permission-per-group-load-button" v-if="! is_loaded">
+            <button class="tlp-button-primary tlp-button-outline"
+                    v-on:click="loadAll"
+            >
+                {{ load_all_label }}
+            </button>
+        </div>
 
         <div v-if="is_loading"
              v-bind:aria-label="news_are_loading"
@@ -39,7 +40,7 @@
 
         <table v-if="is_loaded" class="tlp-table">
             <thead>
-                <tr>
+                <tr class="permission-per-group-double-column-table">
                     <th>{{ news_label }}</th>
                     <th>{{ visibility_label }}</th>
                 </tr>

@@ -46,7 +46,7 @@ class XMLNode
 	var $_parent_id;
 	var $_parent_node;
 	
-	function & XMLNode($id = NULL)
+	function __construct($id = NULL)
 	{
 		$this->_id = isset($id) ? $id : md5(uniqid(rand(),1));
 		$this->_name = '';
@@ -363,9 +363,9 @@ class XMLNode
 
 class MathMLNode extends XMLNode
 {
-	function & MathMLNode($id = NULL)
+	function __construct($id = NULL)
 	{
-		parent::XMLNode($id);
+		parent::__construct($id);
 	}
 	
 	function removeBrackets()
@@ -415,7 +415,7 @@ class ASCIIMathPHP
 	var $_node_arr;
 	var $_node_cntr;
 	
-	function ASCIIMathPHP($symbol_arr,$expr = NULL)
+	function __construct($symbol_arr,$expr = NULL)
 	{
 		$this->_symbol_arr = $symbol_arr;
 		if (isset($expr)) {

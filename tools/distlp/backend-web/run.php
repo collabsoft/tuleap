@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,16 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once '/usr/share/php/Zend/autoload.php';
-
-$loader = new Zend\Loader\StandardAutoloader(
-    array(
-        'namespaces' => array(
-            'Tuleap\Configuration' => '/usr/share/tuleap/tools/Configuration',
-        )
-    )
-);
-$loader->register();
+require_once __DIR__ . '/../../Configuration/vendor/autoload.php';
 
 // Make all warnings or notices fatal
 set_error_handler(function ($errno, $errstr, $errfile, $errline) {
@@ -36,19 +27,19 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 
 $logger = new Tuleap\Configuration\Logger\Console();
 
-$fpm   = new Tuleap\Configuration\FPM\TuleapWeb($logger, 'codendiadm', true);
-$nginx = new \Tuleap\Configuration\Nginx\BackendWeb($logger, '/usr/share/tuleap', '/etc/opt/rh/rh-nginx18/nginx', 'reverse-proxy');
+$fpm      = Tuleap\Configuration\FPM\TuleapWeb::buildForPHP56($logger, 'codendiadm', true);
+$nginx    = new \Tuleap\Configuration\Nginx\BackendWeb($logger, '/usr/share/tuleap', '/etc/nginx', 'reverse-proxy');
 $rabbitmq = new Tuleap\Configuration\RabbitMQ\BackendWeb('codendiadm');
 
 $fpm->configure();
 $nginx->configure();
 $rabbitmq->configure();
 
+$exec = new \Tuleap\Configuration\Common\Exec();
+
 if (isset($argv[1]) && $argv[1] == 'test') {
     try {
-        $exec = new \Tuleap\Configuration\Common\Exec();
-        $exec->command("/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/src/utils/import_project_xml.php -u admin --automap=no-email,create:A -i /usr/share/tuleap/tests/selenium/_fixtures/svn_project_01 --use-lame-password");
-        $exec->command("/usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/src/utils/svn/svnroot_push.php");
+        $exec->command('/usr/share/tuleap/tools/distlp/backend-web/prepare-instance.sh');
     } catch (Exception $e) {
         die($e->getMessage());
     }

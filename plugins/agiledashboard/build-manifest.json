@@ -11,7 +11,8 @@
         "FlamingParrot": {
             "files": [
                 "www/themes/FlamingParrot/css/style.scss",
-                "www/themes/FlamingParrot/css/burnup-chart.scss"
+                "www/themes/FlamingParrot/css/burnup-chart.scss",
+                "www/themes/FlamingParrot/css/planning-admin-colorpicker.scss"
             ],
             "includes": [
                 "../../src/www/themes/FlamingParrot/css/utils"
@@ -21,7 +22,7 @@
         },
         "BurningParrot": {
             "files": [
-                "www/themes/FlamingParrot/css/burnup-chart.scss",
+                "www/themes/BurningParrot/css/burnup-chart.scss",
                 "www/themes/BurningParrot/css/kanban-blue.scss",
                 "www/themes/BurningParrot/css/kanban-blue-condensed.scss",
                 "www/themes/BurningParrot/css/kanban-green.scss",
@@ -77,8 +78,8 @@
         }
     },
     "components": [
-        "plugins/agiledashboard/www/js/kanban",
-        "plugins/agiledashboard/www/js/planning-v2",
-        "plugins/agiledashboard/www/js"
+        "www/js",
+        "www/js/kanban",
+        "www/js/planning-v2"
     ]
 }

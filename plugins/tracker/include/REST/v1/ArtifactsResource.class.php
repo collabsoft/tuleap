@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,41 +20,75 @@
 
 namespace Tuleap\Tracker\REST\v1;
 
-use Tracker;
-use Tuleap\REST\JsonDecoder;
-use \Tuleap\REST\ProjectAuthorization;
-use \Tuleap\REST\Header;
+use EventManager;
+use FeedbackDao;
+use Log_NoopLogger;
+use Luracast\Restler\RestException;
+use PFUser;
+use Tracker_Artifact;
+use Tracker_Artifact_Attachment_AlreadyLinkedToAnotherArtifactException;
+use Tracker_Artifact_Attachment_FileNotFoundException;
+use Tracker_Artifact_Changeset as Changeset;
+use Tracker_Artifact_PriorityDao;
+use Tracker_Artifact_PriorityHistoryDao;
+use Tracker_Artifact_PriorityManager;
+use Tracker_Artifact_XMLImportBuilder;
+use Tracker_ArtifactFactory;
+use Tracker_Exception;
+use Tracker_FormElement_InvalidFieldException;
+use Tracker_FormElement_InvalidFieldValueException;
+use Tracker_FormElement_RESTValueByField_NotImplementedException;
+use Tracker_FormElementFactory;
+use Tracker_NoChangeException;
+use Tracker_REST_Artifact_ArtifactCreator;
+use Tracker_REST_Artifact_ArtifactRepresentationBuilder;
+use Tracker_REST_Artifact_ArtifactUpdater;
+use Tracker_REST_Artifact_ArtifactValidator;
+use Tracker_URLVerification;
+use Tracker_XML_Exporter_ArtifactXMLExporterBuilder;
+use Tracker_XML_Exporter_LocalAbsoluteFilePathXMLExporter;
+use Tracker_XML_Exporter_NullChildrenCollector;
+use TrackerFactory;
 use Tuleap\REST\AuthenticatedResource;
-use \Luracast\Restler\RestException;
-use \Tracker_ArtifactFactory;
-use \Tracker_Artifact;
+use Tuleap\REST\Header;
+use Tuleap\REST\JsonDecoder;
+use Tuleap\REST\ProjectAuthorization;
 use Tuleap\REST\QueryParameterException;
 use Tuleap\REST\QueryParameterParser;
+use Tuleap\Tracker\Action\BeforeMoveArtifact;
+use Tuleap\Tracker\Action\Move\FeedbackFieldCollector;
+use Tuleap\Tracker\Action\Move\NoFeedbackFieldCollector;
+use Tuleap\Tracker\Action\MoveArtifact;
+use Tuleap\Tracker\Action\MoveContributorSemanticChecker;
+use Tuleap\Tracker\Action\MoveDescriptionSemanticChecker;
+use Tuleap\Tracker\Action\MoveStatusSemanticChecker;
+use Tuleap\Tracker\Action\MoveTitleSemanticChecker;
+use Tuleap\Tracker\Admin\ArtifactDeletion\ArtifactsDeletionConfig;
+use Tuleap\Tracker\Admin\ArtifactDeletion\ArtifactsDeletionConfigDAO;
+use Tuleap\Tracker\Admin\ArtifactsDeletion\UserDeletionRetriever;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactDeletionLimitRetriever;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactDeletorBuilder;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactsDeletionDAO;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactsDeletionLimitReachedException;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactsDeletionManager;
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\DeletionOfArtifactsIsNotAllowedException;
+use Tuleap\Tracker\Exception\MoveArtifactNotDoneException;
+use Tuleap\Tracker\Exception\MoveArtifactSemanticsException;
 use Tuleap\Tracker\Exception\SemanticTitleNotDefinedException;
-use Tuleap\Tracker\REST\Artifact\ArtifactBatchQueryConverter;
-use Tuleap\Tracker\REST\Artifact\MalformedArtifactBatchQueryConverterException;
-use Tuleap\Tracker\REST\Artifact\MovedArtifactValueBuilder;
-use \UserManager;
-use \PFUser;
-use \Tracker_REST_Artifact_ArtifactRepresentationBuilder;
-use \Tracker_FormElementFactory;
-use \Tracker_REST_Artifact_ArtifactUpdater;
-use \Tracker_REST_Artifact_ArtifactValidator;
-use \Tracker_FormElement_InvalidFieldException;
-use \Tracker_FormElement_InvalidFieldValueException;
-use \Tracker_FormElement_RESTValueByField_NotImplementedException;
-use \Tracker_Artifact_Attachment_FileNotFoundException;
-use \Tracker_Exception;
-use \Tuleap\Tracker\REST\ChangesetCommentRepresentation;
-use \Tuleap\Tracker\REST\TrackerReference;
-use \Tracker_NoChangeException;
-use \TrackerFactory;
-use \Tracker_REST_Artifact_ArtifactCreator;
-use \Tuleap\Tracker\REST\Artifact\ArtifactReference;
-use \Tracker_URLVerification;
-use \Tracker_Artifact_Changeset as Changeset;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
-use Tracker_Artifact_Attachment_AlreadyLinkedToAnotherArtifactException;
+use Tuleap\Tracker\FormElement\Field\ListFields\FieldValueMatcher;
+use Tuleap\Tracker\REST\Artifact\ArtifactReference;
+use Tuleap\Tracker\REST\Artifact\MovedArtifactValueBuilder;
+use Tuleap\Tracker\REST\ChangesetCommentRepresentation;
+use Tuleap\Tracker\REST\TrackerReference;
+use Tuleap\Tracker\REST\v1\Event\ArtifactPartialUpdate;
+use Tuleap\Tracker\XML\Updater\MoveChangesetXMLUpdater;
+use UserManager;
+use UserXMLExportedCollection;
+use UserXMLExporter;
+use XML_RNGValidator;
+use XML_SimpleXMLCDATAFactory;
+use XMLImportHelper;
 
 class ArtifactsResource extends AuthenticatedResource {
     const MAX_LIMIT          = 50;
@@ -70,6 +104,18 @@ class ArtifactsResource extends AuthenticatedResource {
     const VALUES_DEFAULT           = null;
 
     const EMPTY_TYPE = '';
+    /**
+     * @var PostMoveArticfactRESTAction
+     */
+    private $post_move_action;
+    /**
+     * @var UserManager
+     */
+    private $user_manager;
+    /**
+     * @var UserDeletionRetriever
+     */
+    private $user_deletion_retriever;
 
     /** @var Tracker_ArtifactFactory */
     private $artifact_factory;
@@ -86,6 +132,21 @@ class ArtifactsResource extends AuthenticatedResource {
     /** @var MovedArtifactValueBuilder  */
     private $moved_value_builder;
 
+    /**
+     * @var ArtifactsDeletionManager
+     */
+    private $artifacts_deletion_manager;
+
+    /**
+     * @var ArtifactsDeletionConfig
+     */
+    private $artifacts_deletion_config;
+
+    /**
+     * @var EventManager
+     */
+    private $event_manager;
+
     public function __construct()
     {
         $this->tracker_factory     = TrackerFactory::instance();
@@ -97,6 +158,25 @@ class ArtifactsResource extends AuthenticatedResource {
             new NatureDao()
         );
         $this->moved_value_builder = new MovedArtifactValueBuilder();
+
+        $this->artifacts_deletion_config = new ArtifactsDeletionConfig(
+            new ArtifactsDeletionConfigDAO()
+        );
+
+        $artifacts_deletion_dao           = new ArtifactsDeletionDAO();
+        $this->user_deletion_retriever    = new UserDeletionRetriever($artifacts_deletion_dao);
+        $this->artifacts_deletion_manager = new ArtifactsDeletionManager(
+            $artifacts_deletion_dao,
+            ArtifactDeletorBuilder::build(),
+            new ArtifactDeletionLimitRetriever($this->artifacts_deletion_config, $this->user_deletion_retriever)
+        );
+
+        $this->event_manager = EventManager::instance();
+        $this->user_manager  = UserManager::instance();
+
+        $this->post_move_action = new PostMoveArticfactRESTAction(
+            new FeedbackDao()
+        );
     }
 
     /**
@@ -135,7 +215,7 @@ class ArtifactsResource extends AuthenticatedResource {
             throw new RestException(403, 'No more than '. self::MAX_ARTIFACT_BATCH .' artifacts can be requested at once.');
         }
 
-        $user                     = UserManager::instance()->getCurrentUser();
+        $user                     = $this->user_manager->getCurrentUser();
         $artifact_representations = array();
 
         $artifacts = $this->artifact_factory->getArtifactsByArtifactIdList(
@@ -213,7 +293,7 @@ class ArtifactsResource extends AuthenticatedResource {
     public function getId($id, $values_format = self::VALUES_DEFAULT) {
         $this->checkAccess();
 
-        $user     = UserManager::instance()->getCurrentUser();
+        $user     = $this->user_manager->getCurrentUser();
         $artifact = $this->getArtifactById($user, $id);
         $this->sendAllowHeadersForArtifact();
         $this->sendLastModifiedHeader($artifact);
@@ -245,7 +325,7 @@ class ArtifactsResource extends AuthenticatedResource {
     {
         $this->checkAccess();
 
-        $user     = UserManager::instance()->getCurrentUser();
+        $user     = $this->user_manager->getCurrentUser();
         $artifact = $this->getArtifactById($user, $id);
 
         $artifact_link_representation = new ArtifactLinkRepresentation();
@@ -293,7 +373,7 @@ class ArtifactsResource extends AuthenticatedResource {
     ) {
         $this->checkAccess();
 
-        $user     = UserManager::instance()->getCurrentUser();
+        $user     = $this->user_manager->getCurrentUser();
         $artifact = $this->getArtifactById($user, $id);
 
         $linked_artifacts = $this->builder->getArtifactRepresentationCollection(
@@ -355,7 +435,7 @@ class ArtifactsResource extends AuthenticatedResource {
         $order  = self::ORDER_ASC
     ) {
         $this->checkAccess();
-        $user          = UserManager::instance()->getCurrentUser();
+        $user          = $this->user_manager->getCurrentUser();
         $artifact      = $this->getArtifactById($user, $id);
         $reverse_order = (bool) (strtolower($order) === self::ORDER_DESC);
         $changesets    = $this->builder->getArtifactChangesetsRepresentation($user, $artifact, $fields, $offset, $limit, $reverse_order);
@@ -399,10 +479,10 @@ class ArtifactsResource extends AuthenticatedResource {
      *
      */
     protected function putId($id, array $values, ChangesetCommentRepresentation $comment = null) {
-        $user     = UserManager::instance()->getCurrentUser();
+        $user     = $this->user_manager->getCurrentUser();
         $artifact = $this->getArtifactById($user, $id);
 
-        $this->sendAllowHeadersForArtifact($artifact);
+        $this->sendAllowHeadersForArtifact();
         try {
             $updater = new Tracker_REST_Artifact_ArtifactUpdater(
                 new Tracker_REST_Artifact_ArtifactValidator(
@@ -528,7 +608,7 @@ class ArtifactsResource extends AuthenticatedResource {
         $this->checkThatThereIsOnlyOneSourceOfValuesToCreateArtifact($values, $values_by_field, $from_artifact);
 
         try {
-            $user = UserManager::instance()->getCurrentUser();
+            $user = $this->user_manager->getCurrentUser();
 
             if (! empty($from_artifact)) {
                 $source_artifact = $this->getArtifactById($user, $from_artifact->id);
@@ -573,6 +653,275 @@ class ArtifactsResource extends AuthenticatedResource {
         } catch (Tracker_Artifact_Attachment_FileNotFoundException $exception) {
             throw new RestException(404, $exception->getMessage());
         }
+    }
+
+    /**
+     * Delete an artifact given its id
+     *
+     * @url DELETE {id}
+     *
+     * @throws 401 Unauthorized
+     * @throws 403 Forbidden
+     * @throws 404 Artifact Not found
+     * @throws 429 Too Many Requests (rate limit exceeded)
+     *
+     * @access hybrid
+     * @param int $id Id of the artifact
+     */
+    public function deleteArtifact($id)
+    {
+        $this->checkAccess();
+
+        $user                  = $this->user_manager->getCurrentUser();
+        $artifact              = $this->getArtifactById($user, $id);
+        $is_user_tracker_admin = $artifact->getTracker()->userIsAdmin($user);
+
+        if (! $is_user_tracker_admin) {
+            throw new RestException(403);
+        }
+
+        $remaining_deletions = 0;
+        $limit               = $this->artifacts_deletion_config->getArtifactsDeletionLimit();
+
+        try {
+            $remaining_deletions = $this->artifacts_deletion_manager->deleteArtifact($artifact, $user);
+        } catch (DeletionOfArtifactsIsNotAllowedException $exception) {
+            throw new RestException(403, $exception->getMessage());
+        } catch (ArtifactsDeletionLimitReachedException $limit_reached_exception) {
+            throw new RestException(429, $limit_reached_exception->getMessage());
+        } finally {
+            Header::sendRateLimitHeaders($limit, $remaining_deletions);
+            $this->sendAllowHeadersForArtifact();
+        }
+    }
+
+    /**
+     * Artifact partial update
+     *
+     * Partial update of an artifact.
+     * <br/>
+     *
+     * <pre>
+     * /!\ REST route under construction and subject to changes /!\
+     * </pre>
+     * <br/>
+     *
+     * This partial update allows user to move an artifact from one tracker to another.
+     * <br/>
+     * This route moves an artifact from one tracker to another keeping:
+     * <br/>
+     * <ul>
+     * <li> Artifact ID </li>
+     * <li> Submitter user </li>
+     * <li> Submitted on date </li>
+     * <li> Semantic title</li>
+     * <li> Semantic descprition</li>
+     * <li> Semantic status</li>
+     * <li> Semantic initial effort</li>
+     * </ul>
+     *
+     * <br/>
+     * To move an Artifact:
+     * <pre>
+     * {<br>
+     * &nbsp;"move": {<br/>
+     * &nbsp;&nbsp;"tracker_id": 1<br/>
+     * &nbsp;}<br/>
+     * }
+     * </pre>
+     * <br/>
+     * Limitations:
+     * <ul>
+     * <li>User must be admin of both source and target trackers in order to be able to move an artifact.</li>
+     * <li>Artifact must not be linked to a FRS release.</li>
+     * <li>Both trackers must have the title semantic, the description semantic, the status semantic, the contributor semantic and the initial effort semantic aligned
+     * (traget tracker must have at least one semantic used in source tracker)
+     * </li>
+     * </ul>
+     * <br/>
+     * <br/>
+     * Values for list fields (status and initial effort) are retrieved with duck typing:
+     * <ul>
+     * <li>Values are checked without taking into account the case</li>
+     * <li>The first value matching the label is returned</li>
+     * <li>If no corresponding value found, the default value is returned</li>
+     * </ul>
+     * <br/>
+     * <br/>
+     * Values for list fields bound to users (contributor) are are moved "as much as possible".
+     * <br/>
+     * If a user is not part of the target group, he is silently ignored..
+     * <br/>
+     * <br/>
+     * A new dry-run mode has been added, it allows user to know which fields will be moved or not without doing the action.
+     *  <br/>
+     * To move an Artifact in dry-run:
+     * <pre>
+     * {<br>
+     * &nbsp;"move": {<br/>
+     * &nbsp;&nbsp;"tracker_id": 1<br/>
+     * &nbsp;&nbsp;"dry_run": true<br/>
+     * &nbsp;}<br/>
+     * }
+     * </pre>
+     *
+     * <br>
+     * Note for should_populate_feedback_on_success: this parameter is here to create (if true) a feedback in Tuleap UI
+     * in case of a successful move. The feedback will be displayed the next time the user browse Tuleap. If dry_run is
+     * true, then should_populate_feedback_on_success has no incidence since no move is really done.
+     * By default should_populate_feedback_on_success is false, no feedback will be created.
+     *
+     * @url PATCH {id}
+     *
+     * @access protected
+     *
+     * @param int                         $id    Id of the artifact
+     * @param ArtifactPatchRepresentation $patch Tracker in which the artifact must be created {@from body} {@type \Tuleap\Tracker\REST\v1\ArtifactPatchRepresentation}
+     *
+     * @return ArtifactPatchResponseRepresentation
+     *
+     * @throws 400
+     * @throws 403
+     * @throws 426
+     * @throws 404 Artifact Not found
+     * @throws 500
+     */
+    protected function patchArtifact($id, ArtifactPatchRepresentation $patch)
+    {
+        $this->checkAccess();
+
+        try {
+            $user                = $this->user_manager->getCurrentUser();
+            $limit               = $this->artifacts_deletion_config->getArtifactsDeletionLimit();
+            $remaining_deletions = $this->getRemainingNumberOfDeletion($user);
+
+            $artifact = $this->getArtifactById($user, $id);
+
+            $source_tracker = $artifact->getTracker();
+            $target_tracker = $this->tracker_factory->getTrackerById($patch->move->tracker_id);
+
+            if (! $target_tracker || $target_tracker->isDeleted()) {
+                throw new RestException(404, "Target tracker not found");
+            }
+
+            if (! $source_tracker->userIsAdmin($user) || ! $target_tracker->userIsAdmin($user)) {
+                throw new RestException(400, "User must be admin of both trackers");
+            }
+
+            if ($artifact->getTrackerId() === $target_tracker->getId()) {
+                throw new RestException(400, "An artifact cannot be moved in the same tracker");
+            }
+
+            if (count($artifact->getLinkedAndReverseArtifacts($user)) > 0) {
+                throw new RestException(400, "An artifact with linked artifacts or reverse linked artifacts cannot be moved");
+            }
+
+            $event = new ArtifactPartialUpdate($artifact);
+            $this->event_manager->processEvent($event);
+
+            if (! $event->isArtifactUpdatable()) {
+                throw new RestException(400, $event->getNotUpdatableMessage());
+            }
+
+            $move_action             = $this->getMoveAction($user);
+            $response_representation = new ArtifactPatchResponseRepresentation();
+
+            if ($patch->move->dry_run) {
+                $feedback_collector = new FeedbackFieldCollector();
+                $feedback_collector->initAllTrackerFieldAsNotMigrated($source_tracker);
+                $move_action->checkMoveIsPossible($artifact, $target_tracker, $user, $feedback_collector);
+                $response_representation->build($feedback_collector);
+            } else {
+                $feedback_collector  = new NoFeedbackFieldCollector();
+                $remaining_deletions = $move_action->move($artifact, $target_tracker, $user, $feedback_collector);
+
+                if ($patch->move->should_populate_feedback_on_success) {
+                    $this->post_move_action->addFeedback($source_tracker, $target_tracker, $artifact, $user);
+                }
+            }
+
+            return $response_representation;
+        } catch (DeletionOfArtifactsIsNotAllowedException $exception) {
+            $limit = $remaining_deletions = 0;
+            throw new RestException(403, $exception->getMessage());
+        } catch (ArtifactsDeletionLimitReachedException $limit_reached_exception) {
+            $remaining_deletions = 0;
+            throw new RestException(429, $limit_reached_exception->getMessage());
+        } catch (MoveArtifactNotDoneException $exception) {
+            throw new RestException(500, $exception->getMessage());
+        } catch (MoveArtifactSemanticsException $exception) {
+            throw new RestException(400, $exception->getMessage());
+        } finally {
+            Header::sendRateLimitHeaders($limit, $remaining_deletions);
+            $this->sendAllowHeadersForArtifact();
+        }
+    }
+
+    /**
+     * @throws ArtifactsDeletionLimitReachedException
+     * @throws DeletionOfArtifactsIsNotAllowedException
+     */
+    private function getRemainingNumberOfDeletion(PFUser $user)
+    {
+        $artifact_deletion_limit_retriever = new ArtifactDeletionLimitRetriever(
+            $this->artifacts_deletion_config,
+            $this->user_deletion_retriever
+        );
+
+        return (int) $artifact_deletion_limit_retriever->getNumberOfArtifactsAllowedToDelete($user);
+    }
+
+    /**
+     * @return MoveArtifact
+     */
+    private function getMoveAction(PFUser $user)
+    {
+        $builder                = new Tracker_XML_Exporter_ArtifactXMLExporterBuilder();
+        $children_collector     = new Tracker_XML_Exporter_NullChildrenCollector();
+        $file_path_xml_exporter = new Tracker_XML_Exporter_LocalAbsoluteFilePathXMLExporter();
+
+        $user_xml_exporter = new UserXMLExporter(
+            $this->user_manager,
+            new UserXMLExportedCollection(new XML_RNGValidator(), new XML_SimpleXMLCDATAFactory())
+        );
+
+        $xml_import_builder = new Tracker_Artifact_XMLImportBuilder();
+        $user_finder        = new XMLImportHelper($this->user_manager);
+
+        $title_semantic_checker       = new MoveTitleSemanticChecker();
+        $description_semantic_checker = new MoveDescriptionSemanticChecker($this->formelement_factory);
+        $status_semantic_checker      = new MoveStatusSemanticChecker($this->formelement_factory);
+        $contributor_semantic_checker = new MoveContributorSemanticChecker($this->formelement_factory);
+
+        return new MoveArtifact(
+            $this->artifacts_deletion_manager,
+            $builder->build($children_collector, $file_path_xml_exporter, $user, $user_xml_exporter, true),
+            new MoveChangesetXMLUpdater(
+                $this->event_manager,
+                new FieldValueMatcher($user_finder),
+                $title_semantic_checker,
+                $description_semantic_checker,
+                $status_semantic_checker,
+                $contributor_semantic_checker
+            ),
+            $xml_import_builder->build(
+                $user_finder,
+                new Log_NoopLogger()
+            ),
+            new Tracker_Artifact_PriorityManager(
+                new Tracker_Artifact_PriorityDao(),
+                new Tracker_Artifact_PriorityHistoryDao(),
+                $this->user_manager,
+                $this->artifact_factory
+            ),
+            new BeforeMoveArtifact(
+                $this->event_manager,
+                $title_semantic_checker,
+                $description_semantic_checker,
+                $status_semantic_checker,
+                $contributor_semantic_checker
+            )
+        );
     }
 
     private function getTrackerById(PFUser $user, $tracker_id)
@@ -622,7 +971,7 @@ class ArtifactsResource extends AuthenticatedResource {
     }
 
     private function sendAllowHeadersForArtifact() {
-        Header::allowOptionsGetPut();
+        Header::allowOptionsGetPutDeletePatch();
     }
 
     private function sendLastModifiedHeader(Tracker_Artifact $artifact) {
@@ -649,15 +998,16 @@ class ArtifactsResource extends AuthenticatedResource {
         array $values,
         array $values_by_field,
         $from_artifact
-    ) {
+    )
+    {
         $nb_sources_to_create_artifact = 0;
-        if (! empty($values)) {
+        if (!empty($values)) {
             $nb_sources_to_create_artifact++;
         }
-        if (! empty($values_by_field)) {
+        if (!empty($values_by_field)) {
             $nb_sources_to_create_artifact++;
         }
-        if (! empty($from_artifact)) {
+        if (!empty($from_artifact)) {
             $nb_sources_to_create_artifact++;
         }
         if ($nb_sources_to_create_artifact > 1) {

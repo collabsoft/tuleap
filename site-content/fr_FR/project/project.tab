@@ -393,7 +393,6 @@ project_admin_servicebar	label_missed	Le label est manquant
 project_admin_servicebar	link_missed	Le lien est manquant
 project_admin_servicebar	rank_missed	Le rang est manquant
 project_admin_servicebar	cant_make_s	Impossible de créer un service de portée "système" sans un nom court
-project_admin_servicebar	set_stat_unused	- Statut sur "inutilisé" -
 project_admin_servicebar	short_name_exist	Un service ayant le même nom court existe déjà
 project_admin_servicebar	cant_make_system_wide_s	Impossible de créer un service de portée "système" dans un projet autre que le projet 100
 project_admin_servicebar	cant_create_s	Impossible de créer le service
@@ -478,7 +477,7 @@ project_export_artifact_deps_export	no_deps_found	Aucune dépendance disponible.
 project_export_artifact_deps_export	db_access_err	Erreur lors de l'accès à la base de données des dépendances. Veuillez informer l'administrateur $1 de cette erreur.
 project_export_artifact_deps_export	deps_export_format	Format d'exportation des dépendances
 project_export_artifact_deps_export	deps_export_format_msg	Le format d'exportation des dépendances comprend les champs suivants. Les valeurs données en exemple indique le type des données.
-project_export_artifact_deps_export	create_proj_err	Erreur à la création de la table $2 pour le projet $1
+project_export_artifact_deps_export	create_proj_err	Erreur à la création de la table $1
 project_export_artifact_deps_export	security_violation	VIOLATION DE SECURITE !!! Nom de base de données non autorisé&nbsp;: $1
 project_export_artifact_deps_export	art_id_desc	Identifiant unique de l'artefact
 project_export_artifact_deps_export	depend_on_art	Dépend du/des artefacts
@@ -708,7 +707,6 @@ project_stats_source_code_access_utils	access_for_past_x_days	$1 sur les $2 dern
 project_stats_source_code_access_utils	in_total	$1 au total
 project_stats_source_code_access_utils	time	Heure locale
 project_stats_source_code_access_utils	no_access	Aucun pour cette période.
-project_stats_source_code_access_utils	service_disabled	Service $1 désactivé
 project_stats_source_code_access_utils	subversion	Subversion
 project_stats_source_code_access_utils	docs	Documentation
 project_stats_source_code_access_utils	wiki	Wiki

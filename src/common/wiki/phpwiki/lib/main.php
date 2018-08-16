@@ -48,8 +48,8 @@ function mayAccessPage ($access, $pagename) {
 class WikiRequest extends Request {
     // var $_dbi;
 
-    function WikiRequest () {
-        $this->_dbi = WikiDB::open($GLOBALS['DBParams']);
+    function __construct () {
+        $this->_dbi = WikiDB::open();
          // first mysql request costs [958ms]! [670ms] is mysql_connect()
         
         if (in_array('File', $this->_dbi->getAuthParam('USER_AUTH_ORDER'))) {
@@ -74,29 +74,16 @@ class WikiRequest extends Request {
             }
             unset($method);
         }
-        if (USE_DB_SESSION) {
-            include_once('lib/DbSession.php');
-            $dbi =& $this->_dbi;
-            $this->_dbsession = new DbSession($dbi, $dbi->getParam('prefix') 
-                                              . $dbi->getParam('db_session_table'));
-        }
 
 // Fixme: Does pear reset the error mask to 1? We have to find the culprit
 //$x = error_reporting();
 
         $this->version = phpwiki_version();
-        $this->Request(); // [90ms]
+        parent::__construct(); // [90ms]
 
         // Normalize args...
         $this->setArg('pagename', $this->_deducePagename());
         $this->setArg('action', $this->_deduceAction());
-
-        if ((DEBUG & _DEBUG_SQL) or (time() % 50 == 0)) {
-            if ($this->_dbi->_backend->optimize()) {
-                // Codendi: don't show this message...
-                //trigger_error(_("Optimizing database"), E_USER_NOTICE);
-            }
-        }
 
         // Restore auth state. This doesn't check for proper authorization!
         $userid = $this->_deduceUsername();	
@@ -581,7 +568,6 @@ class WikiRequest extends Request {
             case 'diff':
             case 'select':
             case 'search':
-            case 'pdf':
                 return WIKIAUTH_ANON;
 
             case 'zip':
@@ -1056,11 +1042,6 @@ class WikiRequest extends Request {
         include_once("lib/loadsave.php");
         RakeSandboxAtUserRequest($this);
     }
-
-    function action_pdf () {
-    	include_once("lib/pdf.php");
-    	ConvertAndDisplayPdf($this);
-    }
     
 }
 
@@ -1103,8 +1084,7 @@ function validateSessionPath() {
 }
 
 function main () {
-    if ( !USE_DB_SESSION )
-        validateSessionPath();
+    validateSessionPath();
 
     global $request;
     if ((DEBUG & _DEBUG_APD) and extension_loaded("apd"))
@@ -1117,14 +1097,6 @@ function main () {
     else
         $ErrorManager->setPostponedErrorMask(E_NOTICE|E_USER_NOTICE|E_USER_WARNING|E_WARNING);
     $request = new WikiRequest();
-
-    $action = $request->getArg('action');
-    if (substr($action, 0, 3) != 'zip') {
-    	if ($action == 'pdf')
-    	    $ErrorManager->setPostponedErrorMask(-1); // everything
-    	//else // reject postponing of warnings
-        //    $ErrorManager->setPostponedErrorMask(E_NOTICE|E_USER_NOTICE);
-    }
 
     /*
      * Allow for disabling of markup cache.

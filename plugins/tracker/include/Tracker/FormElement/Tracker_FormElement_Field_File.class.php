@@ -157,7 +157,8 @@ class Tracker_FormElement_Field_File extends Tracker_FormElement_Field {
         return $html;
     }
 
-    public function fetchArtifactForOverlay(Tracker_Artifact $artifact) {
+    public function fetchArtifactForOverlay(Tracker_Artifact $artifact, $submitted_values = [])
+    {
         return $this->fetchArtifactReadOnly($artifact);
     }
 
@@ -165,7 +166,8 @@ class Tracker_FormElement_Field_File extends Tracker_FormElement_Field {
         return '';
     }
 
-    public function fetchArtifactCopyMode(Tracker_Artifact $artifact) {
+    public function fetchArtifactCopyMode(Tracker_Artifact $artifact, $submitted_values = [])
+    {
         $last_changeset = $artifact->getLastChangeset();
         if ($last_changeset) {
             $value = $last_changeset->getValue($this);
@@ -550,14 +552,20 @@ class Tracker_FormElement_Field_File extends Tracker_FormElement_Field {
                 if (ob_get_level()) {
                     ob_end_clean();
                 }
-                readfile($fileinfo->getPath());
+                flush();
+                $file = fopen($fileinfo->getPath(), "r");
+                while (! feof($file)) {
+                    print fread($file, 30*1024);
+                    flush();
+                }
+                fclose($file);
             }
         }
         exit();
     }
 
     public function getRootPath() {
-        return ForgeConfig::get('sys_data_dir') .'/tracker/'. $this->getId();
+        return $this->getGlobalTrackerRootPath() . $this->getId();
     }
 
     /**
@@ -817,6 +825,8 @@ class Tracker_FormElement_Field_File extends Tracker_FormElement_Field {
             foreach($previous_changesetvalue as $previous_attachment) {
                 if (empty($value['delete']) || !in_array($previous_attachment->getId(), $value['delete'])) {
                     $previous_fileinfo_ids[] = $previous_attachment->getId();
+                }  elseif (! empty($value['delete']) && in_array($previous_attachment->getId(), $value['delete'])) {
+                    $previous_attachment->delete();
                 }
             }
             if (count($previous_fileinfo_ids)) {
@@ -945,7 +955,7 @@ class Tracker_FormElement_Field_File extends Tracker_FormElement_Field {
         if (! is_dir($path)) {
             mkdir($path, 0777, true);
             $backend->recurseChownChgrp(
-                $this->getRootPath(),
+                $this->getGlobalTrackerRootPath(),
                 ForgeConfig::get('sys_http_user'),
                 ForgeConfig::get('sys_http_user'),
                 $no_filter_file_extension
@@ -1185,5 +1195,13 @@ class Tracker_FormElement_Field_File extends Tracker_FormElement_Field {
             $is_empty = $this->isPreviousChangesetEmpty($artifact, $value);
         }
         return $is_empty;
+    }
+
+    /**
+     * @return string
+     */
+    private function getGlobalTrackerRootPath()
+    {
+        return ForgeConfig::get('sys_data_dir') . '/tracker/';
     }
 }

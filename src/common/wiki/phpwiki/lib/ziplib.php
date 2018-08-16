@@ -247,7 +247,7 @@ define('ZIP_ENDDIR_MAGIC',   "PK\005\006");
 
 class ZipWriter
 {
-    function ZipWriter ($comment = "", $zipname = "archive.zip") {
+    function __construct ($comment = "", $zipname = "archive.zip") {
         $this->comment = $comment;
         $this->nfiles = 0;
         $this->dir = "";		// "Central directory block"
@@ -378,7 +378,7 @@ class ZipWriter
  */
 class ZipReader
 {
-    function ZipReader ($zipfile) {
+    function __construct ($zipfile) {
         if (!is_string($zipfile)) { // filepointer: File already open
             $this->fp = $zipfile;
             $zipfile = NULL;
@@ -748,10 +748,10 @@ function ParseMimeifiedPerm($string) {
         return '';
     }
     $hash = array();
-    foreach (split(";",trim($string)) as $accessgroup) {
-        list($access,$groupstring) = split(":",trim($accessgroup));
+    foreach (preg_split("/;/D",trim($string)) as $accessgroup) {
+        list($access,$groupstring) = preg_split("/:/D",trim($accessgroup));
         $access = trim($access);
-        $groups = split(",",trim($groupstring));
+        $groups = preg_split("/,/D",trim($groupstring));
         foreach ($groups as $group) {
             $group = trim($group);
             $bool = (boolean) (substr($group,0,1) != '-');

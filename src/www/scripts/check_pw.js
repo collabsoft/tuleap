@@ -1,6 +1,6 @@
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2011-2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2011-2018. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,13 @@
  */
 
 (function($) {
+    let currentRequest = null;
+
     function checkPassword() {
-        $.post(
+        if (currentRequest !== null) {
+            currentRequest.abort();
+        }
+        currentRequest = $.post(
             '/include/check_pw.php',
             {
                 form_pw:$(this).val()
@@ -30,7 +35,8 @@
             } else {
                 setRobustnessToGood();
             }
-        })
+            currentRequest = null;
+        });
     }
 
     function toggleErrorMessages(data) {
@@ -60,18 +66,40 @@
     function setRobustnessToGood() {
         $('.robustness .password_strategy_bad').hide();
         $('.robustness .password_strategy_good').show();
+        $('.robustness .password_validators_loading').hide();
     }
 
     function setRobustnessToBad() {
         $('.robustness .password_strategy_bad').show();
         $('.robustness .password_strategy_good').hide();
+        $('.robustness .password_validators_loading').hide();
+    }
+
+    /**
+     * Simplified version of debounce function of Underscore.js
+     *
+     * @see http://underscorejs.org/#debounce
+     */
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(function() {
+                timeout = null;
+                func.apply(context, args);
+            }, wait);
+        };
     }
 
     $(document).ready(function() {
-        $('#form_pw').attr('autocomplete', 'off');
         setRobustnessToBad();
 
-        $('#form_pw').on('paste keyup', checkPassword);
-        $.proxy(checkPassword, $('#form_pw'))();
+        const debouncedCheckPassword = debounce(checkPassword, 300);
+
+        $('#form_pw').on('paste keyup', debouncedCheckPassword);
+        $('#form_pw').on('paste keyup', function() {
+            $('.robustness .password_validators_loading').show();
+        });
     });
 })(jQuery);

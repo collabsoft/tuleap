@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Git\Events\AfterRepositoryForked;
 use Tuleap\Git\Permissions\FineGrainedPermissionReplicator;
 use Tuleap\Git\Permissions\HistoryValueFormatter;
+use Tuleap\Git\PostInitGitRepositoryWithDataEvent;
+use Tuleap\Git\Repository\GitRepositoryNameIsInvalidException;
 
 require_once 'PathJoinUtil.php';
 
@@ -79,6 +82,10 @@ class GitRepositoryManager {
      * @var System_Command
      */
     private $system_command;
+    /**
+     * @var EventManager
+     */
+    private $event_manager;
 
     /**
      * @param GitRepositoryFactory $repository_factory
@@ -94,7 +101,8 @@ class GitRepositoryManager {
         Git_Mirror_MirrorDataMapper $mirror_data_mapper,
         FineGrainedPermissionReplicator $fine_grained_replicator,
         ProjectHistoryDao $history_dao,
-        HistoryValueFormatter $history_value_formatter
+        HistoryValueFormatter $history_value_formatter,
+        EventManager $event_manager
     ) {
         $this->repository_factory       = $repository_factory;
         $this->git_system_event_manager = $git_system_event_manager;
@@ -106,6 +114,7 @@ class GitRepositoryManager {
         $this->fine_grained_replicator  = $fine_grained_replicator;
         $this->history_dao              = $history_dao;
         $this->history_value_formatter  = $history_value_formatter;
+        $this->event_manager            = $event_manager;
     }
 
     /**
@@ -121,9 +130,18 @@ class GitRepositoryManager {
         }
     }
 
+    /**
+     * @param GitRepository        $repository
+     * @param GitRepositoryCreator $creator
+     *
+     * @throws GitDaoException
+     * @throws GitRepositoryAlreadyExistsException
+     * @throws GitRepositoryNameIsInvalidException
+     */
     private function initRepository(GitRepository $repository, GitRepositoryCreator $creator) {
         if (!$creator->isNameValid($repository->getName())) {
-            throw new Exception($GLOBALS['Language']->getText(
+            throw new GitRepositoryNameIsInvalidException(
+                $GLOBALS['Language']->getText(
                 'plugin_git',
                 'actions_input_format_error',
                 array($creator->getAllowedCharsInNamePattern(), GitDao::REPO_NAME_MAX_LENGTH)
@@ -137,12 +155,16 @@ class GitRepositoryManager {
     }
 
     /**
-     * Create a new GitRepository through its backend
+     * @param GitRepository        $repository
+     * @param GitRepositoryCreator $creator
+     * @param array                $mirror_ids
      *
-     * @param  GitRepository $repository
-     * @throws Exception
+     * @throws GitDaoException
+     * @throws GitRepositoryAlreadyExistsException
+     * @throws GitRepositoryNameIsInvalidException
      */
-    public function create(GitRepository $repository, GitRepositoryCreator $creator, array $mirror_ids) {
+    public function create(GitRepository $repository, GitRepositoryCreator $creator, array $mirror_ids)
+    {
         $this->initRepository($repository, $creator);
 
         if ($mirror_ids) {
@@ -152,6 +174,15 @@ class GitRepositoryManager {
         $this->git_system_event_manager->queueRepositoryUpdate($repository);
     }
 
+    /**
+     * @param GitRepository        $repository
+     * @param GitRepositoryCreator $creator
+     * @param                      $bundle_path
+     *
+     * @throws GitDaoException
+     * @throws GitRepositoryAlreadyExistsException
+     * @throws GitRepositoryNameIsInvalidException
+     */
     public function createFromBundle(GitRepository $repository, GitRepositoryCreator $creator, $bundle_path) {
         $this->initRepository($repository, $creator);
 
@@ -160,6 +191,8 @@ class GitRepositoryManager {
         $this->system_command->exec("sudo -u gitolite /usr/share/tuleap/plugins/git/bin/gl-clone-bundle.sh $bundle_path_arg $repository_full_path_arg");
 
         $this->git_system_event_manager->queueRepositoryUpdate($repository);
+
+        $this->event_manager->processEvent(new PostInitGitRepositoryWithDataEvent($repository));
     }
 
     private function forkUniqueRepository(GitRepository $repository, Project $to_project, PFUser $user, $namespace, $scope, array $forkPermissions) {
@@ -201,6 +234,9 @@ class GitRepositoryManager {
             } else {
                 $this->fine_grained_replicator->replicateRepositoryPermissions($repository, $clone);
             }
+
+            $event = new AfterRepositoryForked($repository, $clone);
+            $this->event_manager->processEvent($event);
 
             $this->history_dao->groupAddHistory(
                 'perm_granted_for_git_repository',
@@ -244,9 +280,17 @@ class GitRepositoryManager {
         $clone->setId($id);
     }
 
-    private function assertRepositoryNameNotAlreadyUsed(GitRepository $repository) {
+    /**
+     * @param GitRepository $repository
+     *
+     * @throws GitRepositoryAlreadyExistsException
+     */
+    private function assertRepositoryNameNotAlreadyUsed(GitRepository $repository)
+    {
         if ($this->isRepositoryNameAlreadyUsed($repository)) {
-            throw new Exception($GLOBALS['Language']->getText('plugin_git', 'actions_create_repo_exists', array($repository->getName())));
+            throw new GitRepositoryAlreadyExistsException(
+                $GLOBALS['Language']->getText('plugin_git', 'actions_create_repo_exists', [$repository->getName()])
+            );
         }
     }
 

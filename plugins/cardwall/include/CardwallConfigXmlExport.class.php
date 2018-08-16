@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -47,7 +47,7 @@ class CardwallConfigXmlExport {
     public function export(SimpleXMLElement $root) {
         $cardwall_node = $root->addChild(CardwallConfigXml::NODE_CARDWALL);
         $trackers_node = $cardwall_node->addChild(CardwallConfigXml::NODE_TRACKERS);
-        $trackers      = $this->tracker_factory->getTrackersByGroupId($this->project->getId());
+        $trackers      = $this->tracker_factory->getTrackersByGroupId($this->project->getID());
         foreach ($trackers as $tracker) {
             $this->addTrackerChild($tracker, $trackers_node);
         }
@@ -112,7 +112,12 @@ class CardwallConfigXmlExport {
         $bg_red   = null;
         $bg_blue  = null;
 
-        $bg_colors = $column->getBgcolor();
+        $bg_colors = $column->getHeadercolor();
+
+        if ($column->isHeaderATLPColor()) {
+            $column_node->addAttribute(CardwallConfigXml::ATTRIBUTE_COLUMN_TLP_COLOR_NAME, $bg_colors);
+            return;
+        }
 
         if ($bg_colors) {
             $regexp  = "/^rgb\((\d{1,3}), (\d{1,3}), (\d{1,3})\)$/";

@@ -1,30 +1,31 @@
 <?php
-/*
+/**
+ * Copyright (c) Enalean, 2015-2018. All rights reserved
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2007
  * 
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
 class Docman_ReportColumn {
     var $md;
     var $sort;
 
-    function Docman_ReportColumn($md) {
+    function __construct($md) {
         $this->md = $md;
         $this->sort = null;
     }
@@ -121,7 +122,7 @@ class Docman_ReportColumn {
 
 class Docman_ReportColumnLocation 
 extends Docman_ReportColumn {
-    function Docman_ReportColumnLocation() {
+    function __construct() {
         $this->sort = null;
     }
 
@@ -133,11 +134,13 @@ extends Docman_ReportColumn {
         return;
     }
 
-    function getTitle($defaultUrl) {
+    public function getTitle($defaultUrl, $viewParams = '')
+    {
         return $GLOBALS['Language']->getText('plugin_docman', 'view_documenttable_location');
     }
 
-    function initFromRequest() {
+    public function initFromRequest($request)
+    {
         return;
     }
 
@@ -164,8 +167,8 @@ extends Docman_ReportColumn {
 
 class Docman_ReportColumnTitle
 extends Docman_ReportColumn {
-    function Docman_ReportColumnTitle($md) {
-        parent::Docman_ReportColumn($md);
+    function __construct($md) {
+        parent::__construct($md);
     }
 
     function getTableBox($item, $view, $params) {
@@ -195,8 +198,8 @@ extends Docman_ReportColumn {
 
 class Docman_ReportColumnList
 extends Docman_ReportColumn {
-    function Docman_ReportColumnList($md) {
-        parent::Docman_ReportColumn($md);
+    function __construct($md) {
+        parent::__construct($md);
     }
 
     function getTableBox($item, $view, $params) {

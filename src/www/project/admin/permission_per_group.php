@@ -20,21 +20,19 @@
 
 use Tuleap\FRS\FRSPermissionDao;
 use Tuleap\FRS\FRSPermissionFactory;
-use Tuleap\FRS\PerGroup\FRSPermissionPerGroupURLBuilder;
-use Tuleap\FRS\PerGroup\PaneCollector;
-use Tuleap\FRS\PerGroup\PermissionPerGroupFRSPackagesPresenterBuilder;
-use Tuleap\FRS\PerGroup\PermissionPerGroupFRSServicePresenterBuilder;
-use Tuleap\FRS\PerGroup\PermissionPerTypeExtractor;
-use Tuleap\News\Admin\AdminNewsDao;
-use Tuleap\News\Admin\PerGroup\NewsPermissionPerGroupPaneBuilder;
-use Tuleap\News\Admin\PerGroup\NewsPermissionsManager;
-use Tuleap\PHPWiki\PerGroup\PHPWikiPermissionPerGroupPaneBuilder;
+use Tuleap\FRS\PermissionsPerGroup\FRSPermissionPerGroupURLBuilder;
+use Tuleap\FRS\PermissionsPerGroup\PaneCollector;
+use Tuleap\FRS\PermissionsPerGroup\PermissionPerGroupFRSPackagesPresenterBuilder;
+use Tuleap\FRS\PermissionsPerGroup\PermissionPerGroupFRSServicePresenterBuilder;
+use Tuleap\FRS\PermissionsPerGroup\PermissionPerTypeExtractor;
+use Tuleap\News\Admin\PermissionsPerGroup\NewsPermissionPerGroupPaneBuilder;
+use Tuleap\PHPWiki\PermissionsPerGroup\PHPWikiPermissionPerGroupPaneBuilder;
 use Tuleap\Project\Admin\Navigation\HeaderNavigationDisplayer;
-use Tuleap\Project\Admin\PerGroup\PermissionPerGroupUGroupFormatter;
-use Tuleap\Project\Admin\Permission\PanesPermissionPerGroupBuilder;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupBuilder;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupPresenter;
-use Tuleap\Project\Admin\Permission\PermissionPerGroupUGroupRetriever;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupDisplayEvent;
+use Tuleap\Project\Admin\PermissionsPerGroup\PanesPermissionPerGroupBuilder;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupBuilder;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupPresenter;
+use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupFormatter;
 
 require_once('pre.php');
 
@@ -46,8 +44,10 @@ session_require(array('group' => $group_id, 'admin_flags' => 'A'));
 $project_manager = ProjectManager::instance();
 $project         = $project_manager->getProject($group_id);
 
-$title = _('Permissions per group');
+$event_manager = EventManager::instance();
+$event_manager->processEvent(new PermissionPerGroupDisplayEvent($GLOBALS['HTML']));
 
+$title = _('Permissions per group');
 $navigation_displayer = new HeaderNavigationDisplayer();
 $navigation_displayer->displayBurningParrotNavigation($title, $project, 'permissions');
 
@@ -55,25 +55,21 @@ $ugroup_manager    = new UGroupManager();
 $formatter         = new PermissionPerGroupUGroupFormatter($ugroup_manager);
 $presenter_builder = new PermissionPerGroupBuilder($ugroup_manager);
 $groups            = $presenter_builder->buildUGroup($project, $request);
-$formatter         = new PermissionPerGroupUGroupFormatter($ugroup_manager);
 
 $additional_panes_builder = new PanesPermissionPerGroupBuilder(
-    EventManager::instance(),
+    $event_manager,
     new PaneCollector(
         new PermissionPerGroupFRSServicePresenterBuilder(
             new PermissionPerTypeExtractor(
                 new FRSPermissionFactory(new FRSPermissionDao()),
                 $formatter,
-                new FRSPermissionPerGroupURLBuilder()
+                new FRSPermissionPerGroupURLBuilder(),
+                $ugroup_manager
             ),
             $ugroup_manager
         ),
         new PermissionPerGroupFRSPackagesPresenterBuilder(
-            $ugroup_manager,
-            new PermissionPerGroupUGroupRetriever(PermissionsManager::instance()),
-            new FRSPackageFactory(),
-            $formatter,
-            new FRSReleaseFactory()
+            $ugroup_manager
         )
     ),
     new PHPWikiPermissionPerGroupPaneBuilder(
@@ -87,18 +83,16 @@ $additional_panes_builder = new PanesPermissionPerGroupBuilder(
         TemplateRendererFactory::build()
     ),
     new NewsPermissionPerGroupPaneBuilder(
-        new NewsPermissionsManager(
-            PermissionsManager::instance(),
-            new AdminNewsDAO()
-        ),
-        $formatter,
-        $ugroup_manager,
-        $request->getCurrentUser()
+        $ugroup_manager
     )
 );
 
-$additional_panes = $additional_panes_builder->getSortedPanes($project, $request->get('group'));
-$presenter        = new PermissionPerGroupPresenter($project, $groups, $additional_panes);
+$additional_panes = $additional_panes_builder->getSortedPanes(
+    $project,
+    $request->get('group')
+);
+
+$presenter = new PermissionPerGroupPresenter($project, $groups, $additional_panes);
 
 $templates_dir = ForgeConfig::get('tuleap_dir') . '/src/templates/project/admin/';
 TemplateRendererFactory::build()

@@ -19,7 +19,6 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('FRSReleaseFactory.class.php');
 
 class FRSFile {
 
@@ -100,7 +99,7 @@ class FRSFile {
      */
     protected $release;
 
-    function FRSFile($data_array = null) {
+    function __construct($data_array = null) {
         $this->file_id       = null;
         $this->filename     = null;
         $this->filepath     = null;
@@ -372,7 +371,7 @@ class FRSFile {
         // retrieve the release the file belongs to
         $release_id = $this->getReleaseID();
         $release_fact = new FRSReleaseFactory();
-        $release =& $release_fact->getFRSReleaseFromDb($release_id);
+        $release = $release_fact->getFRSReleaseFromDb($release_id);
         $package_id = $release->getPackageID();
         return $package_id;
     }
@@ -507,9 +506,21 @@ class FRSFile {
         set_time_limit(0);
 
         // Now transfer the file to the client
-        $read_bytes = readfile($file_location);
+        flush();
+        $file = fopen($file_location, "r");
+        while (! feof($file)) {
+            $content = fread($file, 30*1024);
 
-        return $read_bytes !== false;
+            if (! $content) {
+                return false;
+            }
+
+            print $content;
+            flush();
+        }
+        fclose($file);
+
+        return true;
     }
     
     /**

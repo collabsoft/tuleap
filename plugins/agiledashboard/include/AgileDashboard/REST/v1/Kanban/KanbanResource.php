@@ -63,6 +63,8 @@ use Tracker_Workflow_Transition_InvalidConditionForTransitionException;
 use TrackerFactory;
 use Tuleap\AgileDashboard\Kanban\ColumnIdentifier;
 use Tuleap\AgileDashboard\Kanban\TrackerReport\ReportFilterFromWhereBuilder;
+use Tuleap\AgileDashboard\Kanban\TrackerReport\TrackerReportDao;
+use Tuleap\AgileDashboard\Kanban\TrackerReport\TrackerReportUpdater;
 use Tuleap\AgileDashboard\KanbanCumulativeFlowDiagramDao;
 use Tuleap\AgileDashboard\KanbanRightsPresenter;
 use Tuleap\AgileDashboard\REST\v1\Kanban\CumulativeFlowDiagram\DiagramRepresentationBuilder;
@@ -70,11 +72,10 @@ use Tuleap\AgileDashboard\REST\v1\Kanban\CumulativeFlowDiagram\OrderedColumnRepr
 use Tuleap\AgileDashboard\REST\v1\Kanban\CumulativeFlowDiagram\TooManyPointsException;
 use Tuleap\AgileDashboard\REST\v1\Kanban\TrackerReport\FilteredDiagramRepresentationBuilder;
 use Tuleap\AgileDashboard\REST\v1\Kanban\TrackerReport\FilteredItemCollectionRepresentationBuilder;
-use Tuleap\AgileDashboard\Kanban\TrackerReport\TrackerReportDao;
-use Tuleap\AgileDashboard\Kanban\TrackerReport\TrackerReportUpdater;
 use Tuleap\AgileDashboard\REST\v1\OrderRepresentation;
 use Tuleap\AgileDashboard\REST\v1\OrderValidator;
 use Tuleap\AgileDashboard\REST\v1\ResourcesPatcher;
+use Tuleap\Cardwall\BackgroundColor\BackgroundColorBuilder;
 use Tuleap\RealTime\MessageDataPresenter;
 use Tuleap\RealTime\NodeJSClient;
 use Tuleap\REST\AuthenticatedResource;
@@ -83,6 +84,7 @@ use Tuleap\REST\JsonDecoder;
 use Tuleap\REST\QueryParameterException;
 use Tuleap\REST\QueryParameterParser;
 use Tuleap\Tracker\Artifact\Exception\FieldValidationException;
+use Tuleap\Tracker\FormElement\Field\ListFields\Bind\BindDecoratorRetriever;
 use Tuleap\Tracker\REST\v1\ArtifactLinkUpdater;
 use Tuleap\Tracker\REST\v1\ReportArtifactFactory;
 use UserManager;
@@ -153,6 +155,8 @@ class KanbanResource extends AuthenticatedResource
     private $diagram_builder;
     /** @var FilteredDiagramRepresentationBuilder */
     private $filtered_diagram_builder;
+    /** @var ItemRepresentationBuilder */
+    private $item_representation_builder;
 
     /**
      * @var TrackerReportUpdater
@@ -229,10 +233,19 @@ class KanbanResource extends AuthenticatedResource
             $this->kanban_item_dao
         );
 
+        $color_builder                     = new BackgroundColorBuilder(new BindDecoratorRetriever());
+        $this->item_representation_builder = $item_representation_builder = new ItemRepresentationBuilder(
+            $this->kanban_item_manager,
+            $this->time_info_factory,
+            UserManager::instance(),
+            \EventManager::instance(),
+            $color_builder
+        );
+
         $this->item_collection_builder = new ItemCollectionRepresentationBuilder(
             $this->kanban_item_dao,
             $this->artifact_factory,
-            $this->time_info_factory
+            $this->item_representation_builder
         );
 
         $this->report_factory = Tracker_ReportFactory::instance();
@@ -246,8 +259,8 @@ class KanbanResource extends AuthenticatedResource
         $this->filtered_item_collection_builder = new FilteredItemCollectionRepresentationBuilder(
             $report_from_where_builder,
             $report_artifact_factory,
-            $this->time_info_factory,
-            new Tracker_Artifact_PriorityDao()
+            new Tracker_Artifact_PriorityDao(),
+            $this->item_representation_builder
         );
 
         $ordered_column_representation_builder = new OrderedColumnRepresentationsBuilder(

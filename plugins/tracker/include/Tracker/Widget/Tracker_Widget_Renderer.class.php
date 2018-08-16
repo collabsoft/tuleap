@@ -149,7 +149,7 @@ abstract class Tracker_Widget_Renderer extends Widget {
     ) {
         $sql = "INSERT INTO tracker_widget_renderer (owner_id, owner_type, title, renderer_id) 
         SELECT  ". $owner_id .", '". $owner_type ."', title, renderer_id
-        FROM widget_renderer
+        FROM tracker_widget_renderer
         WHERE owner_id = ". $this->owner_id ." AND owner_type = '". $this->owner_type ."' ";
         $res = db_query($sql);
         return db_insertid($res);
@@ -180,7 +180,8 @@ abstract class Tracker_Widget_Renderer extends Widget {
         return $content_id;
     }
 
-    function updatePreferences($request) {
+    function updatePreferences(&$request)
+    {
         $done = false;
         $vContentId = new Valid_UInt('content_id');
         $vContentId->required();

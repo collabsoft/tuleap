@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Poedit 2.0.3\n"
+"X-Generator: Poedit 2.0.9\n"
 
 #, php-format
 msgid "%s commit was pushed on %s"
@@ -32,9 +32,6 @@ msgstr "%s a poussé sur %s"
 msgid "A push occured on %s"
 msgstr "Un push est survenu sur %s"
 
-msgid "Branch"
-msgstr "Branche"
-
 #, php-format
 msgid "Cannot add user \"%s\""
 msgstr "Impossible d'ajouter l'utilisateur \"%s\""
@@ -51,11 +48,20 @@ msgstr "Impossible de supprimer l'utilisateur %s des notifications"
 msgid "Cannot remove user group \"%s\" from notifications"
 msgstr "Impossible de supprimer le groupe %s des notifications"
 
+msgid "Fork repositories"
+msgstr "Fork de dépôts Git"
+
 msgid "Git"
 msgstr "Git"
 
 msgid "Git Administrators"
 msgstr "Administrateurs Git"
+
+msgid "Git repositories"
+msgstr "Dépôts Git"
+
+msgid "Git service is disabled."
+msgstr "Le service Git est désactivé."
 
 msgid "Global permissions"
 msgstr "Permissions globales"
@@ -66,29 +72,17 @@ msgstr "Groupes autorisés"
 msgid "No notifications set"
 msgstr "Aucune notification n'a été définie"
 
-msgid "No repository found for project"
-msgstr "Aucun dépôt trouvé dans ce projet"
-
 msgid "Notified people"
 msgstr "Personnes notifiées"
 
 msgid "Permission"
 msgstr "Permission"
 
-msgid "Readers"
-msgstr "Droits de lecture"
+msgid "Project not found."
+msgstr "Le projet n'a pas été trouvé."
 
-msgid "Repository"
-msgstr "Dépôt"
-
-msgid "Repository permissions"
-msgstr "Permissions de dépôt"
-
-msgid "Rewinders"
-msgstr "Droits de rewind"
-
-msgid "Tag"
-msgstr "Étiquette"
+msgid "Repository does not exist"
+msgstr "Le dépôt n'existe pas"
 
 #, php-format
 msgid "User \"%s\" successfully added to notifications"
@@ -97,6 +91,9 @@ msgstr "L'utilisateur \"%s\" a été ajouté aux notifications"
 #, php-format
 msgid "User %s has been removed from notifications"
 msgstr "L'utilisateur %s a été supprimé des notifications"
+
+msgid "User cannot access repository"
+msgstr "L'utilisateur ne peut pas accèder au dépôt"
 
 #, php-format
 msgid "User group \"%s\" has been removed from notifications"
@@ -109,11 +106,8 @@ msgstr "Le groupe \"%s\" a été ajouté aux notifications"
 msgid "User, group, email"
 msgstr "Utilisateur, groupe, email"
 
-msgid "Writers"
-msgstr "Droits d'écriture"
+msgid "You don't have permissions to see user groups."
+msgstr "Vous n'avez pas la permission de voir les groupes utilisateur."
 
 msgid "{{ user_group_name }} has no global permission for Git"
 msgstr "{{ user_group_name }} n'a pas de permission globale pour Git"
-
-msgid "{{ user_group_name }} has no permission for any repository in this project"
-msgstr "{{ user_group_name }} n'a de permission pour aucun dépôt de ce projet"

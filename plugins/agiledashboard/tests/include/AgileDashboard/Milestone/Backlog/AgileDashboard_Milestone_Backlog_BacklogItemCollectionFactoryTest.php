@@ -22,9 +22,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once dirname(__FILE__).'/../../../../common.php';
+require_once __DIR__ . '/../../../../bootstrap.php';
 
-class AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactoryTest extends TuleapTestCase {
+class AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactoryTest extends TuleapTestCase
+{
     private $backlog;
 
     /** @var AgileDashboard_BacklogItemDao */
@@ -49,15 +50,17 @@ class AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactoryTest extends 
     private $open_unplanned_story_id = 47;
     private $closed_story_id         = 66;
 
-    public function setUp() {
+    public function setUp()
+    {
         parent::setUp();
 
-        $this->dao                  = mock('AgileDashboard_BacklogItemDao');
-        $this->artifact_factory     = mock('Tracker_ArtifactFactory');
-        $this->form_element_factory = mock('Tracker_FormElementFactory');
-        $this->milestone_factory    = mock('Planning_MilestoneFactory');
-        $this->planning_factory     = mock('PlanningFactory');
-        $this->backlog_item_builder = new AgileDashboard_Milestone_Backlog_BacklogItemBuilder();
+        $this->dao                              = mock('AgileDashboard_BacklogItemDao');
+        $this->artifact_factory                 = mock('Tracker_ArtifactFactory');
+        $this->form_element_factory             = mock('Tracker_FormElementFactory');
+        $this->milestone_factory                = mock('Planning_MilestoneFactory');
+        $this->planning_factory                 = mock('PlanningFactory');
+        $this->backlog_item_builder             = new AgileDashboard_Milestone_Backlog_BacklogItemBuilder();
+        $this->remaining_effort_value_retriever = mock('Tuleap\AgileDashboard\BacklogItem\RemainingEffortValueRetriever');
 
         $this->user = mock('PFUser');
 
@@ -81,7 +84,8 @@ class AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactoryTest extends 
                 $this->form_element_factory,
                 $this->milestone_factory,
                 $this->planning_factory,
-                $this->backlog_item_builder
+                $this->backlog_item_builder,
+                $this->remaining_effort_value_retriever
             )
         );
         stub($this->factory)->userCanReadBacklogTitleField()->returns(true);
@@ -91,9 +95,9 @@ class AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactoryTest extends 
         $this->tracker2 = mock('Tracker');
         $this->tracker3 = mock('Tracker');
 
-        $this->story1 = anArtifact()->withTitle('story 1')->withId($this->open_story_id)->withTracker($this->tracker1)->build();
-        $this->story2 = anArtifact()->withTitle('story 2')->withId($this->open_unplanned_story_id)->withTracker($this->tracker2)->build();
-        $this->story3 = anArtifact()->withTitle('story 3')->withId($this->closed_story_id)->withTracker($this->tracker3)->build();
+        $this->story1 = anArtifact()->withTitle('story 1')->withId($this->open_story_id)->withStatus(Tracker_Semantic_Status::OPEN)->withTracker($this->tracker1)->build();
+        $this->story2 = anArtifact()->withTitle('story 2')->withId($this->open_unplanned_story_id)->withStatus(Tracker_Semantic_Status::OPEN)->withTracker($this->tracker2)->build();
+        $this->story3 = anArtifact()->withTitle('story 3')->withId($this->closed_story_id)->withStatus(Tracker_Semantic_Status::CLOSED)->withTracker($this->tracker3)->build();
 
         $backlog_items = new AgileDashboard_Milestone_Backlog_DescendantItemsCollection();
         $backlog_items->push($this->story1);
@@ -218,7 +222,8 @@ class AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactoryTest extends 
                 $this->form_element_factory,
                 $this->milestone_factory,
                 $this->planning_factory,
-                $this->backlog_item_builder
+                $this->backlog_item_builder,
+                $this->remaining_effort_value_retriever
             )
         );
 

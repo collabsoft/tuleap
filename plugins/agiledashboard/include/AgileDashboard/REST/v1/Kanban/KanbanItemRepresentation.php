@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +19,14 @@
 
 namespace Tuleap\AgileDashboard\REST\v1\Kanban;
 
+use Tuleap\Cardwall\BackgroundColor\BackgroundColor;
 use Tuleap\REST\JsonCast;
 use Tracker_Artifact;
 use UserManager;
 use EventManager;
 
-class KanbanItemRepresentation {
+class KanbanItemRepresentation
+{
 
     /**
      * @var Int
@@ -61,49 +63,25 @@ class KanbanItemRepresentation {
      */
     public $in_column;
 
+    /**
+     * @var string
+     */
+    public $background_color_name;
+
     public function build(
         Tracker_Artifact $artifact,
         $timeinfo,
-        $in_column
+        $in_column,
+        array $card_fields,
+        BackgroundColor $background_color
     ) {
-        $this->id          = JsonCast::toInt($artifact->getId());
-        $this->item_name   = $artifact->getTracker()->getItemName();
-        $this->label       = $artifact->getTitle();
-        $this->color       = $artifact->getTracker()->getNormalizedColor();
-        $this->card_fields = $this->getArtifactCardFields($artifact);
-        $this->timeinfo    = $timeinfo;
-        $this->in_column   = $in_column;
-    }
-
-    private function getArtifactCardFields(Tracker_Artifact $artifact) {
-        $current_user         = UserManager::instance()->getCurrentUser();
-        $card_fields_semantic = $this->getCardFieldsSemantic($artifact);
-        $card_fields          = array();
-
-        foreach($card_fields_semantic->getFields() as $field) {
-            if ($field->userCanRead($current_user)) {
-                $value = $field->getFullRESTValue($current_user, $artifact->getLastChangeset());
-
-                if ($value) {
-                    $card_fields[] = $value;
-                }
-            }
-        }
-
-        return $card_fields;
-    }
-
-    private function getCardFieldsSemantic(Tracker_Artifact $artifact) {
-        $card_fields_semantic = null;
-
-        EventManager::instance()->processEvent(
-            AGILEDASHBOARD_EVENT_GET_CARD_FIELDS,
-            array(
-                'tracker'              => $artifact->getTracker(),
-                'card_fields_semantic' => &$card_fields_semantic
-            )
-        );
-
-        return $card_fields_semantic;
+        $this->id                    = JsonCast::toInt($artifact->getId());
+        $this->item_name             = $artifact->getTracker()->getItemName();
+        $this->label                 = $artifact->getTitle();
+        $this->color                 = $artifact->getTracker()->getNormalizedColor();
+        $this->timeinfo              = $timeinfo;
+        $this->in_column             = $in_column;
+        $this->card_fields           = $card_fields;
+        $this->background_color_name = $background_color->getBackgroundColorName();
     }
 }

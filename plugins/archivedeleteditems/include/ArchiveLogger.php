@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,11 +31,7 @@ class ArchiveLogger extends TruncateLevelLogger
     {
         $file_path = ForgeConfig::get('codendi_log') .'/archive_deleted_item.log';
 
-        if (! is_file($file_path)) {
-            $http_user = ForgeConfig::get('sys_http_user');
-            touch($file_path);
-            chown($file_path, $http_user);
-        }
+        $this->createLogFileForAppUser($file_path);
 
         parent::__construct(
             new BackendLogger($file_path),

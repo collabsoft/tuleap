@@ -24,16 +24,18 @@
             {{ error }}
         </div>
 
-        <button class="tlp-button-primary tlp-button-outline"  v-if="displayButtonLoadAll"
-                v-on:click="loadAll"
-        > {{ planning_permissions }}
-        </button>
+        <div class="permission-per-group-load-button" v-if="displayButtonLoadAll">
+            <button class="tlp-button-primary tlp-button-outline"
+                    v-on:click="loadAll"
+            > {{ planning_permissions }}
+            </button>
+        </div>
 
         <div class="permission-per-group-loader" v-if="is_loading"></div>
 
-        <table class="tlp-table"  v-if="is_loaded">
+        <table class="tlp-table permission-per-group-table" v-if="is_loaded">
             <thead>
-            <tr>
+            <tr class="permission-per-group-double-column-table">
                 <th> {{ planning }} </th>
                 <th> {{ prioritizers }} </th>
             </tr>
@@ -105,7 +107,7 @@
             }
         },
         computed: {
-            planning_permissions: () => gettext_provider.gettext("View planning permissions"),
+            planning_permissions: () => gettext_provider.gettext("See all plannings permissions"),
             planning: ()             => gettext_provider.gettext("Planning"),
             prioritizers: ()         => gettext_provider.gettext("Who can prioritize?"),
             empty_state: ()          => gettext_provider.gettext("Agiledashboard has no planning defined"),

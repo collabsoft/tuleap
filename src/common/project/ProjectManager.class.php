@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2011 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessResultInterface;
 use Tuleap\FRS\FRSPermissionCreator;
 use Tuleap\FRS\FRSPermissionDao;
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\MessageFactoryBuilder;
 use Tuleap\Project\Webhook\Log\StatusLogger as WebhookStatusLogger;
 use Tuleap\Project\Webhook\Log\WebhookLoggerDao;
 use Tuleap\Project\Webhook\ProjectCreatedPayload;
@@ -27,10 +30,11 @@ use Tuleap\Project\Webhook\WebhookDao;
 use Tuleap\Project\Webhook\Retriever;
 use Tuleap\Webhook\Emitter;
 
-/**
- * Provide access to projects
- */
-class ProjectManager {
+class ProjectManager
+{
+    const CONFIG_PROJECT_APPROVAL                            = 'sys_project_approval';
+    const CONFIG_NB_PROJECTS_WAITING_FOR_VALIDATION          = 'nb_projects_waiting_for_validation';
+    const CONFIG_NB_PROJECTS_WAITING_FOR_VALIDATION_PER_USER = 'nb_projects_waiting_for_validation_per_user';
 
     /**
      * The Projects dao used to fetch data
@@ -189,11 +193,15 @@ class ProjectManager {
         return $projects;
     }
 
+    /**
+     * @param $status
+     * @return int
+     */
     public function countProjectsByStatus($status)
     {
         $dar = $this->_getDao()->searchByStatus($status);
 
-        return $this->_getDao()->foundRows();
+        return (int) $this->_getDao()->foundRows();
     }
 
     /**
@@ -280,7 +288,7 @@ class ProjectManager {
         }
         else {
             // Give it a try with only the given name
-            $dar = $dao->searchByUnixGroupName($name);
+            $dar = $dao->searchByCaseInsensitiveUnixGroupName($name);
         }
 
         if ($dar && !$dar->isError() && $dar->rowCount() == 1) {
@@ -367,12 +375,14 @@ class ProjectManager {
     private function launchWebhooksProjectCreated(Project $project)
     {
         $webhook_status_logger   = new WebhookStatusLogger(new WebhookLoggerDao());
-        $webhook_emitter         = new Emitter(new Http_Client(), $webhook_status_logger);
+        $webhook_emitter         = new Emitter(
+            MessageFactoryBuilder::build(),
+            HttpClientFactory::createClient(),
+            $webhook_status_logger
+        );
         $project_created_payload = new ProjectCreatedPayload($project, $_SERVER['REQUEST_TIME']);
         $webhooks                = $this->getProjectWebhooks();
-        foreach ($webhooks as $webhook) {
-            $webhook_emitter->emit($webhook, $project_created_payload);
-        }
+        $webhook_emitter->emit($project_created_payload, ...$webhooks);
     }
 
     public function updateStatus(Project $project, $status)
@@ -783,7 +793,7 @@ class ProjectManager {
         return $this->getPaginatedProjects($matching_projects, $total_size);
     }
 
-    private function getPaginatedProjects(DataAccessResult $result, $total_size)
+    private function getPaginatedProjects(LegacyDataAccessResultInterface $result, $total_size)
     {
         $projects = array();
         foreach ($result as $row) {
@@ -928,6 +938,33 @@ class ProjectManager {
             $forum_dao = new ForumDao(CodendiDataAccess::instance());
             return $forum_dao->updatePublicForumToPrivate($group_id);
     }
-}
 
-?>
+    public function userCanCreateProject(PFUser $requester)
+    {
+        if (ForgeConfig::get(self::CONFIG_PROJECT_APPROVAL, 1) == 1) {
+            return $this->numberOfProjectsWaitingForValidationBelowThreshold() &&
+                $this->numberOfProjectsWaitingForValidationPerUserBelowThreshold($requester);
+        }
+        return true;
+    }
+
+    private function numberOfProjectsWaitingForValidationBelowThreshold()
+    {
+        $max_nb_projects_waiting_for_validation = (int) ForgeConfig::get(self::CONFIG_NB_PROJECTS_WAITING_FOR_VALIDATION, -1);
+        if ($max_nb_projects_waiting_for_validation < 0) {
+            return true;
+        }
+        $current_nb_projects_waiting_for_validation = $this->countProjectsByStatus(Project::STATUS_PENDING);
+        return $current_nb_projects_waiting_for_validation < $max_nb_projects_waiting_for_validation;
+    }
+
+    private function numberOfProjectsWaitingForValidationPerUserBelowThreshold(PFUser $requester)
+    {
+        $max_per_user = (int) ForgeConfig::get(self::CONFIG_NB_PROJECTS_WAITING_FOR_VALIDATION_PER_USER, -1);
+        if ($max_per_user < 0) {
+            return true;
+        }
+        $current_per_user = $this->_getDao()->countByStatusAndUser($requester->getId(), Project::STATUS_PENDING);
+        return $current_per_user < $max_per_user;
+    }
+}

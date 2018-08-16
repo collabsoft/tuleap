@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017-2018. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Tracker\Artifact\Changeset\Notification\Notifier;
+use Tuleap\Tracker\Artifact\Changeset\PostCreation\ActionsRunner;
 
 require_once('utils.php');
 
@@ -447,7 +447,7 @@ class Tracker_Artifact_Changeset extends Tracker_Artifact_Followup_Item {
      */
     public function updateComment($body, $user, $comment_format, $timestamp) {
         if ($this->updateCommentWithoutNotification($body, $user, $comment_format, $timestamp)) {
-            $this->notify();
+            $this->executePostCreationActions();
         }
     }
 
@@ -718,12 +718,13 @@ class Tracker_Artifact_Changeset extends Tracker_Artifact_Followup_Item {
     * @param String $diff
     *
     */
-    public function displayDiff($diff, $format, $field) {
+    public function displayDiff($diff, $format, $field)
+    {
         $result = false;
         switch($format) {
             case 'html':
                 $result .= '<li>';
-                $result .= '<span class="tracker_artifact_followup_changes_field"><b>'. $field->getLabel() .'</b></span> ';
+                $result .= '<span class="tracker_artifact_followup_changes_field"><b>'. Codendi_HTMLPurifier::instance()->purify($field->getLabel()) .'</b></span> ';
                 $result .= '<span class="tracker_artifact_followup_changes_changes">'. $diff .'</span>';
                 $result .= '</li>';
             break;
@@ -748,13 +749,9 @@ class Tracker_Artifact_Changeset extends Tracker_Artifact_Followup_Item {
         return $this->artifact->getTracker();
     }
 
-    /**
-     * notify people
-     *
-     * @return void
-     */
-    public function notify() {
-        Notifier::build(BackendLogger::getDefaultLogger())->notify($this);
+    public function executePostCreationActions()
+    {
+        ActionsRunner::build(BackendLogger::getDefaultLogger())->executePostCreationActions($this);
     }
 
     /**
@@ -839,6 +836,43 @@ class Tracker_Artifact_Changeset extends Tracker_Artifact_Followup_Item {
         return array_filter($values);
     }
 
+    /**
+     * Returns a REST representation with all fields content.
+     * This does not check permissions so use it with caution.
+     *
+     * "A great power comes with a great responsibility"
+     *
+     * @return \Tuleap\Tracker\REST\ChangesetRepresentation
+     */
+    public function getFullRESTValue(PFUser $user)
+    {
+        $comment = $this->getComment();
+        if (! $comment) {
+            $comment = new Tracker_Artifact_Changeset_CommentNull($this);
+        }
+
+        $changeset_representation = new Tuleap\Tracker\REST\ChangesetRepresentation();
+        $changeset_representation->build(
+            $this,
+            $comment,
+            $this->getFullRESTFieldValuesWitoutPermissions($user)
+        );
+
+        return $changeset_representation;
+    }
+
+    private function getFullRESTFieldValuesWitoutPermissions(PFUser $user)
+    {
+        $values = array();
+        $factory = $this->getFormElementFactory();
+
+        foreach ($factory->getUsedFieldsForREST($this->getTracker()) as $field) {
+            $values[] = $field->getRESTValue($user, $this);
+        }
+
+        return array_filter($values);
+    }
+
     private function getEmailForUndefinedSubmitter() {
         if (! $this->getSubmittedBy()) {
             return $this->getEmail();
@@ -852,5 +886,19 @@ class Tracker_Artifact_Changeset extends Tracker_Artifact_Followup_Item {
      */
     public function getUri() {
         return  TRACKER_BASE_URL.'/?aid='.$this->getArtifact()->getId().'#followup_'.$this->getId();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLastChangesetOfArtifact()
+    {
+        $artifact_last_changeset = $this->artifact->getLastChangeset();
+
+        if (! $artifact_last_changeset) {
+            return false;
+        }
+
+        return $this->id === $artifact_last_changeset->getId();
     }
 }

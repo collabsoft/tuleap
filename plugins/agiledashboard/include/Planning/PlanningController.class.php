@@ -18,8 +18,13 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\AgileDashboard\BaseController;
+use Tuleap\AgileDashboard\BreadCrumbDropdown\AdministrationCrumbBuilder;
+use Tuleap\AgileDashboard\BreadCrumbDropdown\AgileDashboardCrumbBuilder;
 use Tuleap\AgileDashboard\FormElement\Burnup;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker;
+use Tuleap\AgileDashboard\Planning\AdditionalPlanningConfigurationWarningsRetriever;
+use Tuleap\AgileDashboard\Planning\Presenters\PlanningWarningPossibleMisconfigurationPresenter;
 use Tuleap\AgileDashboard\Planning\ScrumPlanningFilter;
 use Tuleap\Dashboard\Project\ProjectDashboardDao;
 use Tuleap\Dashboard\Project\ProjectDashboardDuplicator;
@@ -32,6 +37,8 @@ use Tuleap\FRS\FRSPermissionCreator;
 use Tuleap\FRS\FRSPermissionDao;
 use Tuleap\FRS\UploadedLinksDao;
 use Tuleap\FRS\UploadedLinksUpdater;
+use Tuleap\Layout\BreadCrumbDropdown\BreadCrumbCollection;
+use Tuleap\Layout\IncludeAssets;
 use Tuleap\Project\Label\LabelDao;
 use Tuleap\Project\UgroupDuplicator;
 use Tuleap\Project\UserRemover;
@@ -43,8 +50,8 @@ use Tuleap\Widget\WidgetFactory;
 /**
  * Handles the HTTP actions related to a planning.
  */
-class Planning_Controller extends MVC2_PluginController {
-
+class Planning_Controller extends BaseController
+{
     const AGILE_DASHBOARD_TEMPLATE_NAME = 'agile_dashboard_template.xml';
     const PAST_PERIOD   = 'past';
     const FUTURE_PERIOD = 'future';
@@ -102,6 +109,17 @@ class Planning_Controller extends MVC2_PluginController {
      * @var Tracker_FormElementFactory
      */
     private $tracker_form_element_factory;
+    /**
+     * @var Project
+     */
+    private $project;
+    /**
+     * @var AgileDashboardCrumbBuilder
+     */
+    private $service_crumb_builder;
+
+    /** @var AdministrationCrumbBuilder */
+    private $admin_crumb_builder;
 
     public function __construct(
         Codendi_Request $request,
@@ -119,11 +137,14 @@ class Planning_Controller extends MVC2_PluginController {
         ScrumForMonoMilestoneChecker $scrum_mono_milestone_checker,
         ScrumPlanningFilter $scrum_planning_filter,
         TrackerFactory $tracker_factory,
-        Tracker_FormElementFactory $tracker_form_element_factory
+        Tracker_FormElementFactory $tracker_form_element_factory,
+        AgileDashboardCrumbBuilder $service_crumb_builder,
+        AdministrationCrumbBuilder $admin_crumb_builder
     ) {
         parent::__construct('agiledashboard', $request);
 
-        $this->group_id                     = (int) $request->get('group_id');
+        $this->project                      = $this->request->getProject();
+        $this->group_id                     = $this->project->getID();
         $this->planning_factory             = $planning_factory;
         $this->milestone_factory            = $milestone_factory;
         $this->project_manager              = $project_manager;
@@ -139,6 +160,8 @@ class Planning_Controller extends MVC2_PluginController {
         $this->scrum_planning_filter        = $scrum_planning_filter;
         $this->tracker_factory              = $tracker_factory;
         $this->tracker_form_element_factory = $tracker_form_element_factory;
+        $this->service_crumb_builder        = $service_crumb_builder;
+        $this->admin_crumb_builder          = $admin_crumb_builder;
     }
 
     public function index() {
@@ -426,12 +449,12 @@ class Planning_Controller extends MVC2_PluginController {
             $event_manager
         );
 
-        $widget_dao        = new DashboardWidgetDao($widget_factory);
-        $project_dao       = new ProjectDashboardDao($widget_dao);
-        $project_retriever = new ProjectDashboardRetriever($project_dao);
-        $widget_retriever  = new DashboardWidgetRetriever($widget_dao);
-        $duplicator        = new ProjectDashboardDuplicator(
-            $project_dao,
+        $widget_dao            = new DashboardWidgetDao($widget_factory);
+        $project_dashboard_dao = new ProjectDashboardDao($widget_dao);
+        $project_retriever     = new ProjectDashboardRetriever($project_dashboard_dao);
+        $widget_retriever      = new DashboardWidgetRetriever($widget_dao);
+        $duplicator            = new ProjectDashboardDuplicator(
+            $project_dashboard_dao,
             $project_retriever,
             $widget_dao,
             $widget_retriever,
@@ -476,19 +499,12 @@ class Planning_Controller extends MVC2_PluginController {
             new UploadedLinksUpdater(new UploadedLinksDao(), FRSLog::instance()),
             new ProjectDashboardXMLImporter(
                 new ProjectDashboardSaver(
-                    new ProjectDashboardDao(
-                        new DashboardWidgetDao(
-                            new WidgetFactory(
-                                $user_manager,
-                                new User_ForgeUserGroupPermissionsManager(
-                                    new User_ForgeUserGroupPermissionsDao()
-                                ),
-                                $event_manager
-                            )
-                        )
-                    )
+                    $project_dashboard_dao
                 ),
-                $logger
+                $widget_factory,
+                $widget_dao,
+                $logger,
+                $event_manager
             )
         );
 
@@ -601,12 +617,29 @@ class Planning_Controller extends MVC2_PluginController {
             $planning
         );
 
+        $include_assets = new IncludeAssets(
+            __DIR__ . '/../../www/assets',
+            AGILEDASHBOARD_BASE_URL . '/assets'
+        );
+
+        $include_assets_css = new IncludeAssets(
+            __DIR__ . '/../../www/themes/FlamingParrot/assets',
+            AGILEDASHBOARD_BASE_URL . '/themes/FlamingParrot/assets'
+        );
+
+        $GLOBALS['HTML']->addStylesheet(
+            $include_assets_css->getFileURL('planning-admin-colorpicker.css')
+        );
+
+        $GLOBALS['HTML']->includeFooterJavascriptFile($include_assets->getFileURL('planning-admin.js'));
+
         return new Planning_FormPresenter(
             $this->planning_permissions_manager,
             $planning,
             $backlog_trackers_filtered,
             $planning_trackers_filtered,
-            $cardwall_admin
+            $cardwall_admin,
+            $this->getWarnings($planning)
         );
     }
 
@@ -660,21 +693,6 @@ class Planning_Controller extends MVC2_PluginController {
                 Feedback::INFO,
                 dgettext('tuleap-agiledashboard', 'Planning succesfully updated.')
             );
-
-            $planning_tracker_id = $planning_parameter->planning_tracker_id;
-            $planning_tracker    = $this->tracker_factory->getTrackerById($planning_tracker_id);
-
-            $burnup_fields = $this->tracker_form_element_factory->getFormElementsByType($planning_tracker, Burnup::TYPE);
-
-            if ($burnup_fields && $burnup_fields[0]->isUsed()) {
-                $this->addFeedback(
-                    Feedback::WARN,
-                    sprintf(
-                        dgettext('tuleap-agiledashboard', 'The tracker %s uses a Burnup field. Please check its configuration.'),
-                        $planning_tracker->getName()
-                    )
-                );
-            }
         } else {
             $this->addFeedback('error', $GLOBALS['Language']->getText('plugin_agiledashboard', 'planning_all_fields_mandatory'));
         }
@@ -705,16 +723,71 @@ class Planning_Controller extends MVC2_PluginController {
     }
 
     /**
-     * @return BreadCrumb_BreadCrumbGenerator
+     * @return BreadCrumbCollection
      */
-    public function getBreadcrumbs($plugin_path) {
-        return new BreadCrumb_AgileDashboard();
+    public function getBreadcrumbs()
+    {
+        $breadcrumbs = new BreadCrumbCollection();
+        $breadcrumbs->addBreadCrumb(
+            $this->service_crumb_builder->build(
+                $this->getCurrentUser(),
+                $this->project
+            )
+        );
+        if ($this->request->existAndNonEmpty('action')) {
+            $breadcrumbs->addBreadCrumb(
+                $this->admin_crumb_builder->build($this->project)
+            );
+        }
+
+        return $breadcrumbs;
     }
 
     private function getPlanning() {
         $planning_id = $this->request->get('planning_id');
         return $this->planning_factory->getPlanning($planning_id);
     }
-}
 
-?>
+    private function addBurnupWarning(array &$warning_list, Tracker $planning_tracker)
+    {
+        $burnup_fields = $this->tracker_form_element_factory->getFormElementsByType($planning_tracker, Burnup::TYPE);
+
+        if ($burnup_fields && $burnup_fields[0]->isUsed()) {
+            $semantic_url = TRACKER_BASE_URL . "?" . http_build_query(
+                [
+                    "tracker" => $planning_tracker->getId(),
+                    "func"    => "admin-formElements"
+                ]
+            );
+
+            $semantic_name = dgettext('tuleap-agiledashboard', 'Burnup field');
+
+            $warning_list[] = new PlanningWarningPossibleMisconfigurationPresenter($semantic_url, $semantic_name);
+        }
+    }
+
+    private function addOtherWarnings(array &$warning_list,Tracker $planning_tracker)
+    {
+        $event = new AdditionalPlanningConfigurationWarningsRetriever($planning_tracker);
+        EventManager::instance()->processEvent($event);
+
+        foreach ($event->getAllWarnings() as $warning) {
+            $warning_list[] = $warning;
+        }
+    }
+
+    /**
+     * @param Planning $planning
+     *
+     * @return array
+     */
+    private function getWarnings(Planning $planning)
+    {
+        $warning_list = [];
+
+        $this->addBurnupWarning($warning_list, $planning->getPlanningTracker());
+        $this->addOtherWarnings($warning_list, $planning->getPlanningTracker());
+
+        return $warning_list;
+    }
+}

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,11 +19,8 @@
  */
 
 require_once 'common/tracker/ArtifactType.class.php';
-require_once dirname(__FILE__).'/../../../plugins/tracker/include/autoload.php';
-require_once dirname(__FILE__).'/../../../plugins/tracker/include/manual_autoload.php';
-require_once dirname(__FILE__).'/../../../plugins/tracker/include/constants.php';
-require_once TRACKER_BASE_DIR.'/Tracker/TrackerManager.class.php';
-require_once TRACKER_BASE_DIR.'/Tracker/Migration/V3.class.php';
+require_once __DIR__ . '/../../../plugins/tracker/include/trackerPlugin.class.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 abstract class MigrateDefaultTrackersTest extends TuleapDbTestCase {
     private static $defect_tracker_converted = false;
@@ -53,8 +50,16 @@ abstract class MigrateDefaultTrackersTest extends TuleapDbTestCase {
 
     public function setUp() {
         parent::setUp();
+        $sys_dbhost   = ForgeConfig::get('sys_dbhost');
+        $sys_dbuser   = ForgeConfig::get('sys_dbuser');
+        $sys_dbpasswd = ForgeConfig::get('sys_dbpasswd');
+        $sys_dbname   = ForgeConfig::get('sys_dbname');
         ForgeConfig::store();
         ForgeConfig::set('codendi_log', $this->getTmpDir());
+        ForgeConfig::set('sys_dbhost', $sys_dbhost);
+        ForgeConfig::set('sys_dbuser', $sys_dbuser);
+        ForgeConfig::set('sys_dbpasswd', $sys_dbpasswd);
+        ForgeConfig::set('sys_dbname', $sys_dbname);
 
         if (!self::$defect_tracker_converted && $this->thisTestIsNotUnderDevelopment()) {
             $this->convertTrackers();
@@ -618,7 +623,7 @@ class MigrateTracker_TaskTrackerDateReminder_startDateTest extends MigrateDefaul
         parent::setUp();
         $this->start_date_field = $this->form_element_factory->getFormElementByName(self::$task_tracker_id, 'start_date');
 
-        $factory = new Tracker_DateReminderFactory($this->task_tracker);
+        $factory = new Tracker_DateReminderFactory($this->task_tracker, new Tracker_DateReminderRenderer($this->task_tracker));
         $this->reminders = $factory->getTrackerReminders();
     }
 
@@ -662,7 +667,7 @@ class MigrateTracker_TaskTrackerDateReminder_endDateTest extends MigrateDefaultT
         $submitterRole = new Tracker_DateReminder_Role_Submitter();
         $this->notified_roles = array($submitterRole);
 
-        $factory = new Tracker_DateReminderFactory($this->task_tracker);
+        $factory = new Tracker_DateReminderFactory($this->task_tracker, new Tracker_DateReminderRenderer($this->task_tracker));
         $this->reminders = $factory->getTrackerReminders();
     }
 
@@ -697,7 +702,7 @@ class MigrateTracker_TaskTrackerDateReminder_dueDateTest extends MigrateDefaultT
         $submitterRole = new Tracker_DateReminder_Role_Submitter();
         $this->notified_roles = array($submitterRole);
 
-        $factory = new Tracker_DateReminderFactory($this->task_tracker);
+        $factory = new Tracker_DateReminderFactory($this->task_tracker, new Tracker_DateReminderRenderer($this->task_tracker));
         $this->reminders = $factory->getTrackerReminders();
     }
 

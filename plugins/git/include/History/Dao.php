@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,81 +20,48 @@
 
 namespace Tuleap\Git\History;
 
-use DataAccessObject;
+use ParagonIE\EasyDB\EasyStatement;
+use Tuleap\DB\DataAccessObject;
 
 class Dao extends DataAccessObject
 {
-    public function hasAccessForTheDay($day, $repository_id, $user_id)
-    {
-        $repository_id = $this->da->escapeInt($repository_id);
-        $user_id       = $this->da->escapeInt($user_id);
-        $day           = $this->da->escapeInt($day);
 
-        $sql = "SELECT 1
-                FROM plugin_git_log_read_daily
-                WHERE repository_id = $repository_id
-                AND user_id = $user_id
-                AND day = $day";
-        $dar = $this->retrieve($sql);
-        return $dar && $dar->count() > 0;
+    public function startTransaction()
+    {
+        $this->getDB()->beginTransaction();
     }
 
-    public function insertGitReadAccess($day, $repository_id, $user_id, $count)
+    public function commit()
     {
-        $day           = $this->da->escapeInt($day);
-        $repository_id = $this->da->escapeInt($repository_id);
-        $user_id       = $this->da->escapeInt($user_id);
-        $count         = $this->da->escapeInt($count);
-
-        $sql = "INSERT INTO plugin_git_log_read_daily (repository_id, user_id, day, git_read)
-                VALUES ($repository_id, $user_id, $day, $count)";
-
-        return $this->update($sql);
+        $this->getDB()->commit();
     }
 
     public function addGitReadAccess($day, $repository_id, $user_id, $count)
     {
-        $repository_id = $this->da->escapeInt($repository_id);
-        $user_id       = $this->da->escapeInt($user_id);
-        $day           = $this->da->escapeInt($day);
-        $count         = $this->da->escapeInt($count);
-        $sql = "UPDATE plugin_git_log_read_daily
-                SET git_read = git_read + $count
-                WHERE repository_id = $repository_id
-                AND user_id = $user_id
-                AND day = $day";
-        return $this->update($sql);
-    }
+        $sql = 'INSERT INTO plugin_git_log_read_daily (repository_id, user_id, day, git_read)
+                VALUES (?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE git_read = git_read + ?';
 
-    public function searchAccessPerDay($day)
-    {
-        $day = $this->da->escapeInt($day);
-        $sql = "SELECT repository_id, user_id
-                FROM plugin_git_log_read_daily
-                WHERE day = $day";
-        return $this->retrieve($sql);
+        $this->getDB()->run($sql, $repository_id, $user_id, $day, $count, $count);
     }
 
     public function searchStatistics($start_date, $end_date, $project_id = null)
     {
-        $start_date     = $this->da->quoteSmart($start_date);
-        $end_date       = $this->da->quoteSmart($end_date);
-        $project_id     = $this->da->escapeInt($project_id);
-        $project_filter = "";
+        $filter = EasyStatement::open();
 
+        $filter->with("day BETWEEN DATE_FORMAT(?, '%Y%m%d') AND DATE_FORMAT(?, '%Y%m%d')", $start_date, $end_date);
         if (! empty($project_id)) {
-            $project_filter = " AND project_id = " . $project_id;
+            $filter->andWith('AND project_id = ?', $project_id);
         }
 
         $sql = "SELECT DATE_FORMAT(day, '%M') AS month,
                   YEAR(day) as year,
                   SUM(git_read) as nb
                 FROM plugin_git_log_read_daily JOIN plugin_git USING(repository_id)
-                WHERE day BETWEEN DATE_FORMAT($start_date, '%Y%m%d') AND DATE_FORMAT($end_date, '%Y%m%d')
-                  $project_filter
+                WHERE $filter
                 GROUP BY year, month
                 ORDER BY year, STR_TO_DATE(month,'%M')";
 
-        return $this->retrieve($sql);
+        return $this->getDB()->safeQuery($sql, $filter->values());
     }
 }

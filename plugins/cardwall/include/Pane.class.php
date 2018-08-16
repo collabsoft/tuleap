@@ -18,10 +18,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\AgileDashboard\BacklogItem\RemainingEffortValueRetriever;
 use Tuleap\AgileDashboard\MonoMilestone\MonoMilestoneBacklogItemDao;
 use Tuleap\AgileDashboard\MonoMilestone\MonoMilestoneItemsFinder;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneDao;
+use Tuleap\Cardwall\Agiledashboard\CardwallPaneInfo;
 
 require_once 'common/TreeNode/TreeNodeMapper.class.php';
 require_once 'common/templating/TemplateRendererFactory.class.php';
@@ -32,7 +34,7 @@ require_once 'common/templating/TemplateRendererFactory.class.php';
 class Cardwall_Pane extends AgileDashboard_Pane {
 
     /**
-     * @var Cardwall_PaneInfo
+     * @var CardwallPaneInfo
      */
     private $info;
 
@@ -77,7 +79,7 @@ class Cardwall_Pane extends AgileDashboard_Pane {
     private $planning_factory;
 
     public function __construct(
-        Cardwall_PaneInfo $info,
+        CardwallPaneInfo $info,
         Planning_Milestone $milestone,
         Cardwall_OnTop_Config $config,
         PFUser $user,
@@ -97,11 +99,6 @@ class Cardwall_Pane extends AgileDashboard_Pane {
     public function getIdentifier() {
         return $this->info->getIdentifier();
     }
-
-    public function getUriForMilestone(Planning_Milestone $milestone) {
-        return $this->info->getUriForMilestone($milestone);
-    }
-
 
     /**
      * @see AgileDashboard_Pane::getFullContent()
@@ -213,7 +210,10 @@ class Cardwall_Pane extends AgileDashboard_Pane {
             $this->tracker_form_element_factory,
             $this->milestone_factory,
             $this->planning_factory,
-            new AgileDashboard_Milestone_Backlog_BacklogItemBuilder()
+            new AgileDashboard_Milestone_Backlog_BacklogItemBuilder(),
+            new RemainingEffortValueRetriever(
+                $this->tracker_form_element_factory
+            )
         );
 
         $mono_milestone_items_finder = new MonoMilestoneItemsFinder(

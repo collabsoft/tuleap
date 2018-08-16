@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once TRACKER_BASE_DIR . '/../tests/bootstrap.php';
+require_once __DIR__.'/../../bootstrap.php';
 
-class Tracker_Workflow_Trigger_TriggerValidator_Test extends TuleapTestCase {
+class Tracker_Workflow_Trigger_TriggerValidator_validateJsonFormat_Test extends TuleapTestCase
+{
 
     protected $json_input;
     protected $validator;
@@ -39,9 +40,6 @@ class Tracker_Workflow_Trigger_TriggerValidator_Test extends TuleapTestCase {
         $this->tracker = mock('Tracker');
 
     }
-}
-
-class Tracker_Workflow_Trigger_TriggerValidator_validateJsonFormat_Test extends Tracker_Workflow_Trigger_TriggerValidator_Test {
 
     public function itRaisesAnExceptionIfNoTarget() {
         $json = new stdClass();
@@ -197,7 +195,4 @@ class Tracker_Workflow_Trigger_TriggerValidator_validateJsonFormat_Test extends 
 
         $validator->validateJsonFormat($json, $tracker);
     }
-
-
 }
-?>

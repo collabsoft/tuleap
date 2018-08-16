@@ -19,6 +19,26 @@
 
 namespace Tuleap\Project\REST\v1;
 
+use Event;
+use EventManager;
+use Luracast\Restler\RestException;
+use PaginatedWikiPagesFactory;
+use PFUser;
+use Project;
+use Project_InvalidFullName_Exception;
+use Project_InvalidShortName_Exception;
+use ProjectCreator;
+use ProjectManager;
+use ProjectUGroup;
+use ReferenceManager;
+use Tuleap\Project\Event\GetProjectWithTrackerAdministrationPermission;
+use Tuleap\Dashboard\Project\ProjectDashboardDao;
+use Tuleap\Dashboard\Project\ProjectDashboardDuplicator;
+use Tuleap\Dashboard\Project\ProjectDashboardRetriever;
+use Tuleap\Dashboard\Widget\DashboardWidgetDao;
+use Tuleap\Dashboard\Widget\DashboardWidgetRetriever;
+use Tuleap\FRS\FRSPermissionCreator;
+use Tuleap\FRS\FRSPermissionDao;
 use Tuleap\Label\Label;
 use Tuleap\Label\PaginatedCollectionsOfLabelsBuilder;
 use Tuleap\Label\REST\LabelRepresentation;
@@ -30,49 +50,31 @@ use Tuleap\Project\ProjectRegistrationDisabledException;
 use Tuleap\Project\REST\HeartbeatsRepresentation;
 use Tuleap\Project\REST\ProjectRepresentation;
 use Tuleap\Project\REST\UserGroupRepresentation;
-use Tuleap\Dashboard\Project\ProjectDashboardDuplicator;
-use Tuleap\Dashboard\Project\ProjectDashboardDao;
-use Tuleap\Dashboard\Project\ProjectDashboardRetriever;
-use Tuleap\Dashboard\Widget\DashboardWidgetRetriever;
-use Tuleap\Dashboard\Widget\DashboardWidgetDao;
+use Tuleap\Project\UgroupDuplicator;
+use Tuleap\REST\AuthenticatedResource;
 use Tuleap\REST\Event\ProjectGetSvn;
 use Tuleap\REST\Event\ProjectOptionsSvn;
-use Tuleap\REST\v1\GitRepositoryRepresentationBase;
-use Tuleap\REST\v1\PhpWikiPageRepresentation;
-use Tuleap\REST\v1\OrderRepresentationBase;
-use Tuleap\REST\v1\MilestoneRepresentationBase;
-use Tuleap\REST\ProjectAuthorization;
 use Tuleap\REST\Header;
 use Tuleap\REST\JsonDecoder;
+use Tuleap\REST\ProjectAuthorization;
 use Tuleap\REST\ResourcesInjector;
-use Tuleap\REST\AuthenticatedResource;
-use Tuleap\Project\UgroupDuplicator;
-use Tuleap\FRS\FRSPermissionCreator;
-use Tuleap\FRS\FRSPermissionDao;
+use Tuleap\REST\v1\GitRepositoryListRepresentation;
+use Tuleap\REST\v1\GitRepositoryRepresentationBase;
+use Tuleap\REST\v1\MilestoneRepresentationBase;
+use Tuleap\REST\v1\OrderRepresentationBase;
+use Tuleap\REST\v1\PhpWikiPageRepresentation;
 use Tuleap\Service\ServiceCreator;
 use Tuleap\Widget\WidgetFactory;
-use User_ForgeUserGroupPermissionsManager;
-use User_ForgeUserGroupPermissionsDao;
 use UGroupBinding;
-use UGroupUserDao;
 use UGroupDao;
-use ReferenceManager;
-use ProjectManager;
-use ProjectCreator;
-use UserManager;
-use PFUser;
-use Project;
-use Project_InvalidFullName_Exception;
-use Project_InvalidShortName_Exception;
-use EventManager;
-use Event;
-use ProjectUGroup;
 use UGroupManager;
+use UGroupUserDao;
 use URLVerification;
-use Luracast\Restler\RestException;
-use PaginatedWikiPagesFactory;
-use WikiDao;
+use User_ForgeUserGroupPermissionsDao;
+use User_ForgeUserGroupPermissionsManager;
+use UserManager;
 use Wiki;
+use WikiDao;
 
 /**
  * Wrapper for project related REST methods
@@ -187,6 +189,10 @@ class ProjectResource extends AuthenticatedResource {
     {
         $this->checkAccess();
 
+        if (! $this->project_manager->userCanCreateProject($this->user_manager->getCurrentUser())) {
+            throw new RestException(429, 'Too many projects were created');
+        }
+
         $data = array(
             'project' => array(
                 'form_short_description' => $description,
@@ -227,11 +233,18 @@ class ProjectResource extends AuthenticatedResource {
      *   <li>a property "is_member_of" to search projects the current user is member of.
      *     Example: <pre>{"is_member_of": true}</pre>
      *   </li>
+     *   <li>a property "is_tracker_admin" to search projects the current user is administrator of at least one tracker.
+     *     Example: <pre>{"is_tracker_admin": true}</pre>
+     *   </li>
      * </ul>
      * </p>
      *
      * <p>
      *   <strong>/!\</strong> Please note that {"is_member_of": false} is not supported and will result
+     *   in a 400 Bad Request error.
+     * </p>
+     * <p>
+     *   <strong>/!\</strong> Please note that {"is_tracker_admin": false} is not supported and will result
      *   in a 400 Bad Request error.
      * </p>
      *
@@ -303,12 +316,20 @@ class ProjectResource extends AuthenticatedResource {
         $json_query = $this->json_decoder->decodeAsAnArray('query', $query);
         if (! isset($json_query['shortname'])
             && ! isset($json_query['is_member_of'])
+            && ! isset($json_query['is_tracker_admin'])
         ) {
-            throw new RestException(400, "You can only search on 'shortname' or 'is_member_of': true");
+            throw new RestException(400, "You can only search on 'shortname', 'is_member_of': true or 'is_tracker_admin': true");
         }
 
         if (isset($json_query['is_member_of']) && ! $json_query['is_member_of']) {
             throw new RestException(400, "Searching for projects you are not member of is not supported. Use 'is_member_of': true");
+        }
+
+        if (isset($json_query['is_tracker_admin']) && ! $json_query['is_tracker_admin']) {
+            throw new RestException(
+                400,
+                "Searching for projects you are not administrator of at least one tracker is not supported. Use 'is_tracker_admin': true"
+            );
         }
 
         if (isset($json_query['shortname'])) {
@@ -318,13 +339,18 @@ class ProjectResource extends AuthenticatedResource {
                 $offset,
                 $limit
             );
-        }
+        } elseif (isset($json_query['is_tracker_admin'])) {
+            $event = new GetProjectWithTrackerAdministrationPermission($user, $limit, $offset);
+            $this->event_manager->processEvent($event);
 
-        return $this->project_manager->getMyProjectsForREST(
-            $user,
-            $offset,
-            $limit
-        );
+            return $event->getPaginatedProjects();
+        } else {
+            return $this->project_manager->getMyProjectsForREST(
+                $user,
+                $offset,
+                $limit
+            );
+        }
     }
 
     /**
@@ -647,8 +673,18 @@ class ProjectResource extends AuthenticatedResource {
      *
      * Get the trackers of a given project.
      *
-     *
      * Fetching reference representations can be helpful if you encounter performance issues with complex trackers.
+     *
+     * <br/>
+     * query is optional. When filled, it is a json object with a property "is_tracker_admin" to filter trackers.
+     * <br/>
+     * <br/>
+     * Example: <pre>{"is_tracker_admin": true}</pre>
+     * <br/>
+     * <p>
+     *   <strong>/!\</strong> Please note that {"is_tracker_admin": false} is not supported and will result
+     *   in a 400 Bad Request error.
+     * </p>
      *
      * @url GET {id}/trackers
      * @access hybrid
@@ -657,14 +693,22 @@ class ProjectResource extends AuthenticatedResource {
      * @param string $representation Whether you want to fetch full or reference only representations {@from path}{@choice full,minimal}
      * @param int $limit  Number of elements displayed per page {@from path}
      * @param int $offset Position of the first element to display {@from path}
+     * @param string $query JSON object of search criteria properties {@from path}
      *
      * @return array {@type Tuleap\Tracker\REST\TrackerRepresentation}
      */
-    public function getTrackers($id, $representation = 'full', $limit = 10, $offset = 0)
+    public function getTrackers($id, $representation = 'full', $limit = 10, $offset = 0, $query = '')
     {
         $this->checkAccess();
 
-        $trackers = $this->getRepresentationsForTrackers($id, $representation, $limit, $offset, Event::REST_GET_PROJECT_TRACKERS);
+        $trackers = $this->getRepresentationsForTrackers(
+            $id,
+            $representation,
+            $limit,
+            $offset,
+            $query
+        );
+
         $this->sendAllowHeadersForProject();
 
         return $trackers;
@@ -679,18 +723,19 @@ class ProjectResource extends AuthenticatedResource {
         $this->sendAllowHeadersForProject();
     }
 
-    private function getRepresentationsForTrackers($id, $representation, $limit, $offset, $event)
+    private function getRepresentationsForTrackers($id, $representation, $limit, $offset, $query)
     {
         $project = $this->getProjectWithoutAuthorisation($id);
         $result  = array();
 
         $this->event_manager->processEvent(
-            $event,
+            Event::REST_GET_PROJECT_TRACKERS,
             array(
                 'version'        => 'v1',
                 'project'        => $project,
                 'representation' => $representation,
                 'limit'          => $limit,
+                'query'          => $query,
                 'offset'         => $offset,
                 'result'         => &$result,
             )
@@ -1006,7 +1051,11 @@ class ProjectResource extends AuthenticatedResource {
     /**
      * Get git
      *
-     * Get info about project Git repositories
+     * Get info about project Git repositories. Repositories are returned ordered by last_push date, if there are no push
+     * yet, it's the creation date of the repository that is taken into account.
+     * <br>
+     * The total number of repositories returned by 'x-pagination-size' header corresponds to ALL repositories, including
+     * those you cannot view so you might retrieve a lower number of repositories than 'x-pagination-size'.
      * <br>
      * <br>
      * With fields = 'basic', permissions is always set as <strong>NULL</strong>
@@ -1071,24 +1120,41 @@ class ProjectResource extends AuthenticatedResource {
      * ]
      * </pre>
      * <br>
+     * You can use <code>query</code> parameter in order to filter results. Currently you can only filter on scope or
+     * owner_id. By default, all repositories are returned.
+     * <br>
+     * { "scope": "project" } will return only project repositories.
+     * <br>
+     * { "scope": "individual" } will return only forked repositories.
+     * <br>
+     * { "owner_id": 123 } will return all repositories created by user with id 123.
+     * <br>
+     * { "scope": "individual", "owner_id": 123 } will return all repositories forked by user with id 123.
      *
-     * @url GET {id}/git
+     * @url    GET {id}/git
      * @access hybrid
      *
-     * @param int $id        Id of the project
-     * @param int $limit     Number of elements displayed per page {@from path}
-     * @param int $offset    Position of the first element to display {@from path}
+     * @param int    $id     Id of the project
+     * @param int    $limit  Number of elements displayed per page {@from path}
+     * @param int    $offset Position of the first element to display {@from path}
      * @param string $fields Whether you want to fetch permissions or just repository info {@from path}{@choice basic,all}
+     * @param string $query  Filter repositories {@from path}
      *
-     * @return array {@type Tuleap\REST\v1\GitRepositoryRepresentationBase}
+     * @return GitRepositoryListRepresentation
      *
-     * @throws 404
+     * @throws RestException
      */
-    public function getGit($id, $limit = 10, $offset = 0, $fields = GitRepositoryRepresentationBase::FIELDS_BASIC) {
+    public function getGit(
+        $id,
+        $limit = 10,
+        $offset = 0,
+        $fields = GitRepositoryRepresentationBase::FIELDS_BASIC,
+        $query = ''
+    ) {
         $this->checkAccess();
 
         $project                = $this->getProjectForUser($id);
-        $result                 = array();
+        $result                 = new GitRepositoryListRepresentation();
         $total_git_repositories = 0;
 
         $this->event_manager->processEvent(
@@ -1100,11 +1166,12 @@ class ProjectResource extends AuthenticatedResource {
                 'limit'          => $limit,
                 'offset'         => $offset,
                 'fields'         => $fields,
+                'query'          => $query,
                 'total_git_repo' => &$total_git_repositories
             )
         );
 
-        if (count($result) > 0) {
+        if ($result->repositories !== null) {
             $this->sendAllowHeadersForProject();
             $this->sendPaginationHeaders($limit, $offset, $total_git_repositories);
             return $result;

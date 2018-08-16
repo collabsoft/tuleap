@@ -10,6 +10,9 @@ msgstr ""
 msgid "Add to project dashboard"
 msgstr ""
 
+msgid "Agile Dashboard"
+msgstr ""
+
 msgid "Agiledashboard plannings"
 msgstr ""
 
@@ -37,6 +40,9 @@ msgstr ""
 msgid "Burnup Chart"
 msgstr ""
 
+msgid "Burnup field"
+msgstr ""
+
 msgid "Burnup is under calculation. It will be available in few minutes."
 msgstr ""
 
@@ -62,6 +68,9 @@ msgstr ""
 msgid "Done values successfully updated."
 msgstr ""
 
+msgid "Filter:"
+msgstr ""
+
 msgid "Force cache regeneration"
 msgstr ""
 
@@ -73,6 +82,18 @@ msgstr ""
 
 msgid "Item is not linked to this milestone"
 msgstr ""
+
+msgid "Make sure to check their configuration."
+msgstr ""
+
+msgid "None"
+msgstr ""
+
+#, php-format
+msgid "Other %s"
+msgid_plural "Other %s"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "Parent item"
 msgstr ""
@@ -123,8 +144,9 @@ msgid ""
 "for this tracker."
 msgstr ""
 
-#, php-format
-msgid "The tracker %s uses a Burnup field. Please check its configuration."
+msgid ""
+"The semantic status cannot de deleted because tracker notifications is set "
+"to \"Status change notifications\"."
 msgstr ""
 
 msgid "There is no content <br> you can see"
@@ -134,13 +156,17 @@ msgid "There is no item yet"
 msgstr ""
 
 msgid ""
-"This semantic will be used in the <strong>AgileDashboard</strong> service."
+"This semantic will be used in the <strong>AgileDashboard</strong> service "
+"for burnup and velocity charts."
 msgstr ""
 
 msgid "This tracker is not a planning tracker"
 msgstr ""
 
 msgid "Tracker semantic done"
+msgstr ""
+
+msgid "Update of planning assignment may lead to errors in:"
 msgstr ""
 
 msgid ""

@@ -20,40 +20,44 @@
 
 namespace Tuleap\AgileDashboard\REST\v1;
 
+use AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentationsBuilder;
+use AgileDashboard_BacklogItemDao;
+use AgileDashboard_Milestone_Backlog_BacklogFactory;
+use AgileDashboard_Milestone_Backlog_BacklogItemBuilder;
+use AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactory;
+use AgileDashboard_Milestone_MilestoneDao;
+use AgileDashboard_Milestone_MilestoneReportCriterionOptionsProvider;
+use AgileDashboard_Milestone_MilestoneStatusCounter;
+use Luracast\Restler\RestException;
 use PFUser;
-use Project;
+use Planning_MilestoneFactory;
 use PlanningFactory;
+use PlanningPermissionsManager;
+use Project;
+use Tracker_Artifact_PriorityDao;
+use Tracker_Artifact_PriorityHistoryDao;
+use Tracker_Artifact_PriorityManager;
+use Tracker_ArtifactDao;
 use Tracker_ArtifactFactory;
 use Tracker_FormElementFactory;
 use TrackerFactory;
-use Planning_MilestoneFactory;
-use AgileDashboard_Milestone_Backlog_BacklogFactory;
-use AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactory;
-use AgileDashboard_Milestone_Backlog_BacklogItemBuilder;
-use AgileDashboard_Milestone_MilestoneReportCriterionOptionsProvider;
-use AgileDashboard_BacklogItemDao;
-use AgileDashboard_Milestone_MilestoneStatusCounter;
-use Tracker_ArtifactDao;
-use Luracast\Restler\RestException;
+use Tuleap\AgileDashboard\BacklogItem\RemainingEffortValueRetriever;
 use Tuleap\AgileDashboard\MonoMilestone\MonoMilestoneBacklogItemDao;
 use Tuleap\AgileDashboard\MonoMilestone\MonoMilestoneItemsFinder;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneDao;
+use Tuleap\Cardwall\BackgroundColor\BackgroundColorBuilder;
 use Tuleap\REST\Header;
-use Tracker_Artifact_PriorityDao;
-use Tracker_Artifact_PriorityManager;
-use Tracker_Artifact_PriorityHistoryDao;
-use UserManager;
 use Tuleap\REST\v1\OrderRepresentationBase;
-use PlanningPermissionsManager;
-use AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentationsBuilder;
-use AgileDashboard_Milestone_MilestoneDao;
+use Tuleap\Tracker\FormElement\Field\ListFields\Bind\BindDecoratorRetriever;
 use Tuleap\Tracker\REST\v1\ArtifactLinkUpdater;
+use UserManager;
 
 /**
  * Wrapper for backlog related REST methods
  */
-class ProjectBacklogResource {
+class ProjectBacklogResource
+{
     const MAX_LIMIT = 100;
     const TOP_BACKLOG_IDENTIFIER = AgileDashboard_Milestone_MilestoneReportCriterionOptionsProvider::TOP_BACKLOG_IDENTIFIER;
 
@@ -84,10 +88,13 @@ class ProjectBacklogResource {
     /** @var AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentationsBuilder */
     private $paginated_backlog_item_representation_builder;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->planning_factory             = PlanningFactory::build();
         $tracker_artifact_factory           = Tracker_ArtifactFactory::instance();
         $tracker_form_element_factory       = Tracker_FormElementFactory::instance();
+        $event_manager                      = \EventManager::instance();
+        $user_manager                       = UserManager::instance();
         $this->planning_permissions_manager = new PlanningPermissionsManager();
         $status_counter                     = new AgileDashboard_Milestone_MilestoneStatusCounter(
             new AgileDashboard_BacklogItemDao(),
@@ -131,7 +138,10 @@ class ProjectBacklogResource {
             $tracker_form_element_factory,
             $this->milestone_factory,
             $this->planning_factory,
-            new AgileDashboard_Milestone_Backlog_BacklogItemBuilder()
+            new AgileDashboard_Milestone_Backlog_BacklogItemBuilder(),
+            new RemainingEffortValueRetriever(
+                $tracker_form_element_factory
+            )
         );
 
         $this->milestone_validator = new MilestoneResourceValidator(
@@ -147,7 +157,7 @@ class ProjectBacklogResource {
         $priority_manager = new Tracker_Artifact_PriorityManager(
             new Tracker_Artifact_PriorityDao(),
             new Tracker_Artifact_PriorityHistoryDao(),
-            UserManager::instance(),
+            $user_manager,
             $tracker_artifact_factory
         );
 
@@ -157,11 +167,18 @@ class ProjectBacklogResource {
             $this->artifactlink_updater,
             $tracker_artifact_factory,
             $priority_manager,
-            \EventManager::instance()
+            $event_manager
+        );
+
+        $color_builder = new BackgroundColorBuilder(new BindDecoratorRetriever());
+        $item_factory  = new BacklogItemRepresentationFactory(
+            $color_builder,
+            $user_manager,
+            $event_manager
         );
 
         $this->paginated_backlog_item_representation_builder = new AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentationsBuilder(
-            new BacklogItemRepresentationFactory(),
+            $item_factory,
             $this->backlog_item_collection_factory,
             $this->backlog_factory
         );

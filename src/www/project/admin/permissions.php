@@ -1,13 +1,25 @@
 <?php
-//
-// Codendi
-// Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
-// http://www.codendi.com
-//
-// 
-//
-// Originally written by Nicolas Guerin 2004, Codendi Team, Xerox
-//
+/**
+ * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
+ * Copyright (c) Enalean 2017 - 2018. All rights reserved
+ *
+ * Originally written by Nicolas Guerin 2004, Codendi Team, Xerox
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 // Supported object types and related object_id:
 //
@@ -66,7 +78,7 @@ function permission_get_name($permission_type) {
     } else if ($permission_type=='TRACKER_ARTIFACT_ACCESS') {
         return $Language->getText('project_admin_permissions','tracker_artifact_access');
     } else {
-        $em =& EventManager::instance();
+        $em   = EventManager::instance();
         $name = false;
         $em->processEvent('permission_get_name', array('permission_type' => $permission_type, 'name' => &$name));
         return $name ? $name : $permission_type;
@@ -104,7 +116,7 @@ function permission_get_object_type($permission_type,$object_id) {
     } else if ($permission_type=='TRACKER_ACCESS_FULL') {
         return 'artefact';
     } else {
-        $em =& EventManager::instance();
+        $em = EventManager::instance();
         $object_type = false;
         $em->processEvent('permission_get_object_type', array(
             'permission_type' => $permission_type, 
@@ -179,7 +191,7 @@ function permission_get_object_name($permission_type,$object_id) {
         $a  = new Artifact($at,$object_id);
         return 'art #'. $a->getId() .' - '. util_unconvert_htmlspecialchars($a->getSummary());    
     } else {
-        $em =& EventManager::instance();
+        $em = EventManager::instance();
         $object_name = false;
         $em->processEvent('permission_get_object_name', array(
             'permission_type' => $permission_type, 
@@ -457,11 +469,17 @@ function permission_get_field_tracker_ugroups_permissions($group_id, $atid, $fie
 function permission_get_tracker_ugroups_permissions($group_id, $object_id) {
   return permission_get_ugroups_permissions($group_id, $object_id, array('TRACKER_ACCESS_FULL','TRACKER_ACCESS_ASSIGNEE','TRACKER_ACCESS_SUBMITTER'), false);
 }
+
 /**
  * @returns array the permissions for the ugroups
  */
 function permission_get_ugroups_permissions($group_id, $object_id, $permission_types, $use_default_permissions = true) {
-   
+    $cache = Tuleap\Project\UgroupsPermissionsCache::instance();
+    $cached_value = $cache->get($group_id, $object_id, $permission_types, $use_default_permissions);
+    if ($cached_value !== null) {
+        return $cached_value;
+    }
+
     //We retrive ugroups (user defined)
     $object_id = db_es($object_id);
     $sql="SELECT u.ugroup_id, u.name, p.permission_type ".
@@ -479,6 +497,7 @@ function permission_get_ugroups_permissions($group_id, $object_id, $permission_t
     $sql .= ")";
     $res = db_query($sql);
     if (!$res) {
+        $cache->set($group_id, $object_id, $permission_types, $use_default_permissions, false);
         return false;
     } else {
         $return = array();
@@ -571,6 +590,7 @@ function permission_get_ugroups_permissions($group_id, $object_id, $permission_t
                 }
             }
         }
+        $cache->set($group_id, $object_id, $permission_types, $use_default_permissions, $return);
         return $return;
     }
 }
@@ -931,9 +951,10 @@ function permission_add_history($group_id, $permission_type, $object_id){
         return;
     } 
     $ugroup_list='';
+    $manager = new UGroupManager();
     while ($row = db_fetch_array($res)) {
         if ($ugroup_list) { $ugroup_list.=', ';}
-        $ugroup_list.= ugroup_get_name_from_id($row['ugroup_id']);
+        $ugroup_list.= $manager->getById($row['ugroup_id'])->getTranslatedName();
     }
     group_add_history('perm_granted_for_'.$type, $ugroup_list, $group_id, array($name));
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,6 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+use Tuleap\Tracker\Artifact\ArtifactsDeletion\ArtifactDeletorBuilder;
+use Tuleap\user\PasswordVerifier;
 
 require_once 'pre.php';
 
@@ -51,9 +54,12 @@ if (!isset($password)) {
     echo PHP_EOL;
 }
 
+$password_handler = PasswordHandlerFactory::getPasswordHandler();
+
 $login_manager = new User_LoginManager(
     EventManager::instance(),
     UserManager::instance(),
+    new PasswordVerifier($password_handler),
     new User_PasswordExpirationChecker(),
     PasswordHandlerFactory::getPasswordHandler()
 );
@@ -77,6 +83,8 @@ if (! $tracker->userIsAdmin($tuleap_user)) {
     exit(1);
 }
 
+$artifact_deletor = ArtifactDeletorBuilder::build();
+
 $current_artifact_id = $first_artifact_id;
 
 while ($current_artifact_id <= $last_artifact_id) {
@@ -98,6 +106,6 @@ while ($current_artifact_id <= $last_artifact_id) {
     }
 
     fwrite(STDOUT, 'Removing artifact #' . $current_artifact_id . PHP_EOL);
-    $artifact->delete($tuleap_user);
+    $artifact_deletor->delete($artifact, $tuleap_user);
     $current_artifact_id++;
 }

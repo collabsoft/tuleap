@@ -66,6 +66,8 @@ DROP TABLE IF EXISTS tracker_tooltip;
 DROP TABLE IF EXISTS tracker_global_notification;
 DROP TABLE IF EXISTS tracker_global_notification_users;
 DROP TABLE IF EXISTS tracker_global_notification_ugroups;
+DROP TABLE IF EXISTS tracker_global_notification_unsubscribers;
+DROP TABLE IF EXISTS tracker_only_status_change_notification_subscribers;
 DROP TABLE IF EXISTS tracker_watcher;
 DROP TABLE IF EXISTS tracker_notification_role;
 DROP TABLE IF EXISTS tracker_notification_event;
@@ -91,11 +93,15 @@ DROP TABLE IF EXISTS plugin_tracker_config;
 DROP TABLE IF EXISTS plugin_tracker_artifactlink_natures;
 DROP TABLE IF EXISTS plugin_tracker_artifactlink_natures_allowed_projects;
 DROP TABLE IF EXISTS plugin_tracker_notification_assigned_to;
+DROP TABLE IF EXISTS plugin_tracker_notification_email_custom_sender_format;
 DROP TABLE IF EXISTS plugin_tracker_recently_visited;
 DROP TABLE IF EXISTS plugin_tracker_projects_use_artifactlink_types;
 DROP TABLE IF EXISTS plugin_tracker_projects_unused_artifactlink_types;
+DROP TABLE IF EXISTS plugin_tracker_deleted_artifacts;
 
 DROP TABLE IF EXISTS tracker_report_criteria_comment_value;
+DROP TABLE IF EXISTS plugin_tracker_webhook_url;
+DROP TABLE IF EXISTS plugin_tracker_webhook_log;
 
 DELETE FROM permissions WHERE permission_type LIKE 'PLUGIN_TRACKER_%';
 DELETE FROM permissions_values WHERE permission_type LIKE 'PLUGIN_TRACKER_%';

@@ -1,8 +1,6 @@
 <?php
-use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
-
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,6 +17,8 @@ use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
 
 class Tracker_Artifact_XMLImport {
 
@@ -105,6 +105,10 @@ class Tracker_Artifact_XMLImport {
      * importBareArtifactsFromXML() first to generate the mapping for all the
      * trackers and then importArtifactChangesFromXML().
      *
+     * @param Tracker $tracker
+     * @param SimpleXMLElement $xml_element
+     * @param $extraction_path
+     * @param TrackerXmlFieldsMapping $xml_fields_mapping
      * @return bool for success or failure
      */
     public function importFromXML(
@@ -140,7 +144,13 @@ class Tracker_Artifact_XMLImport {
      * Import bare artifacts without any changeset
      * Fill up $artifacts_id_mapping with a mapping from old ids to new ids
      *
+     * @param Tracker $tracker
+     * @param SimpleXMLElement $xml_element
+     * @param $extraction_path
+     * @param TrackerXmlFieldsMapping $xml_fields_mapping
+     * @param Tracker_XML_Importer_ArtifactImportedMapping $artifacts_id_mapping
      * @return array of bare artifacts or null on error
+     * @throws Tracker_Artifact_Exception_XMLImportException
      */
     public function importBareArtifactsFromXML(
         Tracker $tracker,
@@ -165,6 +175,12 @@ class Tracker_Artifact_XMLImport {
 
     /**
      * Import changesets from a n array of bare artifacts
+     * @param Tracker $tracker
+     * @param SimpleXMLElement $xml_element
+     * @param $extraction_path
+     * @param TrackerXmlFieldsMapping $xml_fields_mapping
+     * @param Tracker_XML_Importer_ArtifactImportedMapping $artifacts_id_mapping
+     * @param array $artifacts
      * @return true
      */
     public function importArtifactChangesFromXML(
@@ -193,6 +209,11 @@ class Tracker_Artifact_XMLImport {
     }
 
     /**
+     * @param Tracker $tracker
+     * @param SimpleXMLElement $artifact_xml
+     * @param $extraction_path
+     * @param TrackerXmlFieldsMapping $xml_fields_mapping
+     * @param Tracker_XML_Importer_ArtifactImportedMapping $artifacts_id_mapping
      * @return Tracker_Artifact_XMLImport_ArtifactFieldsDataBuilder
      */
     public function createFieldsDataBuilder(
@@ -219,7 +240,10 @@ class Tracker_Artifact_XMLImport {
     }
 
     /**
+     * @param Tracker $tracker
+     * @param SimpleXMLElement $xml_artifact
      * @return Tracker_Artifact|null The created artifact
+     * @throws Tracker_Artifact_Exception_XMLImportException
      */
     public function importBareArtifact(
         Tracker $tracker,
@@ -322,7 +346,8 @@ class Tracker_Artifact_XMLImport {
             $fields_data,
             $submitted_by,
             $this->getSubmittedOn($xml_changeset),
-            false);
+            false
+        );
     }
 
     private function importFakeFirstChangeset(
@@ -338,7 +363,8 @@ class Tracker_Artifact_XMLImport {
             array(),
             $submitted_by,
             $this->getSubmittedOn($xml_changeset),
-            false);
+            false
+        );
     }
 
     private function importRemainingChangeset(
@@ -384,6 +410,9 @@ class Tracker_Artifact_XMLImport {
         }
     }
 
+    /**
+     * @return \PFUser
+     */
     private function getSubmittedBy(SimpleXMLElement $xml_changeset) {
         return $this->user_finder->getUser($xml_changeset->submitted_by);
     }
@@ -394,5 +423,42 @@ class Tracker_Artifact_XMLImport {
             return $time;
         }
         throw new Tracker_Artifact_Exception_XMLImportException("Invalid date format not ISO8601: ".(string)$xml_changeset->submitted_on);
+    }
+
+    /**
+     * @param Tracker $tracker
+     * @param SimpleXMLElement $xml_artifact
+     * @return Tracker_Artifact|null
+     * @throws Tracker_Artifact_Exception_XMLImportException
+     */
+    public function importArtifactWithAllDataFromXMLContent(
+        Tracker $tracker,
+        SimpleXMLElement $xml_artifact
+    ) {
+        if (count($xml_artifact->changeset) > 0) {
+            $changesets      = array_values($this->getSortedBySubmittedOn($xml_artifact->changeset));
+            $first_changeset = count($changesets) ? $changesets[0] : null;
+            $artifact = $this->artifact_creator->createBareWithAllData(
+                $tracker,
+                (int) $xml_artifact['id'],
+                $this->getSubmittedOn($first_changeset),
+                $this->getSubmittedBy($first_changeset)->getId()
+            );
+
+            if ($artifact) {
+                $fields_data_builder = $this->createFieldsDataBuilder(
+                    $tracker,
+                    $xml_artifact,
+                    '',
+                    new TrackerXmlFieldsMapping_InSamePlatform(),
+                    new Tracker_XML_Importer_ArtifactImportedMapping()
+                );
+
+                $this->importAllChangesetsBySubmitionDate($artifact, $xml_artifact->changeset, $fields_data_builder);
+                return $artifact;
+            }
+        }
+
+        return null;
     }
 }

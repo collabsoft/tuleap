@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,12 +41,6 @@ class TrackerXmlExport
 
     /** @var Tracker_Artifact_XMLExport */
     private $artifact_xml_export;
-
-    /** @var AgileDashboard_XMLExporter */
-    private $agiledashboard_exporter;
-
-    /** @var PlanningFactory */
-    private $planning_factory;
 
     /** @var EventManager */
     private $event_manager;
@@ -102,8 +96,10 @@ class TrackerXmlExport
         $params = array(
             'user'        => $user,
             'xml_content' => &$xml_content,
-            'group_id'    => $project->getID()
+            'group_id'    => $project->getID(),
+            'archive'     => &$archive
         );
+
         $this->event_manager->processEvent(TRACKER_EVENT_EXPORT_FULL_XML, $params);
 
         $this->exportTriggers($xml_trackers, $xml_field_mapping, $exported_trackers);
@@ -197,18 +193,54 @@ class TrackerXmlExport
         PFUser $user,
         Tuleap\Project\XML\Export\ArchiveInterface $archive
     ) {
-        $xml_field_mapping = array();
-        $xml_trackers      = $xml_content->addChild('trackers');
-        $tracker           = $this->tracker_factory->getTrackerById($tracker_id);
+        $tracker = $this->tracker_factory->getTrackerById($tracker_id);
 
         if ($tracker->isActive()) {
-            $tracker_xml = $xml_trackers->addChild('tracker');
-
-            $tracker->exportToXMLInProjectExportContext($tracker_xml, $this->user_xml_exporter, $xml_field_mapping);
-            $this->artifact_xml_export->export($tracker, $tracker_xml, $user, $archive);
+            $xml_content = $xml_content->addChild('trackers');
+            $this->exportTrackerAndArtifacts($user, $archive, $xml_content, $tracker);
         }
 
-        $this->rng_validator->validate($xml_trackers, dirname(TRACKER_BASE_DIR).'/www/resources/trackers.rng');
-        return $xml_trackers;
+        return $xml_content;
+    }
+
+    public function exportSingleTrackerBunchOfArtifactsToXml(
+        $tracker_id,
+        PFUser $user,
+        Tuleap\Project\XML\Export\ArchiveInterface $archive,
+        array $artifacts
+    ) {
+        $tracker = $this->tracker_factory->getTrackerById($tracker_id);
+        $xml_content = new SimpleXMLElement(
+            '<?xml version="1.0" encoding="UTF-8"?>
+                                         <trackers />'
+        );
+
+        if ($tracker->isActive()) {
+            $this->exportTrackerAndArtifacts($user, $archive, $xml_content, $tracker);
+        }
+
+        $this->artifact_xml_export->exportBunchOfArtifactsForArchive($artifacts, $xml_content, $user, $archive);
+
+        return $xml_content;
+    }
+
+    private function validateExport(SimpleXMLElement $xml_trackers)
+    {
+        $this->rng_validator->validate($xml_trackers, dirname(TRACKER_BASE_DIR) . '/www/resources/trackers.rng');
+    }
+
+    private function exportMapping(SimpleXMLElement $tracker_xml, Tracker $tracker)
+    {
+        $xml_field_mapping = array();
+
+        $tracker->exportToXMLInProjectExportContext($tracker_xml, $this->user_xml_exporter, $xml_field_mapping);
+    }
+
+    private function exportTrackerAndArtifacts(PFUser $user, ArchiveInterface $archive, SimpleXMLElement $xml_content, Tracker $tracker)
+    {
+        $tracker_xml_node = $xml_content->addChild('tracker');
+        $this->exportMapping($tracker_xml_node, $tracker);
+        $this->artifact_xml_export->export($tracker, $tracker_xml_node, $user, $archive);
+        $this->validateExport($xml_content);
     }
 }

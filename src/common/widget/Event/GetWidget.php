@@ -21,7 +21,9 @@
 
 namespace Tuleap\Widget\Event;
 
-class GetWidget
+use Tuleap\Event\Dispatchable;
+
+class GetWidget implements Dispatchable
 {
 
     const NAME = 'widgetInstance';

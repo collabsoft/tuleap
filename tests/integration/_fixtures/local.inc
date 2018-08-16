@@ -247,10 +247,6 @@ $sys_user_approval = 0;
 // Project default privacy status (1 is public, 0 is private)
 $sys_is_project_public = 1;
 
-// If set to 1 (one) new projects must be approved by site
-// admin. If 0 new projects are automatically approved
-$sys_project_approval = 1;
-
 // Is license approval mandatory when downloading a file from the FRS?
 // (1 is mandatory, 0 is optional)
 $sys_frs_license_mandatory = 1;
@@ -312,9 +308,6 @@ $sys_enable_avatars = 1;
 //User's avatar path
 $sys_avatar_path = $sys_data_dir . "/user/avatar/";
 
-//Zend Framework path
-$zend_path = "/usr/share/zend";
-
 //Markdown library path
 $markdown_path = "/usr/share/php-markdown";
 
@@ -364,13 +357,7 @@ $sys_default_theme_variant = 'FlamingParrot_Orange';
 // * FlamingParrot_BlueGrey
 // * FlamingParrot_Purple
 // * FlamingParrot_Red
-// * FlamingParrot_DarkOrange
-// * FlamingParrot_DarkBlue
-// * FlamingParrot_DarkGreen
-// * FlamingParrot_DarkBlueGrey
-// * FlamingParrot_DarkPurple
-// * FlamingParrot_DarkRed
-$sys_available_theme_variants = 'FlamingParrot_Orange,FlamingParrot_Blue,FlamingParrot_Green,FlamingParrot_BlueGrey,FlamingParrot_Purple,FlamingParrot_Red,FlamingParrot_DarkOrange,FlamingParrot_DarkBlue,FlamingParrot_DarkGreen,FlamingParrot_DarkBlueGrey,FlamingParrot_DarkPurple,FlamingParrot_DarkRed';
+$sys_available_theme_variants = 'FlamingParrot_Orange,FlamingParrot_Blue,FlamingParrot_Green,FlamingParrot_BlueGrey,FlamingParrot_Purple,FlamingParrot_Red';
 
 // Set the reporting level for logging
 //

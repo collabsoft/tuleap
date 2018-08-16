@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2011 - 2017. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessResultInterface;
 use Tuleap\Tracker\FormElement\Field\Shareable\PropagatePropertiesDao;
+use Tuleap\Tracker\FormElement\View\Admin\FilterFormElementsThatCanBeCreatedForTracker;
 
 require_once TRACKER_BASE_DIR . '/tracker_permissions.php';
 require_once('common/widget/Widget_Static.class.php');
@@ -563,7 +565,7 @@ class Tracker_FormElementFactory {
 
     /**
      * @param Tracker $tracker
-     * @return array of Tracker_FormElement - All fields used and  unused by the tracker
+     * @return Tracker_FormElement_Field[] - All fields used and  unused by the tracker
      */
     public function getFields($tracker) {
         $field_classnames = array_merge($this->classnames, $this->special_classnames);
@@ -778,7 +780,7 @@ class Tracker_FormElementFactory {
      *
      * @param Tracker $tracker
      *
-     * @return DataAccessObject
+     * @return DataAccessResult
      */
     public function getUsedStaticSbFields(Tracker $tracker) {
         return $this->getDao()->searchUsedStaticSbFieldByTrackerId($tracker->getId())
@@ -827,7 +829,8 @@ class Tracker_FormElementFactory {
             $this->getUsedNumericFields($tracker),
             $this->getUsedTextFields($tracker),
             $this->getUsedDateFields($tracker),
-            $this->getUsedClosedListFields($tracker)
+            $this->getUsedClosedListFields($tracker),
+            $this->getUsedFileFields($tracker)
         );
 
         foreach ($fields as $key => $field) {
@@ -923,7 +926,8 @@ class Tracker_FormElementFactory {
      *
      * @return array All text formElements used by the tracker
      */
-    protected function getCachedInstancesFromDAR(DataAccessResult $dar) {
+    protected function getCachedInstancesFromDAR(LegacyDataAccessResultInterface $dar)
+    {
         $form_elements = array();
         foreach($dar as $row) {
             $form_elements[] = $this->getCachedInstanceFromRow($row);
@@ -1151,7 +1155,7 @@ class Tracker_FormElementFactory {
      * @return Array of Tracker_FormElement_Field
      */
     public function getProjectSharedFields(Project $project) {
-        $dar = $this->getDao()->searchProjectSharedFieldsOriginals($project->getId());
+        $dar = $this->getDao()->searchProjectSharedFieldsOriginals($project->getID());
         return $this->getCachedInstancesFromRows($dar);
     }
 
@@ -1387,31 +1391,33 @@ class Tracker_FormElementFactory {
         $w->display();
     }
 
-    protected function fetchFactoryButtons($klasses, $tracker) {
+    private function fetchFactoryButtons(array $klasses, Tracker $tracker)
+    {
+        $event = new FilterFormElementsThatCanBeCreatedForTracker($klasses, $tracker);
+        $this->getEventManager()->processEvent($event);
+
         $html = '';
         $html .= '<div class="tracker-admin-palette-content">';
-        $i = 0;
-        foreach($klasses as $type => $klass) {
+        foreach($event->getKlasses() as $type => $klass) {
             $html .= $this->getFactoryButton($klass, 'create-formElement['.  urlencode($type) .']', $tracker);
-            ++$i;
         }
         $html .= '</div>';
+
         return $html;
     }
 
-    public function getFactoryButton($klass, $name, $tracker, $label = null, $description = null, $icon = null, $isUnique = null) {
+    public function getFactoryButton($klass, $name, Tracker $tracker, $label = null, $description = null, $icon = null, $isUnique = null) {
         $hp = Codendi_HTMLPurifier::instance();
-        //Waiting for PHP5.3 and $klass::staticMethod() and Late Static Binding
         $button = '';
         $button_class = 'button';
         if (!$label) {
-            eval("\$label = $klass::getFactoryLabel();");
+            $label = $klass::getFactoryLabel();
         }
         if ($description === null) {
-            eval("\$description = $klass::getFactoryDescription();");
+            $description = $klass::getFactoryDescription();
         }
         if (!$icon) {
-            eval("\$icon = $klass::getFactoryIconCreate();");
+            $icon = $klass::getFactoryIconCreate();
         }
         if ($this->isFieldUniqueAndAlreadyUsed($klass, $tracker, $isUnique)) {
             $button_class = 'button_disabled';
@@ -1506,7 +1512,7 @@ class Tracker_FormElementFactory {
         );
     }
 
-    public function createFormElement($tracker, $type, $form_element_data) {
+    public function createFormElement(Tracker $tracker, $type, $form_element_data, $tracker_is_empty, $force_absolute_ranking) {
         //Check that the label has been submitted
         if (isset($form_element_data['label']) && trim($form_element_data['label'])) {
             $label       = trim($form_element_data['label']);
@@ -1566,7 +1572,9 @@ class Tracker_FormElementFactory {
                                                      $is_required,
                                                      $notify,
                                                      $rank,
-                                                     $original_field_id)) {
+                                                     $original_field_id,
+                                                     $force_absolute_ranking
+                        )) {
                         //Set permissions
                         if (!array_key_exists($type, array_merge($this->group_classnames, $this->staticfield_classnames))) {
                             $ugroups_permissions = $this->getPermissionsFromFormElementData($id, $form_element_data);
@@ -1594,7 +1602,7 @@ class Tracker_FormElementFactory {
                             }
 
                             //All is done, the field may want to do some things depending on the request
-                            $form_element->afterCreate($form_element_data);
+                            $form_element->afterCreate($form_element_data, $tracker_is_empty);
 
                             return $id;
                         }
@@ -1650,13 +1658,13 @@ class Tracker_FormElementFactory {
      *
      * @return the id of the newly created FormElement
      */
-    public function saveObject($tracker, $form_element, $parent_id) {
+    public function saveObject(Tracker $tracker, $form_element, $parent_id, $tracker_is_empty, $force_absolute_ranking) {
         $form_element_data = $form_element->getFormElementDataForCreation($parent_id);
         $type              = $this->getType($form_element);
 
-        if ($id = $this->createFormElement($tracker, $type, $form_element_data)) {
+        if ($id = $this->createFormElement($tracker, $type, $form_element_data, $tracker_is_empty, $force_absolute_ranking)) {
             $form_element->setId($id);
-            $form_element->afterSaveObject($tracker);
+            $form_element->afterSaveObject($tracker, $tracker_is_empty, $force_absolute_ranking);
         }
         return $id;
     }
@@ -1733,5 +1741,10 @@ class Tracker_FormElementFactory {
         }
 
         return $fields;
+    }
+
+    public function isFieldASimpleListField(Tracker_FormElement_Field $field)
+    {
+        return in_array($this->getType($field), ["sb", "rb"]);
     }
 }

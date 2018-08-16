@@ -20,14 +20,17 @@
 
 namespace Tuleap\CrossTracker\Report\Query;
 
-use Tuleap\Tracker\Report\Query\IProvideFromAndWhereSQLFragments;
-
-interface IProvideParametrizedFromAndWhereSQLFragments extends IProvideFromAndWhereSQLFragments
+interface IProvideParametrizedFromAndWhereSQLFragments
 {
     /**
-     * @return array
+     * @return ParametrizedFrom[]
      */
-    public function getFromParameters();
+    public function getAllParametrizedFrom();
+
+    /**
+     * @return string
+     */
+    public function getWhere();
 
     /**
      * @return array

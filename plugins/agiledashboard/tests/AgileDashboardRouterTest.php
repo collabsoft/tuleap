@@ -18,14 +18,13 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once dirname(__FILE__).'/../include/constants.php';
-require_once dirname(__FILE__).'/../../tracker/include/constants.php';
-require_once AGILEDASHBOARD_BASE_DIR.'/autoload.php';
-require_once TRACKER_BASE_DIR.'/autoload.php';
+require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__.'/../../tracker/include/trackerPlugin.class.php';
 
-class AgileDashboardRouter_RouteShowPlanningTest extends TuleapTestCase {
-
-    public function setUp() {
+class AgileDashboardRouter_RouteShowPlanningTest extends TuleapTestCase
+{
+    public function setUp()
+    {
         parent::setUp();
         ForgeConfig::store();
         ForgeConfig::set('codendi_dir', AGILEDASHBOARD_BASE_DIR .'/../../..');
@@ -54,12 +53,14 @@ class AgileDashboardRouter_RouteShowPlanningTest extends TuleapTestCase {
             mock('AgileDashboard_HierarchyChecker'),
             mock('Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker'),
             mock('Tuleap\AgileDashboard\Planning\ScrumPlanningFilter'),
-            mock('Tuleap\AgileDashboard\PerGroup\AgileDashboardJSONPermissionsRetriever')
+            mock('Tuleap\AgileDashboard\PermissionsPerGroup\AgileDashboardJSONPermissionsRetriever'),
+            mock(\Tuleap\AgileDashboard\BreadCrumbDropdown\AgileDashboardCrumbBuilder::class),
+            mock(\Tuleap\AgileDashboard\BreadCrumbDropdown\AdministrationCrumbBuilder::class)
         );
 
         stub($this->router)->buildPlanningController()->returns($this->planning_controller);
         stub($milestone_controller_factory)->getMilestoneController()->returns(mock('Planning_MilestoneController'));
-        stub($this->router)->buildController()->returns(mock('AgileDashboard_Controller'));
+        stub($this->router)->buildController()->returns(mock('Tuleap\AgileDashboard\AdminController'));
     }
 
     public function tearDown() {

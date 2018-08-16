@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright Enalean (c) 2016-2018. All rights reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright Enalean (c) 2016-2017. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -23,8 +23,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\MessageFactoryBuilder;
 use Tuleap\Tracker\RecentlyVisited\RecentlyVisitedDao;
 use Tuleap\Tracker\RecentlyVisited\VisitRecorder;
+use Tuleap\Tracker\Webhook\WebhookDao;
+use Tuleap\Tracker\Webhook\WebhookFactory;
+use Tuleap\Tracker\Webhook\WebhookStatusLogger;
+use Tuleap\Webhook\Emitter;
 
 class Tracker_ArtifactFactory {
     
@@ -387,13 +393,23 @@ class Tracker_ArtifactFactory {
         $formelement_factory = Tracker_FormElementFactory::instance();
         $fields_validator    = new Tracker_Artifact_Changeset_InitialChangesetFieldsValidator($formelement_factory);
         $visit_recorder      = new VisitRecorder(new RecentlyVisitedDao());
+        $webhook_dao         = new WebhookDao();
+        $emitter             = new Emitter(
+            MessageFactoryBuilder::build(),
+            HttpClientFactory::createClient(),
+            new WebhookStatusLogger($webhook_dao)
+        );
+
+        $webhook_factory = new WebhookFactory($webhook_dao);
 
         $changeset_creator = new Tracker_Artifact_Changeset_InitialChangesetCreator(
             $fields_validator,
             $formelement_factory,
             new Tracker_Artifact_ChangesetDao(),
             $this,
-            EventManager::instance()
+            EventManager::instance(),
+            $emitter,
+            $webhook_factory
         );
         $creator = new Tracker_ArtifactCreator($this, $fields_validator, $changeset_creator, $visit_recorder);
 

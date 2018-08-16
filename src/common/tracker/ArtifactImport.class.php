@@ -102,7 +102,7 @@ class ArtifactImport {
    *
    *      @return boolean success.
    */
-  function ArtifactImport($ath,$art_field_fact,$group) {
+  function __construct($ath,$art_field_fact,$group) {
     $this->ath = $ath;
     $this->art_field_fact = $art_field_fact;
     $this->group = $group;
@@ -871,7 +871,7 @@ function getUsedFields() {
   function splitFollowUpComments($followup_comments) {
       // A follow-up comment is delimited by:
       // A carriage return, 66 "-", a carriage return
-      $comments = split("(\n|\r|\r\n)[-]{66}(\n|\r|\r\n)",$followup_comments);
+      $comments = preg_split("/(\n|\r|\r\n)[-]{66}(\n|\r|\r\n)/D",$followup_comments);
       return $comments;
   }
 
@@ -912,7 +912,7 @@ function getUsedFields() {
      function parseLegacyDetails($details,&$parsed_details,$for_parse_report=false) {
     global $sys_lf, $user_id;
     
-    $comments = split("==================================================",$details);
+    $comments = preg_split("/==================================================/D",$details);
     
     $i = 0;
     

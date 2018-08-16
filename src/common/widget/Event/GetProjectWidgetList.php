@@ -21,6 +21,7 @@
 
 namespace Tuleap\Widget\Event;
 
+use Tuleap\Widget\Note\ProjectNote;
 use Tuleap\Widget\ProjectHeartbeat;
 
 class GetProjectWidgetList extends GetWidgetList
@@ -40,6 +41,7 @@ class GetProjectWidgetList extends GetWidgetList
         'projectrss',
         'projectimageviewer',
         'projectcontacts',
+        ProjectNote::NAME,
     ];
 
     public function __construct()

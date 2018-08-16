@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -365,10 +365,16 @@ class UserDao extends DataAccessObject {
      * @param  $time    Integer
      * @return Boolean
      */
-    function storeLastAccessDate($user_id, $time) {
-        $sql = 'UPDATE user_access
-                SET last_access_date  = '.$this->da->escapeInt($time).'
-                WHERE user_id = '. $this->da->escapeInt($user_id);
+    public function storeLastAccessDate($user_id, $time)
+    {
+        $user_id = $this->da->escapeInt($user_id);
+        $time    = $this->da->escapeInt($time);
+
+        $sql = "UPDATE user_access
+                SET last_access_date = $time
+                WHERE user_id = $user_id
+                  AND last_access_date < $time";
+
         return $this->update($sql);
     }
 
@@ -637,7 +643,8 @@ class UserDao extends DataAccessObject {
      *
      * @return Array
      */
-    function listAllUsers ($group_id, $pattern, $offset, $limit, $sort_header, $sort_order, $status_values) {
+    public function listAllUsers ($group_id, $pattern, $offset, $limit, $sort_header, $sort_order, $status_values)
+    {
         $group_id = $this->da->escapeInt($group_id);
         $offset   = $this->da->escapeInt($offset);
         $limit    = $this->da->escapeInt($limit);
@@ -669,8 +676,9 @@ class UserDao extends DataAccessObject {
             $from .= " INNER JOIN user_group ON (user.user_id = user_group.user_id AND user_group.group_id = $group_id)";
         }
 
-        $sql = "SELECT SQL_CALC_FOUND_ROWS user.*, admin_of.nb AS admin_of, member_of.nb AS member_of
-            $from
+        $sql = "SELECT SQL_CALC_FOUND_ROWS user.*, admin_of.nb AS admin_of, member_of.nb AS member_of, user_access.last_access_date
+                $from
+                INNER JOIN user_access ON (user_access.user_id = user.user_id)
                 LEFT JOIN (
                     SELECT count(admin_flags) as nb, user_id
                     FROM user_group
@@ -767,6 +775,16 @@ class UserDao extends DataAccessObject {
     public function removeConfirmHash($confirm_hash) {
         $confirm_hash = $this->da->quoteSmart($confirm_hash);
         $sql = "UPDATE user SET confirm_hash = null WHERE confirm_hash=$confirm_hash";
+        return $this->update($sql);
+    }
+
+    public function setEmailChangeConfirm($user_id, $confirm_hash, $email_new)
+    {
+        $user_id      = $this->da->escapeInt($user_id);
+        $confirm_hash = $this->da->quoteSmart($confirm_hash);
+        $email_new    = $this->da->quoteSmart($email_new);
+
+        $sql = "UPDATE user SET confirm_hash=$confirm_hash, email_new=$email_new WHERE user_id=$user_id";
         return $this->update($sql);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-require_once TRACKER_BASE_DIR . '/../tests/bootstrap.php';
+require_once __DIR__.'/../../../bootstrap.php';
 
 class Tracker_XML_Updater_ChangesetXMLUpdaterTest extends TuleapTestCase {
 
@@ -76,13 +76,13 @@ class Tracker_XML_Updater_ChangesetXMLUpdaterTest extends TuleapTestCase {
         $this->formelement_factory = mock('Tracker_FormElementFactory');
         $this->updater             = new Tracker_XML_Updater_ChangesetXMLUpdater($this->visitor, $this->formelement_factory);
         $this->user                = aUser()->withId($this->user_id)->build();
-        $this->tracker             = aTracker()->withId($this->tracker_id)->build();
+        $this->tracker             = aMockTracker()->withId($this->tracker_id)->build();
         $this->submitted_values    = array(
             1001 => 'Content of summary field',
             1002 => '123'
         );
 
-        $this->field_summary = aStringField()->withId(1001)->build();
+        $this->field_summary = aStringField()->withId(1001)->withName('summary')->build();
         $this->field_effort  = aStringField()->withId(1002)->build();
         $this->field_details = aStringField()->withId(1003)->build();
         stub($this->formelement_factory)

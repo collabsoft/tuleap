@@ -8,9 +8,11 @@ require_once('lib/WikiDB/backend.php');
 class WikiDB_backend_PearDB
 extends WikiDB_backend
 {
+    const DATABASE_TABLE_PREFIX = 'wiki_';
+
     var $_dbh;
 
-    function WikiDB_backend_PearDB ($dbparams) {
+    function __construct () {
         // Find and include PEAR's DB.php. maybe we should force our private version again...
         // if DB would have exported its version number, it would be easier.
         @require_once('DB/common.php'); // Either our local pear copy or the system one
@@ -40,18 +42,9 @@ extends WikiDB_backend
             $ErrorManager->pushErrorHandler(new WikiMethodCb($this, '_pear_notice_filter'));
             $this->_pearerrhandler = true;
         }
-        
-        // Open connection to database
-        $this->_dsn = $dbparams['dsn'];
-	$this->_dbparams = $dbparams;
-        $this->_lock_count = 0;
 
-        // persistent is usually a DSN option: we override it with a config value.
-        //   phptype://username:password@hostspec/database?persistent=false
-        $dboptions = array('persistent' => DATABASE_PERSISTENT,
-                           'debug' => 2);
-        //if (preg_match('/^pgsql/', $this->_dsn)) $dboptions['persistent'] = false;
-        $this->_dbh = DB::connect($this->_dsn, $dboptions);
+        $this->_lock_count = 0;
+        $this->_dbh = DB::connect();
         $dbh = &$this->_dbh;
         if (DB::isError($dbh)) {
             trigger_error(sprintf("Can't connect to database: %s",
@@ -62,13 +55,12 @@ extends WikiDB_backend
                                array($this, '_pear_error_callback'));
         $dbh->setFetchMode(DB_FETCHMODE_ASSOC);
 
-        $prefix = isset($dbparams['prefix']) ? $dbparams['prefix'] : '';
         $this->_table_names
-            = array('page_tbl'     => $prefix . 'page',
-                    'version_tbl'  => $prefix . 'version',
-                    'link_tbl'     => $prefix . 'link',
-                    'recent_tbl'   => $prefix . 'recent',
-                    'nonempty_tbl' => $prefix . 'nonempty');
+            = array('page_tbl'     => self::DATABASE_TABLE_PREFIX . 'page',
+                    'version_tbl'  => self::DATABASE_TABLE_PREFIX . 'version',
+                    'link_tbl'     => self::DATABASE_TABLE_PREFIX . 'link',
+                    'recent_tbl'   => self::DATABASE_TABLE_PREFIX . 'recent',
+                    'nonempty_tbl' => self::DATABASE_TABLE_PREFIX . 'nonempty');
         $page_tbl = $this->_table_names['page_tbl'];
         $version_tbl = $this->_table_names['version_tbl'];
         $this->page_tbl_fields = "$page_tbl.id AS id, $page_tbl.pagename AS pagename, $page_tbl.hits AS hits, $page_tbl.group_id AS group_id";
@@ -1148,25 +1140,6 @@ extends WikiDB_backend
     function listOfTables() {
         return $this->_dbh->getListOf('tables');
     }
-    function listOfFields($database,$table) {
-        if ($this->backendType() == 'mysql') {
-            $fields = array();
-            assert(!empty($database));
-            assert(!empty($table));
-  	    $result = mysql_list_fields($database, $table, $this->_dbh->connection) or 
-  	        trigger_error(__FILE__.':'.__LINE__.' '.mysql_error(), E_USER_WARNING);
-  	    if (!$result) return array();
-              $columns = mysql_num_fields($result);
-            for ($i = 0; $i < $columns; $i++) {
-                $fields[] = mysql_field_name($result, $i);
-            }
-            mysql_free_result($result);
-            return $fields;
-        } else {
-            // TODO: try ADODB version?
-            trigger_error("Unsupported dbtype and backend. Either switch to ADODB or check it manually.");
-        }
-    }
 };
 
 /**
@@ -1184,7 +1157,7 @@ extends WikiDB_backend
 class WikiDB_backend_PearDB_generic_iter
 extends WikiDB_backend_iterator
 {
-    function WikiDB_backend_PearDB_generic_iter($backend, $query_result, 
+    function __construct($backend, $query_result, 
                                                 $field_list = NULL) 
     {
         if (DB::isError($query_result)) {

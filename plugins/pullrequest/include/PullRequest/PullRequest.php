@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -66,10 +66,10 @@ class PullRequest implements Labelable
         $repo_dest_id,
         $branch_dest,
         $sha1_dest,
-        $last_build_date   = null,
+        $last_build_date = null,
         $last_build_status = self::BUILD_STATUS_UNKNOWN,
-        $status            = 'R',
-        $merge_status      = self::UNKNOWN_MERGE
+        $status = 'R',
+        $merge_status = self::UNKNOWN_MERGE
     ) {
         $this->id                = $id;
         $this->title             = $title;
@@ -148,11 +148,17 @@ class PullRequest implements Labelable
         return $this->merge_status = $merge_status;
     }
 
+    /**
+     * @deprecated
+     */
     public function getLastBuildDate()
     {
         return $this->last_build_date;
     }
 
+    /**
+     * @deprecated
+     */
     public function getLastBuildStatus()
     {
         return $this->last_build_status;
@@ -173,11 +179,17 @@ class PullRequest implements Labelable
         $this->id = $id;
     }
 
+    /**
+     * @deprecated
+     */
     public function setLastBuildStatus($status)
     {
         $this->last_build_status = $status;
     }
 
+    /**
+     * @deprecated
+     */
     public function setLastBuildDate($date)
     {
         $this->last_build_date = $date;

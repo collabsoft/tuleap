@@ -18,67 +18,106 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'autoload.php';
 require_once 'constants.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
+use Tuleap\Git\DefaultSettings\Pane\DefaultSettingsPanesCollection;
+use Tuleap\Git\Events\AfterRepositoryCreated;
+use Tuleap\Git\Events\AfterRepositoryForked;
+use Tuleap\Git\GitAdditionalActionEvent;
+use Tuleap\Git\GitRepositoryDeletionEvent;
+use Tuleap\Git\GitViews\RepoManagement\Pane\PanesCollection;
+use Tuleap\Git\MarkTechnicalReference;
+use Tuleap\Git\Permissions\FineGrainedDao;
+use Tuleap\Git\Permissions\FineGrainedRetriever;
+use Tuleap\Git\Permissions\GetProtectedGitReferences;
+use Tuleap\Git\Permissions\ProtectedReferencePermission;
+use Tuleap\Git\PostInitGitRepositoryWithDataEvent;
+use Tuleap\Git\Repository\AdditionalInformationRepresentationCache;
+use Tuleap\Git\Repository\AdditionalInformationRepresentationRetriever;
 use Tuleap\Glyph\GlyphFinder;
 use Tuleap\Glyph\GlyphLocation;
 use Tuleap\Glyph\GlyphLocationsCollector;
 use Tuleap\Label\CanProjectUseLabels;
 use Tuleap\Label\CollectionOfLabelableDao;
-use Tuleap\Git\GitRepositoryDeletionEvent;
 use Tuleap\Label\LabeledItemCollection;
 use Tuleap\Layout\IncludeAssets;
-use Tuleap\PullRequest\Authorization\PullRequestPermissionChecker;
-use Tuleap\PullRequest\Label\LabeledItemCollector;
-use Tuleap\PullRequest\Label\PullRequestLabelDao;
-use Tuleap\PullRequest\Reference\HTMLURLBuilder;
-use Tuleap\PullRequest\Router;
-use Tuleap\PullRequest\PullRequestCreator;
-use Tuleap\PullRequest\REST\ResourcesInjector;
-use Tuleap\PullRequest\PluginInfo;
-use Tuleap\PullRequest\GitExec;
-use Tuleap\PullRequest\AdditionalInfoPresenter;
+use Tuleap\Project\Admin\GetProjectHistoryEntryValue;
 use Tuleap\PullRequest\AdditionalActionsPresenter;
 use Tuleap\PullRequest\AdditionalHelpTextPresenter;
-use Tuleap\PullRequest\PullRequestPresenter;
+use Tuleap\PullRequest\AdditionalInfoPresenter;
+use Tuleap\PullRequest\Authorization\PullRequestPermissionChecker;
+use Tuleap\PullRequest\Dao as PullRequestDao;
+use Tuleap\PullRequest\DefaultSettings\DefaultSettingsController;
+use Tuleap\PullRequest\DefaultSettings\PullRequestPane as DefaultSettingsPullRequestPane;
 use Tuleap\PullRequest\Factory;
-use Tuleap\PullRequest\Dao;
-use Tuleap\PullRequest\PullRequestUpdater;
-use Tuleap\PullRequest\PullRequestMerger;
-use Tuleap\PullRequest\PullRequestCloser;
-use Tuleap\PullRequest\FileUnidiffBuilder;
-use Tuleap\PullRequest\InlineComment\InlineCommentUpdater;
+use Tuleap\PullRequest\FileUniDiffBuilder;
+use Tuleap\PullRequest\GitExec;
+use Tuleap\PullRequest\GitReference\GitPullRequestReference;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceBulkConverter;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceCreator;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceDAO;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceNamespaceAvailabilityChecker;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceRemover;
+use Tuleap\PullRequest\GitReference\GitPullRequestReferenceUpdater;
+use Tuleap\PullRequest\GitRestRouteAdditionalInformations;
 use Tuleap\PullRequest\InlineComment\Dao as InlineCommentDao;
-use Tuleap\PullRequest\Timeline\Dao as TimelineDao;
-use Tuleap\PullRequest\Timeline\TimelineEventCreator;
-use Tuleap\PullRequest\Reference\ReferenceFactory;
+use Tuleap\PullRequest\InlineComment\InlineCommentUpdater;
+use Tuleap\PullRequest\Label\LabeledItemCollector;
+use Tuleap\PullRequest\Label\PullRequestLabelDao;
+use Tuleap\PullRequest\LegacyRouter;
+use Tuleap\PullRequest\Logger;
+use Tuleap\PullRequest\MergeSetting\MergeSettingDAO;
+use Tuleap\PullRequest\MergeSetting\MergeSettingRetriever;
+use Tuleap\PullRequest\PluginInfo;
+use Tuleap\PullRequest\PullRequestCloser;
+use Tuleap\PullRequest\PullRequestCreator;
+use Tuleap\PullRequest\PullRequestMerger;
+use Tuleap\PullRequest\PullRequestPresenter;
+use Tuleap\PullRequest\PullRequestUpdater;
+use Tuleap\PullRequest\Reference\HTMLURLBuilder;
 use Tuleap\PullRequest\Reference\ProjectReferenceRetriever;
 use Tuleap\PullRequest\Reference\ReferenceDao;
+use Tuleap\PullRequest\Reference\ReferenceFactory;
+use Tuleap\PullRequest\RepoManagement\PullRequestPane;
+use Tuleap\PullRequest\RepoManagement\RepoManagementController;
+use Tuleap\PullRequest\REST\ResourcesInjector;
+use Tuleap\PullRequest\Timeline\Dao as TimelineDao;
+use Tuleap\PullRequest\Timeline\TimelineEventCreator;
 use Tuleap\PullRequest\Tooltip\Presenter;
+use Tuleap\Request\CollectRoutesEvent;
 
-class pullrequestPlugin extends Plugin
+class pullrequestPlugin extends Plugin // phpcs:ignore
 {
 
     const PR_REFERENCE_KEYWORD          = 'pr';
     const PULLREQUEST_REFERENCE_KEYWORD = 'pullrequest';
     const REFERENCE_NATURE              = 'pullrequest';
+    private $git_rest_route_additional_informations;
 
     public function __construct($id)
     {
         parent::__construct($id);
         $this->setScope(self::SCOPE_SYSTEM);
+        bindtextdomain('tuleap-pullrequest', __DIR__ . '/../site-content/');
 
         $this->addHook(Event::SERVICE_CLASSNAMES);
         $this->addHook(Event::REST_RESOURCES);
         $this->addHook(Event::GET_REFERENCE);
         $this->addHook(Event::GET_PLUGINS_AVAILABLE_KEYWORDS_REFERENCES);
         $this->addHook(Event::GET_AVAILABLE_REFERENCE_NATURE);
-        $this->addHook('ajax_reference_tooltip');
+        $this->addHook('codendi_daily_start', 'dailyExecution');
+        $this->addHook(\Tuleap\Reference\ReferenceGetTooltipContentEvent::NAME);
         $this->addHook(CollectionOfLabelableDao::NAME);
         $this->addHook(LabeledItemCollection::NAME);
         $this->addHook(GlyphLocationsCollector::NAME);
         $this->addHook(CanProjectUseLabels::NAME);
+        $this->addHook(GetProtectedGitReferences::NAME);
+        $this->addHook(MarkTechnicalReference::NAME);
+        $this->addHook(PostInitGitRepositoryWithDataEvent::NAME);
+        $this->addHook(Event::REGISTER_PROJECT_CREATION);
+        $this->addHook(CollectRoutesEvent::NAME);
+        $this->addHook(GetProjectHistoryEntryValue::NAME);
 
         if (defined('GIT_BASE_URL')) {
             $this->addHook('cssfile');
@@ -89,12 +128,17 @@ class pullrequestPlugin extends Plugin
             $this->addHook(GIT_ADDITIONAL_ACTIONS);
             $this->addHook(GIT_ADDITIONAL_BODY_CLASSES);
             $this->addHook(GIT_ADDITIONAL_PERMITTED_ACTIONS);
-            $this->addHook(GIT_HANDLE_ADDITIONAL_ACTION);
             $this->addHook(GIT_ADDITIONAL_HELP_TEXT);
-            $this->addHook(GIT_VIEW);
             $this->addHook(GIT_HOOK_POSTRECEIVE_REF_UPDATE, 'gitHookPostReceive');
             $this->addHook(REST_GIT_BUILD_STATUS, 'gitRestBuildStatus');
             $this->addHook(GitRepositoryDeletionEvent::NAME);
+            $this->addHook(GitAdditionalActionEvent::NAME);
+            $this->addHook(AdditionalInformationRepresentationRetriever::NAME);
+            $this->addHook(AdditionalInformationRepresentationCache::NAME);
+            $this->addHook(AfterRepositoryForked::NAME);
+            $this->addHook(AfterRepositoryCreated::NAME);
+            $this->addHook(PanesCollection::NAME);
+            $this->addHook(DefaultSettingsPanesCollection::NAME);
         }
     }
 
@@ -111,47 +155,58 @@ class pullrequestPlugin extends Plugin
         return array('git');
     }
 
-    public function service_classnames($params)
+    public function service_classnames($params) // phpcs:ignore
     {
         $params['classnames'][$this->getServiceShortname()] = 'PullRequest\\Service';
     }
 
     public function cssfile($params)
     {
-        if (strpos($_SERVER['REQUEST_URI'], GIT_BASE_URL . '/') === 0) {
-            echo '<link rel="stylesheet" type="text/css" href="' . $this->getPluginPath() . '/js/angular/bin/assets/tuleap-pullrequest.css" />';
+        if ($this->isAPullrequestRequest()) {
+            echo '<link rel="stylesheet" type="text/css" href="' . $this->getPluginPath() . '/assets/tuleap-pullrequest.css" />';
             echo '<link rel="stylesheet" type="text/css" href="' . $this->getThemePath() . '/css/style.css" />';
         }
     }
 
-    public function javascript_file()
+    public function javascript_file() // phpcs:ignore
     {
-        if (strpos($_SERVER['REQUEST_URI'], GIT_BASE_URL . '/') === 0) {
-            $include_asset = new IncludeAssets(ForgeConfig::get('codendi_dir').'/src/www/assets', '/assets');
-            echo '<script type="text/javascript" src="'. $include_asset->getFileURL('labels-box.js') .'"></script>';
-            echo '<script type="text/javascript" src="'.$this->getPluginPath().'/js/angular/bin/assets/tuleap-pullrequest.js"></script>'."\n";
-            echo '<script type="text/javascript" src="'.$this->getPluginPath().'/js/move-button-back.js"></script>';
+        if ($this->isAPullrequestRequest()) {
+            $include_asset_pullrequest = new IncludeAssets(
+                PULLREQUEST_BASE_DIR . '/www/assets',
+                $this->getPluginPath() . '/assets'
+            );
+
+            echo $include_asset_pullrequest->getHTMLSnippet('move-button-back.js');
+            echo $include_asset_pullrequest->getHTMLSnippet('tuleap-pullrequest.js');
         }
     }
 
-    public function process(Codendi_Request $request)
+    private function isAPullrequestRequest()
+    {
+        return strpos($_SERVER['REQUEST_URI'], GIT_BASE_URL . '/') === 0;
+    }
+
+    private function getLegacyRouter()
     {
         $user_manager           = UserManager::instance();
         $event_manager          = EventManager::instance();
         $git_repository_factory = $this->getRepositoryFactory();
 
-        $pull_request_merger = new PullRequestMerger(
-            $git_repository_factory
+        $pull_request_merger  = new PullRequestMerger(
+            new MergeSettingRetriever(new MergeSettingDAO())
         );
         $pull_request_creator = new PullRequestCreator(
             $this->getPullRequestFactory(),
-            new Dao(),
+            new PullRequestDao(),
             $pull_request_merger,
-            $event_manager
+            $event_manager,
+            new GitPullRequestReferenceCreator(
+                new GitPullRequestReferenceDAO,
+                new GitPullRequestReferenceNamespaceAvailabilityChecker
+            )
         );
 
-        $router = new Router($pull_request_creator, $git_repository_factory, $user_manager);
-        $router->route($request);
+        return new LegacyRouter($pull_request_creator, $git_repository_factory, $user_manager);
     }
 
     /**
@@ -168,7 +223,7 @@ class pullrequestPlugin extends Plugin
     /**
      * @see REST_RESOURCES
      */
-    public function rest_resources(array $params)
+    public function rest_resources(array $params) // phpcs:ignore
     {
         $injector = new ResourcesInjector();
         $injector->populate($params['restler']);
@@ -177,7 +232,7 @@ class pullrequestPlugin extends Plugin
     /**
      * @see REST_GIT_PULL_REQUEST_ENDPOINTS
      */
-    public function rest_git_pull_request_endpoints($params)
+    public function rest_git_pull_request_endpoints($params) // phpcs:ignore
     {
         $params['available'] = true;
     }
@@ -185,7 +240,7 @@ class pullrequestPlugin extends Plugin
     /**
      * @see REST_GIT_PULL_REQUEST_GET_FOR_REPOSITORY
      */
-    public function rest_git_pull_request_get_for_repository($params)
+    public function rest_git_pull_request_get_for_repository($params) // phpcs:ignore
     {
         $version = $params['version'];
         $class   = "\\Tuleap\\PullRequest\\REST\\$version\\RepositoryResource";
@@ -202,7 +257,7 @@ class pullrequestPlugin extends Plugin
     /**
      * @see GIT_ADDITIONAL_INFO
      */
-    public function git_additional_info($params)
+    public function git_additional_info($params) // phpcs:ignore
     {
         $repository = $params['repository'];
 
@@ -219,7 +274,7 @@ class pullrequestPlugin extends Plugin
     /**
      * @see GIT_ADDITIONAL_ACTIONS
      */
-    public function git_additional_actions($params)
+    public function git_additional_actions($params) // phpcs:ignore
     {
         $repository = $params['repository'];
         $user       = $params['user'];
@@ -261,7 +316,7 @@ class pullrequestPlugin extends Plugin
     /**
      * @see GIT_ADDITIONAL_BODY_CLASSES
      */
-    public function git_additional_body_classes($params)
+    public function git_additional_body_classes($params) // phpcs:ignore
     {
         if ($params['request']->get('action') === 'pull-requests') {
             $params['classes'][] = 'git-pull-requests';
@@ -271,7 +326,7 @@ class pullrequestPlugin extends Plugin
     /**
      * @see GIT_ADDITIONAL_PERMITTED_ACTIONS
      */
-    public function git_additional_permitted_actions($params)
+    public function git_additional_permitted_actions($params) // phpcs:ignore
     {
         $repository = $params['repository'];
         $user       = $params['user'];
@@ -281,22 +336,35 @@ class pullrequestPlugin extends Plugin
         }
     }
 
-    /**
-     * @see GIT_HANDLE_ADDITIONAL_ACTION
-     */
-    public function git_handle_additional_action($params)
+    public function gitAdditionalAction(GitAdditionalActionEvent $event)
     {
-        $git_controller = $params['git_controller'];
-        $repository     = $params['repository'];
-
-        if ($params['action'] === 'pull-requests') {
-            $params['handled'] = true;
-
+        if ($event->getRequest()->get('action') === 'pull-requests') {
+            $repository = $event->getRepositoryFactory()->getRepositoryById($event->getRequest()->getValidated('repo_id', 'uint', 0));
             if ($repository) {
-                $git_controller->addAction('getRepositoryDetails', array($repository->getProjectId(), $repository->getId()));
-                $git_controller->addView('view');
+                $nb_pull_requests = $this->getPullRequestFactory()->getPullRequestCount($repository);
+                $renderer         = $this->getTemplateRenderer();
+                $user             = $event->getRequest()->getCurrentUser();
+
+                $merge_settings_retriever = new MergeSettingRetriever(
+                    new MergeSettingDAO()
+                );
+
+                $presenter = new PullRequestPresenter(
+                    $repository->getId(),
+                    $user->getId(),
+                    $user->getShortLocale(),
+                    $nb_pull_requests,
+                    $merge_settings_retriever->getMergeSettingForRepository($repository)
+                );
+
+                $event->getRepoHeader()->display($event->getRequest(), $event->getLayout(), $repository);
+
+                $renderer->renderToPage($presenter->getTemplateName(), $presenter);
+
+                $event->getLayout()->footer([]);
+                exit;
             } else {
-                $git_controller->redirectNoRepositoryError();
+                throw new \Tuleap\Request\NotFoundException();
             }
         }
     }
@@ -304,7 +372,7 @@ class pullrequestPlugin extends Plugin
     /**
      * @see GIT_ADDITIONAL_HELP_TEXT
      */
-    public function git_additional_help_text($params)
+    public function git_additional_help_text($params) // phpcs:ignore
     {
         $repository = $params['repository'];
 
@@ -316,25 +384,8 @@ class pullrequestPlugin extends Plugin
         }
     }
 
-    /**
-     * @see GIT_VIEW
-     */
-    public function git_view($params)
+    public function gitHookPostReceive($params)
     {
-        $repository = $params['repository'];
-        $user       = $params['user'];
-        $request    = $params['request'];
-
-        if ($request->get('action') === 'pull-requests') {
-            $nb_pull_requests = $this->getPullRequestFactory()->getPullRequestCount($repository);
-            $renderer         = $this->getTemplateRenderer();
-            $presenter        = new PullRequestPresenter($repository->getId(), $user->getId(), $user->getShortLocale(), $nb_pull_requests);
-
-            $params['view'] = $renderer->renderToString($presenter->getTemplateName(), $presenter);
-        }
-    }
-
-    public function gitHookPostReceive($params) {
         $refname     = $params['refname'];
         $branch_name = $this->getBranchNameFromRef($refname);
 
@@ -349,12 +400,18 @@ class pullrequestPlugin extends Plugin
             } else {
                 $pull_request_updater = new PullRequestUpdater(
                     $this->getPullRequestFactory(),
-                    new PullRequestMerger($this->getRepositoryFactory()),
+                    new PullRequestMerger(
+                        new MergeSettingRetriever(new MergeSettingDAO())
+                    ),
                     new InlineCommentDao(),
                     new InlineCommentUpdater(),
-                    new FileUnidiffBuilder(),
+                    new FileUniDiffBuilder(),
                     $this->getTimelineEventCreator(),
-                    $this->getRepositoryFactory()
+                    $this->getRepositoryFactory(),
+                    new GitPullRequestReferenceUpdater(
+                        new GitPullRequestReferenceDAO(),
+                        new GitPullRequestReferenceNamespaceAvailabilityChecker()
+                    )
                 );
                 $pull_request_updater->updatePullRequests($user, $git_exec, $repository, $branch_name, $new_rev);
             }
@@ -391,7 +448,12 @@ class pullrequestPlugin extends Plugin
     {
         $pull_request_factory   = $this->getPullRequestFactory();
         $timeline_event_creator = $this->getTimelineEventCreator();
-        $closer                 = new PullRequestCloser($this->getPullRequestFactory(), new PullRequestMerger($this->getRepositoryFactory()));
+        $closer                 = new PullRequestCloser(
+            $this->getPullRequestFactory(),
+            new PullRequestMerger(
+                new MergeSettingRetriever(new MergeSettingDAO())
+            )
+        );
 
         $prs = $pull_request_factory->getOpenedBySourceBranch($repository, $branch_name);
         foreach ($prs as $pr) {
@@ -400,11 +462,14 @@ class pullrequestPlugin extends Plugin
         }
     }
 
+    /**
+     * @deprecated
+     */
     public function gitRestBuildStatus($params)
     {
         $factory = $this->getPullRequestFactory();
         $pull_requests = $factory->getOpenedBySourceBranch($params['repository'], $params['branch']);
-        foreach($pull_requests as $pull_request) {
+        foreach ($pull_requests as $pull_request) {
             $factory->updateLastBuildStatus($pull_request, $params['status'], time());
         }
     }
@@ -423,7 +488,7 @@ class pullrequestPlugin extends Plugin
 
     private function getPullRequestFactory()
     {
-        return new Factory(new Dao(), ReferenceManager::instance());
+        return new Factory(new PullRequestDao(), ReferenceManager::instance());
     }
 
     private function getRepositoryFactory()
@@ -441,7 +506,7 @@ class pullrequestPlugin extends Plugin
         return new TimelineEventCreator(new TimelineDao());
     }
 
-    public function get_reference($params)
+    public function get_reference($params) // phpcs:ignore
     {
         $keyword         = $params['keyword'];
         $pull_request_id = $params['value'];
@@ -469,11 +534,12 @@ class pullrequestPlugin extends Plugin
         );
     }
 
-    private function isReferenceAPullRequestReference($keyword) {
+    private function isReferenceAPullRequestReference($keyword)
+    {
         return $keyword === self::PR_REFERENCE_KEYWORD || $keyword === self::PULLREQUEST_REFERENCE_KEYWORD;
     }
 
-    public function get_plugins_available_keywords_references($params)
+    public function get_plugins_available_keywords_references($params) // phpcs:ignore
     {
         $params['keywords'] = array_merge(
             $params['keywords'],
@@ -481,7 +547,8 @@ class pullrequestPlugin extends Plugin
         );
     }
 
-    public function get_available_reference_natures($params) {
+    public function get_available_reference_natures($params) // phpcs:ignore
+    {
         $nature = array(self::REFERENCE_NATURE => array(
             'keyword' => 'pullrequest',
             'label'   => 'Git Pull Request'
@@ -490,23 +557,26 @@ class pullrequestPlugin extends Plugin
         $params['natures'] = array_merge($params['natures'], $nature);
     }
 
-    public function ajax_reference_tooltip($params)
+    public function referenceGetTooltipContentEvent(Tuleap\Reference\ReferenceGetTooltipContentEvent $event)
     {
-        $reference = $params['reference'];
-        if ($reference->getNature() === self::REFERENCE_NATURE) {
-            $pull_request_id            = $params['val'];
-            $pull_request               = $this->getPullRequestFactory()->getPullRequestById($pull_request_id);
-            $pull_request_title         = $pull_request->getTitle();
-            $pull_request_status        = $pull_request->getStatus();
-            $pull_request_creation_date = $pull_request->getCreationDate();
+        if ($event->getReference()->getNature() === self::REFERENCE_NATURE) {
+            try {
+                $pull_request_id            = $event->getValue();
+                $pull_request               = $this->getPullRequestFactory()->getPullRequestById($pull_request_id);
+                $pull_request_title         = $pull_request->getTitle();
+                $pull_request_status        = $pull_request->getStatus();
+                $pull_request_creation_date = $pull_request->getCreationDate();
 
-            $renderer  = $this->getTemplateRenderer();
-            $presenter = new Presenter(
-                $pull_request_title,
-                $pull_request_status,
-                $pull_request_creation_date
-            );
-            echo $renderer->renderToString($presenter->getTemplateName(), $presenter);
+                $renderer  = $this->getTemplateRenderer();
+                $presenter = new Presenter(
+                    $pull_request_title,
+                    $pull_request_status,
+                    $pull_request_creation_date
+                );
+                $event->setOutput($renderer->renderToString($presenter->getTemplateName(), $presenter));
+            } catch (\Tuleap\PullRequest\Exception\PullRequestNotFoundException $exception) {
+                // No tooltip
+            }
         }
     }
 
@@ -517,7 +587,7 @@ class pullrequestPlugin extends Plugin
 
     public function gitRepositoryDeletion(GitRepositoryDeletionEvent $event)
     {
-        $dao = new Dao();
+        $dao = new PullRequestDao();
         $dao->deleteAllPullRequestsOfRepository($event->getRepository()->getId());
     }
 
@@ -561,5 +631,157 @@ class pullrequestPlugin extends Plugin
         if ($event->getProject()->usesService(GitPlugin::SERVICE_SHORTNAME)) {
             $event->projectCanUseLabels();
         }
+    }
+
+    public function getProtectedGitReferences(GetProtectedGitReferences $event)
+    {
+        $event->addProtectedReference(new ProtectedReferencePermission(GitPullRequestReference::PR_NAMESPACE . '*'));
+    }
+
+    public function markTechnicalReference(MarkTechnicalReference $event)
+    {
+        if (strpos($event->getReferenceName(), GitPullRequestReference::PR_NAMESPACE) === 0) {
+            $event->markAsTechnical();
+        }
+    }
+
+    public function postInitGitRepositoryWithDataEvent(PostInitGitRepositoryWithDataEvent $event)
+    {
+        (new GitPullRequestReferenceRemover)->removeAll(GitExec::buildFromRepository($event->getRepository()));
+    }
+
+    public function dailyExecution()
+    {
+        $pull_request_git_reference_dao            = new GitPullRequestReferenceDAO();
+        $pull_request_git_reference_bulk_converter = new GitPullRequestReferenceBulkConverter(
+            $pull_request_git_reference_dao,
+            new GitPullRequestReferenceUpdater(
+                $pull_request_git_reference_dao,
+                new GitPullRequestReferenceNamespaceAvailabilityChecker()
+            ),
+            $this->getPullRequestFactory(),
+            $this->getRepositoryFactory(),
+            new Logger()
+        );
+        $pull_request_git_reference_bulk_converter->convertAllPullRequestsWithoutAGitReference();
+    }
+
+    public function additionalInformationRepresentationRetriever(AdditionalInformationRepresentationRetriever $event)
+    {
+        $this->getGitRestRouteAdditionaInformations()->getOpenPullRequestsCount($event);
+    }
+
+    public function additionalInformationRepresentationCache(AdditionalInformationRepresentationCache $event)
+    {
+        $this->getGitRestRouteAdditionaInformations()->createCache($event);
+    }
+
+    private function getGitRestRouteAdditionaInformations()
+    {
+        if ($this->git_rest_route_additional_informations === null) {
+            $this->git_rest_route_additional_informations = new GitRestRouteAdditionalInformations(new PullRequestDao());
+        }
+        return $this->git_rest_route_additional_informations;
+    }
+
+    public function afterRepositoryForked(AfterRepositoryForked $event)
+    {
+        $dao = new MergeSettingDAO();
+        $dao->duplicateRepositoryMergeSettings(
+            $event->getBaseRepository()->getId(),
+            $event->getForkedRepository()->getId()
+        );
+    }
+
+    public function afterRepositoryCreated(AfterRepositoryCreated $event)
+    {
+        $repository = $event->getRepository();
+        $dao        = new MergeSettingDAO();
+
+        $dao->inheritFromTemplate(
+            $repository->getId(),
+            $repository->getProjectId()
+        );
+    }
+
+    public function register_project_creation(array $params) // phpcs:ignore
+    {
+        $dao = new MergeSettingDAO();
+        $dao->duplicateFromProjectTemplate(
+            $params['template_id'],
+            $params['group_id']
+        );
+    }
+
+    public function collectPanes(PanesCollection $collection)
+    {
+        $collection->add(
+            new PullRequestPane(
+                $collection->getRepository(),
+                $collection->getRequest(),
+                new MergeSettingRetriever(new MergeSettingDAO())
+            )
+        );
+    }
+
+    public function collectDefaultSettingsPanes(DefaultSettingsPanesCollection $collection)
+    {
+        $collection->add(
+            new DefaultSettingsPullRequestPane(
+                new MergeSettingRetriever(new MergeSettingDAO()),
+                $collection->getProject(),
+                $collection->getCurrentPane() === DefaultSettingsPullRequestPane::NAME
+            )
+        );
+    }
+
+    public function getProjectHistoryEntryValue(GetProjectHistoryEntryValue $event)
+    {
+        $project_history_entry = $event->getRow();
+        if ($project_history_entry['field_name'] === DefaultSettingsController::HISTORY_FIELD_NAME) {
+            $is_merge_commit_allowed = $event->getValue();
+            if ($is_merge_commit_allowed) {
+                $value = dgettext('tuleap-pullrequest', 'Default (Will fast-forward when possible, fallback to merge when not possible)');
+            } else {
+                $value = dgettext('tuleap-pullrequest', 'Fast-forward only');
+            }
+
+            $event->setValue($value);
+        }
+    }
+
+    public function collectRoutesEvent(CollectRoutesEvent $event)
+    {
+        $event->getRouteCollector()->post(
+            $this->getPluginPath() . '/repository-settings',
+            function () {
+                $repository_factory = new GitRepositoryFactory(new GitDao(), ProjectManager::instance());
+                $fine_grained_dao   = new FineGrainedDao();
+
+                return new RepoManagementController(
+                    new MergeSettingDAO(),
+                    $repository_factory,
+                    new GitPermissionsManager(
+                        new Git_PermissionsDao(),
+                        new Git_SystemEventManager(SystemEventManager::instance(), $repository_factory),
+                        $fine_grained_dao,
+                        new FineGrainedRetriever($fine_grained_dao)
+                    )
+                );
+            }
+        );
+        $event->getRouteCollector()->post(
+            $this->getPluginPath() . '/default-settings',
+            function () {
+                return new DefaultSettingsController(new MergeSettingDAO(), new ProjectHistoryDao());
+            }
+        );
+
+        $event->getRouteCollector()->post(
+            $this->getPluginPath() . '/{query:.*}',
+            function () {
+                return $this->getLegacyRouter();
+            }
+        );
     }
 }

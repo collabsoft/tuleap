@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,8 @@
 
 namespace Tuleap\REST\v1;
 
-class GitRepositoryRepresentationBase {
-
+class GitRepositoryRepresentationBase
+{
     const ROUTE = 'git';
 
     const FIELDS_BASIC = 'basic';
@@ -54,12 +54,27 @@ class GitRepositoryRepresentationBase {
     public $description;
 
     /**
-     * @var Tuleap\REST\v1\GitRepositoryPermissionRepresentationBase | null
+     * @var string
+     */
+    public $last_update_date;
+
+    /**
+     * @var \Tuleap\Git\REST\v1\GitRepositoryPermissionRepresentation | null
      */
     public $permissions = null;
 
     /**
-     * @var Tuleap\REST\v1\GerritServerRepresentation | null
+     * @var \Tuleap\Git\REST\v1\GerritServerRepresentation | null
      */
     public $server = null;
+
+    /**
+     * @var string
+     */
+    public $html_url;
+
+    /**
+     * @var array
+     */
+    public $additional_information;
 }

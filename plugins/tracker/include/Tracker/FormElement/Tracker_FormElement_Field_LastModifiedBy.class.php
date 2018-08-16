@@ -1,5 +1,6 @@
 <?php
-/** Copyright (c) Enalean, 2015. All Rights Reserved.
+/**
+ * Copyright (c) Enalean, 2015-2018. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -32,14 +33,14 @@ class Tracker_FormElement_Field_LastModifiedBy extends Tracker_FormElement_Field
         return '';
     }
 
-    public function afterCreate($formElement_data) {
-        $formElement_data['bind-type'] = 'users';
-        $formElement_data['bind'] = array(
+    public function afterCreate(array $form_element_data, $tracker_is_empty) {
+        $form_element_data['bind-type'] = 'users';
+        $form_element_data['bind'] = array(
             'value_function' => array(
                 'artifact_modifiers',
             )
         );
-        parent::afterCreate($formElement_data);
+        parent::afterCreate($form_element_data, $tracker_is_empty);
     }
 
     public function getCriteriaWhere($criteria) {
@@ -50,9 +51,9 @@ class Tracker_FormElement_Field_LastModifiedBy extends Tracker_FormElement_Field
                                array_values($criteria_value),
                                array_merge(array(100),array_keys($this->getBind()->getAllValues())));
             if (count($ids_to_search) > 1) {
-                return " c.submitted_by IN(". implode(',', $ids_to_search) .") ";
+                return " c.submitted_by IN(". $this->getCriteriaDao()->getDa()->escapeIntImplode($ids_to_search) .") ";
             } else if (count($ids_to_search)) {
-                return " c.submitted_by = ". implode('', $ids_to_search) ." ";
+                return " c.submitted_by = ". $this->getCriteriaDao()->getDa()->escapeInt($ids_to_search[0]) ." ";
             }
         }
         return '';
@@ -172,7 +173,11 @@ class Tracker_FormElement_Field_LastModifiedBy extends Tracker_FormElement_Field
         return '';
     }
 
-    public function fetchArtifactValueWithEditionFormIfEditable(Tracker_Artifact $artifact, Tracker_Artifact_ChangesetValue $value = null) {
+    public function fetchArtifactValueWithEditionFormIfEditable(
+        Tracker_Artifact $artifact,
+        Tracker_Artifact_ChangesetValue $value = null,
+        $submitted_values = []
+    ) {
         return $this->fetchArtifactValueReadOnly($artifact, $value);
     }
 
@@ -211,7 +216,12 @@ class Tracker_FormElement_Field_LastModifiedBy extends Tracker_FormElement_Field
         return true;
     }
 
-    public function validateFieldWithPermissionsAndRequiredStatus(Tracker_Artifact $artifact, $submitted_value, Tracker_Artifact_ChangesetValue $last_changeset_value = null) {
+    public function validateFieldWithPermissionsAndRequiredStatus(
+        Tracker_Artifact $artifact,
+        $submitted_value,
+        Tracker_Artifact_ChangesetValue $last_changeset_value = null,
+        $is_submission = null
+    ) {
         if ($submitted_value !== null) {
             $GLOBALS['Response']->addFeedback('warning', $GLOBALS['Language']->getText('plugin_tracker_admin_import', 'field_not_taken_account', array($this->getName())));
         }
@@ -267,7 +277,8 @@ class Tracker_FormElement_Field_LastModifiedBy extends Tracker_FormElement_Field
     /**
      * @see Tracker_FormElement_Field::fetchCardValue()
      */
-    public function fetchCardValue(Tracker_Artifact $artifact, Tracker_CardDisplayPreferences $display_preferences) {
+    public function fetchCardValue(Tracker_Artifact $artifact, Tracker_CardDisplayPreferences $display_preferences = null)
+    {
         $value = new Tracker_FormElement_Field_List_Bind_UsersValue($artifact->getLastModifiedBy());
         return $value->fetchCard($display_preferences);
     }

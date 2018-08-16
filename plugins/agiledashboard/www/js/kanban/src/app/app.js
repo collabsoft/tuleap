@@ -5,7 +5,6 @@ import angular_artifact_modal from 'angular-artifact-modal';
 import angular_tlp from 'angular-tlp';
 
 import 'angular-locker';
-import 'angular-moment';
 import 'angular-gettext';
 import 'ng-scrollbar';
 import 'restangular';
@@ -47,10 +46,10 @@ import WipPopoverDirective                 from './wip-popover/wip-popover-direc
 import KanbanColumnController              from './kanban-column/kanban-column-controller.js';
 import KanbanDirective                     from './kanban-directive.js';
 import ColumnWipHeaderDirective            from './kanban-column/column-wip-header/column-wip-header-directive.js';
+import FeedbackComponent                   from './feedback-component.js';
 
 export default angular.module('kanban', [
     'angular-locker',
-    'angularMoment',
     'gettext',
     'ngScrollbar',
     'restangular',
@@ -95,6 +94,7 @@ export default angular.module('kanban', [
 .directive('columnWipHeader', ColumnWipHeaderDirective)
 .value('KanbanFilterValue', KanbanFilterValue)
 .filter('InPropertiesFilter', InPropertiesFilter)
+.component('feedbackMessage', FeedbackComponent)
 .name;
 
 var kanban_elements = document.getElementsByClassName('widget-kanban');
