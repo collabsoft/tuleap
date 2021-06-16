@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,21 +23,20 @@ declare(strict_types=1);
 
 namespace Tuleap\Tests\Selenium\SVN;
 
-use PHPUnit\Framework\TestCase;
-use SimpleXmlElement;
+use SimpleXMLElement;
 
-class SVNCLITest extends TestCase
+class SVNCLITest extends \Tuleap\Test\PHPUnit\TestCase
 {
     private $init_pwd;
 
-    public function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
         $this->init_pwd = getcwd();
         system('/bin/rm -rf /tmp/sample');
     }
 
-    public function tearDown()
+    protected function tearDown(): void
     {
         parent::tearDown();
         chdir($this->init_pwd);
@@ -46,17 +45,17 @@ class SVNCLITest extends TestCase
 
     public function testSVNLs()
     {
-        $output = $this->getXML($this->getSvnCommand('alice', 'ls --xml https://reverse-proxy/svnplugin/svn-project-01/sample'));
+        $output  = $this->getXML($this->getSvnCommand('alice', 'ls --xml https://reverse-proxy/svnplugin/svn-project-01/sample'));
         $content = [];
         foreach ($output->list->entry as $entry) {
             $content[] = (string) $entry->name;
         }
-        $this->assertEquals(['tags', 'trunk', 'branches'], $content, '', 0, 10, true);
+        $this->assertEqualsCanonicalizing(['tags', 'trunk', 'branches'], $content);
     }
 
-    private function getSvnCommand(string $username, string $command) : string
+    private function getSvnCommand(string $username, string $command): string
     {
-        return 'svn --username '.$username.' --password "Correct Horse Battery Staple" --non-interactive --trust-server-cert '.$command;
+        return 'svn --username ' . $username . ' --password "Correct Horse Battery Staple" --non-interactive --trust-server-cert ' . $command;
     }
 
     public function testWriteAccessByAlice()
@@ -65,7 +64,7 @@ class SVNCLITest extends TestCase
         $this->command($this->getSvnCommand('alice', 'co https://reverse-proxy/svnplugin/svn-project-01/sample'));
         chdir('/tmp/sample');
         $checkedout_revision = $this->getWCRevision();
-        $need_to_add = true;
+        $need_to_add         = true;
         if (file_exists('trunk/README')) {
             $need_to_add = false;
         }
@@ -81,7 +80,7 @@ class SVNCLITest extends TestCase
     public function testWriteAccessDeniedToBob()
     {
         $got_exception = false;
-        $message = '';
+        $message       = '';
         try {
             $this->command($this->getSvnCommand('bob', 'cp -m "stuff" https://reverse-proxy/svnplugin/svn-project-01/sample/trunk https://reverse-proxy/svnplugin/svn-project-01/sample/branches/v1'));
         } catch (\Exception $e) {
@@ -90,7 +89,7 @@ class SVNCLITest extends TestCase
                 $got_exception = true;
             }
         }
-        $this->assertTrue($got_exception, "Message: ".$message);
+        $this->assertTrue($got_exception, "Message: " . $message);
     }
 
     public function testWriteAccessGrantedToAlice()
@@ -107,27 +106,27 @@ class SVNCLITest extends TestCase
         $this->assertFalse($got_exception);
     }
 
-    private function getWCRevision() : int
+    private function getWCRevision(): int
     {
         $xml = $this->getXML('svn --xml info');
         return (int) $xml->entry['revision'];
     }
 
-    private function getXML(string $command) : SimpleXMLElement
+    private function getXML(string $command): SimpleXMLElement
     {
         $xml = simplexml_load_string($this->command($command));
         return $xml;
     }
 
-    private function command(string $command) : string
+    private function command(string $command): string
     {
-        $total_stdout = '';
-        $total_stderr = '';
-        $descriptorspec = array(
-            0 => array("pipe", "r"),   // stdin is a pipe that the child will read from
-            1 => array("pipe", "w"),   // stdout is a pipe that the child will write to
-            2 => array("pipe", "w")    // stderr is a pipe that the child will write to
-        );
+        $total_stdout   = '';
+        $total_stderr   = '';
+        $descriptorspec = [
+            0 => ["pipe", "r"],   // stdin is a pipe that the child will read from
+            1 => ["pipe", "w"],   // stdout is a pipe that the child will write to
+            2 => ["pipe", "w"]    // stderr is a pipe that the child will write to
+        ];
         flush();
         $process = proc_open($command, $descriptorspec, $pipes);
         if (is_resource($process)) {
@@ -141,7 +140,7 @@ class SVNCLITest extends TestCase
             fclose($pipes[2]);
             $return_value = proc_close($process);
             if ($return_value !== 0) {
-                throw new \Exception("$command return code: ".$return_value." ".$total_stderr);
+                throw new \Exception("$command return code: " . $return_value . " " . $total_stderr);
             }
         }
         return $total_stdout;

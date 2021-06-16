@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,35 +20,40 @@
 
 use Tuleap\Git\PostInitGitRepositoryWithDataEvent;
 
-require_once 'common/system_event/SystemEvent.class.php';
-
-class SystemEvent_GIT_REPO_FORK extends SystemEvent {
-    const NAME =  'GIT_REPO_FORK';
+class SystemEvent_GIT_REPO_FORK extends SystemEvent
+{
+    public const NAME =  'GIT_REPO_FORK';
 
     /** @var GitRepositoryFactory */
     private $repository_factory;
 
-    public function injectDependencies(GitRepositoryFactory $repository_factory) {
+    public function injectDependencies(GitRepositoryFactory $repository_factory)
+    {
         $this->repository_factory = $repository_factory;
     }
 
-    private function getOldRepositoryIdFromParameters() {
+    private function getOldRepositoryIdFromParameters()
+    {
         return intval($this->getParameter(0));
     }
 
-    private function getNewRepositoryIdFromParameters() {
+    private function getNewRepositoryIdFromParameters()
+    {
         return intval($this->getParameter(1));
     }
 
-    private function getOldRepositoryFromParameters() {
+    private function getOldRepositoryFromParameters()
+    {
         return $this->repository_factory->getRepositoryById($this->getOldRepositoryIdFromParameters());
     }
 
-    private function getNewRepositoryFromParameters() {
+    private function getNewRepositoryFromParameters()
+    {
         return $this->repository_factory->getRepositoryById($this->getNewRepositoryIdFromParameters());
     }
 
-    public function process() {
+    public function process()
+    {
         $old_repository = $this->getOldRepositoryFromParameters();
         $new_repository = $this->getNewRepositoryFromParameters();
 
@@ -63,25 +68,24 @@ class SystemEvent_GIT_REPO_FORK extends SystemEvent {
         $this->done();
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         $old_repository = $this->getOldRepositoryFromParameters();
         $new_repository = $this->getNewRepositoryFromParameters();
         if ($old_repository && $new_repository) {
             if ($with_link) {
-                return 'Fork '.$this->getLinkToRepositoryManagement($old_repository).' => '.$this->getLinkToRepositoryManagement($new_repository);
+                return 'Fork ' . $this->getLinkToRepositoryManagement($old_repository) . ' => ' . $this->getLinkToRepositoryManagement($new_repository);
             } else {
-                return $old_repository->getId(). ' => '.$new_repository->getId();
+                return $old_repository->getId() . ' => ' . $new_repository->getId();
             }
         } else {
             return $this->getOldRepositoryIdFromParameters();
         }
     }
 
-    private function getLinkToRepositoryManagement(GitRepository $repository) {
+    private function getLinkToRepositoryManagement(GitRepository $repository)
+    {
         $project = $repository->getProject();
-        return '<a href="/plugins/git/?action=repo_management&group_id='.$project->getId().'&repo_id='.$repository->getId().'">'.$project->getUnixName().'/'.$repository->getFullName().'</a>';
+        return '<a href="/plugins/git/?action=repo_management&group_id=' . $project->getId() . '&repo_id=' . $repository->getId() . '">' . $project->getUnixName() . '/' . $repository->getFullName() . '</a>';
     }
-
 }
-
-?>

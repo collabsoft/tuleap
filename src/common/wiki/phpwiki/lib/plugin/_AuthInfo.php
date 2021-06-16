@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: _AuthInfo.php,v 1.19 2005/04/01 14:04:31 rurban Exp $');
 /**
  Copyright 2004 $ThePhpWikiProgrammingTeam
@@ -23,169 +24,218 @@ rcs_id('$Id: _AuthInfo.php,v 1.19 2005/04/01 14:04:31 rurban Exp $');
 require_once('lib/Template.php');
 /**
  * Used to debug auth problems and settings.
- * This plugin is only testing purposes. 
+ * This plugin is only testing purposes.
  * if DEBUG is false, only admin can call it, which is of no real use.
  *
  * Warning! This may display db and user passwords in cleartext.
  */
-class WikiPlugin__AuthInfo
-extends WikiPlugin
+class WikiPlugin__AuthInfo extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return _("AuthInfo");
     }
 
-    function getDescription () {
+    public function getDescription()
+    {
         return _("Display general and user specific auth information.");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.19 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.19 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array('userid' => '');
+    public function getDefaultArguments()
+    {
+        return ['userid' => ''];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         $args = $this->getArgs($argstr, $request);
         extract($args);
         if (empty($userid) or $userid == $request->_user->UserName()) {
-            $user =& $request->_user;
+            $user   = $request->_user;
             $userid = $user->UserName();
         } else {
             $user = WikiUser($userid);
         }
-        if (!$user->isAdmin() and ! (DEBUG && _DEBUG_LOGIN)) {
+        if (! $user->isAdmin() and ! (DEBUG && _DEBUG_LOGIN)) {
             $request->_notAuthorized(WIKIAUTH_ADMIN);
             $this->disabled("! user->isAdmin");
         }
 
-        $html = HTML(HTML::h3(fmt("General Auth Settings")));
-        $table = HTML::table(array('border' => 1,
+        $html  = HTML(HTML::h3(fmt("General Auth Settings")));
+        $table = HTML::table(['border' => 1,
                                   'cellpadding' => 2,
-                                  'cellspacing' => 0));
-        $table->pushContent($this->_showhash("AUTH DEFINES", 
-                                $this->_buildConstHash(
-                                    array("ENABLE_USER_NEW","ALLOW_ANON_USER",
+                                  'cellspacing' => 0]);
+        $table->pushContent($this->_showhash(
+            "AUTH DEFINES",
+            $this->_buildConstHash(
+                ["ENABLE_USER_NEW","ALLOW_ANON_USER",
                                           "ALLOW_ANON_EDIT","ALLOW_BOGO_LOGIN",
                                           "REQUIRE_SIGNIN_BEFORE_EDIT","ALLOW_USER_PASSWORDS",
-                                          "PASSWORD_LENGTH_MINIMUM"))));
-        if ((defined('ALLOW_LDAP_LOGIN') && ALLOW_LDAP_LOGIN) or in_array("LDAP",$GLOBALS['USER_AUTH_ORDER']))
-            $table->pushContent($this->_showhash("LDAP DEFINES", 
-                                                 $this->_buildConstHash(array("LDAP_AUTH_HOST","LDAP_BASE_DN"))));
-        if ((defined('ALLOW_IMAP_LOGIN') && ALLOW_IMAP_LOGIN) or in_array("IMAP",$GLOBALS['USER_AUTH_ORDER']))
-            $table->pushContent($this->_showhash("IMAP DEFINES", array("IMAP_AUTH_HOST" => IMAP_AUTH_HOST)));
-        if (defined('AUTH_USER_FILE') or in_array("File",$GLOBALS['USER_AUTH_ORDER']))
-            $table->pushContent($this->_showhash("AUTH_USER_FILE", 
-                                    $this->_buildConstHash(array("AUTH_USER_FILE",
-                                                                 "AUTH_USER_FILE_STORABLE"))));
-        if (defined('GROUP_METHOD'))
-            $table->pushContent($this->_showhash("GROUP_METHOD", 
-                                    $this->_buildConstHash(array("GROUP_METHOD","AUTH_GROUP_FILE","GROUP_LDAP_QUERY"))));
+                "PASSWORD_LENGTH_MINIMUM"]
+            )
+        ));
+        if ((defined('ALLOW_LDAP_LOGIN') && ALLOW_LDAP_LOGIN) or in_array("LDAP", $GLOBALS['USER_AUTH_ORDER'])) {
+            $table->pushContent($this->_showhash(
+                "LDAP DEFINES",
+                $this->_buildConstHash(["LDAP_AUTH_HOST", "LDAP_BASE_DN"])
+            ));
+        }
+        if ((defined('ALLOW_IMAP_LOGIN') && ALLOW_IMAP_LOGIN) or in_array("IMAP", $GLOBALS['USER_AUTH_ORDER'])) {
+            $table->pushContent($this->_showhash("IMAP DEFINES", ["IMAP_AUTH_HOST" => IMAP_AUTH_HOST]));
+        }
+        if (defined('AUTH_USER_FILE') or in_array("File", $GLOBALS['USER_AUTH_ORDER'])) {
+            $table->pushContent($this->_showhash(
+                "AUTH_USER_FILE",
+                $this->_buildConstHash(["AUTH_USER_FILE",
+                "AUTH_USER_FILE_STORABLE"])
+            ));
+        }
+        if (defined('GROUP_METHOD')) {
+            $table->pushContent($this->_showhash(
+                "GROUP_METHOD",
+                $this->_buildConstHash(["GROUP_METHOD", "AUTH_GROUP_FILE", "GROUP_LDAP_QUERY"])
+            ));
+        }
         $table->pushContent($this->_showhash("\$USER_AUTH_ORDER[]", $GLOBALS['USER_AUTH_ORDER']));
-        $table->pushContent($this->_showhash("USER_AUTH_POLICY", array("USER_AUTH_POLICY"=>USER_AUTH_POLICY)));
+        $table->pushContent($this->_showhash("USER_AUTH_POLICY", ["USER_AUTH_POLICY" => USER_AUTH_POLICY]));
         $html->pushContent($table);
         $html->pushContent(HTML(HTML::h3(fmt("Personal Auth Settings for '%s'", $userid))));
-        if (!$user) {
+        if (! $user) {
             $html->pushContent(HTML::p(fmt("No userid")));
         } else {
-            $table = HTML::table(array('border' => 1,
+            $table = HTML::table(['border' => 1,
                                        'cellpadding' => 2,
-                                       'cellspacing' => 0));
+                                       'cellspacing' => 0]);
             //$table->pushContent(HTML::tr(HTML::td(array('colspan' => 2))));
-            $userdata = obj2hash($user, array('_dbi','_request', 'password', 'passwd'));
-            $table->pushContent($this->_showhash("User: Object of ".get_class($user), $userdata));
+            $userdata = obj2hash($user, ['_dbi', '_request', 'password', 'passwd']);
+            $table->pushContent($this->_showhash("User: Object of " . get_class($user), $userdata));
             if (ENABLE_USER_NEW) {
-              $group = &$request->getGroup();
-              $groups = $group->getAllGroupsIn();
-              $groupdata = obj2hash($group, array('_dbi','_request', 'password', 'passwd'));
-              unset($groupdata['request']);
-              $table->pushContent($this->_showhash("Group: Object of ".get_class($group), $groupdata));
-              $groups = $group->getAllGroupsIn();
-              $groupdata = array('getAllGroupsIn' => $groups);
-              foreach ($groups as $g) {
-                $groupdata["getMembersOf($g)"] = $group->getMembersOf($g);
-                $groupdata["isMember($g)"] = $group->isMember($g);
-              }
-              $table->pushContent($this->_showhash("Group Methods: ", $groupdata));
+                $group     = $request->getGroup();
+                $groups    = $group->getAllGroupsIn();
+                $groupdata = obj2hash($group, ['_dbi', '_request', 'password', 'passwd']);
+                unset($groupdata['request']);
+                $table->pushContent($this->_showhash("Group: Object of " . get_class($group), $groupdata));
+                $groups    = $group->getAllGroupsIn();
+                $groupdata = ['getAllGroupsIn' => $groups];
+                foreach ($groups as $g) {
+                    $groupdata["getMembersOf($g)"] = $group->getMembersOf($g);
+                    $groupdata["isMember($g)"]     = $group->isMember($g);
+                }
+                $table->pushContent($this->_showhash("Group Methods: ", $groupdata));
             }
             $html->pushContent($table);
         }
         return $html;
     }
 
-    function _showhash ($heading, $hash, $depth = 0) {
-    	static $seen = array();
-    	static $maxdepth = 0;
-        $rows = array();
+    public function _showhash($heading, $hash, $depth = 0)
+    {
+        static $seen     = [];
+        static $maxdepth = 0;
+        $rows            = [];
         $maxdepth++;
-        if ($maxdepth > 35) return $heading;
-        
-        if ($heading)
-            $rows[] = HTML::tr(array('bgcolor' => '#ffcccc',
-                                     'style' => 'color:#000000'),
-                               HTML::td(array('colspan' => 2,
-                                              'style' => 'color:#000000'),
-                                        $heading));
-        if (is_object($hash))
+        if ($maxdepth > 35) {
+            return $heading;
+        }
+
+        if ($heading) {
+            $rows[] = HTML::tr(
+                ['bgcolor' => '#ffcccc',
+                                     'style' => 'color:#000000'],
+                HTML::td(
+                    ['colspan' => 2,
+                                              'style' => 'color:#000000'],
+                    $heading
+                )
+            );
+        }
+        if (is_object($hash)) {
             $hash = obj2hash($hash);
-        if (!empty($hash)) {
+        }
+        if (! empty($hash)) {
             ksort($hash);
             foreach ($hash as $key => $val) {
                 if (is_object($val)) {
-                    $heading = "Object of ".get_class($val);
-                    if ($depth > 3) $val = $heading;
-                    elseif ($heading == "Object of wikidb_sql") $val = $heading;
-                    elseif (substr($heading,0,13) == "Object of db_") $val = $heading;
-                    elseif (!isset($seen[$heading])) {
+                    $heading = "Object of " . get_class($val);
+                    if ($depth > 3) {
+                        $val = $heading;
+                    } elseif ($heading == "Object of wikidb_sql") {
+                        $val = $heading;
+                    } elseif (substr($heading, 0, 13) == "Object of db_") {
+                        $val = $heading;
+                    } elseif (! isset($seen[$heading])) {
                         //if (empty($seen[$heading])) $seen[$heading] = 1;
-                        $val = HTML::table(array('border' => 1,
+                        $val = HTML::table(
+                            ['border' => 1,
                                                  'cellpadding' => 2,
-                                                 'cellspacing' => 0),
-                                           $this->_showhash($heading, obj2hash($val), $depth+1));
+                                                 'cellspacing' => 0],
+                            $this->_showhash($heading, obj2hash($val), $depth + 1)
+                        );
                     } else {
                         $val = $heading;
                     }
                 } elseif (is_array($val)) {
-                    $heading = $key."[]";
-                    if ($depth > 3) $val = $heading;
-                    elseif (!isset($seen[$heading])) {
+                    $heading = $key . "[]";
+                    if ($depth > 3) {
+                        $val = $heading;
+                    } elseif (! isset($seen[$heading])) {
                         //if (empty($seen[$heading])) $seen[$heading] = 1;
-                        $val = HTML::table(array('border' => 1,
+                        $val = HTML::table(
+                            ['border' => 1,
                                                  'cellpadding' => 2,
-                                                 'cellspacing' => 0),
-                                           $this->_showhash($heading, $val, $depth+1));
+                                                 'cellspacing' => 0],
+                            $this->_showhash($heading, $val, $depth + 1)
+                        );
                     } else {
                         $val = $heading;
                     }
                 }
-                $rows[] = HTML::tr(HTML::td(array('align' => 'right',
+                $rows[] = HTML::tr(
+                    HTML::td(
+                        ['align' => 'right',
                                                   'bgcolor' => '#cccccc',
-                                                  'style' => 'color:#000000'),
-                                            HTML(HTML::raw('&nbsp;'), $key,
-                                                 HTML::raw('&nbsp;'))),
-                                   HTML::td(array('bgcolor' => '#ffffff',
-                                                  'style' => 'color:#000000'),
-                                            $val ? $val : HTML::raw('&nbsp;'))
-                                   );
+                                                  'style' => 'color:#000000'],
+                        HTML(
+                            HTML::raw('&nbsp;'),
+                            $key,
+                            HTML::raw('&nbsp;')
+                        )
+                    ),
+                    HTML::td(
+                        ['bgcolor' => '#ffffff',
+                                                  'style' => 'color:#000000'],
+                        $val ? $val : HTML::raw('&nbsp;')
+                    )
+                );
                 //if (empty($seen[$key])) $seen[$key] = 1;
             }
         }
         return $rows;
     }
-    
-    function _buildConstHash($constants) {
-        $hash = array();
+
+    public function _buildConstHash($constants)
+    {
+        $hash = [];
         foreach ($constants as $c) {
             $hash[$c] = defined($c) ? constant($c) : '<empty>';
-            if ($hash[$c] === false) $hash[$c] = 'false';
-            elseif ($hash[$c] === true) $hash[$c] = 'true';
+            if ($hash[$c] === false) {
+                $hash[$c] = 'false';
+            } elseif ($hash[$c] === true) {
+                $hash[$c] = 'true';
+            }
         }
         return $hash;
     }
-};
+}
 
 // $Log: _AuthInfo.php,v $
 // Revision 1.19  2005/04/01 14:04:31  rurban
@@ -302,8 +352,6 @@ extends WikiPlugin
 // Revision 1.20  2003/01/18 21:19:24  carstenklapp
 // Code cleanup:
 // Reformatting; added copyleft, getVersion, getDescription
-//
-
 // (c-file-style: "gnu")
 // Local Variables:
 // mode: php
@@ -312,4 +360,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,20 +19,50 @@
 
 namespace Tuleap\AgileDashboard\REST\v1;
 
-use Tuleap\Tracker\REST\TrackerReference;
-use Tuleap\REST\ResourceReference;
+use Tuleap\Project\ProjectBackground\ProjectBackgroundConfiguration;
 use Tuleap\REST\JsonCast;
-use Tuleap\REST\v1\BacklogItemParentReferenceBase;
-use Tracker_Artifact;
+use Tuleap\REST\ResourceReference;
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\REST\TrackerReference;
 
-class BacklogItemParentReference extends BacklogItemParentReferenceBase {
+/**
+ * @psalm-immutable
+ */
+class BacklogItemParentReference
+{
+    /**
+     * @var int ID of the backlog item
+     */
+    public $id;
 
-    public function build(Tracker_Artifact $backlog_item) {
-        $this->id    = JsonCast::toInt($backlog_item->getId());
-        $this->label = $backlog_item->getTitle();
-        $this->uri   = ResourceReference::NO_ROUTE;
+    /**
+     * @var String
+     */
+    public $label;
 
-        $this->tracker = new TrackerReference();
-        $this->tracker->build($backlog_item->getTracker());
+    /**
+     * @var string URI of backlog item
+     */
+    public $uri = ResourceReference::NO_ROUTE;
+
+    /**
+     * @var \Tuleap\Tracker\REST\TrackerReference
+     */
+    public $tracker;
+
+    private function __construct(int $id, string $label, TrackerReference $tracker)
+    {
+        $this->id      = $id;
+        $this->label   = $label;
+        $this->tracker = $tracker;
+    }
+
+    public static function build(Artifact $backlog_item, ProjectBackgroundConfiguration $project_background_configuration): self
+    {
+        return new self(
+            JsonCast::toInt($backlog_item->getId()),
+            $backlog_item->getTitle() ?? '',
+            TrackerReference::buildWithExtendedProjectReference($backlog_item->getTracker(), $project_background_configuration)
+        );
     }
 }

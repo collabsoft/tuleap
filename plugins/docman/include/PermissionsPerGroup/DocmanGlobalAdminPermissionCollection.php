@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,7 +29,7 @@ class DocmanGlobalAdminPermissionCollection
 
     public function __construct()
     {
-        $this->permissions = array();
+        $this->permissions = [];
     }
 
     /**

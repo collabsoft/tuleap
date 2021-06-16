@@ -1,6 +1,6 @@
 <?php
 /**
- *  Copyright (c) Enalean, 2016. All Rights Reserved.
+ *  Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,22 +19,31 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\svn\Event\UpdateProjectAccessFilesScheduler;
+
 /**
 * System Event classes
 *
 * UGROUP_MODIFY = one static ugroup of the project has been modified
 */
-class SystemEvent_UGROUP_MODIFY extends SystemEvent {
+class SystemEvent_UGROUP_MODIFY extends SystemEvent
+{
+    /**
+     * @var UpdateProjectAccessFilesScheduler
+     */
+    private $update_project_access_files_scheduler;
+
     /**
      * Verbalize the parameters so they are readable and much user friendly in
      * notifications
      *
-     * @param bool $with_link true if you want links to entities. The returned 
+     * @param bool $with_link true if you want links to entities. The returned
      * string will be html instead of plain/text
      *
      * @return string
      */
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         $txt             = '';
         $ugroup_name     = '';
         $ugroup_old_name = '';
@@ -43,22 +52,28 @@ class SystemEvent_UGROUP_MODIFY extends SystemEvent {
         } else {
             list($group_id, $ugroup_id) = $this->getParametersAsArray();
         }
-        $txt .= 'project: '. $this->verbalizeProjectId($group_id, $with_link) .', ugroup: #'. $ugroup_id;
+        $txt .= 'project: ' . $this->verbalizeProjectId($group_id, $with_link) . ', ugroup: #' . $ugroup_id;
 
         if ($ugroup_name) {
-            $txt .= ', rename: '. $ugroup_old_name .' => '. $ugroup_name;
+            $txt .= ', rename: ' . $ugroup_old_name . ' => ' . $ugroup_name;
         }
 
         return $txt;
     }
-    
-    /** 
+
+    public function injectDependencies(UpdateProjectAccessFilesScheduler $update_project_access_files_scheduler): void
+    {
+        $this->update_project_access_files_scheduler = $update_project_access_files_scheduler;
+    }
+
+    /**
      * Process stored event
      *
-     * @return Boolean
+     * @return bool
      */
-    function process() {
-        $ugroup_name = null;
+    public function process()
+    {
+        $ugroup_name     = null;
         $ugroup_old_name = null;
         // Check parameters
         if (count($this->getParametersAsArray()) == 4) {
@@ -67,42 +82,42 @@ class SystemEvent_UGROUP_MODIFY extends SystemEvent {
             list($group_id, $ugroup_id) = $this->getParametersAsArray();
         }
         // Remove ugroup binding to this user group
-        if (!$this->processUgroupBinding($ugroup_id, $group_id)) {
+        if (! $this->processUgroupBinding($ugroup_id, $group_id)) {
             $this->error("Could not process binding to this user group ($ugroup_id)");
             return false;
         }
-        $is_svn_access_successfuly_updated = $this->processSVNAccessFile($group_id, $ugroup_name, $ugroup_old_name);
-        if (! $is_svn_access_successfuly_updated) {
-            $this->error("Could not update SVN access file ($group_id)");
-            return false;
-        }
-
-        EventManager::instance()->processEvent(
-            Event::UGROUP_MODIFY,
-            array(
-                'project'         => $this->getProject($group_id),
-                'new_ugroup_name' => $ugroup_name,
-                'old_ugroup_name' => $ugroup_old_name
-            )
-        );
+        $this->processSVNAccessFile($group_id, $ugroup_name, $ugroup_old_name);
 
         $this->done();
         return true;
     }
 
-    /**
-     * @return bool
-     */
-    private function processSVNAccessFile($project_id, $ugroup_name, $ugroup_old_name) {
-        if ($project = $this->getProject($project_id)) {
-            if ($project->usesSVN()) {
-                $backendSVN = $this->getBackend('SVN');
-                if (! $backendSVN->updateSVNAccess($project_id, $project->getSVNRootPath(), $ugroup_name, $ugroup_old_name)) {
-                    return false;
-                }
-            }
+    private function processSVNAccessFile($project_id, ?string $ugroup_name, ?string $ugroup_old_name): void
+    {
+        $project = $this->getProject($project_id);
+
+        if ($project === null) {
+            return;
         }
-        return true;
+
+        if ($ugroup_name !== null && $ugroup_old_name !== null) {
+            if ($project->usesSVN()) {
+                $backend_svn = $this->getBackend('SVN');
+                assert($backend_svn instanceof BackendSVN);
+                $backend_svn->updateSVNAccess($project_id, $project->getSVNRootPath(), $ugroup_name, $ugroup_old_name);
+            }
+            EventManager::instance()->processEvent(
+                Event::UGROUP_RENAME,
+                [
+                    'project'         => $project,
+                    'new_ugroup_name' => $ugroup_name,
+                    'old_ugroup_name' => $ugroup_old_name
+                ]
+            );
+            return;
+        }
+
+        $this->update_project_access_files_scheduler->scheduleUpdateOfProjectAccessFiles($project);
     }
 
     /**
@@ -110,15 +125,15 @@ class SystemEvent_UGROUP_MODIFY extends SystemEvent {
      *
      * @protected for testing purpose
      *
-     * @param Integer $ugroup_id Id of the deleted user group
-     * @param Integer $group_id  Id of the project
+     * @param int $ugroup_id Id of the deleted user group
+     * @param int $group_id Id of the project
      *
-     * @return Boolean
      */
-    protected function processUgroupBinding($ugroup_id, $group_id) {
+    protected function processUgroupBinding($ugroup_id, $group_id): bool
+    {
         $ugroup_binding               = $this->getUgroupBinding();
         $ugroups_successfully_updated = true;
-        if (!$ugroup_binding->checkUGroupValidity($group_id, $ugroup_id)) {
+        if (! $ugroup_binding->checkUGroupValidity($group_id, $ugroup_id)) {
             //The user group is removed, we remove all its binding traces
             $ugroups_successfully_updated = $ugroup_binding->removeAllUGroupsBinding($ugroup_id);
         } else {
@@ -128,23 +143,17 @@ class SystemEvent_UGROUP_MODIFY extends SystemEvent {
             }
         }
 
+        if (! $ugroups_successfully_updated) {
+            return false;
+        }
+
         $binded_ugroups = $ugroup_binding->getUGroupsByBindingSource($ugroup_id);
         foreach ($binded_ugroups as $binded_ugroup) {
             $bound_target_project_id = $binded_ugroup['group_id'];
-            $ugroups_successfully_updated = $this->processSVNAccessFile($bound_target_project_id, null, null) &&
-                $ugroups_successfully_updated;
-
-            EventManager::instance()->processEvent(
-                Event::UGROUP_MODIFY,
-                array(
-                    'project'         => $this->getProject($bound_target_project_id),
-                    'new_ugroup_name' => null,
-                    'old_ugroup_name' => null
-                )
-            );
+            $this->processSVNAccessFile($bound_target_project_id, null, null);
         }
 
-        return $ugroups_successfully_updated;
+        return true;
     }
 
     /**
@@ -154,11 +163,11 @@ class SystemEvent_UGROUP_MODIFY extends SystemEvent {
      *
      * @return UGroupBinding
      */
-    protected function getUgroupBinding() {
+    protected function getUgroupBinding()
+    {
         $ugroupUserDao = new UGroupUserDao();
         $ugroupManager = new UGroupManager(new UGroupDao());
         $uGroupBinding = new UGroupBinding($ugroupUserDao, $ugroupManager);
         return $uGroupBinding;
     }
-
 }

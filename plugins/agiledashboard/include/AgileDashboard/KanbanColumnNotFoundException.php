@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,10 +19,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class AgileDashboard_KanbanColumnNotFoundException extends Exception {
+class AgileDashboard_KanbanColumnNotFoundException extends Exception
+{
 
-    public function __construct(AgileDashboard_Kanban $kanban, $column_id) {
-        $message = "Column $column_id has not been found for Kanban ".$kanban->getId();
+    public function __construct(AgileDashboard_Kanban $kanban, $column_id)
+    {
+        $message = "Column $column_id has not been found for Kanban " . $kanban->getId();
         parent::__construct($message);
     }
 }

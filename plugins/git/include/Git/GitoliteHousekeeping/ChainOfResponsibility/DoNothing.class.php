@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,17 +18,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/backend/BackendService.class.php';
-
 /**
  * A command that do nothing
  */
-class Git_GitoliteHousekeeping_ChainOfResponsibility_DoNothing extends Git_GitoliteHousekeeping_ChainOfResponsibility_Command {
+class Git_GitoliteHousekeeping_ChainOfResponsibility_DoNothing extends Git_GitoliteHousekeeping_ChainOfResponsibility_Command
+{
 
-    public function __construct() {
+    public function __construct()
+    {
     }
 
-    public function execute() {
+    public function execute()
+    {
         // do nothing
     }
 }

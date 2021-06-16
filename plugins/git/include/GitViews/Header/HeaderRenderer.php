@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -140,8 +140,7 @@ class HeaderRenderer
         BreadCrumbCollection $breadcrumbs
     ) {
         $headers = new GitViewHeader(
-            $this->event_manager,
-            $this->service_crumb_builder
+            $this->event_manager
         );
         $headers->header($request, $GLOBALS['HTML'], $project, $breadcrumbs);
     }

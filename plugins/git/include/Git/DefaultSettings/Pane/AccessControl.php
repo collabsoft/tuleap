@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -34,7 +34,7 @@ use UserManager;
 
 class AccessControl extends Pane
 {
-    const NAME = 'access_control';
+    public const NAME = 'access_control';
     /**
      * @var Project
      */
@@ -80,7 +80,7 @@ class AccessControl extends Pane
         $is_active
     ) {
         parent::__construct(
-            $GLOBALS['Language']->getText('plugin_git', 'view_repo_access_control'),
+            dgettext('tuleap-git', 'Access control'),
             "?" . http_build_query(
                 [
                     'action'   => 'admin-default-settings',

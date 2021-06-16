@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,26 +19,25 @@
  */
 
 
-interface Tracker_Report_Field extends Tracker_FormElement_IHaveAnId, Tracker_FormElement_Usable {
+interface Tracker_Report_Field extends Tracker_FormElement_IHaveAnId, Tracker_FormElement_Usable
+{
 
     /**
      * Return a label (e.g. usable both in a form or as a column header)
      */
-    function getLabel();
+    public function getLabel();
 
     /**
      * Display the field as a criteria
-     * @param Tracker_Report_Criteria $criteria
      * @return string
      */
-    function fetchCriteria(Tracker_Report_Criteria $criteria);
+    public function fetchCriteria(Tracker_Report_Criteria $criteria);
 
     /**
      * Display the field as criteria but without been able to be switch to advanced mode
-     * @param Tracker_Report_Criteria $criteria
      * @return string
      */
-    function fetchCriteriaWithoutExpandFunctionnality(Tracker_Report_Criteria $criteria);
+    public function fetchCriteriaWithoutExpandFunctionnality(Tracker_Report_Criteria $criteria);
 
     /**
      * Display the field as a Changeset value.
@@ -50,7 +48,5 @@ interface Tracker_Report_Field extends Tracker_FormElement_IHaveAnId, Tracker_Fo
      * @param int $report_id the id of the calling report
      * @return string
      */
-    function fetchChangesetValue($artifact_id, $changeset_id, $value, $report_id=null, $from_aid = null);
-
+    public function fetchChangesetValue($artifact_id, $changeset_id, $value, $report_id = null, $from_aid = null);
 }
-?>

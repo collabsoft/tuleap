@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,9 +41,7 @@ class NotInComparisonFromWhereBuilder implements FromWhereBuilder
     private $alias_field;
 
     /**
-     * EqualComparisonFromWhereBuilder constructor.
-     * @param ListValueExtractor $extractor
-     * @param UserManager $user_manager
+     *
      * @param string $alias_field
      */
     public function __construct(
@@ -51,20 +49,18 @@ class NotInComparisonFromWhereBuilder implements FromWhereBuilder
         UserManager $user_manager,
         $alias_field
     ) {
-        $this->extractor = $extractor;
+        $this->extractor    = $extractor;
         $this->user_manager = $user_manager;
-        $this->alias_field = $alias_field;
+        $this->alias_field  = $alias_field;
     }
 
     /**
-     * @param Metadata $metadata
-     * @param Comparison $comparison
      * @param Tracker[] $trackers
      * @return IProvideParametrizedFromAndWhereSQLFragments
      */
     public function getFromWhere(Metadata $metadata, Comparison $comparison, array $trackers)
     {
-        $values = $this->extractor->extractCollectionOfValues($comparison);
+        $values       = $this->extractor->extractCollectionOfValues($comparison);
         $in_condition = EasyStatement::open()->in(
             "{$this->alias_field} NOT IN (?*)",
             $this->getUserIdsByUserNames($values)

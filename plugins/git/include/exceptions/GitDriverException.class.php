@@ -20,16 +20,13 @@
 
 /**
  * Description of GitDriverException
- *
- * @author gstorchi
  */
-class GitDriverException extends Exception {
+class GitDriverException extends Exception
+{
     //put your code here
 
-    public function __construct($msg) {
-      parent::__construct(__CLASS__.' : '.$msg);
+    public function __construct($msg)
+    {
+        parent::__construct(self::class . ' : ' . $msg);
     }
 }
-
-
-?>

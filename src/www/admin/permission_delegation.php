@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All rights reserved
+ * Copyright (c) Enalean, 2012 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,9 +19,10 @@
  */
 
 use Tuleap\Admin\PermissionDelegation\PermissionPresenterBuilder;
-use Tuleap\user\ForgeUserGroupPermission\SiteAdministratorPermissionChecker;
+use Tuleap\User\ForgeUserGroupPermission\SiteAdministratorPermissionChecker;
+use Tuleap\User\User_ForgeUserGroupPermissionsFactory;
 
-require_once 'pre.php';
+require_once __DIR__ . '/../include/pre.php';
 
 $request = HTTPRequest::instance();
 $request->checkUserIsSuperUser();

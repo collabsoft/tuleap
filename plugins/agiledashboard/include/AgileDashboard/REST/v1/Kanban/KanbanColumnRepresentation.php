@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,9 +23,12 @@ namespace Tuleap\AgileDashboard\REST\v1\Kanban;
 use AgileDashboard_KanbanColumn;
 use Tuleap\REST\JsonCast;
 
+/**
+ * @psalm-immutable
+ */
 class KanbanColumnRepresentation
 {
-    const ROUTE = "kanban_columns";
+    public const ROUTE = "kanban_columns";
 
     /**
      * @var int {@type int}
@@ -67,7 +70,7 @@ class KanbanColumnRepresentation
      */
     public $user_can_edit_label;
 
-    public function build(
+    public function __construct(
         AgileDashboard_KanbanColumn $column,
         $user_can_add_in_place,
         $user_can_remove_column,

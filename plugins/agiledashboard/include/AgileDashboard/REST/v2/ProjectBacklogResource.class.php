@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,37 +20,37 @@
 
 namespace Tuleap\AgileDashboard\REST\v2;
 
-use \PFUser;
+use AgileDashboard_BacklogItemDao;
+use AgileDashboard_Milestone_Backlog_BacklogFactory;
+use AgileDashboard_Milestone_Backlog_BacklogItemBuilder;
+use AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactory;
+use Luracast\Restler\RestException;
+use PFUser;
+use Planning_MilestoneFactory;
 use Planning_NoPlanningsException;
 use Planning_VirtualTopMilestone;
-use \Project;
-use \PlanningFactory;
-use \Tracker_ArtifactFactory;
-use \Tracker_FormElementFactory;
-use \TrackerFactory;
-use \Planning_MilestoneFactory;
-use \AgileDashboard_Milestone_Backlog_BacklogFactory;
-use \AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactory;
-use \AgileDashboard_Milestone_Backlog_BacklogItemBuilder;
-use \AgileDashboard_BacklogItemDao;
-use \AgileDashboard_Milestone_MilestoneStatusCounter;
-use \Tracker_ArtifactDao;
-use \Luracast\Restler\RestException;
-use Tuleap\AgileDashboard\BacklogItem\RemainingEffortValueRetriever;
+use PlanningFactory;
+use PlanningPermissionsManager;
+use Project;
+use Tracker_ArtifactFactory;
+use Tracker_FormElementFactory;
+use Tuleap\AgileDashboard\ExplicitBacklog\ArtifactsInExplicitBacklogDao;
 use Tuleap\AgileDashboard\Milestone\ParentTrackerRetriever;
 use Tuleap\AgileDashboard\MonoMilestone\MonoMilestoneBacklogItemDao;
 use Tuleap\AgileDashboard\MonoMilestone\MonoMilestoneItemsFinder;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneDao;
-use \Tuleap\REST\Header;
-use \PlanningPermissionsManager;
-use AgileDashboard_Milestone_MilestoneDao;
+use Tuleap\AgileDashboard\RemainingEffortValueRetriever;
+use Tuleap\Project\ProjectBackground\ProjectBackgroundConfiguration;
+use Tuleap\Project\ProjectBackground\ProjectBackgroundDao;
+use Tuleap\REST\Header;
 
 /**
  * Wrapper for backlog related REST methods
  */
-class ProjectBacklogResource {
-    const MAX_LIMIT = 50;
+class ProjectBacklogResource
+{
+    public const MAX_LIMIT = 50;
 
     /** @var Planning_MilestoneFactory */
     private $milestone_factory;
@@ -72,16 +72,12 @@ class ProjectBacklogResource {
      */
     private $parent_tracker_retriever;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->planning_factory             = PlanningFactory::build();
         $tracker_artifact_factory           = Tracker_ArtifactFactory::instance();
         $tracker_form_element_factory       = Tracker_FormElementFactory::instance();
         $this->planning_permissions_manager = new PlanningPermissionsManager();
-        $status_counter                     = new AgileDashboard_Milestone_MilestoneStatusCounter(
-            new AgileDashboard_BacklogItemDao(),
-            new Tracker_ArtifactDao(),
-            $tracker_artifact_factory
-        );
 
         $mono_milestone_items_finder = new MonoMilestoneItemsFinder(
             new MonoMilestoneBacklogItemDao(),
@@ -93,16 +89,7 @@ class ProjectBacklogResource {
             $this->planning_factory
         );
 
-        $this->milestone_factory      = new Planning_MilestoneFactory(
-            $this->planning_factory,
-            Tracker_ArtifactFactory::instance(),
-            Tracker_FormElementFactory::instance(),
-            TrackerFactory::instance(),
-            $status_counter,
-            $this->planning_permissions_manager,
-            new AgileDashboard_Milestone_MilestoneDao(),
-            $scrum_mono_milestone_checker
-        );
+        $this->milestone_factory = Planning_MilestoneFactory::build();
 
         $this->backlog_factory = new AgileDashboard_Milestone_Backlog_BacklogFactory(
             new AgileDashboard_BacklogItemDao(),
@@ -115,13 +102,14 @@ class ProjectBacklogResource {
         $this->backlog_item_collection_factory = new AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactory(
             new AgileDashboard_BacklogItemDao(),
             $tracker_artifact_factory,
-            $tracker_form_element_factory,
             $this->milestone_factory,
             $this->planning_factory,
             new AgileDashboard_Milestone_Backlog_BacklogItemBuilder(),
             new RemainingEffortValueRetriever(
                 $tracker_form_element_factory
-            )
+            ),
+            new ArtifactsInExplicitBacklogDao(),
+            new \Tracker_Artifact_PriorityDao()
         );
 
         $this->parent_tracker_retriever = new ParentTrackerRetriever($this->planning_factory);
@@ -130,11 +118,8 @@ class ProjectBacklogResource {
     /**
      * Get the backlog with the items that can be planned in a top-milestone of a given project
      */
-    public function get(PFUser $user, Project $project, $limit, $offset) {
-        if (! $this->limitValueIsAcceptable($limit)) {
-             throw new RestException(406, 'Maximum value for limit exceeded');
-        }
-
+    public function get(PFUser $user, Project $project, $limit, $offset)
+    {
         try {
             $top_milestone = $this->milestone_factory->getVirtualTopMilestone($user, $project);
         } catch (Planning_NoPlanningsException $exception) {
@@ -142,22 +127,21 @@ class ProjectBacklogResource {
         }
 
         if ($limit == 0) {
-            $backlog_items = array();
+            $backlog_items = [];
         } else {
             $backlog_items = $this->getBacklogItems($user, $top_milestone);
         }
 
-        $backlog_item_representations        = array();
-        $backlog_item_representation_factory = new BacklogItemRepresentationFactory();
+        $backlog_item_representations        = [];
+        $backlog_item_representation_factory = new BacklogItemRepresentationFactory(new ProjectBackgroundConfiguration(new ProjectBackgroundDao()));
 
-        foreach($backlog_items as $backlog_item) {
+        foreach ($backlog_items as $backlog_item) {
             $backlog_item_representations[] = $backlog_item_representation_factory->createBacklogItemRepresentation($backlog_item);
         }
 
         $this->sendAllowHeaders();
         $this->sendPaginationHeaders($limit, $offset, count($backlog_items));
 
-        $backlog  = new BacklogRepresentation();
         $contents = array_slice($backlog_item_representations, $offset, $limit);
 
         $accepted_trackers                   = $this->getAcceptedTrackers($user, $project);
@@ -165,10 +149,11 @@ class ProjectBacklogResource {
 
         $parent_trackers = $this->parent_tracker_retriever->getCreatableParentTrackers($top_milestone, $user, $accepted_trackers);
 
-        return $backlog->build($contents, $accepted_trackers, $parent_trackers, $has_user_priority_change_permission);
+        return BacklogRepresentation::build($contents, $accepted_trackers, $parent_trackers, $has_user_priority_change_permission);
     }
 
-    private function hasUserPriorityChangePermission(PFUser $user, Project $project) {
+    private function hasUserPriorityChangePermission(PFUser $user, Project $project)
+    {
         $root_planning = $this->planning_factory->getRootPlanning($user, $project->getId());
 
         if ($root_planning) {
@@ -178,11 +163,8 @@ class ProjectBacklogResource {
         return false;
     }
 
-    private function limitValueIsAcceptable($limit) {
-        return $limit <= self::MAX_LIMIT;
-    }
-
-    public function options(PFUser $user, Project $project, $limit, $offset) {
+    public function options(PFUser $user, Project $project, $limit, $offset)
+    {
         $this->sendAllowHeaders();
     }
 
@@ -193,19 +175,22 @@ class ProjectBacklogResource {
         return $this->backlog_item_collection_factory->getUnassignedOpenCollection($user, $top_milestone, $backlog_unassigned, false);
     }
 
-    private function sendPaginationHeaders($limit, $offset, $size) {
+    private function sendPaginationHeaders($limit, $offset, $size)
+    {
         Header::sendPaginationHeaders($limit, $offset, $size, self::MAX_LIMIT);
     }
 
-    private function sendAllowHeaders() {
+    private function sendAllowHeaders()
+    {
         Header::allowOptionsGet();
     }
 
-    private function getAcceptedTrackers(PFUser $user, Project $project) {
+    private function getAcceptedTrackers(PFUser $user, Project $project)
+    {
         try {
             $top_milestone = $this->milestone_factory->getVirtualTopMilestone($user, $project);
         } catch (\Planning_NoPlanningsException $e) {
-            return array();
+            return [];
         }
 
         return $top_milestone->getPlanning()->getBacklogTrackers();

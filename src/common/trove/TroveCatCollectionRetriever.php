@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -38,12 +38,12 @@ class TroveCatCollectionRetriever
 
     public function getCollection($project_id)
     {
-        $categories = array();
+        $categories = [];
 
         foreach ($this->dao->getProjectCategories($project_id) as $row) {
-            $folders     = explode(" :: ", $row['fullpath']);
-            $folders_ids = explode(" :: ", $row['fullpath_ids']);
-            $folders_len = count($folders);
+            $folders      = explode(" :: ", $row['fullpath']);
+            $folders_ids  = explode(" :: ", $row['fullpath_ids']);
+            $folders_len  = count($folders);
             $categories[] = new TroveCatPresenter(
                 $folders_ids[$folders_len - 1],
                 $folders[$folders_len - 1]

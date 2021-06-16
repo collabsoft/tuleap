@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All rights reserved
+ * Copyright (c) Enalean, 2017-present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -23,48 +23,58 @@
  * URL is a transport object (aka container) used to share data between
  * Model/Controler and View layer of the application
  */
-class Docman_Link extends Docman_Document {
-
+class Docman_Link extends Docman_Document
+{
+    /**
+     * @var Docman_LinkVersion
+     */
     private $current_version;
-    
-    function __construct($data = null) {
+
+    public function __construct($data = null)
+    {
         parent::__construct($data);
     }
 
-    var $url;
-    function getUrl() { 
-        return $this->url; 
+    public $url;
+    public function getUrl()
+    {
+        return $this->url;
     }
-    function setUrl($url) { 
+    public function setUrl($url)
+    {
         $this->url = $url;
     }
 
     public function getType()
     {
-        return $GLOBALS['Language']->getText('plugin_docman', 'doc_type_link');
+        return dgettext('tuleap-docman', 'Link');
     }
 
-    function initFromRow($row) {
+    public function initFromRow($row)
+    {
         parent::initFromRow($row);
         $this->setUrl($row['link_url']);
     }
-    function toRow() {
-        $row = parent::toRow();
-        $row['link_url'] = $this->getUrl();
+    public function toRow()
+    {
+        $row              = parent::toRow();
+        $row['link_url']  = $this->getUrl();
         $row['item_type'] = PLUGIN_DOCMAN_ITEM_TYPE_LINK;
         return $row;
     }
 
-    public function accept($visitor, $params = array())
+    public function accept($visitor, $params = [])
     {
         return $visitor->visitLink($this, $params);
     }
 
-    public function setCurrentVersion(Docman_LinkVersion $current_version) {
+    public function setCurrentVersion(Docman_LinkVersion $current_version)
+    {
         $this->current_version = $current_version;
     }
 
-    public function getCurrentVersion() {
+    public function getCurrentVersion()
+    {
         return $this->current_version;
     }
 }

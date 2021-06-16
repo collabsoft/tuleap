@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: text2png.php,v 1.13 2004/02/17 12:11:36 rurban Exp $');
 /*
  Copyright 1999, 2000, 2001, 2002 $ThePhpWikiProgrammingTeam
@@ -32,48 +33,55 @@ rcs_id('$Id: text2png.php,v 1.13 2004/02/17 12:11:36 rurban Exp $');
  *
  * See <http://www.php.net/manual/pl/ref.image.php> for more info.
  */
-define('text2png_debug', true);
+define('TEXT2PNG_DEBUG', true);
 
 
-class WikiPlugin_text2png
-extends WikiPlugin
+class WikiPlugin_text2png extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return "text2png";
     }
 
-    function getDescription() {
+    public function getDescription()
+    {
         return _("Convert text into a png image using GD.");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.13 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.13 $"
+        );
     }
 
-    function getDefaultArguments() {
+    public function getDefaultArguments()
+    {
         global $LANG;
-        return array('text' => "Hello WikiWorld!",
-                     'l'    => $LANG );
-        }
+        return ['text' => "Hello WikiWorld!",
+                     'l'    => $LANG ];
+    }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         if (ImageTypes() & IMG_PNG) {
             // we have gd & png so go ahead.
             extract($this->getArgs($argstr, $request));
-            return $this->text2png($text,$l);
+            return $this->text2png($text, $l);
         } else {
             // we don't have png and/or gd.
-            $error_html = _("Sorry, this version of PHP cannot create PNG image files.");
-            $link = "http://www.php.net/manual/pl/ref.image.php";
-            $error_html .= sprintf(_("See %s"), $link) .".";
+            $error_html  = _("Sorry, this version of PHP cannot create PNG image files.");
+            $link        = "http://www.php.net/manual/pl/ref.image.php";
+            $error_html .= sprintf(_("See %s"), $link) . ".";
             trigger_error($error_html, E_USER_NOTICE);
             return;
         }
     }
 
-    function text2png($text, $l) {
-
+    public function text2png($text, $l)
+    {
         /**
          * Basic image creation and caching
          *
@@ -94,9 +102,8 @@ extends WikiPlugin
         } //english=C
         $filepath = getcwd() . "/images/$l";
 
-        if (!file_exists($filepath ."/". $filename)) {
-
-            if (!file_exists($filepath)) {
+        if (! file_exists($filepath . "/" . $filename)) {
+            if (! file_exists($filepath)) {
                 $oldumask = umask(0);
                 // permissions affected by user the www server is running as
                 mkdir($filepath, 0777);
@@ -118,9 +125,9 @@ extends WikiPlugin
                 $error_html = _("PHP was unable to create a new GD image stream. Read 'lib/plugin/text2png.php' for details.");
                 // FIXME: Error manager does not transform URLs passed
                 //        through it.
-                $link = "http://www.php.net/manual/en/function.imagecreate.php";
-                $error_html .= sprintf(_("See %s"), $link) .".";
-                trigger_error( $error_html, E_USER_NOTICE );
+                $link        = "http://www.php.net/manual/en/function.imagecreate.php";
+                $error_html .= sprintf(_("See %s"), $link) . ".";
+                trigger_error($error_html, E_USER_NOTICE);
                 return;
             }
             // get ready to draw
@@ -153,39 +160,50 @@ extends WikiPlugin
 
             // to save to file:
             $success = ImagePng($im, $filepath . $filename);
-
         } else {
             $filepath .= "/";
-            $success = 2;
+            $success   = 2;
         }
 
         // create an <img src= tag to show the image!
         $html = HTML();
         if ($success > 0) {
-            if (defined('text2png_debug')) {
-                switch($success) {
-                case 1:
-                    trigger_error(sprintf(_("Image saved to cache file: %s"),
-                                          $filepath . $filename),
-                                  E_USER_NOTICE);
-                case 2:
-                    trigger_error(sprintf(_("Image loaded from cache file: %s"),
-                                          $filepath . $filename),
-                                  E_USER_NOTICE);
+            if (defined('TEXT2PNG_DEBUG')) {
+                switch ($success) {
+                    case 1:
+                        trigger_error(
+                            sprintf(
+                                _("Image saved to cache file: %s"),
+                                $filepath . $filename
+                            ),
+                            E_USER_NOTICE
+                        );
+                        break;
+                    case 2:
+                        trigger_error(
+                            sprintf(
+                                _("Image loaded from cache file: %s"),
+                                $filepath . $filename
+                            ),
+                            E_USER_NOTICE
+                        );
                 }
             }
             $url = "images/$l/$filename";
-            if (defined('DATA_PATH'))
+            if (defined('DATA_PATH')) {
                 $url = DATA_PATH . "/$url";
-            $html->pushContent(HTML::img(array('src' => $url,
-                                               'alt' => $text)));
+            }
+            $html->pushContent(HTML::img(['src' => $url,
+                                               'alt' => $text]));
         } else {
-            trigger_error(sprintf(_("couldn't open file '%s' for writing"),
-                                  $filepath . $filename), E_USER_NOTICE);
+            trigger_error(sprintf(
+                _("couldn't open file '%s' for writing"),
+                $filepath . $filename
+            ), E_USER_NOTICE);
         }
         return $html;
     }
-};
+}
 
 // $Log: text2png.php,v $
 // Revision 1.13  2004/02/17 12:11:36  rurban
@@ -199,8 +217,6 @@ extends WikiPlugin
 // Code cleanup:
 // Reformatting & tabs to spaces;
 // Added copyleft, getVersion, getDescription, rcs_id.
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -209,4 +225,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

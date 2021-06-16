@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class MediawikiSiteAdminAllowedProjectsPresenter {
+class MediawikiSiteAdminAllowedProjectsPresenter
+{
 
-    const TEMPLATE = 'grant-only-allowed-projects';
+    public const TEMPLATE = 'grant-only-allowed-projects';
 
     /**
      * @var Project[]
@@ -29,62 +30,75 @@ class MediawikiSiteAdminAllowedProjectsPresenter {
 
     private $count_project_to_migrate;
 
-    public function __construct($allowed_projects, $count_projects_to_migrate) {
-        $this->allowed_projects       = $allowed_projects;
+    public function __construct($allowed_projects, $count_projects_to_migrate)
+    {
+        $this->allowed_projects         = $allowed_projects;
         $this->count_project_to_migrate = $count_projects_to_migrate;
     }
 
-    public function there_is_no_project() {
+    public function there_is_no_project()
+    {
         return count($this->allowed_projects) === 0;
     }
 
-    public function update_allowed_projects_action() {
+    public function update_allowed_projects_action()
+    {
         return '/plugins/mediawiki/forge_admin.php?action=site_update_allowed_project_list';
     }
 
-    public function update_allowed_projects_action_csrf() {
+    public function update_allowed_projects_action_csrf()
+    {
         return new CSRFSynchronizerToken($this->update_allowed_projects_action());
     }
 
-    public function resource_allowed_project_title() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_title');
+    public function resource_allowed_project_title()
+    {
+        return dgettext('tuleap-mediawiki', 'MediaWiki');
     }
 
-    public function resource_allowed_project_subtitle() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_subtitle');
+    public function resource_allowed_project_subtitle()
+    {
+        return dgettext('tuleap-mediawiki', 'Projects that use Mediawiki 1.23 (LTS)');
     }
 
-    public function information() {
+    public function information()
+    {
         if ($this->is_resource_restricted()) {
-            return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_information');
+            return dgettext('tuleap-mediawiki', 'Please note that upgrading to Mediawiki 1.23 is a one-way process there is no way to revert this process. This progressive migration was meant to mitigate the risks of errors during upgrade process. Please ask the upgraded projects if they noticed any troubles and to report related issues.');
         } else {
-            return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_information_done');
+            return dgettext('tuleap-mediawiki', 'All projects where upgraded to Mediawiki 1.23. This is a one-way process so it\'s not possible downgrade.');
         }
     }
 
-    public function resource_allowed_project_list_allow_placeholder() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_list_allow_placeholder');
+    public function resource_allowed_project_list_allow_placeholder()
+    {
+        return dgettext('tuleap-mediawiki', 'Project name');
     }
 
-    public function resource_allowed_project_list_filter_placeholder() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_list_filter_placeholder');
+    public function resource_allowed_project_list_filter_placeholder()
+    {
+        return dgettext('tuleap-mediawiki', 'Project id or project name');
     }
 
-    public function resource_allowed_project_list_allow_project() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_list_allow_project');
+    public function resource_allowed_project_list_allow_project()
+    {
+        return dgettext('tuleap-mediawiki', 'Migrate');
     }
 
 
-    public function resource_allowed_project_list_id() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_list_id');
+    public function resource_allowed_project_list_id()
+    {
+        return dgettext('tuleap-mediawiki', 'Id');
     }
 
-    public function resource_allowed_project_list_name() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_list_name');
+    public function resource_allowed_project_list_name()
+    {
+        return dgettext('tuleap-mediawiki', 'Name');
     }
 
-    public function resource_allowed_project_list_empty() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_list_empty');
+    public function resource_allowed_project_list_empty()
+    {
+        return dgettext('tuleap-mediawiki', 'Currently, there are no projects that uses Mediawiki 1.23.');
     }
 
     public function url_project()
@@ -124,11 +138,11 @@ class MediawikiSiteAdminAllowedProjectsPresenter {
 
     public function resource_allowed_project_allow_all()
     {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_allow_all');
+        return dgettext('tuleap-mediawiki', 'Migrate all projects to Mediawiki 1.23');
     }
 
     public function resource_allowed_project_list()
     {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'allowed_project_list_allowed_projects');
+        return dgettext('tuleap-mediawiki', 'List of migrated projects');
     }
 }

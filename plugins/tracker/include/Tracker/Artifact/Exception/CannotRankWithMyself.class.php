@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_Exception_CannotRankWithMyself extends Exception {
-    public function __construct($artifact_id) {
-        parent::__construct('Artifact '.$artifact_id.' cannot be ranked with itself.');
+class Tracker_Artifact_Exception_CannotRankWithMyself extends Exception
+{
+    public function __construct($artifact_id)
+    {
+        parent::__construct('Artifact ' . $artifact_id . ' cannot be ranked with itself.');
     }
 }

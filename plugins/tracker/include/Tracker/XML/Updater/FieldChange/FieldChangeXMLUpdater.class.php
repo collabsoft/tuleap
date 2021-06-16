@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,10 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-interface Tracker_XML_Updater_FieldChange_FieldChangeXMLUpdater {
+interface Tracker_XML_Updater_FieldChange_FieldChangeXMLUpdater
+{
 
     /**
-     * @param SimpleXMLElement $field_change_xml
      * @param mixed            $submitted_value
      */
     public function update(SimpleXMLElement $field_change_xml, $submitted_value);

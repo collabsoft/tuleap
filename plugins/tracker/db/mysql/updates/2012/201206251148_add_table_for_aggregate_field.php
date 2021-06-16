@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,21 +18,22 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- *
- */
-class b201206251148_add_table_for_aggregate_field extends ForgeUpgrade_Bucket {
+class b201206251148_add_table_for_aggregate_field extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'Add a new table to store aggregate fields';
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
-        $sql = <<<SQL
+    public function up()
+    {
+        $sql    = <<<SQL
         CREATE TABLE tracker_field_aggregate (
           field_id INT(11) NOT NULL PRIMARY KEY,
           target_field_name VARCHAR(255) NULL
@@ -45,6 +46,4 @@ SQL;
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete($error_message);
         }
     }
-
 }
-?>

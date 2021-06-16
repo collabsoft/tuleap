@@ -1,6 +1,6 @@
 <?php
 /**
-* Copyright Enalean (c) 2015. All rights reserved.
+* Copyright Enalean (c) 2015 - Present. All rights reserved.
 *
 * Tuleap and Enalean names and logos are registrated trademarks owned by
 * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,11 +22,8 @@
 * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
 */
 
-require_once 'pre.php';
-require_once dirname(__FILE__).'/../include/Statistics_ConfigurationManager.class.php';
-require_once dirname(__FILE__).'/../include/Statistics_ConfigurationDao.class.php';
-require_once dirname(__FILE__).'/../include/Statistics_DiskUsagePurger.class.php';
-require_once dirname(__FILE__).'/../include/Statistics_DiskUsageDao.class.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/statisticsPlugin.php';
 
 $disk_data_purger = new Statistics_DiskUsagePurger(
     new Statistics_DiskUsageDao(),
@@ -40,7 +37,6 @@ try {
         new Statistics_ConfigurationDao()
     );
     $configuration_manager->activateDailyPurge();
-
-} catch (Statistics_PHPVersionException $e) {
+} catch (Exception $e) {
     echo $e->getMessage() . PHP_EOL;
 }

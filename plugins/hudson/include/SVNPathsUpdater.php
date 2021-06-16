@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,12 +18,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SVNPathsUpdater {
+class SVNPathsUpdater
+{
 
-    public function transformContent($submitted_content) {
+    public function transformContent($submitted_content)
+    {
         $submitted_content_lines = explode(PHP_EOL, $submitted_content);
 
-        $transformed_content = array();
+        $transformed_content = [];
         foreach ($submitted_content_lines as $line) {
             $line = trim($line);
 

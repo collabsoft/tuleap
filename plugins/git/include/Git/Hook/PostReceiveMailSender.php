@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2013-2017. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -34,11 +34,11 @@ use Notification;
 
 class PostReceiveMailSender
 {
-    const DEFAULT_MAIL_SUBJECT = 'Git notification';
-    const DEFAULT_FROM         = 'git';
+    public const DEFAULT_MAIL_SUBJECT = 'Git notification';
+    public const DEFAULT_FROM         = 'git';
 
-    const TIMEOUT_EXIT_CODE    = 124;
-    const INITIAL_COMMIT       = '0000000000000000000000000000000000000000';
+    public const TIMEOUT_EXIT_CODE = 124;
+    public const INITIAL_COMMIT    = '0000000000000000000000000000000000000000';
 
     /**
      * @var Git_GitRepositoryUrlManager
@@ -74,10 +74,10 @@ class PostReceiveMailSender
         if (count($notified_mails) === 0) {
             return true;
         }
-        $mail_raw_output  = array();
+        $mail_raw_output  = [];
         $exit_status_code = 0;
         exec('GIT_DIR=' . escapeshellarg($repository->getFullPath()) .
-            ' /usr/share/codendi/plugins/git/hooks/post-receive-email ' . escapeshellarg($oldrev) . ' ' .
+            ' /usr/share/tuleap/plugins/git/hooks/post-receive-email ' . escapeshellarg($oldrev) . ' ' .
             escapeshellarg($newrev) . ' ' . escapeshellarg($refname), $mail_raw_output, $exit_status_code);
 
         $subject       = isset($mail_raw_output[0]) ? $mail_raw_output[0] : self::DEFAULT_MAIL_SUBJECT;
@@ -85,9 +85,9 @@ class PostReceiveMailSender
         $this->addAdditionalMailHeaders($mail_enhancer, $mail_raw_output);
         $this->setFrom($mail_enhancer);
 
-        $body          = $this->createMailBody($mail_raw_output);
-        $access_link   = $repository->getDiffLink($this->repository_url_manager, $newrev);
-        $notification  = new Notification($notified_mails, $subject, '', $body, $access_link, 'Git');
+        $body         = $this->createMailBody($mail_raw_output);
+        $access_link  = $repository->getDiffLink($this->repository_url_manager, $newrev);
+        $notification = new Notification($notified_mails, $subject, '', $body, $access_link, 'Git');
 
         if ($exit_status_code === self::TIMEOUT_EXIT_CODE) {
             $this->warnSiteAdministratorOfAMisuseOfAGitRepo($repository, $oldrev, $refname);

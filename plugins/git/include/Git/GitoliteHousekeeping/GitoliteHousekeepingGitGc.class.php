@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,17 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/backend/BackendService.class.php';
-
 /**
  * I run git gc on gitolite admin working copy
  */
-class Git_GitoliteHousekeeping_GitoliteHousekeepingGitGc {
+class Git_GitoliteHousekeeping_GitoliteHousekeepingGitGc
+{
 
     /** @var Git_GitoliteHousekeeping_GitoliteHousekeepingDao */
     private $dao;
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
     /** @var string */
@@ -36,7 +35,7 @@ class Git_GitoliteHousekeeping_GitoliteHousekeepingGitGc {
 
     public function __construct(
         Git_GitoliteHousekeeping_GitoliteHousekeepingDao $dao,
-        Logger $logger,
+        \Psr\Log\LoggerInterface $logger,
         $gitolite_admin_working_copy
     ) {
         $this->dao                         = $dao;
@@ -44,15 +43,16 @@ class Git_GitoliteHousekeeping_GitoliteHousekeepingGitGc {
         $this->gitolite_admin_working_copy = $gitolite_admin_working_copy;
     }
 
-    public function cleanUpGitoliteAdminWorkingCopy() {
+    public function cleanUpGitoliteAdminWorkingCopy()
+    {
         if ($this->dao->isGitGcEnabled()) {
             $this->logger->info('Running git gc on gitolite admin working copy.');
             $this->execGitGcAsAppAdm();
         } else {
-            $this->logger->warn(
-                'Cannot run git gc on gitolite admin working copy. '.
-                'Please run as root: /usr/share/codendi/src/utils/php-launcher.sh '.
-                '/usr/share/codendi/plugins/git/bin/gl-admin-housekeeping.php'
+            $this->logger->warning(
+                'Cannot run git gc on gitolite admin working copy. ' .
+                'Please run as root: /usr/share/tuleap/src/utils/php-launcher.sh ' .
+                '/usr/share/tuleap/plugins/git/bin/gl-admin-housekeeping.php'
             );
         }
     }
@@ -60,7 +60,8 @@ class Git_GitoliteHousekeeping_GitoliteHousekeepingGitGc {
     /**
      * @protected for testing purpose
      */
-    protected function execGitGcAsAppAdm() {
+    protected function execGitGcAsAppAdm()
+    {
         exec("su - codendiadm -c '(cd {$this->gitolite_admin_working_copy} && git gc)'");
     }
 }

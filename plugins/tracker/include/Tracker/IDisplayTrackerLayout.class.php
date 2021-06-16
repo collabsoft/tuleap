@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,20 +21,21 @@
 /**
  * Display the page header and footer for the current service.
  */
-interface Tracker_IDisplayTrackerLayout {
-    
+interface Tracker_IDisplayTrackerLayout
+{
+
     /**
      * Display header for the current service
      *
      * @param Project $project    The project
      * @param string  $title      The title for this page
-     * @param array   $breadcrumb The breadcrumbs for this page
-     * @param ?       $toolbar    The toolbar
+     * @param array   $breadcrumbs The breadcrumbs for this page
+     * @param mixed   $toolbar    The toolbar
      *
      * @return void
      */
     public function displayHeader($project, $title, $breadcrumbs, $toolbar, array $params);
-    
+
     /**
      * Display footer for the current service.
      *
@@ -42,4 +43,3 @@ interface Tracker_IDisplayTrackerLayout {
      */
     public function displayFooter($project);
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class CardwallConfigXmlExport {
+use Tuleap\Cardwall\XML\XMLCardwall;
+use Tuleap\Cardwall\XML\XMLCardwallColumn;
+use Tuleap\Cardwall\XML\XMLCardwallMapping;
+use Tuleap\Cardwall\XML\XMLCardwallMappingValue;
+use Tuleap\Cardwall\XML\XMLCardwallTracker;
+
+class CardwallConfigXmlExport
+{
 
     /** @var Project */
     private $project;
@@ -32,7 +39,8 @@ class CardwallConfigXmlExport {
     /**  @var XML_RNGValidator */
     private $xml_validator;
 
-    public function __construct(Project $project, TrackerFactory $tracker_factory, Cardwall_OnTop_ConfigFactory $config_factory, XML_RNGValidator $xml_validator) {
+    public function __construct(Project $project, TrackerFactory $tracker_factory, Cardwall_OnTop_ConfigFactory $config_factory, XML_RNGValidator $xml_validator)
+    {
         $this->project         = $project;
         $this->tracker_factory = $tracker_factory;
         $this->config_factory  = $config_factory;
@@ -44,70 +52,74 @@ class CardwallConfigXmlExport {
      * @param SimpleXMLElement $root
      * Export in XML the list of tracker with a cardwall
      */
-    public function export(SimpleXMLElement $root) {
-        $cardwall_node = $root->addChild(CardwallConfigXml::NODE_CARDWALL);
-        $trackers_node = $cardwall_node->addChild(CardwallConfigXml::NODE_TRACKERS);
-        $trackers      = $this->tracker_factory->getTrackersByGroupId($this->project->getID());
+    public function export(SimpleXMLElement $root): void
+    {
+        $xml_cardwall = new XMLCardwall();
+
+        $trackers = $this->tracker_factory->getTrackersByGroupId($this->project->getID());
         foreach ($trackers as $tracker) {
-            $this->addTrackerChild($tracker, $trackers_node);
+            $xml_tracker = $this->getXMLCardwallTracker($tracker);
+            if ($xml_tracker !== null) {
+                $xml_cardwall = $xml_cardwall->withTracker($xml_tracker);
+            }
         }
 
-        $rng_path = realpath(CARDWALL_BASE_DIR.'/../www/resources/xml_project_cardwall.rng');
+        $cardwall_node = $xml_cardwall->export($root);
+
+        $rng_path = realpath(__DIR__ . '/../resources/xml_project_cardwall.rng');
         $this->xml_validator->validate($cardwall_node, $rng_path);
     }
 
-    private function addTrackerChild(Tracker $tracker, SimpleXMLElement $trackers_node) {
+    private function getXMLCardwallTracker(Tracker $tracker): ?XMLCardwallTracker
+    {
         $on_top_config = $this->config_factory->getOnTopConfig($tracker);
-        if ($on_top_config->isEnabled()) {
-            $tracker_node = $trackers_node->addChild(CardwallConfigXml::NODE_TRACKER);
-            $tracker_node->addAttribute(CardwallConfigXml::ATTRIBUTE_TRACKER_ID, 'T'.$tracker->getId());
-            if (count($on_top_config->getDashboardColumns()) > 0) {
-                $columns_node = $tracker_node->addChild(CardwallConfigXml::NODE_COLUMNS);
-                foreach ($on_top_config->getDashboardColumns() as $column) {
-                    $this->exportColumn($columns_node, $column);
-                }
+        if (! $on_top_config->isEnabled()) {
+            return null;
+        }
 
-                $mappings_node = $tracker_node->addChild(CardwallConfigXml::NODE_MAPPINGS);
-                foreach ($on_top_config->getMappings() as $mapping) {
-                    $this->exportMapping($mappings_node, $mapping);
+        $xml_tracker = (new XMLCardwallTracker('T' . $tracker->getId()));
+
+        if (count($on_top_config->getDashboardColumns()) > 0) {
+            foreach ($on_top_config->getDashboardColumns() as $column) {
+                $xml_tracker = $xml_tracker->withColumn($this->getXMLCardwallColumn($column));
+            }
+
+            foreach ($on_top_config->getMappings() as $mapping) {
+                $xml_mapping = $this->getXMLCardwallMapping($mapping);
+                if ($xml_mapping !== null) {
+                    $xml_tracker = $xml_tracker->withMapping($xml_mapping);
                 }
             }
         }
+        return $xml_tracker;
     }
 
-    private function exportMapping(SimpleXMLElement $mappings_node, Cardwall_OnTop_Config_TrackerMapping $mapping) {
+    private function getXMLCardwallMapping(Cardwall_OnTop_Config_TrackerMapping $mapping): ?XMLCardwallMapping
+    {
         if (! $mapping->isCustom()) {
-            return;
+            return null;
         }
 
-        $mapping_node = $mappings_node->addChild(CardwallConfigXml::NODE_MAPPING);
-        $mapping_node->addAttribute('tracker_id', $mapping->getTracker()->getXMLId());
-        $mapping_node->addAttribute('field_id', $mapping->getField()->getXMLId());
+        $field = $mapping->getField();
+        if ($field === null) {
+            return null;
+        }
 
-        $values_node = $mapping_node->addChild(CardwallConfigXml::NODE_VALUES);
+        $xml_mapping = (new XMLCardwallMapping($mapping->getTracker()->getXMLId(), $field->getXMLId()));
+
         foreach ($mapping->getValueMappings() as $value_mapping) {
-            $this->exportValueMapping($values_node, $value_mapping);
+            $xml_mapping = $xml_mapping
+                ->withMappingValue((new XMLCardwallMappingValue($value_mapping->getXMLValueId(), 'C' . $value_mapping->getColumnId())));
         }
+
+        return $xml_mapping;
     }
 
-    private function exportValueMapping(
-        SimpleXMLElement $values_node,
-        Cardwall_OnTop_Config_ValueMapping $value_mapping
-    ) {
-        $value_node = $values_node->addChild(CardwallConfigXml::NODE_VALUE);
-        $value_node->addAttribute('value_id', $value_mapping->getXMLValueId());
-        $value_node->addAttribute('column_id', 'C'.$value_mapping->getColumnId());
-    }
+    private function getXMLCardwallColumn(Cardwall_Column $column): XMLCardwallColumn
+    {
+        $xml_column = (new XMLCardwallColumn($column->getLabel()))
+            ->withId('C' . $column->getId());
 
-    private function exportColumn(SimpleXMLElement $columns_node, Cardwall_Column $column) {
-        $column_node = $columns_node->addChild(CardwallConfigXml::NODE_COLUMN);
-        $column_node->addAttribute(CardwallConfigXml::ATTRIBUTE_COLUMN_LABEL, $column->getLabel());
-        $column_node->addAttribute(CardwallConfigXml::ATTRIBUTE_COLUMN_ID, 'C'.$column->getId());
-
-        $this->exportColumnColors($column_node, $column);
-    }
-
-    private function exportColumnColors(SimpleXMLElement $column_node, Cardwall_Column $column) {
         $bg_green = null;
         $bg_red   = null;
         $bg_blue  = null;
@@ -115,13 +127,13 @@ class CardwallConfigXmlExport {
         $bg_colors = $column->getHeadercolor();
 
         if ($column->isHeaderATLPColor()) {
-            $column_node->addAttribute(CardwallConfigXml::ATTRIBUTE_COLUMN_TLP_COLOR_NAME, $bg_colors);
-            return;
+            $xml_column = $xml_column->withTLPColorName($bg_colors);
+            return $xml_column;
         }
 
         if ($bg_colors) {
             $regexp  = "/^rgb\((\d{1,3}), (\d{1,3}), (\d{1,3})\)$/";
-            $matches = array();
+            $matches = [];
             if (preg_match($regexp, $bg_colors, $matches)) {
                 $bg_red   = $matches[1];
                 $bg_green = $matches[2];
@@ -129,10 +141,10 @@ class CardwallConfigXmlExport {
             }
         }
 
-        if ($bg_red !== null && $bg_green !== null  && $bg_blue !== null ) {
-            $column_node->addAttribute(CardwallConfigXml::ATTRIBUTE_COLUMN_BG_RED, $bg_red);
-            $column_node->addAttribute(CardwallConfigXml::ATTRIBUTE_COLUMN_BG_GREEN, $bg_green);
-            $column_node->addAttribute(CardwallConfigXml::ATTRIBUTE_COLUMN_BG_BLUE, $bg_blue);
+        if ($bg_red !== null && $bg_green !== null && $bg_blue !== null) {
+            $xml_column = $xml_column->withLegacyColorsName($bg_red, $bg_green, $bg_blue);
         }
+
+        return $xml_column;
     }
 }

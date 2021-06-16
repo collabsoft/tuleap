@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,20 +20,42 @@
 
 namespace Tuleap\Git\GitPHP;
 
+use Git_Exec;
+
 class ProjectProvider
 {
+    private $repository;
     private $project;
 
+    /**
+     * @throws RepositoryAccessException
+     * @throws RepositoryNotExistingException
+     */
     public function __construct(\GitRepository $repository)
     {
         $project_root = $repository->getGitRootPath() . $repository->getProject()->getUnixName() . '/';
         $project_path = $repository->getFullName() . '.git';
 
-        $this->project = new Project($project_root, $project_path);
+        $repository_path = $project_root . $project_path;
+        $git_exec        = new Git_Exec($repository_path, $repository_path);
+
+        $this->project    = new Project($project_root, $project_path, $git_exec);
+        $this->repository = $repository;
     }
 
+    /**
+     * @return Project
+     */
     public function GetProject() // @codingStandardsIgnoreLine
     {
         return $this->project;
+    }
+
+    /**
+     * @return \GitRepository
+     */
+    public function getRepository()
+    {
+        return $this->repository;
     }
 }

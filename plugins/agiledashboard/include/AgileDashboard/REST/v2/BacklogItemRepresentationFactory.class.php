@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,25 +19,35 @@
 
 namespace Tuleap\AgileDashboard\REST\v2;
 
-use \AgileDashboard_Milestone_Backlog_IBacklogItem;
-use \UserManager;
-use \EventManager;
+use AgileDashboard_Milestone_Backlog_IBacklogItem;
+use Tuleap\Project\ProjectBackground\ProjectBackgroundConfiguration;
+use UserManager;
+use EventManager;
 
-class BacklogItemRepresentationFactory {
+class BacklogItemRepresentationFactory
+{
+    /**
+     * @var ProjectBackgroundConfiguration
+     */
+    private $project_background_configuration;
 
-    public function createBacklogItemRepresentation(AgileDashboard_Milestone_Backlog_IBacklogItem $backlog_item) {
-        $backlog_item_representation = new BacklogItemRepresentation();
-        $backlog_item_representation->build($backlog_item, $this->getBacklogItemCardFields($backlog_item));
-
-        return $backlog_item_representation;
+    public function __construct(ProjectBackgroundConfiguration $project_background_configuration)
+    {
+        $this->project_background_configuration = $project_background_configuration;
     }
 
-    private function getBacklogItemCardFields($backlog_item) {
+    public function createBacklogItemRepresentation(AgileDashboard_Milestone_Backlog_IBacklogItem $backlog_item)
+    {
+        return BacklogItemRepresentation::build($backlog_item, $this->getBacklogItemCardFields($backlog_item), $this->project_background_configuration);
+    }
+
+    private function getBacklogItemCardFields($backlog_item)
+    {
         $current_user         = UserManager::instance()->getCurrentUser();
         $card_fields_semantic = $this->getCardFieldsSemantic($backlog_item);
-        $card_fields          = array();
+        $card_fields          = [];
 
-        foreach($card_fields_semantic->getFields() as $field) {
+        foreach ($card_fields_semantic->getFields() as $field) {
             if ($field->userCanRead($current_user)) {
                 $card_fields[] = $field->getFullRESTValue($current_user, $backlog_item->getArtifact()->getLastChangeset());
             }
@@ -46,18 +56,18 @@ class BacklogItemRepresentationFactory {
         return $card_fields;
     }
 
-    private function getCardFieldsSemantic($backlog_item) {
+    private function getCardFieldsSemantic($backlog_item)
+    {
         $card_fields_semantic = null;
 
         EventManager::instance()->processEvent(
             AGILEDASHBOARD_EVENT_GET_CARD_FIELDS,
-            array(
+            [
                 'tracker'              => $backlog_item->getArtifact()->getTracker(),
                 'card_fields_semantic' => &$card_fields_semantic
-            )
+            ]
         );
 
         return $card_fields_semantic;
     }
-
 }

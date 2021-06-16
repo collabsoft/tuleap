@@ -1,83 +1,79 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-require_once('include/DataAccessObject.class.php');
 
-/**
- *  Data Access Object for UserPreferences 
- */
-class UserPreferencesDao extends DataAccessObject {
-    
-    function __construct($da = null) {
-        parent::__construct($da);
-    }
-    
+declare(strict_types=1);
+
+class UserPreferencesDao extends \Tuleap\DB\DataAccessObject
+{
     /**
      * Search user preferences by user id and preference name
-     * @param int $user_id
-     * @param string $preference_name
-     * @return DataAccessResult
      */
-    function search($user_id, $preference_name) {
-        $sql = sprintf("SELECT * FROM user_preferences WHERE user_id = %d AND preference_name = %s",
-            $this->da->escapeInt($user_id),
-            $this->da->quoteSmart($preference_name));
-        return $this->retrieve($sql);
+    public function search(int $user_id, string $preference_name): array
+    {
+        $sql = 'SELECT * FROM user_preferences WHERE user_id = ? AND preference_name = ?';
+
+        $result = $this->getDB()->row($sql, $user_id, $preference_name);
+
+        return is_array($result) ? $result : [];
     }
 
-    /**
-     * Set a preference for the user
-     *
-     * @param int $user_id
-     * @param string $preference_name
-     * @param string $preference_value
-     * @return boolean
-     */
-    function set($user_id, $preference_name, $preference_value) {
-        $sql = sprintf("INSERT INTO user_preferences (user_id, preference_name, preference_value) VALUES (%d, %s, %s)
-                        ON DUPLICATE KEY UPDATE preference_value = %s",
-            $this->da->escapeInt($user_id),
-            $this->da->quoteSmart($preference_name),
-            $this->da->quoteSmart($preference_value),
-            $this->da->quoteSmart($preference_value));
-        return $this->update($sql);
+    public function set(int $user_id, string $preference_name, string $preference_value): void
+    {
+        $this->getDB()->insertOnDuplicateKeyUpdate(
+            'user_preferences',
+            [
+                'user_id'          => $user_id,
+                'preference_name'  => $preference_name,
+                'preference_value' => $preference_value
+            ],
+            [
+                'preference_value'
+            ]
+        );
     }
-    
-    /**
-     * Delete a preference
-     */
-    function delete($user_id, $preference_name) {
-        $sql = sprintf("DELETE FROM user_preferences WHERE user_id = %d AND preference_name = %s",
-            $this->da->escapeInt($user_id),
-            $this->da->quoteSmart($preference_name));        
-        return $this->update($sql);
+
+    public function delete(int $user_id, string $preference_name): void
+    {
+        $this->getDB()->delete(
+            'user_preferences',
+            [
+                'user_id'         => $user_id,
+                'preference_name' => $preference_name
+            ]
+        );
     }
-    
-    function deleteByPreferenceNameAndValue($preference_name, $preference_value) {
-        $preference_name  = $this->da->quoteSmart($preference_name);
-        $preference_value = $this->da->quoteSmart($preference_value);
-        $sql = "DELETE FROM user_preferences
-                WHERE preference_name = $preference_name
-                  AND preference_value = $preference_value";
-        return $this->update($sql);
+
+    public function deleteByPreferenceNameAndValue(string $preference_name, string $preference_value): void
+    {
+        $this->getDB()->delete(
+            'user_preferences',
+            [
+                'preference_name' => $preference_name,
+                'preference_value' => $preference_value
+            ]
+        );
+    }
+
+    public function deletePreferenceForAllUsers(string $preference_name): void
+    {
+        $this->getDB()->delete('user_preferences', ['preference_name' => $preference_name]);
     }
 }
-
-
-?>

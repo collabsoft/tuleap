@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2017-2018. All rights reserved.
+ * Copyright Enalean (c) 2017 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -31,7 +31,7 @@ use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessInterface;
 class TrackerReportDao extends DataAccessObject
 {
 
-    public function __construct(LegacyDataAccessInterface $da = null)
+    public function __construct(?LegacyDataAccessInterface $da = null)
     {
         parent::__construct($da);
 
@@ -68,7 +68,7 @@ class TrackerReportDao extends DataAccessObject
     private function addForKanban($kanban_id, array $tracker_report_ids)
     {
         $kanban_id = $this->da->escapeInt($kanban_id);
-        $values = array();
+        $values    = [];
         foreach ($tracker_report_ids as $report_id) {
             $report_id = $this->da->escapeInt($report_id);
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,7 +29,7 @@ class PermissionPresenterBuilder
      */
     public function build(array $permissions)
     {
-        $presenter = array();
+        $presenter = [];
 
         foreach ($permissions as $permission) {
             $presenter[] = new PermissionPresenter($permission);

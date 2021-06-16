@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,24 +20,28 @@
 
 namespace Tuleap\Git;
 
+use EventManager;
 use Git;
 use Git_LogDao;
 use GitPermissionsManager;
 use GitRepository;
 use GitRepositoryFactory;
-use Logger;
+use Psr\Log\LoggerInterface;
 use Project;
 use ProjectUGroup;
 use SimpleXMLElement;
-use System_Command;
+use Tuleap\Git\Events\XMLExportExternalContentEvent;
 use Tuleap\GitBundle;
+use Tuleap\Project\UGroups\InvalidUGroupException;
 use Tuleap\Project\XML\Export\ArchiveInterface;
 use UGroupManager;
 use UserManager;
+use UserXMLExporter;
+use XML_SimpleXMLCDATAFactory;
 
 class GitXmlExporter
 {
-    const EXPORT_FOLDER = "export";
+    public const EXPORT_FOLDER = "export";
 
     /**
      * @var Project
@@ -60,14 +64,9 @@ class GitXmlExporter
     private $repository_factory;
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
-
-    /**
-     * @var System_Command
-     */
-    private $command;
     /**
      * @var GitBundle
      */
@@ -81,38 +80,44 @@ class GitXmlExporter
      */
     private $user_manager;
     /**
-     * @var \UserXMLExporter
+     * @var UserXMLExporter
      */
     private $user_exporter;
+
+    /**
+     * @var EventManager
+     */
+    private $event_manager;
 
     public function __construct(
         Project $project,
         GitPermissionsManager $permission_manager,
         UGroupManager $ugroup_manager,
         GitRepositoryFactory $repository_factory,
-        Logger $logger,
-        System_Command $command,
+        LoggerInterface $logger,
         GitBundle $git_bundle,
         Git_LogDao $git_log_dao,
         UserManager $user_manager,
-        \UserXMLExporter $user_exporter
+        UserXMLExporter $user_exporter,
+        EventManager $event_manager
     ) {
         $this->project            = $project;
         $this->permission_manager = $permission_manager;
         $this->ugroup_manager     = $ugroup_manager;
         $this->repository_factory = $repository_factory;
         $this->logger             = $logger;
-        $this->command            = $command;
         $this->git_bundle         = $git_bundle;
         $this->git_log_dao        = $git_log_dao;
         $this->user_manager       = $user_manager;
         $this->user_exporter      = $user_exporter;
+        $this->event_manager      = $event_manager;
     }
 
     public function exportToXml(SimpleXMLElement $xml_content, ArchiveInterface $archive, $temporary_dump_path_on_filesystem)
     {
         $root_node = $xml_content->addChild("git");
         $this->exportGitAdministrators($root_node);
+        $this->exportExternalGitAdministrationContent($root_node);
 
         $this->exportGitRepositories($root_node, $temporary_dump_path_on_filesystem, $archive);
     }
@@ -124,7 +129,8 @@ class GitXmlExporter
         $admin_ugroups = $this->permission_manager->getCurrentGitAdminUgroups($this->project->getId());
 
         foreach ($admin_ugroups as $ugroup) {
-            $root_node->addChild("ugroup", $this->getLabelForUgroup($ugroup));
+            $cdata = new XML_SimpleXMLCDATAFactory();
+            $cdata->insert($root_node, "ugroup", $this->getLabelForUgroup($ugroup));
         }
     }
 
@@ -138,7 +144,22 @@ class GitXmlExporter
             return $GLOBALS['Language']->getText('project_ugroup', 'ugroup_project_admins_name_key');
         }
 
-        return $this->ugroup_manager->getUGroup($this->project, $ugroup)->getTranslatedName();
+        $ugroup_object = $this->ugroup_manager->getUGroup($this->project, $ugroup);
+        if (! $ugroup_object) {
+            throw new InvalidUGroupException($ugroup);
+        }
+        return $ugroup_object->getTranslatedName();
+    }
+
+    private function exportExternalGitAdministrationContent(SimpleXMLElement $xml_content): void
+    {
+        $this->event_manager->processEvent(
+            new XMLExportExternalContentEvent(
+                $this->project,
+                $xml_content,
+                $this->logger
+            )
+        );
     }
 
     private function exportGitRepositories(
@@ -162,8 +183,8 @@ class GitXmlExporter
 
             $row = $this->git_log_dao->getLastPushForRepository($repository->getId());
             if (! empty($row) && $row['user_id'] !== 0) {
-                $last_push_node    = $root_node->addChild("last-push-date");
-                $user              = $this->user_manager->getUserById($row['user_id']);
+                $last_push_node = $root_node->addChild("last-push-date");
+                $user           = $this->user_manager->getUserById($row['user_id']);
                 $this->user_exporter->exportUser($user, $last_push_node, 'user');
                 $last_push_node->addAttribute("push_date", $row["push_date"]);
                 $last_push_node->addAttribute("commits_number", $row["commits_number"]);
@@ -172,9 +193,11 @@ class GitXmlExporter
                 $last_push_node->addAttribute("refname_type", $row["refname_type"]);
             }
 
-            $bundle_path = "";
+            $bundle_path = '';
+            $bundle_name = '';
             if ($repository->isInitialized()) {
-                $bundle_path = self::EXPORT_FOLDER . DIRECTORY_SEPARATOR . $repository->getName() . '.bundle';
+                $bundle_name = 'repository-' . (int) $repository->getId() . '.bundle';
+                $bundle_path = self::EXPORT_FOLDER . DIRECTORY_SEPARATOR . $bundle_name;
             }
 
             $root_node->addAttribute(
@@ -182,7 +205,7 @@ class GitXmlExporter
                 $bundle_path
             );
 
-            $this->bundleRepository($repository, $temporary_dump_path_on_filesystem, $archive);
+            $this->bundleRepository($repository, $temporary_dump_path_on_filesystem, $archive, $bundle_name);
 
             $this->exportGitRepositoryPermissions($repository, $root_node);
         }
@@ -191,11 +214,12 @@ class GitXmlExporter
     private function bundleRepository(
         GitRepository $repository,
         $temporary_dump_path_on_filesystem,
-        ArchiveInterface $archive
+        ArchiveInterface $archive,
+        string $bundle_name
     ) {
         $this->logger->info('Create git bundle for repository ' . $repository->getName());
 
-        $this->git_bundle->dumpRepository($repository, $archive, $temporary_dump_path_on_filesystem);
+        $this->git_bundle->dumpRepository($repository, $archive, $temporary_dump_path_on_filesystem, $bundle_name);
     }
 
     private function exportGitRepositoryPermissions(GitRepository $repository, SimpleXMLElement $xml_content)
@@ -221,8 +245,9 @@ class GitXmlExporter
 
     private function exportPermission(SimpleXMLElement $xml_content, $permissions)
     {
+        $cdata = new XML_SimpleXMLCDATAFactory();
         foreach ($permissions as $permission) {
-            $xml_content->addChild("ugroup", $this->getLabelForUgroup($permission));
+            $cdata->insert($xml_content, "ugroup", $this->getLabelForUgroup($permission));
         }
     }
 }

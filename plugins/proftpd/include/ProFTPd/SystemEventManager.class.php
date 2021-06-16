@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +23,8 @@ namespace Tuleap\ProFTPd;
 use Backend;
 use ProjectManager;
 
-class SystemEventManager {
+class SystemEventManager
+{
     /** @var SystemEventManager */
     private $system_event_manager;
 
@@ -41,11 +41,11 @@ class SystemEventManager {
     private $proftpd_base_directory;
 
     public function __construct(
-            \SystemEventManager $system_event_manager,
-            Backend $backend,
-            Admin\PermissionsManager $permissions_manager,
-            ProjectManager $project_manager,
-            $proftpd_base_directory
+        \SystemEventManager $system_event_manager,
+        Backend $backend,
+        Admin\PermissionsManager $permissions_manager,
+        ProjectManager $project_manager,
+        $proftpd_base_directory
     ) {
         $this->system_event_manager   = $system_event_manager;
         $this->backend                = $backend;
@@ -54,8 +54,9 @@ class SystemEventManager {
         $this->proftpd_base_directory = $proftpd_base_directory;
     }
 
-    public function queueDirectoryCreate($project_name) {
-        if (! is_dir($this->proftpd_base_directory.DIRECTORY_SEPARATOR.$project_name)) {
+    public function queueDirectoryCreate($project_name)
+    {
+        if (! is_dir($this->proftpd_base_directory . DIRECTORY_SEPARATOR . $project_name)) {
             $this->system_event_manager->createEvent(
                 SystemEvent\PROFTPD_DIRECTORY_CREATE::NAME,
                 $project_name,
@@ -65,7 +66,8 @@ class SystemEventManager {
         }
     }
 
-    public function queueACLUpdate($project_name) {
+    public function queueACLUpdate($project_name)
+    {
         $this->system_event_manager->createEvent(
             SystemEvent\PROFTPD_UPDATE_ACL::NAME,
             $project_name,
@@ -74,29 +76,31 @@ class SystemEventManager {
         );
     }
 
-    public function getTypes() {
-        return array(
+    public function getTypes()
+    {
+        return [
             SystemEvent\PROFTPD_DIRECTORY_CREATE::NAME,
             SystemEvent\PROFTPD_UPDATE_ACL::NAME,
-        );
+        ];
     }
 
-    public function instanciateEvents($type, &$dependencies) {
-        switch($type) {
+    public function instanciateEvents($type, &$dependencies)
+    {
+        switch ($type) {
             case \Tuleap\ProFTPd\SystemEvent\PROFTPD_DIRECTORY_CREATE::NAME:
-                $dependencies = array(
+                $dependencies = [
                     $this->backend,
                     new Admin\ACLUpdater($this->backend),
                     $this->proftpd_base_directory
-                );
+                ];
                 break;
             case \Tuleap\ProFTPd\SystemEvent\PROFTPD_UPDATE_ACL::NAME:
-                $dependencies = array(
+                $dependencies = [
                     new Admin\ACLUpdater($this->backend),
                     $this->permissions_manager,
                     $this->project_manager,
                     $this->proftpd_base_directory
-                );
+                ];
                 break;
             default:
                 break;

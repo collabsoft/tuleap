@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,17 +20,20 @@
 
 namespace Tuleap\PullRequest\REST\v1;
 
-use Tuleap\User\REST\MinimalUserRepresentation ;
+use Tuleap\User\REST\MinimalUserRepresentation;
 use Tuleap\REST\JsonCast;
-use Tuleap\PullRequest\Timeline\TimelineEvent;
+use Tuleap\PullRequest\Timeline\TimelineGlobalEvent;
 
+/**
+ * @psalm-immutable
+ */
 class TimelineEventRepresentation
 {
 
-    const UPDATE  = 'update';
-    const REBASE  = 'rebase';
-    const MERGE   = 'merge';
-    const ABANDON = 'abandon';
+    public const UPDATE  = 'update';
+    public const REBASE  = 'rebase';
+    public const MERGE   = 'merge';
+    public const ABANDON = 'abandon';
 
     /**
      * @var MinimalUserRepresentation {@type MinimalUserRepresentation}
@@ -53,22 +56,22 @@ class TimelineEventRepresentation
     public $type;
 
 
-    public function __construct($user, $post_date, $event_type)
+    public function __construct(MinimalUserRepresentation $user, int $post_date, int $event_type)
     {
-        $this->user           = $user;
-        $this->post_date      = JsonCast::toDate($post_date);
-        $this->event_type     = $this->expandType($event_type);
-        $this->type           = 'timeline-event';
+        $this->user       = $user;
+        $this->post_date  = JsonCast::toDate($post_date);
+        $this->event_type = self::expandType($event_type);
+        $this->type       = 'timeline-event';
     }
 
-    private function expandType($type_acronym)
+    private static function expandType(int $type_acronym): string
     {
-        $status_name = array(
-            TimelineEvent::UPDATE  => self::UPDATE,
-            TimelineEvent::REBASE  => self::REBASE,
-            TimelineEvent::MERGE   => self::MERGE,
-            TimelineEvent::ABANDON => self::ABANDON,
-        );
+        $status_name = [
+            TimelineGlobalEvent::UPDATE  => self::UPDATE,
+            TimelineGlobalEvent::REBASE  => self::REBASE,
+            TimelineGlobalEvent::MERGE   => self::MERGE,
+            TimelineGlobalEvent::ABANDON => self::ABANDON,
+        ];
 
         return $status_name[$type_acronym];
     }

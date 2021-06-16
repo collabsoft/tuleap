@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright Enalean (c) 2016. All rights reserved.
+ * Copyright Enalean (c) 2016 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -25,7 +25,7 @@
 
 
 try {
-    require_once 'pre.php';
+    require_once __DIR__ . '/../../../src/www/include/pre.php';
 
     $repository         = $argv[1];
     $revision           = $argv[2];
@@ -34,6 +34,6 @@ try {
 
     exit(0);
 } catch (Exception $exception) {
-    fwrite (STDERR, $exception->getMessage());
+    fwrite(STDERR, $exception->getMessage());
     exit(1);
 }

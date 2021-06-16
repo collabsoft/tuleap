@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011 - 2018. All rights reserved
+ * Copyright (c) Enalean, 2011 - Present. All rights reserved
  * Copyright 1999-2000 (c) The SourceForge Crew
  *
  * This file is a part of Tuleap.
@@ -19,57 +19,35 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\BrowserDetection\DetectedBrowser;
 use Tuleap\BurningParrotCompatiblePageDetector;
+use Tuleap\CookieManager;
+use Tuleap\Event\Events\HitEvent;
+use Tuleap\Instrument\Prometheus\Prometheus;
+use Tuleap\Plugin\PluginLoader;
 use Tuleap\Request\CurrentPage;
+use Tuleap\Request\RequestInstrumentation;
 use Tuleap\TimezoneRetriever;
 
-if (PHP_VERSION_ID < 50600) {
-    die('Tuleap must be run on a PHP 5.6 (or greater) engine.');
-}
-
-require_once __DIR__ . '/../../common/constants.php';
-require_once __DIR__ . '/../../common/autoload.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 date_default_timezone_set(TimezoneRetriever::getServerTimezone());
 
 // Defines all of the settings first (hosts, databases, etc.)
-$locar_inc_finder = new Config_LocalIncFinder();
-$local_inc = $locar_inc_finder->getLocalIncPath();
-require($local_inc);
-require($GLOBALS['db_config_file']);
-ForgeConfig::loadFromFile($GLOBALS['codendi_dir'] .'/src/etc/local.inc.dist'); //load the default settings
-ForgeConfig::loadFromFile($local_inc);
-ForgeConfig::loadFromFile($GLOBALS['db_config_file']);
-if (isset($GLOBALS['DEBUG_MODE'])) {
-    ForgeConfig::loadFromFile($GLOBALS['codendi_dir'] .'/src/etc/development.inc.dist');
-    ForgeConfig::loadFromFile(dirname($local_inc).'/development.inc');
-}
+ForgeConfig::loadLocalInc();
+ForgeConfig::loadDatabaseInc();
 ForgeConfig::loadFromDatabase();
-ForgeConfig::loadFromFile(ForgeConfig::get('rabbitmq_config_file'));
 ForgeConfig::loadFromFile(ForgeConfig::get('redis_config_file'));
 
 bindtextdomain('tuleap-core', ForgeConfig::get('sys_incdir'));
 textdomain('tuleap-core');
 
-// Fix path if needed
-if (isset($GLOBALS['jpgraph_dir'])) {
-    ini_set('include_path', ini_get('include_path').PATH_SEPARATOR.$GLOBALS['jpgraph_dir']);
-}
-
-if(!defined('TTF_DIR')) {
-    define('TTF_DIR',isset($GLOBALS['ttf_font_dir']) ? $GLOBALS['ttf_font_dir'] : '/usr/share/fonts/');
-}
-
-$xml_security = new XML_Security();
-$xml_security->disableExternalLoadOfEntities();
-
 // Detect whether this file is called by a script running in cli mode, or in normal web mode
-if (!defined('IS_SCRIPT')) {
-    if (php_sapi_name() == "cli") {
+if (! defined('IS_SCRIPT')) {
+    if (PHP_SAPI === "cli") {
         // Backend scripts should never ends because of lack of time or memory
-        ini_set('max_execution_time', 0);
-        ini_set('memory_limit', -1);
+        ini_set('max_execution_time', '0');
+        ini_set('memory_limit', '-1');
 
         define('IS_SCRIPT', true);
     } else {
@@ -78,21 +56,21 @@ if (!defined('IS_SCRIPT')) {
 }
 
 //{{{ Sanitize $_REQUEST : remove cookies
-while(count($_REQUEST)) {
+while (count($_REQUEST)) {
     array_pop($_REQUEST);
 }
 
-if (!ini_get('variables_order')) {
+if (! ini_get('variables_order')) {
         $_REQUEST = array_merge($_GET, $_POST);
 } else {
     $g_pos = strpos(strtolower(ini_get('variables_order')), 'g');
     $p_pos = strpos(strtolower(ini_get('variables_order')), 'p');
-    if ($g_pos === FALSE) {
-        if ($p_pos !== FALSE) {
+    if ($g_pos === false) {
+        if ($p_pos !== false) {
             $_REQUEST = $_POST;
         }
     } else {
-        if ($p_pos === FALSE) {
+        if ($p_pos === false) {
             $_REQUEST = $_GET;
         } else {
             if ($g_pos < $p_pos) {
@@ -105,19 +83,21 @@ if (!ini_get('variables_order')) {
 }
 
 //Cast group_id as int.
-foreach(array(
+foreach (
+    [
         'group_id',
         'atid',
         'pv',
-    ) as $variable) {
+    ] as $variable
+) {
     if (isset($_REQUEST[$variable])) {
-        $$variable = $_REQUEST[$variable] = $_GET[$variable] = $_POST[$variable] = (int)$_REQUEST[$variable];
+        $$variable = $_REQUEST[$variable] = $_GET[$variable] = $_POST[$variable] = (int) $_REQUEST[$variable];
     }
 }
 //}}}
 
 //{{{ define undefined variables
-if (!isset($GLOBALS['feedback'])) {
+if (! isset($GLOBALS['feedback'])) {
     $GLOBALS['feedback'] = "";  //By default the feedbak is empty
 }
 
@@ -131,14 +111,19 @@ if (! file_exists(ForgeConfig::get('codendi_cache_dir'))) {
 $system_event_manager = SystemEventManager::instance();
 
 //Load plugins
+$event_manager  = EventManager::instance();
 $plugin_manager = PluginManager::instance();
-
+$plugin_loader  = new PluginLoader(
+    $event_manager,
+    PluginFactory::instance(),
+    BackendLogger::getDefaultLogger()
+);
 $cookie_manager = new CookieManager();
 
-$loader_scheduler = new LoaderScheduler($cookie_manager, $plugin_manager);
+$loader_scheduler = new LoaderScheduler($cookie_manager, $plugin_loader);
 $loader_scheduler->loadPluginsThenStartSession(IS_SCRIPT);
 
-if (!IS_SCRIPT) {
+if (! IS_SCRIPT) {
     header('X-UA-Compatible: IE=Edge');
     header('Referrer-Policy: no-referrer-when-downgrade, strict-origin, same-origin');
 
@@ -149,73 +134,53 @@ if (!IS_SCRIPT) {
     // XSS prevention
     header('X-Content-Type-Options: nosniff');
     header('X-XSS-Protection: 1; mode=block');
-    $whitelist_scripts = array();
-    EventManager::instance()->processEvent(
+    $whitelist_scripts = [];
+    $event_manager->processEvent(
         Event::CONTENT_SECURITY_POLICY_SCRIPT_WHITELIST,
-        array(
+        [
             'whitelist_scripts' => &$whitelist_scripts
-        )
+        ]
     );
     $csp_whitelist_script_scr  = implode(' ', $whitelist_scripts);
     $csp_whitelist_script_scr .= ' ' . ForgeConfig::get('sys_csp_script_scr_whitelist');
-    $csp_rules                .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' $csp_whitelist_script_scr; ";
+    $csp_rules                .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'report-sample' $csp_whitelist_script_scr ; ";
+    $csp_rules                .= "style-src 'self' 'unsafe-inline' 'report-sample'; ";
+    $csp_rules                .= "font-src 'self'; ";
+    $csp_rules                .= "form-action 'self'; ";
+    $csp_rules                .= "manifest-src 'self'; ";
+    $csp_rules                .= "img-src * data: blob:; ";
+    $csp_rules                .= "connect-src *; ";
+    $csp_rules                .= "child-src *; ";
+    $csp_rules                .= "upgrade-insecure-requests; ";
+    $csp_rules                .= "report-uri /csp-violation; ";
 
-    header('Content-Security-Policy: ' . $csp_rules);
+    header("Content-Security-Policy: default-src 'report-sample'; base-uri 'self'; $csp_rules");
 }
 
-$feedback=''; // Initialize global var
+$feedback = ''; // Initialize global var
 
 $request = HTTPRequest::instance();
 $request->setTrustedProxies(array_map('trim', explode(',', ForgeConfig::get('sys_trusted_proxies'))));
 
 //Language
-if (!$GLOBALS['sys_lang']) {
-    $GLOBALS['sys_lang']="en_US";
+if (! ForgeConfig::get('sys_lang')) {
+    ForgeConfig::set('sys_lang', 'en_US');
 }
-$Language = new BaseLanguage($GLOBALS['sys_supported_languages'], $GLOBALS['sys_lang']);
+$Language = new BaseLanguage(ForgeConfig::get('sys_supported_languages'), ForgeConfig::get('sys_lang'));
 
-//various html utilities
-require_once('utils.php');
-
-//database abstraction
-require_once('database.php');
-
-//security library
-require_once('session.php');
-
-//user functions like get_name, logged_in, etc
-require_once('user.php');
 $user_manager = UserManager::instance();
 $current_user = $user_manager->getCurrentUser();
 
-$current_locale = $current_user->getLocale();
-setlocale(LC_CTYPE, "$current_locale.UTF-8");
-setlocale(LC_MESSAGES, "$current_locale.UTF-8");
+(static function () use ($current_user) {
+    (new \Tuleap\Language\LocaleSwitcher())->setLocale($current_user->getLocale());
+})();
 
-//library to set up context help
-require_once('help.php');
-
-//exit_error library
-require_once('exit.php');
-
-//various html libs like button bar, themable
-require_once('html.php');
-
-// Permission stuff that need to cripple each and every hit
-require_once __DIR__.'/../project/admin/permissions.php';
-
-$event_manager = EventManager::instance();
-$event_manager->processEvent(
-    Event::HIT,
-    array(
-        'is_script' => IS_SCRIPT,
-        'request'  => $request
-    )
-);
+$hit_event = new HitEvent($request, IS_SCRIPT);
+$event_manager->processEvent($hit_event);
 
 /*
 
-	Timezone must come after we have warn plugins of the hit to prevent messups
+    Timezone must come after we have warn plugins of the hit to prevent messups
 
 
 */
@@ -225,13 +190,12 @@ if (! defined('FRONT_ROUTER')) {
     $theme_manager = new ThemeManager(
         new BurningParrotCompatiblePageDetector(
             new CurrentPage(),
-            new Admin_Homepage_Dao(),
             new User_ForgeUserGroupPermissionsManager(
                 new User_ForgeUserGroupPermissionsDao()
             )
         )
     );
-    $HTML = $theme_manager->getTheme($current_user);
+    $HTML          = $theme_manager->getTheme($current_user);
 }
 
 // Check if anonymous user is allowed to browse the site
@@ -241,28 +205,36 @@ if (! defined('FRONT_ROUTER')) {
 
 // Check URL for valid hostname and valid protocol
 
-if (!IS_SCRIPT) {
+if (! IS_SCRIPT) {
     if (! defined('FRONT_ROUTER')) {
         $urlVerifFactory = new URLVerificationFactory($event_manager);
-        $urlVerif = $urlVerifFactory->getURLVerification($_SERVER);
-        $urlVerif->assertValidUrl($_SERVER, $request);
+        $global_server   = $_SERVER ?? [];
+        $urlVerif        = $urlVerifFactory->getURLVerification($global_server);
+        $urlVerif->assertValidUrl($global_server, $request);
 
-        \Tuleap\Request\RequestInstrumentation::incrementLegacy();
+        (new RequestInstrumentation(Prometheus::instance()))->incrementLegacy(
+            DetectedBrowser::detectFromTuleapHTTPRequest($request)
+        );
     }
 
-    if (! $current_user->isAnonymous()) {
-        header('X-Tuleap-Username: '.$current_user->getUserName());
-    }
+    (static function () use ($current_user) {
+        if (! $current_user->isAnonymous()) {
+            /**
+             * @psalm-taint-escape header
+             */
+            $header = 'X-Tuleap-Username: ' . $current_user->getUserName();
+            header($header);
+        }
+    })();
 }
 
-//Check post max size
-if ($request->exist('postExpected') && !$request->exist('postReceived')) {
-    $e = 'You tried to upload a file that is larger than the Codendi post_max_size setting.';
-    exit_error('Error', $e);
-}
-if (ForgeConfig::get('DEBUG_MODE')) {
-    $GLOBALS['DEBUG_TIME_IN_PRE'] = microtime(1) - $GLOBALS['debug_time_start'];
-}
+(static function () use ($request) {
+    //Check post max size
+    if ($request->exist('postExpected') && ! $request->exist('postReceived')) {
+        $e = 'You tried to upload a file that is larger than the Codendi post_max_size setting.';
+        exit_error('Error', $e);
+    }
+})();
 
 if ($request->isAjax()) {
     header("Cache-Control: no-store, no-cache, must-revalidate");

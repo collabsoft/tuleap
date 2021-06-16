@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 
 namespace Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature;
 
-class NatureEditor {
+class NatureEditor
+{
 
     /** @var NatureDao */
     private $dao;
@@ -29,7 +30,8 @@ class NatureEditor {
     /** @var NatureValidator */
     private $validator;
 
-    public function __construct(NatureDao $dao, NatureValidator $validator) {
+    public function __construct(NatureDao $dao, NatureValidator $validator)
+    {
         $this->dao       = $dao;
         $this->validator = $validator;
     }
@@ -38,13 +40,14 @@ class NatureEditor {
      * @throws InvalidNatureParameterException
      * @throws UnableToEditNatureException
      */
-    public function edit($shortname, $forward_label, $reverse_label) {
+    public function edit($shortname, $forward_label, $reverse_label)
+    {
         $this->validator->checkForwardLabel($forward_label);
         $this->validator->checkReverseLabel($reverse_label);
 
         if (! $this->dao->edit($shortname, $forward_label, $reverse_label)) {
             throw new UnableToEditNatureException(
-                $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', 'db_error')
+                dgettext('tuleap-tracker', 'error while playing with the database.  Help us improve your experience by sending an error report.')
             );
         }
     }

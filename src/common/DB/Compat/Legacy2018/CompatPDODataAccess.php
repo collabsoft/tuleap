@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,8 +20,7 @@
 
 namespace Tuleap\DB\Compat\Legacy2018;
 
-use ForgeConfig;
-use ParagonIE\EasyDB\EasyDB;
+use Tuleap\DB\DBConnection;
 
 /**
  * @deprecated
@@ -29,17 +28,17 @@ use ParagonIE\EasyDB\EasyDB;
 final class CompatPDODataAccess implements LegacyDataAccessInterface
 {
     /**
-     * @var EasyDB
+     * @var DBConnection
      */
-    private $db;
+    private $db_connection;
     /**
      * @var \PDOStatement
      */
     private $latest_statement;
 
-    public function __construct(EasyDB $db)
+    public function __construct(DBConnection $db_connection)
     {
-        $this->db = $db;
+        $this->db_connection = $db_connection;
     }
 
     /**
@@ -47,8 +46,11 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      * @param $sql string the database query to run
      * @deprecated
      * @return object MySQLDataAccessResultInterface
+     *
+     * @psalm-taint-sink sql $sql
+     * @psalm-taint-sink sql $params
      */
-    public function query($sql, $params = array())
+    public function query($sql, $params = [])
     {
         if (! empty($params)) {
             $args = [];
@@ -60,7 +62,7 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
         }
 
         try {
-            $this->latest_statement = $this->db->query($sql);
+            $this->latest_statement = $this->db_connection->getDB()->query($sql);
         } catch (\PDOException $ex) {
             $this->latest_statement = null;
             if ($ex->getCode() == 2006) {
@@ -69,10 +71,10 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
         }
 
         try {
-            $this->db->getPdo()->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, true);
+            $this->db_connection->getDB()->getPdo()->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, true);
             $data_access_result = new CompatPDODataAccessResult($this->latest_statement);
         } finally {
-            $this->db->getPdo()->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
+            $this->db_connection->getDB()->getPdo()->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
         }
         return $data_access_result;
     }
@@ -82,12 +84,12 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      *
      * @deprecated
      *
-     * @return int, or 0 if the previous query does not generate an AUTO_INCREMENT value, or FALSE if no MySQL connection was established
+     * @return false|int or 0 if the previous query does not generate an AUTO_INCREMENT value, or FALSE if no MySQL connection was established
      */
     public function lastInsertId()
     {
         try {
-            return (int) $this->db->lastInsertId();
+            return (int) $this->db_connection->getDB()->lastInsertId();
         } catch (\PDOException $ex) {
             return false;
         }
@@ -125,17 +127,14 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
         }
 
         if (! isset($error_info[0]) || $error_info[0] === '00000') {
-            $error_info = $this->db->getPdo()->errorInfo();
+            $error_info = $this->db_connection->getDB()->getPdo()->errorInfo();
         }
 
         $has_error = isset($error_info[0]) && $error_info[0] !== '00000';
         if (! $has_error) {
             return '';
         }
-        if (! ForgeConfig::get('DEBUG_MODE')) {
-            return 'DB error';
-        }
-        return $error_info[2];
+        return 'DB error';
     }
 
     /**
@@ -149,7 +148,7 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
         }
 
         if (! isset($error_info[0]) || $error_info[0] === '00000') {
-            $error_info = $this->db->getPdo()->errorInfo();
+            $error_info = $this->db_connection->getDB()->getPdo()->errorInfo();
         }
 
         return $error_info[2] . ' - ' . $error_info[1];
@@ -163,9 +162,9 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      *
      * @return string
      */
-    public function quoteSmart($value, $params = array())
+    public function quoteSmart($value, $params = [])
     {
-        return $this->db->quote($value);
+        return $this->db_connection->getDB()->quote((string) $value);
     }
 
     /**
@@ -176,9 +175,9 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      *
      * @return string
      */
-    public function quoteSmartSchema($value, $params = array())
+    public function quoteSmartSchema($value, $params = [])
     {
-        return $this->db->escapeIdentifier($value);
+        return $this->db_connection->getDB()->escapeIdentifier((string) $value);
     }
 
     /**
@@ -186,7 +185,7 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      * @deprecated
      * @static
      */
-    public function quoteSmartImplode($glue, $pieces, $params = array())
+    public function quoteSmartImplode($glue, $pieces, $params = [])
     {
         $str         = '';
         $after_first = false;
@@ -204,19 +203,13 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      * cast to int
      *
      * @deprecated
-     *
-     * @return int
      */
-    public function escapeInt($v, $null = CODENDI_DB_NOT_NULL)
+    public function escapeInt($v, $null = CODENDI_DB_NOT_NULL): string
     {
         if ($null === CODENDI_DB_NULL && $v === '') {
             return 'NULL';
         }
-        $m = [];
-        if (preg_match('/^([+-]?[1-9][0-9]*|[+-]?0)$/', $v, $m)) {
-            return $m[1];
-        }
-        return '0';
+        return (string) (int) $v;
     }
 
     /**
@@ -242,7 +235,7 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      */
     public function escapeIntImplode(array $ints)
     {
-        return implode(',', array_map(array($this, 'escapeInt'), $ints));
+        return implode(',', array_map([$this, 'escapeInt'], $ints));
     }
 
     /**
@@ -259,7 +252,8 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      */
     public function escapeLikeValue($value)
     {
-        return $this->db->escapeLikeValue($value);
+        $value = $value ?? '';
+        return $this->db_connection->getDB()->escapeLikeValue($value);
     }
 
     /**
@@ -286,7 +280,7 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      */
     public function quoteLikeValuePrefix($value)
     {
-        return $this->quoteSmart('%'. $this->escapeLikeValue($value));
+        return $this->quoteSmart('%' . $this->escapeLikeValue($value));
     }
 
     /**
@@ -350,7 +344,7 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      *
      * @deprecated
      *
-     * @return boolean Returns TRUE on success or FALSE on failure.
+     * @return bool Returns TRUE on success or FALSE on failure.
      */
     public function dataSeek($result, $row_number)
     {
@@ -367,11 +361,11 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      */
     public function startTransaction()
     {
-        if ($this->db->getPdo()->inTransaction()) {
+        if ($this->db_connection->getDB()->getPdo()->inTransaction()) {
             $this->commit();
         }
         try {
-            return $this->db->beginTransaction();
+            return $this->db_connection->getDB()->beginTransaction();
         } catch (\PDOException $ex) {
             return false;
         }
@@ -383,11 +377,11 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      */
     public function rollback()
     {
-        if (! $this->db->getPdo()->inTransaction()) {
+        if (! $this->db_connection->getDB()->getPdo()->inTransaction()) {
             return true;
         }
         try {
-            return $this->db->rollBack();
+            return $this->db_connection->getDB()->rollBack();
         } catch (\PDOException $ex) {
             return false;
         }
@@ -399,11 +393,11 @@ final class CompatPDODataAccess implements LegacyDataAccessInterface
      */
     public function commit()
     {
-        if (! $this->db->getPdo()->inTransaction()) {
+        if (! $this->db_connection->getDB()->getPdo()->inTransaction()) {
             return true;
         }
         try {
-            return $this->db->commit();
+            return $this->db_connection->getDB()->commit();
         } catch (\PDOException $ex) {
             return false;
         }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All rights reserved
+ * Copyright (c) Enalean, 2015 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-require_once dirname(__FILE__).'/../bootstrap.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 /**
  * @group DocmanTest
@@ -28,7 +28,8 @@ class DocmanTest extends SOAPBase
     private $content    = 'Content of the file';
     private $content_v2 = 'Updated content of the file';
 
-    public function setUp() {
+    public function setUp(): void
+    {
         parent::setUp();
 
         $_SERVER['SERVER_NAME'] = $this->server_name;
@@ -36,7 +37,8 @@ class DocmanTest extends SOAPBase
         $_SERVER['SCRIPT_NAME'] = $this->base_wsdl;
     }
 
-    public function tearDown() {
+    public function tearDown(): void
+    {
         unset($_SERVER['SERVER_NAME']);
         unset($_SERVER['SERVER_PORT']);
         unset($_SERVER['SCRIPT_NAME']);
@@ -44,7 +46,8 @@ class DocmanTest extends SOAPBase
         parent::tearDown();
     }
 
-    public function testGetDocumentRootFolder() {
+    public function testGetDocumentRootFolder()
+    {
         $session_hash = $this->getSessionHash();
 
         $root_folder_id = $this->soap_base->getRootFolder(
@@ -75,8 +78,8 @@ class DocmanTest extends SOAPBase
             'end',
             null,
             null,
-            array(),
-            array(),
+            [],
+            [],
             strlen($this->content),
             'file.txt',
             'text/plain',
@@ -89,6 +92,8 @@ class DocmanTest extends SOAPBase
             '1438953065',
             ''
         );
+
+        $this->assertTrue($file_id > 0);
 
         return $file_id;
     }
@@ -139,7 +144,44 @@ class DocmanTest extends SOAPBase
             '1438953065'
         );
 
+        $this->assertTrue($item_id > 0);
+
         return $item_id;
+    }
+
+    /**
+     * @depends testGetDocumentRootFolder
+     * @param $root_folder_id
+     */
+    public function testCreateFileWithTheWrongSizeFail($root_folder_id): void
+    {
+        $session_hash = $this->getSessionHash();
+
+        $this->expectException(SoapFault::class);
+
+        $this->soap_base->createDocmanFile(
+            $session_hash,
+            SOAP_TestDataBuilder::PROJECT_PRIVATE_MEMBER_ID,
+            $root_folder_id,
+            'Uploaded document fail',
+            'Description of uploaded document fail',
+            'end',
+            null,
+            null,
+            [],
+            [],
+            strlen($this->content) + 10,
+            'filefail.txt',
+            'text/plain',
+            base64_encode($this->content),
+            0,
+            strlen($this->content),
+            SOAP_TestDataBuilder::TEST_USER_1_NAME,
+            '1438953065',
+            SOAP_TestDataBuilder::TEST_USER_1_NAME,
+            '1438953065',
+            ''
+        );
     }
 
     /**
@@ -171,15 +213,16 @@ class DocmanTest extends SOAPBase
     /**
      * @depends testGetDocumentRootFolder
      */
-    public function testCreateFolder($root_folder_id) {
+    public function testCreateFolder($root_folder_id)
+    {
         $session_hash = $this->getSessionHash();
 
         $title       = 'My Folder';
         $description = 'My Folder';
         $ordering    = 'begin';
         $status      = 'approved';
-        $permissions = array();
-        $metadata    = array();
+        $permissions = [];
+        $metadata    = [];
         $owner       = SOAP_TestDataBuilder::TEST_USER_1_NAME;
         $create_date = '1438953065';
         $update_date = '';
@@ -208,15 +251,16 @@ class DocmanTest extends SOAPBase
     /**
      * @depends testCreateFolder
      */
-    public function testCreateFolderWithSpaces($root_folder_id) {
+    public function testCreateFolderWithSpaces($root_folder_id)
+    {
         $session_hash = $this->getSessionHash();
 
         $title       = ' My second Folder ';
         $description = 'My Folder';
         $ordering    = 'begin';
         $status      = 'approved';
-        $permissions = array();
-        $metadata    = array();
+        $permissions = [];
+        $metadata    = [];
         $owner       = SOAP_TestDataBuilder::TEST_USER_1_NAME;
         $create_date = '1438953065';
         $update_date = '';
@@ -245,7 +289,8 @@ class DocmanTest extends SOAPBase
     /**
      * @depends testCreateFolderWithSpaces
      */
-    public function testGetFirstFolder($root_folder_id) {
+    public function testGetFirstFolder($root_folder_id)
+    {
         $session_hash = $this->getSessionHash();
 
         $response = $this->soap_base->listFolder(

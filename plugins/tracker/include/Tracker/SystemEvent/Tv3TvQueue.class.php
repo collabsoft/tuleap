@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,15 +18,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_SystemEvent_Tv3Tv5Queue extends SystemEventQueue {
+class Tracker_SystemEvent_Tv3Tv5Queue extends SystemEventQueue
+{
 
-    const NAME = 'tv3_tv5_migration';
+    public const NAME = 'tv3_tv5_migration';
 
-    public function getName() {
+    public function getName()
+    {
         return self::NAME;
     }
 
-    public function getLabel() {
+    public function getLabel()
+    {
         return $GLOBALS['Language']->getText('admin_system_events', 'tv3tv5_queue');
     }
 }

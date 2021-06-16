@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,30 +20,34 @@
 
 namespace Tuleap\OpenIDConnectClient\Login;
 
+class ConnectorPresenter
+{
 
-class ConnectorPresenter {
+    private $providers_login_request_uri;
 
-    private $providers_authorization_request_uri;
-
-    public function __construct(array $providers_authorization_request_uri) {
-        $this->providers_authorization_request_uri = $providers_authorization_request_uri;
+    public function __construct(array $providers_login_request_uri)
+    {
+        $this->providers_login_request_uri = $providers_login_request_uri;
     }
 
     /**
      * @return string
      */
-    public function or_label() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient', 'or_label');
+    public function or_label()
+    {
+        return dgettext('tuleap-openidconnectclient', 'or login with');
     }
 
-    public function are_there_providers() {
-        return count($this->providers_authorization_request_uri) > 0;
+    public function are_there_providers()
+    {
+        return count($this->providers_login_request_uri) > 0;
     }
 
     /**
      * @return array
      */
-    public function providers() {
-        return $this->providers_authorization_request_uri;
+    public function providers()
+    {
+        return $this->providers_login_request_uri;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -46,22 +46,35 @@ class FieldValueMatcher
             return Tracker_FormElement_Field_List::NONE_VALUE;
         }
 
-        $source_value       = $source_field->getBind()->getValue($source_value_id);
-        $source_value_label = $source_value->getLabel();
+        $source_bind = $source_field->getBind();
+        if ($source_bind === null) {
+            return null;
+        }
+        $source_value = $source_bind->getValue($source_value_id);
+        if ($source_value === null || is_array($source_value)) {
+            return null;
+        }
+        $target_value = $this->getMatchingBindValueByDuckTyping($source_value, $target_field);
+        return ($target_value !== null) ? $target_value->getId() : null;
+    }
 
+    public function getMatchingBindValueByDuckTyping(
+        \Tracker_FormElement_Field_List_BindValue $source_value,
+        \Tracker_FormElement_Field_List $target_field
+    ): ?\Tracker_FormElement_Field_List_BindValue {
+        $source_value_label = strtolower($source_value->getLabel());
         foreach ($target_field->getBind()->getAllValues() as $target_value) {
-            if (strtolower($source_value_label) === strtolower($target_value->getLabel())) {
-                return $target_value->getId();
+            if ($source_value_label === strtolower($target_value->getLabel())) {
+                return $target_value;
             }
         }
-
         return null;
     }
 
-    public function isSourceUserValueMathingATargetUserValue(Tracker_FormElement_Field_list $target_contributor_field, SimpleXMLElement $value)
+    public function isSourceUserValueMathingATargetUserValue(Tracker_FormElement_Field_List $target_contributor_field, SimpleXMLElement $value)
     {
         $user = $this->user_finder->getUser($value);
 
-        return ! $user->isAnonymous() && $target_contributor_field->checkValueExists($user->getId());
+        return ! $user->isAnonymous() && $target_contributor_field->checkValueExists((string) $user->getId());
     }
 }

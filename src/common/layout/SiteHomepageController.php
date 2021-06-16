@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,13 +21,54 @@
 
 namespace Tuleap\Layout;
 
+use Admin_Homepage_Dao;
+use CSRFSynchronizerToken;
+use EventManager;
 use HTTPRequest;
 use ForgeConfig;
 use Event;
+use ProjectManager;
+use SVN_LogDao;
+use TemplateRendererFactory;
+use Tuleap\date\RelativeDatesAssetsRetriever;
+use Tuleap\layout\HomePage\NewsCollection;
+use Tuleap\layout\HomePage\NewsCollectionBuilder;
+use Tuleap\layout\HomePage\StatisticsCollectionBuilder;
+use Tuleap\News\NewsDao;
+use Tuleap\Request\DispatchableWithBurningParrot;
 use Tuleap\Request\DispatchableWithRequest;
+use Tuleap\Theme\BurningParrot\HomePagePresenter;
+use Tuleap\User\Account\RegistrationGuardEvent;
+use User_LoginPresenterBuilder;
+use UserManager;
 
-class SiteHomepageController implements DispatchableWithRequest
+class SiteHomepageController implements DispatchableWithRequest, DispatchableWithBurningParrot
 {
+
+    /**
+     * @var Admin_Homepage_Dao
+     */
+    private $dao;
+    /**
+     * @var ProjectManager
+     */
+    private $project_manager;
+    /**
+     * @var UserManager
+     */
+    private $user_manager;
+    /**
+     * @var EventManager
+     */
+    private $event_manager;
+
+    public function __construct(Admin_Homepage_Dao $dao, ProjectManager $project_manager, UserManager $user_manager, EventManager $event_manager)
+    {
+        $this->dao             = $dao;
+        $this->project_manager = $project_manager;
+        $this->user_manager    = $user_manager;
+        $this->event_manager   = $event_manager;
+    }
 
     /**
      * Is able to process a request routed by FrontRouter
@@ -37,76 +78,87 @@ class SiteHomepageController implements DispatchableWithRequest
      */
     public function process(HTTPRequest $request, BaseLayout $layout, array $variables)
     {
-        $hp            = \Codendi_HTMLPurifier::instance();
-        $event_manager = \EventManager::instance();
+        $event_manager = EventManager::instance();
 
-        $event_manager->processEvent(Event::DISPLAYING_HOMEPAGE, array());
+        $event_manager->processEvent(Event::DISPLAYING_HOMEPAGE, []);
 
-        $current_user              = $request->getCurrentUser();
-        $current_user_display_name = '';
-        if ($current_user->isLoggedIn()) {
-            $current_user_display_name = $hp->purify(\UserHelper::instance()->getDisplayNameFromUser($current_user));
-        }
-        $login_form_url = $request->getServerUrl().'/account/login.php';
+        $registration_guard = $event_manager->dispatch(new RegistrationGuardEvent());
+        assert($registration_guard instanceof RegistrationGuardEvent);
 
-        $display_homepage_boxes      = ((int) ForgeConfig::get('sys_display_homepage_boxes') === 1);
-        $display_homepage_news       = ((int) ForgeConfig::get('sys_display_homepage_news') === 1);
-        $display_new_account_button  = true;
-        $event_manager->processEvent('display_newaccount', array('allow' => &$display_new_account_button));
         $login_url = '';
-        $event_manager->processEvent(\Event::GET_LOGIN_URL, array('return_to' => '', 'login_url' => &$login_url));
+        $event_manager->processEvent(\Event::GET_LOGIN_URL, ['return_to' => '', 'login_url' => &$login_url]);
 
-        $header_params = array(
+        $header_params = [
             'title' => $GLOBALS['Language']->getText('homepage', 'title'),
+        ];
+
+        $header_params['body_class'] = ['homepage'];
+        $news_collection_builder     = new NewsCollectionBuilder(new NewsDao(), $this->project_manager, $this->user_manager, \Codendi_HTMLPurifier::instance());
+        $news_collection             = $news_collection_builder->build();
+
+        $layout->header($header_params);
+        $this->displayStandardHomepage(
+            $registration_guard->isRegistrationPossible(),
+            $login_url,
+            $request->isSecure(),
+            $news_collection
+        );
+        $layout->footer([]);
+        $this->includeRelativeDatesAssetsIfNeeded($news_collection, $layout);
+    }
+
+    private function displayStandardHomepage(bool $display_new_account_button, string $login_url, bool $is_secure, NewsCollection $news_collection): void
+    {
+        $current_user = UserManager::instance()->getCurrentUser();
+
+        $headline = $this->dao->getHeadlineByLanguage($current_user->getLocale());
+        if ($headline === null || $headline === '') {
+            $headline = gettext(
+                "Tuleap helps teams to deliver awesome applications, better, faster, and easier.\n" .
+                'Here you plan, track, code, and collaborate on software projects.'
+            );
+        }
+
+        $most_secure_url = '';
+        if (ForgeConfig::get('sys_https_host')) {
+            $most_secure_url = 'https://' . ForgeConfig::get('sys_https_host');
+        }
+
+        $login_presenter_builder = new User_LoginPresenterBuilder();
+        $login_csrf              = new CSRFSynchronizerToken('/account/login.php');
+        $login_presenter         = $login_presenter_builder->buildForHomepage($is_secure, $login_csrf);
+
+        $display_new_account_button = ($current_user->isAnonymous() && $display_new_account_button);
+
+        $statistics_collection_builder = new StatisticsCollectionBuilder(
+            $this->project_manager,
+            $this->user_manager,
+            $this->event_manager,
+            new SVN_LogDao()
         );
 
-        $homepage_dao = new \Admin_Homepage_Dao();
-        if ($homepage_dao->isStandardHomepageUsed()) {
-            $header_params['body_class'] = array('homepage');
+        $statistics_collection = $statistics_collection_builder->build();
 
-            $layout->header($header_params);
-            $layout->displayStandardHomepage(
-                $display_new_account_button,
-                $login_url,
-                $request->isSecure()
-            );
-        } else {
-            require_once 'www/forum/forum_utils.php';
-            require_once 'features_boxes.php';
+        $templates_dir = ForgeConfig::get('codendi_dir') . '/src/templates/homepage/';
+        $renderer      = TemplateRendererFactory::build()->getRenderer($templates_dir);
+        $presenter     = new HomePagePresenter(
+            $headline,
+            $current_user,
+            $most_secure_url,
+            $login_presenter,
+            $display_new_account_button,
+            $login_url,
+            $statistics_collection,
+            $news_collection
+        );
+        $renderer->renderToPage('homepage', $presenter);
+    }
 
-            $layout->header($header_params);
-
-            echo '<div id="homepage" class="container">';
-            // go fetch le content that may have its own logic to decide if the boxes should be displayed or not
-            ob_start();
-            $Language = $GLOBALS['Language'];
-            include($GLOBALS['Language']->getContent('homepage/homepage', null, null, '.php'));
-            $homepage_content = ob_get_contents();
-            ob_end_clean();
-
-            echo '<div id="homepage_speech" '. ($display_homepage_boxes ? '' : 'style="width:100%;"') .'>';
-            echo $homepage_content;
-            echo '</div>';
-
-            if ($display_homepage_boxes) {
-                echo '<div id="homepage_boxes">';
-                show_features_boxes();
-                echo '</div>';
-            }
-
-            // HTML is sad, we need to keep this div to clear the "float:right/left" that might exists before
-            // Yet another dead kitten somewhere :'(
-            echo '<div id="homepage_news">';
-            if ($display_homepage_news) {
-                $w = new \Widget_Static($GLOBALS['Language']->getText('homepage', 'news_title'));
-                $w->setContent(news_show_latest(ForgeConfig::get('sys_news_group'), 5, true, false, true, 5));
-                $w->setRssUrl('/export/rss_sfnews.php');
-                $w->display();
-            }
-            echo '</div>';
-            echo '</div>';
+    private function includeRelativeDatesAssetsIfNeeded(NewsCollection $news_collection, BaseLayout $layout): void
+    {
+        if (! $news_collection->hasNews()) {
+            return;
         }
-
-        $layout->footer(array());
+        $layout->addJavascriptAsset(RelativeDatesAssetsRetriever::getAsJavascriptAssets());
     }
 }

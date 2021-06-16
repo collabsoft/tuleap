@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_ChangesetFactory {
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentUGroupPermissionRetriever;
+
+class Tracker_Artifact_ChangesetFactory
+{
     /** Tracker_Artifact_ChangesetDao */
     private $dao;
     /**
@@ -35,29 +39,35 @@ class Tracker_Artifact_ChangesetFactory {
      * @var Tracker_FormElementFactory
      */
     private $tracker_form_element_factory;
+    /**
+     * @var TrackerPrivateCommentUGroupPermissionRetriever
+     */
+    private $private_comment_permission_retriever;
 
     public function __construct(
         Tracker_Artifact_ChangesetDao $dao,
         Tracker_Artifact_Changeset_ValueDao $changeset_value_dao,
         Tracker_Artifact_Changeset_CommentDao $changeset_comment_dao,
         Tracker_Artifact_ChangesetJsonFormatter $json_formatter,
-        Tracker_FormElementFactory $tracker_form_element_factory
+        Tracker_FormElementFactory $tracker_form_element_factory,
+        TrackerPrivateCommentUGroupPermissionRetriever $private_comment_permission_retriever
     ) {
-        $this->dao                          = $dao;
-        $this->changeset_value_dao          = $changeset_value_dao;
-        $this->changeset_comment_dao        = $changeset_comment_dao;
-        $this->json_formatter               = $json_formatter;
-        $this->tracker_form_element_factory = $tracker_form_element_factory;
+        $this->dao                                  = $dao;
+        $this->changeset_value_dao                  = $changeset_value_dao;
+        $this->changeset_comment_dao                = $changeset_comment_dao;
+        $this->json_formatter                       = $json_formatter;
+        $this->tracker_form_element_factory         = $tracker_form_element_factory;
+        $this->private_comment_permission_retriever = $private_comment_permission_retriever;
     }
 
     /**
      * Return a changeset
      *
-     * @param Tracker_Artifact $artifact
-     * @param Integer $changeset_id
+     * @param int $changeset_id
      * @return Tracker_Artifact_Changeset | null
      */
-    public function getChangeset(Tracker_Artifact $artifact, $changeset_id) {
+    public function getChangeset(Artifact $artifact, $changeset_id)
+    {
         $row = $this->dao->searchByArtifactIdAndChangesetId($artifact->getId(), $changeset_id)->getRow();
         if ($row) {
             return $this->getChangesetFromRow($artifact, $row);
@@ -68,7 +78,8 @@ class Tracker_Artifact_ChangesetFactory {
     /**
      * @return \Tracker_Artifact_Changeset|null
      */
-    public function getLastChangeset(Tracker_Artifact $artifact) {
+    public function getLastChangeset(Artifact $artifact)
+    {
         $row = $this->dao->searchLastChangesetByArtifactId($artifact->getId())->getRow();
         if ($row) {
             return $this->getChangesetFromRow($artifact, $row);
@@ -79,7 +90,7 @@ class Tracker_Artifact_ChangesetFactory {
     /**
      * @return null|Tracker_Artifact_Changeset
      */
-    public function getChangesetAtTimestamp(Tracker_Artifact $artifact, $timestamp)
+    public function getChangesetAtTimestamp(Artifact $artifact, $timestamp)
     {
         $row = $this->dao->searchChangesetByTimestamp($artifact->getId(), $timestamp)->getRow();
         if ($row) {
@@ -89,26 +100,28 @@ class Tracker_Artifact_ChangesetFactory {
         return null;
     }
 
-    /**
-     * @return \Tracker_Artifact_Changeset|null
-     */
-    public function getLastChangesetWithFieldValue(Tracker_Artifact $artifact, Tracker_FormElement_Field $field) {
+    public function getLastChangesetWithFieldValue(Artifact $artifact, Tracker_FormElement_Field $field): ?Tracker_Artifact_Changeset
+    {
         $dar = $this->dao->searchLastChangesetAndValueForArtifactField($artifact->getId(), $field->getId());
-        if ($dar) {
-            $row       = $dar->getRow();
-            $changeset = $this->getChangesetFromRow($artifact, $row);
-            $value     = $field->getChangesetValue($changeset, $row['value_id'], $row['has_changed']);
-            $changeset->setFieldValue($field, $value);
-            return $changeset;
+        if ($dar === false) {
+            return null;
         }
-        return null;
+        $row = $dar->getRow();
+        if ($row === false) {
+            return null;
+        }
+
+        $changeset = $this->getChangesetFromRow($artifact, $row);
+        $value     = $field->getChangesetValue($changeset, $row['value_id'], $row['has_changed']);
+        $changeset->setFieldValue($field, $value);
+        return $changeset;
     }
 
     /**
      * @return \Tracker_Artifact_Changeset|null
      */
     public function getPreviousChangesetWithFieldValue(
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Tracker_FormElement_Field $field,
         $changeset_id
     ) {
@@ -129,11 +142,11 @@ class Tracker_Artifact_ChangesetFactory {
     /**
      * Return all the changesets of an artifact
      *
-     * @param Tracker_Artifact $artifact
      * @return Tracker_Artifact_Changeset[]
      */
-    public function getChangesetsForArtifact(Tracker_Artifact $artifact) {
-        $changesets = array();
+    public function getChangesetsForArtifact(Artifact $artifact)
+    {
+        $changesets = [];
         foreach ($this->dao->searchByArtifactId($artifact->getId()) as $row) {
             $changesets[$row['id']] = $this->getChangesetFromRow($artifact, $row);
         }
@@ -143,7 +156,7 @@ class Tracker_Artifact_ChangesetFactory {
     /**
      * @return Tracker_Artifact_Changeset[]
      */
-    public function getFullChangesetsForArtifact(Tracker_Artifact $artifact, PFUser $user)
+    public function getFullChangesetsForArtifact(Artifact $artifact, PFUser $user)
     {
         $changeset_values_cache = $this->changeset_value_dao->searchByArtifactId($artifact->getId());
         $comments_cache         = $this->changeset_comment_dao->searchLastVersionForArtifact($artifact->getId());
@@ -162,9 +175,13 @@ class Tracker_Artifact_ChangesetFactory {
     private function setCommentsFromCache(array $cache, Tracker_Artifact_Changeset $changeset)
     {
         if (isset($cache[$changeset->getId()])) {
-            $row = $cache[$changeset->getId()];
+            $row                     = $cache[$changeset->getId()];
+            $comment_id              = $row['id'];
+            $ugroups_private_comment = $this->private_comment_permission_retriever
+                ->getUGroupsCanSeePrivateComment($changeset->getTracker(), (int) $comment_id);
+
             $comment = new Tracker_Artifact_Changeset_Comment(
-                $row['id'],
+                $comment_id,
                 $changeset,
                 $row['comment_type_id'],
                 $row['canned_response_id'],
@@ -172,7 +189,8 @@ class Tracker_Artifact_ChangesetFactory {
                 $row['submitted_on'],
                 $row['body'],
                 $row['body_format'],
-                $row['parent_id']
+                $row['parent_id'],
+                $ugroups_private_comment
             );
             $changeset->setLatestComment($comment);
         }
@@ -182,7 +200,7 @@ class Tracker_Artifact_ChangesetFactory {
         PFUser $user,
         array $cache,
         Tracker_Artifact_Changeset $changeset,
-        Tracker_Artifact_Changeset $previous_changeset = null
+        ?Tracker_Artifact_Changeset $previous_changeset = null
     ) {
         foreach ($cache[$changeset->getId()] as $changeset_value_row) {
             $field = $this->tracker_form_element_factory->getFieldById($changeset_value_row['field_id']);
@@ -203,19 +221,20 @@ class Tracker_Artifact_ChangesetFactory {
     /**
      * Get all changesets in a format ready for json conversion
      *
-     * @param Tracker_Artifact $artifact
-     * @param Integer $changeset_id
+     * @param int $changeset_id
      * @return array
      */
-    public function getNewChangesetsFormattedForJson(Tracker_Artifact $artifact, $changeset_id) {
-        $changesets = array();
+    public function getNewChangesetsFormattedForJson(Artifact $artifact, $changeset_id, PFUser $current_user)
+    {
+        $changesets = [];
         foreach ($this->dao->searchChangesetNewerThan($artifact->getId(), $changeset_id) as $row) {
-            $changesets[] = $this->json_formatter->format($this->getChangesetFromRow($artifact, $row));
+            $changesets[] = $this->json_formatter->format($this->getChangesetFromRow($artifact, $row), $current_user);
         }
         return $changesets;
     }
 
-    private function getChangesetFromRow(Tracker_Artifact $artifact, $row) {
+    private function getChangesetFromRow(Artifact $artifact, $row)
+    {
         return new Tracker_Artifact_Changeset(
             $row['id'],
             $artifact,

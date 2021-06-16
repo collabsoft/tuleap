@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2015. All rights reserved
+ * Copyright (c) Enalean SAS 2015 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201506031610_add_svn_immutable_tags_whitelist_table extends ForgeUpgrade_Bucket {
+class b201506031610_add_svn_immutable_tags_whitelist_table extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return "Add table to store SVN immutable tags whitelist";
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE svn_immutable_tags_whitelist (
                 group_id INT(11),
                 content TEXT,

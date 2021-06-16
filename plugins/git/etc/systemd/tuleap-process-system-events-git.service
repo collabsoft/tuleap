@@ -1,0 +1,10 @@
+[Unit]
+Description=Tuleap git system events
+
+[Service]
+Type=simple
+User=codendiadm
+ExecStart=/usr/bin/tuleap process-system-event git
+
+[Install]
+WantedBy=multi-user.target

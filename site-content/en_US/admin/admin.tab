@@ -11,177 +11,6 @@
 #
 #
 
-admin_sidebar	users_section_title	Users
-admin_sidebar	users_search_placeholder	Email, username…
-admin_sidebar	users_nav_all_users	All users
-admin_sidebar	users_nav_new_user	 New user
-admin_sidebar	users_nav_pending_users	Pending users
-admin_sidebar	users_nav_validated_users	Users pending email activation
-admin_sidebar	users_nav_permission_delegation	Permission delegation
-admin_sidebar	projects_section_title	Projects
-admin_sidebar	projects_search_placeholder	Id, unix name…
-admin_sidebar	projects_nav_all_projects	All projects
-admin_sidebar	projects_nav_pending_projects	Pending projects
-admin_sidebar	projects_nav_configuration	Projects configuration
-admin_sidebar	configuration_section_title	Global configuration
-admin_sidebar	configuration_nav_global_access_rights	Global access rights
-admin_sidebar	configuration_nav_homepage	Homepage
-admin_sidebar	configuration_nav_categories	Project categories
-admin_sidebar	configuration_nav_project_fields	Custom project fields
-admin_sidebar	configuration_nav_predefined_references	Predefined project references
-admin_sidebar	configuration_nav_tracker_restore	Pending trackers removal
-admin_sidebar	configuration_nav_svn	Manage SVN
-admin_sidebar	utils_section_title	Global utils
-admin_sidebar	utils_nav_system_events	System events
-admin_sidebar	utils_nav_news	News approval
-admin_sidebar	utils_nav_mass_mail	Mass emailing
-admin_sidebar	links_nav_plugins	Plugins
-admin_sidebar	links_nav_doc	Doc
-admin_sidebar	collapse_sidebar_label	Collapse sidebar
-
-#-----------------------------------------------
-# Script: SF/www/admin/index.php
-#
-admin_main	title		Site administration
-admin_main	header		Administrative functions
-admin_main	forgeupgrade	<h4><i class="icon-warning-sign fa fa-warning tlp-alert-icon"></i> ForgeUpgrade was not run!</h4><p>It seems that someone upgraded Tuleap RPMs without running forgeupgrade command. Please check <a href="http://tuleap-documentation.readthedocs.org/en/latest/installation-guide/update.html">upgrade documentation</a>.</p>
-admin_main	header_user	Pending users
-admin_main	display_user	Display users beginning with :
-admin_main	search_user	User
-admin_main	search	Search
-admin_main	export_csv	Export CSV
-admin_main	review_pending_users	Review pending users
-admin_main	review_pending_users_empty	No users to validate
-admin_main	pending_user	Users in <a href="$1"><B>P</B> (pending) status</a>
-admin_main	validated_user	Validated users <a href="$1"><B>pending email activation</B></a>
-admin_main	need_approval	approval needed
-admin_main	need_validation	validation needed
-admin_main	header_group	Pending projects
-admin_main	display_group	Display projects neginning with :
-admin_main	search_group	Search (group id, unix name, real name) :
-admin_main	all_users	All <a href="$1">users</a>
-admin_main	all_groups	All <a href="$1">projects</a>
-admin_main	review_pending_projects	Review pending projects
-admin_main	review_pending_projects_empty	No projects to validate
-admin_main	incomplete_group	Projects in <a href="$1"><B>I</B> (incomplete) status</A>
-admin_main	pending_group	Projects in <a href="$1"><B>P</B> (pending) status</A>
-admin_main	deleted_group	Projects in <a href="$1"><B>D</B> (deleted) status</A>
-admin_main	header_svc	Service administration
-admin_main	configure_svc	Configuration of predefined services
-admin_main	header_ref	Reference administration
-admin_main	configure_ref	Configuration of predefined references
-admin_main	header_tracker	Trackers administration
-admin_main	header_svn	Subversion administration
-admin_main	svn_token_config	Project configuration for tokens
-admin_main	tracker_remove	Pending trackers removal
-admin_main	tracker_template	Configuration of predefined tracker v3 templates
-admin_main	header_stat	Statistics
-admin_main	stat_login	View most recent logins
-admin_main	stat_spu	See global statistics
-admin_main	header_utils	Site utilities
-admin_main	mail_engine	Mass mail engine
-admin_main	header_sstat	Statistics
-admin_main	header_plugins	Plugins
-admin_main	manage_all_plugins	Manage all plugins
-admin_main	servers	Servers
-admin_main	servers_admin	Servers administration
-admin_main	sstat_reg_u	Registered active or restricted site users
-admin_main	sstat_reg_g	registered
-admin_main	sstat_reg_act_g	active
-admin_main	sstat_deleted	deleted
-admin_main	sstat_pend_g	pending
-admin_main	sstat_pend_u	Pending users
-admin_main	site_news	Site news
-admin_main	site_news_approval	Site news approval
-admin_main	trove_cat	Trove categories
-admin_main	trove_cat_list	Manage list of trove categories
-admin_main	trove_cat_add	Add one
-admin_main	new_user	New user
-admin_main	detail_button_label	Details
-admin_main	permission_delegation	Permission delegation
-admin_main	active_users	Per activities
-admin_main	lastday_users	active last 24 hours
-admin_main	lastweek_users	active last week
-admin_main	lastmonth_users	active last month
-admin_main	last3months_users	active last 3 months
-admin_main	mode_lab_users	Active or restricted users using mode lab
-admin_main	mode_lab_users_nb_users	users
-admin_main	stat_projects	Projects statistics
-admin_main	status_project	Per status
-admin_main	stat_users	Users statistics
-admin_main	status_user	Per status
-admin_main	statusactif_user	active
-admin_main	statusrestricted_user	restricted
-admin_main	statushold_user	suspended
-admin_main	statusdeleted_user	deleted
-admin_main	statusvalidated_user	validated
-admin_main	statuspending_user	waiting
-admin_main	statustotal_user	total
-admin_main	desc_fields	Project Description fields
-admin_main	desc_fields_edit	Project description fields edition
-admin_main	system_event	System events
-admin_main	sysevent_monitor	System events monitor
-admin_main	documentation	Documentation
-admin_main	install_guide	Installation guide
-admin_main	admin_guide	Administration guide
-admin_main	conf_project	Project configuration
-admin_main	tool_internal	Internal
-admin_main	tool_external	3rd party
-admin_main	configure_generic_user	Generic user
-admin_main	configure_homepage	Configure homepage
-admin_main	placeholder_headline	Enter meaningful headline...
-admin_main	headline	Headline
-admin_main	headline_help	Writing a compelling headline is a necessary step in order to encourage your users to sign in. Choose a catchy headline to summarize what Tuleap in your context is about. Don't be verbose though, keep the headline short.
-admin_main	use_standard_homepage_label	Use the standard Tuleap homepage
-admin_main	use_standard_homepage_help	You are using the legacy homepage which can be customized via /etc/tuleap/site-content/…/homepage/* files. Once you switch to the standard homepage (which cannot be customized), it won't be possible to switch back to the custom homepage.
-admin_main	successfully_updated	Successfully updated.
-admin_main	homepage_logo	Homepage logo
-admin_main	homepage_logo_help	You can upload your own logo. In order to not ruin the design of the homepage, your logo should have a transparent background and a height of 100px.
-admin_main	homepage_logo_help_end	 Please avoid to upload too big file (< 500kB).
-admin_main	homepage_upload_logo	Upload your own logo
-admin_main	homepage_replace_logo	Replace the current logo
-admin_main	remove_custom_logo	Delete current logo
-admin_main	homepage_or_label	or
-admin_main	save_conf	Save configuration
-admin_main	logo_too_big	Uploaded file is too big
-admin_main	upload_error	File upload error (error code: $1)
-admin_main	no_png	You should send a png image
-admin_main	100px	You should send an image with height smaller than 100px
-admin_main	standard_title	Standard Tuleap homepage
-admin_main	customize_title	Customized homepage
-admin_main	label_language	Your catchy headline
-admin_main	homepage_all_users	View all users
-admin_main	homepage_all_projects	View all projects
-
-admin_main	system_events_pane_title	System events (last 48 hours)
-admin_main	system_events_view_all_label	View all system events
-admin_main	new_label_tooltip	New events
-admin_main	running_label_tooltip	Running events
-admin_main	done_label_tooltip	Done events
-admin_main	warning_label_tooltip	Events in warning
-admin_main	error_label_tooltip	Events in error
-admin_main	warning_label	Warnings
-admin_main	error_label	Errors
-
-admin_main	configure_access_controls	Access control
-admin_main	platform_access_control	Platform access control
-admin_main	projects_visibility	Projects visibility
-admin_main	projects_visibility_label	Project administrators can choose project visibility
-admin_main	projects_visibility_help	If, in your organization, the strict privacy of the projects must be preserved by 'design', then you should uncheck this option so that project admins cannot disclose confidential resources to other platform users.
-admin_main	localinc_obsolete_message	<h4><i class="icon-warning-sign"></i> Your local.inc file is outdated!</h4><p>It appears that your local.inc file contains definitions of variables that are unused and it may lead to confusion.</p><p>Please edit <code>$1</code> and remove the following variables: <code>$sys_allow_anon</code> and <code>$sys_allow_restricted_users</code>.</p>
-admin_main	access_anonymous_label	Anonymous users can access the platform
-admin_main	access_anonymous_desc	Anonymous users can browse the public part of the site without logging in.
-admin_main	access_regular_label	All users must be logged in
-admin_main	access_regular_desc	Users must first login before going further.
-admin_main	access_restrited_label	All users must be logged in and restricted users are enabled
-admin_main	access_restrited_desc	Users must first login before going further. Some users may be restricted (restricted users have to be specifically granted access to projects and services).
-admin_main	current_restricted_users_message	<h4>Heads up!</h4><p>Currently there are <a href="/admin/userlist.php?status_values[]=R">$1 user(s)</a> that have restricted status. Changing current access mode will not change their status, they will need to be dealt with manually.</p>
-admin_main	ugroup_authenticated_users_placeholder	E.g $1 employees & subco
-admin_main	ugroup_registered_users_placeholder	E.g $1 employees
-admin_main	ugroup_authenticated_users_label	Authenticated users (Registered + Restricted) label
-admin_main	ugroup_registered_users_label	Registered users label
-admin_main	customize_ugroups_label_info	You can override default names for the two special groups. This only applies for git permissions at the moment.
-admin_main	btn_update_information	Update information
 #
 #-----------------------------------------------
 # Script: SF/www/admin/admin_utils.php
@@ -264,64 +93,6 @@ admin_approve_pending_users	user_deleted_success	User has been successfully dele
 
 #
 #-----------------------------------------------
-# Script: SF/www/admin/groupedit-add.php
-#
-admin_groupedit_add	title	Adding a Project Group
-admin_groupedit_add	desc_name	New descriptive group name
-admin_groupedit_add	unix_name	New unix group name
-#
-#-----------------------------------------------
-# Script: SF/www/admin/groupedit.php
-#
-admin_groupedit	title	Editing Project
-admin_groupedit	feedback_info	Updating Project Info
-admin_groupedit	error_group	Invalid project was passed in.
-admin_groupedit	proj_edit	Edit Project Details
-admin_groupedit	proj_admin	Project Admin
-admin_groupedit	proj_member	View/Edit Project Members
-admin_groupedit	pending_data	Show pending project data
-admin_groupedit	group_type	Project Type
-admin_groupedit	status_I	Incomplete
-admin_groupedit	status_A	Active
-admin_groupedit	status_P	Pending
-admin_groupedit	status_H	Holding
-admin_groupedit	status_D	Deleted
-admin_groupedit	status_s	System
-admin_groupedit	public	Public?
-admin_groupedit	home_box	Home Box
-admin_groupedit	http_domain	HTTP Domain
-admin_groupedit	other	Other
-admin_groupedit	send_email	Send New Project Instruction Email
-admin_groupedit	other_info	Other Information
-admin_groupedit	grp_name	Project Name
-admin_groupedit	unix_grp	Unix Group Name
-admin_groupedit	description	Description
-admin_groupedit	built_from_template	Built from template
-admin_groupedit	rename_project_title	Rename Project
-admin_groupedit	rename_project_label	Rename Project to
-admin_groupedit	rename_project_msg	Propagation of project's name update on system queued ($1 -> $2). It will be processed in a little while.
-admin_groupedit	rename_project_warn	Project name update will be effective only after system event processing.
-admin_groupedit	rename_project_already_queued	There is already an event scheduled to rename this project. Please check <a href="/admin/system_events/">System Event Monitor</a>.
-admin_groupedit	invalid_short_name	Invalid Short Name
-admin_groupedit	manage_access	Manage Access
-admin_groupedit	archived_wiki	Deleted wiki attachments
-admin_groupedit	archived_files	Deleted files
-
-#
-#-----------------------------------------------
-# Script: SF/www/admin/grouplist.php
-#
-admin_grouplist	title	Project List
-admin_grouplist	add_group	Add Project
-admin_grouplist	for_categ	Project List for Category
-admin_grouplist	begins_with	Projects that begin with $1
-admin_grouplist	all_categ	All Categories
-admin_grouplist	click	(click to edit)
-admin_grouplist	categ	Categories
-admin_grouplist	members	Members
-admin_grouplist	id_group	Id group
-#
-#-----------------------------------------------
 # Script: SF/www/admin/lastlogins.php
 #
 admin_lastlogins	title	Most recent logins
@@ -332,43 +103,6 @@ admin_lastlogins	ip_column_header	IP address
 admin_lastlogins	date_column_header	Date
 admin_lastlogins	filter_placeholder	Username, IP, date
 admin_lastlogins	filter_no_matching_result	There isn't any matching recent login
-#
-#-----------------------------------------------
-# Script: SF/www/admin/massmail_execute.php
-#
-admin_massmail_execute	post_recvd	Received Post. Making Query
-admin_massmail_execute	mailing	Beginning mailings to $1 distinct email addresses
-admin_massmail_execute	sending	Preview sent
-admin_massmail_execute	no_sending	Preview could not be sent
-admin_massmail_execute	done	Done!
-admin_massmail_execute	no_user_mail	The added user $1 have no mail address.
-admin_massmail_execute	no_user	No user corresponding to entry $1.
-admin_massmail_execute	no_mails	No valid email to send the preview.
-#
-#-----------------------------------------------
-# Script: SF/www/admin/massmail.php
-#
-admin_massmail	title	Mass emailing
-admin_massmail	header	Email
-admin_massmail	warning	$1 users will receive this email.
-admin_massmail	to_additional	Send only to users subscribed to "Additional Community Mailings" ($1 users)
-admin_massmail	to_update	Users that agreed to receive "Site Updates" ($1 users)
-admin_massmail	to_devel	Project developers ($1 users)
-admin_massmail	to_proj_admin	Project administrators ($1 users)
-admin_massmail	to_site_admin	Site administrators ($1 users)
-admin_massmail	to_all	All users, regardless of their preferences ($1 users)
-admin_massmail	subject	Subject
-admin_massmail	send_email_label	Send email
-admin_massmail	destination_label	Send to
-admin_massmail	subject_label	Subject
-admin_massmail	subject_placeholder	Catchy email subject line
-admin_massmail	content_label	Content
-admin_massmail	content_placeholder	Message…
-admin_massmail	preview_label	Preview
-admin_massmail	send_preview_label	Send preview
-admin_massmail	massmail_queued	The sending of the mail has been <a href="$1">put in the queue</a>
-admin_massmail	confirmation_title	Massmail sending
-admin_massmail	confirmation_body	Please confirm your action.
 
 #
 #-----------------------------------------------
@@ -397,7 +131,6 @@ admin_search	grp_name	Project Name
 admin_user_changepw	error_userid	No user ID
 admin_user_changepw	error_nopasswd	You must supply a password.
 admin_user_changepw	error_passwd	Passwords do not match.
-admin_user_changepw	error_update	Could not update password.
 admin_user_changepw	title_changed	Successfully Changed Password
 admin_user_changepw	header_changed	Password Change Confirmation
 admin_user_changepw	msg_changed	The user's password has been changed.
@@ -550,10 +283,10 @@ admin_trove_cat_edit	update_forbidden	Cannot move a project category under its o
 #-----------------------------------------------
 # Script: SF/www/admin/trove/trove_cat_list.php
 #
-admin_trove_cat_list	title	Project categories
+admin_trove_cat_list	title	Public project categories
 admin_trove_cat_list	header_name	Full name
 admin_trove_cat_list	header_description	Description
-admin_trove_cat_list	header	Project categories
+admin_trove_cat_list	header	Public project categories
 admin_trove_cat_list	edit	Edit
 admin_trove_cat_list	delete	Delete
 admin_trove_cat_list	add	Add a trove category
@@ -588,7 +321,6 @@ admin_servers	info_notupdated	Server <em>$1</em> has not been updated
 #-----------------------------------------------
 # Script: src/www/admin/descfields/desc_fields_edit.php
 #
-admin_desc_fields	title	Custom project fields
 admin_desc_fields	header_add	Add field
 admin_desc_fields	desc_name	Name
 admin_desc_fields	desc_description	Description
@@ -600,10 +332,7 @@ admin_desc_fields	desc_line	String
 admin_desc_fields	desc_text	Text area
 admin_desc_fields	rank	Rank
 admin_desc_fields	rank_on_screen	Rank on screen
-admin_desc_fields	ins_desc_field_fail	Inserting description failed.
-admin_desc_fields	del_desc_field_fail	Deleting description failed.
 admin_desc_fields	update_required_desc_field_fail	Updating description failed.
-admin_desc_fields	update_desc_field_fail	Update failed or no data changed.
 admin_desc_fields	info_missed	Missing Information. Please fill in all required information.
 admin_desc_fields	info_rank_noint	Rank must be an integer value.
 admin_desc_fields	add_success	Custom project field has been successfully added.
@@ -611,8 +340,6 @@ admin_desc_fields	update_success	Custom project field has been successfully upda
 admin_desc_fields	remove_success	Custom project field has been successfully deleted.
 admin_desc_fields	edit_btn	Edit
 admin_desc_fields	delete_btn	Delete
-admin_desc_fields	description_fields_header	Custom project fields
-admin_desc_fields	no_description_fields	No custom project fields
 admin_desc_fields	add_modal_title	Add field
 admin_desc_fields	add_modal_cancel	Cancel
 admin_desc_fields	add_modal_submit	Add field
@@ -703,7 +430,7 @@ admin_system_events	people_not_empty	People to be notified cannot be empty
 # Script: SF/www/admin/show_pending_documents.php
 #
 admin_show_pending_documents	pending_doc	Pending deleted documents for project <a href="/project/admin/?group_id=$1">$2</a>
-admin_show_pending_documents	delay_info	As per the configuration (<code>$sys_file_deletion_delay</code>) defined in <code>/etc/codendi/local.inc</code> elements will be <strong>purged</strong> from the filesystem after <strong>$1 days.</strong>
+admin_show_pending_documents	delay_info	As per the configuration (<code>$sys_file_deletion_delay</code>) defined in <code>/etc/tuleap/conf/local.inc</code> elements will be <strong>purged</strong> from the filesystem after <strong>$1 days.</strong>
 
 admin_show_pending_documents	note_intro	Note: there might be some delay (max 30 minutes) between the time the file is deleted and time it becomes restorable.
 admin_show_pending_documents	note_intro_system	When a file is deleted by the user, it becomes restorable after SYSTEM_CHECK
@@ -826,8 +553,7 @@ admin_projectlist	any	Any
 admin_projectlist	active	Active
 admin_projectlist	system	System
 admin_projectlist	pending	Pending
-admin_projectlist	incomplete	Incomplete
-admin_projectlist	holding	Holding
+admin_projectlist	suspended	Suspended
 admin_projectlist	deleted	Deleted
 admin_projectlist	matching_projects	Matching projects
 admin_projectlist	no_matching_projects	No matching projects

@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,11 +19,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('pre.php');
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 $data_access = CodendiDataAccess::instance();
 
-$sql = 'CREATE OR REPLACE VIEW ftpusers AS
+$sql    = 'CREATE OR REPLACE VIEW ftpusers AS
             SELECT user_name as username, unix_pw as password, unix_uid+20000 as uid, unix_uid+20000 as gid, CONCAT("/home/users/", user_name) as home, shell
             FROM user
             WHERE status IN ("A", "R")

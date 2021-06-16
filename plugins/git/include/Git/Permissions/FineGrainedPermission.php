@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -73,7 +73,7 @@ class FineGrainedPermission implements Permission
 
     public function getPatternWithoutPrefix()
     {
-        $matches = array();
+        $matches = [];
         preg_match("/^refs\/(?:heads|tags)\/(?P<pattern>.*)$/", $this->pattern, $matches);
 
         return $matches['pattern'];

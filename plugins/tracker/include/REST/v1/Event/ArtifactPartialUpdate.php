@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,15 +20,15 @@
 
 namespace Tuleap\Tracker\REST\v1\Event;
 
-use Tracker_Artifact;
 use Tuleap\Event\Dispatchable;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class ArtifactPartialUpdate implements Dispatchable
 {
-    const NAME = 'artifactPartialUpdate';
+    public const NAME = 'artifactPartialUpdate';
 
     /**
-     * @var Tracker_Artifact
+     * @var Artifact
      */
     private $artifact;
 
@@ -42,13 +42,13 @@ class ArtifactPartialUpdate implements Dispatchable
      */
     private $not_updatable_message = '';
 
-    public function __construct(Tracker_Artifact $artifact)
+    public function __construct(Artifact $artifact)
     {
         $this->artifact = $artifact;
     }
 
     /**
-     * @return Tracker_Artifact
+     * @return Artifact
      */
     public function getArtifact()
     {

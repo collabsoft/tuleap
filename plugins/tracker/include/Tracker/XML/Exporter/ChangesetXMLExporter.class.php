@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Exporter_ChangesetXMLExporter {
+class Tracker_XML_Exporter_ChangesetXMLExporter
+{
+    public const PREFIX = 'CHANGESET_';
 
     /**
      * @var Tracker_XML_Exporter_ChangesetValuesXMLExporter
@@ -42,11 +44,14 @@ class Tracker_XML_Exporter_ChangesetXMLExporter {
     ) {
         $changeset_xml = $artifact_xml->addChild('changeset');
 
-        $submitted_by = $changeset_xml->addChild('submitted_by', $changeset->getSubmittedBy());
-        $submitted_by->addAttribute('format', 'id');
-
-        $submitted_on = $changeset_xml->addChild('submitted_on', date('c', $changeset->getSubmittedOn()));
-        $submitted_on->addAttribute('format', 'ISO8601');
+        $cdata = new \XML_SimpleXMLCDATAFactory();
+        $cdata->insertWithAttributes($changeset_xml, 'submitted_by', $changeset->getSubmittedBy(), ['format' => 'id']);
+        $cdata->insertWithAttributes(
+            $changeset_xml,
+            'submitted_on',
+            date('c', (int) $changeset->getSubmittedOn()),
+            ['format' => 'ISO8601']
+        );
 
         $this->values_exporter->exportSnapshot($artifact_xml, $changeset_xml, $changeset->getArtifact(), $changeset->getValues());
     }
@@ -56,6 +61,7 @@ class Tracker_XML_Exporter_ChangesetXMLExporter {
         Tracker_Artifact_Changeset $changeset
     ) {
         $changeset_xml = $artifact_xml->addChild('changeset');
+        $changeset_xml->addAttribute('id', self::PREFIX . $changeset->getId());
 
         if ($changeset->getSubmittedBy()) {
             $this->user_xml_exporter->exportUserByUserId(
@@ -71,12 +77,13 @@ class Tracker_XML_Exporter_ChangesetXMLExporter {
             );
         }
 
-        $submitted_on = $changeset_xml->addChild('submitted_on', date('c', $changeset->getSubmittedOn()));
+        $submitted_on = $changeset_xml->addChild('submitted_on', date('c', (int) $changeset->getSubmittedOn()));
         $submitted_on->addAttribute('format', 'ISO8601');
 
         $comments_node = $changeset_xml->addChild('comments');
-        if ($changeset->getComment()) {
-            $changeset->getComment()->exportToXML($comments_node, $this->user_xml_exporter);
+        $comment       = $changeset->getComment();
+        if ($comment !== null) {
+            $comment->exportToXML($comments_node, $this->user_xml_exporter);
         }
 
         $changeset->forceFetchAllValues();

@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2015-2016. All rights reserved.
+ * Copyright Enalean (c) 2015-Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -23,6 +23,7 @@
  */
 
 use Tuleap\Svn\ApacheConfGenerator;
+use Tuleap\SystemEvent\GetSystemEventQueuesEvent;
 
 class SystemEventProcessor_Factory
 {
@@ -33,10 +34,10 @@ class SystemEventProcessor_Factory
     /** @var SystemEventManager */
     private $system_event_manager;
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
-    public function __construct(Logger $logger, SystemEventManager $system_event_manager, EventManager $event_manager)
+    public function __construct(\Psr\Log\LoggerInterface $logger, SystemEventManager $system_event_manager, EventManager $event_manager)
     {
         $this->logger               = $logger;
         $this->system_event_manager = $system_event_manager;
@@ -45,17 +46,17 @@ class SystemEventProcessor_Factory
 
     public function getProcessForQueue($request_queue)
     {
-        $owner         = SystemEvent::OWNER_APP;
-        $custom_queues = array();
+        $owner = SystemEvent::OWNER_APP;
+        $event = new GetSystemEventQueuesEvent([]);
         $this->event_manager->processEvent(
-            Event::SYSTEM_EVENT_GET_CUSTOM_QUEUES,
-            array(
-                'queues' => &$custom_queues,
-            )
+            $event
         );
+
+        $custom_queues = $event->getAvailableQueues();
+
         if (isset($custom_queues[$request_queue])) {
             $this->logger = $custom_queues[$request_queue]->getLogger();
-            $this->logger->debug('Processing '. $request_queue .' queue.');
+            $this->logger->debug('Processing ' . $request_queue . ' queue.');
             $process = new SystemEventProcessCustomQueue($request_queue);
             $owner   = $custom_queues[$request_queue]->getOwner();
         } else {
@@ -70,7 +71,7 @@ class SystemEventProcessor_Factory
                     $process = new SystemEventProcessRootDefaultQueue();
                     break;
                 default:
-                    $this->logger->debug('Ignoring '. $request_queue .' queue.');
+                    $this->logger->debug('Ignoring ' . $request_queue . ' queue.');
                     exit(0);
             }
         }
@@ -90,11 +91,12 @@ class SystemEventProcessor_Factory
             new SystemEventDao(),
             $this->logger,
             Backend::instance('Aliases'),
-            Backend::instance('CVS'),
-            Backend::instance('SVN'),
+            Backend::instanceCVS(),
+            Backend::instanceSVN(),
             Backend::instance('System'),
             new SiteCache($this->logger),
-            ApacheConfGenerator::build()
+            ApacheConfGenerator::build(),
+            \Tuleap\DB\DBFactory::getMainTuleapDBConnection()
         );
     }
 }

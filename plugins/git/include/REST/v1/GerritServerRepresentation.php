@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,9 +24,13 @@ namespace Tuleap\Git\REST\v1;
 use Git_RemoteServer_GerritServer;
 use Tuleap\REST\JsonCast;
 
-class GerritServerRepresentation {
+/**
+ * @psalm-immutable
+ */
+class GerritServerRepresentation
+{
 
-    const ROUTE = 'gerrit';
+    public const ROUTE = 'gerrit';
 
     /**
      * @var int {@type int}
@@ -38,8 +42,9 @@ class GerritServerRepresentation {
      */
     public $html_url;
 
-    public function build(Git_RemoteServer_GerritServer $server) {
-       $this->id       = JsonCast::toInt($server->getId());
-       $this->html_url = $server->getBaseUrl();
+    public function __construct(Git_RemoteServer_GerritServer $server)
+    {
+        $this->id       = JsonCast::toInt($server->getId());
+        $this->html_url = $server->getBaseUrl();
     }
 }

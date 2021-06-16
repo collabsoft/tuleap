@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,58 +18,98 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\Artifact\Changeset\FieldsToBeSavedInSpecificOrderRetriever;
+use Tuleap\Tracker\FormElement\Field\File\CreatedFileURLMapping;
+
 /**
  * I create an initial changeset
  */
-class Tracker_Artifact_Changeset_InitialChangesetCreator extends Tracker_Artifact_Changeset_InitialChangesetCreatorBase {
-
-    public function __construct(
-        Tracker_Artifact_Changeset_InitialChangesetFieldsValidator $fields_validator,
-        Tracker_FormElementFactory                                 $formelement_factory,
-        Tracker_Artifact_ChangesetDao                              $changeset_dao,
-        Tracker_ArtifactFactory                                    $artifact_factory,
-        EventManager                                               $event_manager
-    ) {
-        parent::__construct(
-            $fields_validator,
-            $formelement_factory,
-            $changeset_dao,
-            $artifact_factory,
-            $event_manager
-        );
-    }
-
+class Tracker_Artifact_Changeset_InitialChangesetCreator extends Tracker_Artifact_Changeset_InitialChangesetCreatorBase
+{
     /**
      * @see parent::saveNewChangesetForField()
      */
     protected function saveNewChangesetForField(
         Tracker_FormElement_Field $field,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         array $fields_data,
         PFUser $submitter,
-        $changeset_id
-    ) {
+        int $changeset_id,
+        CreatedFileURLMapping $url_mapping
+    ): void {
         $is_submission = true;
         $bypass_perms  = true;
         $workflow      = $artifact->getWorkflow();
 
         if ($this->isFieldSubmitted($field, $fields_data)) {
-            if ($field->userCanSubmit()) {
-                $field->saveNewChangeset($artifact, null, $changeset_id, $fields_data[$field->getId()], $submitter, $is_submission);
+            if ($field->userCanSubmit($submitter)) {
+                $field->saveNewChangeset(
+                    $artifact,
+                    null,
+                    $changeset_id,
+                    $fields_data[$field->getId()],
+                    $submitter,
+                    $is_submission,
+                    false,
+                    $url_mapping
+                );
+
                 return;
-            } else if ($workflow && $workflow->bypassPermissions($field)) {
-                $field->saveNewChangeset($artifact, null, $changeset_id, $fields_data[$field->getId()], $submitter, $is_submission, $bypass_perms);
+            }
+
+            if ($workflow && $workflow->bypassPermissions($field)) {
+                $field->saveNewChangeset(
+                    $artifact,
+                    null,
+                    $changeset_id,
+                    $fields_data[$field->getId()],
+                    $submitter,
+                    $is_submission,
+                    $bypass_perms,
+                    $url_mapping
+                );
+
                 return;
             }
         }
 
-        if (!$field->userCanSubmit() && $field->isSubmitable()) {
+        if (! $field->userCanSubmit() && $field->isSubmitable()) {
             $this->pushDefaultValueInSubmittedValues($field, $fields_data);
-            $field->saveNewChangeset($artifact, null, $changeset_id, $fields_data[$field->getId()], $submitter, $is_submission, $bypass_perms);
+            $field->saveNewChangeset(
+                $artifact,
+                null,
+                $changeset_id,
+                $fields_data[$field->getId()],
+                $submitter,
+                $is_submission,
+                $bypass_perms,
+                $url_mapping
+            );
         }
     }
 
-    private function pushDefaultValueInSubmittedValues(Tracker_FormElement_Field $field, array &$fields_data) {
+    private function pushDefaultValueInSubmittedValues(Tracker_FormElement_Field $field, array &$fields_data): void
+    {
         $fields_data[$field->getId()] = $field->getDefaultValue();
+    }
+
+    public static function build(\Psr\Log\LoggerInterface $logger): self
+    {
+        $form_element_factory = \Tracker_FormElementFactory::instance();
+        $artifact_factory     = Tracker_ArtifactFactory::instance();
+
+        return new Tracker_Artifact_Changeset_InitialChangesetCreator(
+            Tracker_Artifact_Changeset_InitialChangesetFieldsValidator::build(),
+            new FieldsToBeSavedInSpecificOrderRetriever($form_element_factory),
+            new Tracker_Artifact_ChangesetDao(),
+            $artifact_factory,
+            EventManager::instance(),
+            new Tracker_Artifact_Changeset_ChangesetDataInitializator($form_element_factory),
+            $logger,
+            \Tuleap\Tracker\Artifact\Changeset\ArtifactChangesetSaver::build()
+        );
     }
 }

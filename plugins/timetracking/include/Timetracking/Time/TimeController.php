@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,13 +23,13 @@ namespace Tuleap\Timetracking\Time;
 use Codendi_Request;
 use CSRFSynchronizerToken;
 use PFUser;
-use Tracker_Artifact;
 use Tuleap\Timetracking\Exceptions\TimeTrackingMissingTimeException;
-use Tuleap\Timetracking\Exceptions\TimeTrackingNotAllowedToDeleteException;
 use Tuleap\Timetracking\Exceptions\TimeTrackingNotAllowedToAddException;
+use Tuleap\Timetracking\Exceptions\TimeTrackingNotAllowedToDeleteException;
 use Tuleap\Timetracking\Exceptions\TimeTrackingNotAllowedToEditException;
 use Tuleap\Timetracking\Exceptions\TimeTrackingNotBelongToUserException;
 use Tuleap\Timetracking\Exceptions\TimeTrackingNoTimeException;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class TimeController
 {
@@ -47,8 +47,8 @@ class TimeController
         TimeUpdater $time_updater,
         TimeRetriever $time_retriever
     ) {
-        $this->time_updater          = $time_updater;
-        $this->time_retriever        = $time_retriever;
+        $this->time_updater   = $time_updater;
+        $this->time_retriever = $time_retriever;
     }
 
     /**
@@ -59,7 +59,7 @@ class TimeController
     public function addTimeForUser(
         Codendi_Request $request,
         PFUser $user,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         CSRFSynchronizerToken $csrf
     ) {
         $csrf->check();
@@ -79,7 +79,7 @@ class TimeController
     public function deleteTimeForUser(
         Codendi_Request $request,
         PFUser $user,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         CSRFSynchronizerToken $csrf
     ) {
         $csrf->check();
@@ -99,7 +99,7 @@ class TimeController
     public function editTimeForUser(
         Codendi_Request $request,
         PFUser $user,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         CSRFSynchronizerToken $csrf
     ) {
         $csrf->check();
@@ -114,8 +114,6 @@ class TimeController
     }
 
     /**
-     * @param Codendi_Request $request
-     * @param PFUser $user
      * @return Time
      * @throws TimeTrackingNoTimeException
      */

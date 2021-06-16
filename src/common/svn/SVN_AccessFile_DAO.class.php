@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2014 - 2018. All rights reserved
+ * Copyright (c) Enalean SAS 2014 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,11 +16,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SVN_AccessFile_DAO extends DataAccessObject {
+class SVN_AccessFile_DAO extends DataAccessObject
+{
 
-    private function addNewVersion($group_id, $content) {
+    private function addNewVersion(int $group_id, string $content)
+    {
         $new_version_number  = 0;
         $last_version_number = $this->getLastVersionNumber($group_id);
+        $group_id            = $this->da->escapeInt($group_id);
+        $content             = $this->da->quoteSmart($content);
         $current_timestamp   = $this->da->escapeInt($_SERVER['REQUEST_TIME']);
 
         if ($last_version_number) {
@@ -49,7 +53,8 @@ class SVN_AccessFile_DAO extends DataAccessObject {
         return $result;
     }
 
-    public function updateAccessFileVersionInProject($group_id, $version_id) {
+    public function updateAccessFileVersionInProject($group_id, $version_id)
+    {
         try {
             return $this->linkNewVersionIdToProject($group_id, $version_id);
         } catch (SVN_SQLRequestNotSuccededException $exception) {
@@ -57,12 +62,10 @@ class SVN_AccessFile_DAO extends DataAccessObject {
         }
     }
 
-    public function saveNewAccessFileVersionInProject($group_id, $content) {
+    public function saveNewAccessFileVersionInProject($group_id, $content)
+    {
         try {
             $this->startTransaction();
-
-            $group_id = $this->da->escapeInt($group_id);
-            $content  = $this->da->quoteSmart($content);
 
             $version_id = $this->addNewVersion($group_id, $content);
             $this->linkNewVersionIdToProject($group_id, $version_id);
@@ -75,8 +78,11 @@ class SVN_AccessFile_DAO extends DataAccessObject {
         }
     }
 
-    public function getLastVersionNumber($group_id) {
-       $sql = "SELECT max(version_number) as version_number
+    public function getLastVersionNumber(int $group_id)
+    {
+        $group_id = $this->da->escapeInt($group_id);
+
+        $sql = "SELECT max(version_number) as version_number
                 FROM svn_accessfile_history
                 WHERE group_id = $group_id";
 
@@ -90,7 +96,11 @@ class SVN_AccessFile_DAO extends DataAccessObject {
         return $row['version_number'];
     }
 
-    private function linkNewVersionIdToProject($group_id, $version_id) {
+    private function linkNewVersionIdToProject(int $group_id, int $version_id)
+    {
+        $group_id   = $this->da->escapeInt($group_id);
+        $version_id = $this->da->escapeInt($version_id);
+
         $sql = "UPDATE groups
                 SET svn_accessfile_version_id = $version_id
                 WHERE group_id = $group_id";
@@ -103,7 +113,8 @@ class SVN_AccessFile_DAO extends DataAccessObject {
 
         return $result;
     }
-    public function getAllVersions($group_id) {
+    public function getAllVersions($group_id)
+    {
         $group_id = $this->da->escapeInt($group_id);
 
         $sql = "SELECT version_number, id, version_date, content
@@ -113,7 +124,8 @@ class SVN_AccessFile_DAO extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function getCurrentVersionNumber($group_id) {
+    public function getCurrentVersionNumber($group_id)
+    {
         $group_id = $this->da->escapeInt($group_id);
 
         $sql = "SELECT s.version_number
@@ -124,7 +136,7 @@ class SVN_AccessFile_DAO extends DataAccessObject {
 
         $result = $this->retrieve($sql);
 
-        if(! $result) {
+        if (! $result) {
             return null;
         }
 
@@ -133,7 +145,8 @@ class SVN_AccessFile_DAO extends DataAccessObject {
         return $row['version_number'];
     }
 
-    public function getVersionContent($version_id) {
+    public function getVersionContent($version_id)
+    {
         $version_id = $this->da->escapeInt($version_id);
 
         $sql = "SELECT content
@@ -142,7 +155,7 @@ class SVN_AccessFile_DAO extends DataAccessObject {
 
         $result = $this->retrieve($sql);
 
-        if(! $result) {
+        if (! $result) {
             return null;
         }
 

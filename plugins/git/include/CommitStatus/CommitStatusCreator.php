@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -49,7 +49,7 @@ class CommitStatusCreator
             throw new InvalidCommitReferenceException("$commit_reference does not reference a commit");
         }
 
-        $commit_status = CommitStatusWithKnownStatus::buildFromStatusName($status_name, new \DateTimeImmutable);
+        $commit_status = CommitStatusWithKnownStatus::buildFromStatusName($status_name, new \DateTimeImmutable());
 
         $this->dao->create(
             $git_repository->getId(),

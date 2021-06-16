@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,6 +22,7 @@
 namespace Tuleap\Git\REST\v1;
 
 use DateTime;
+use Git_GitRepositoryUrlManager;
 use Git_LogDao;
 use Git_RemoteServer_GerritServerFactory;
 use Git_RemoteServer_NotFoundException;
@@ -56,32 +57,39 @@ class RepositoryRepresentationBuilder
 
     private $remote_server;
 
+    /** @var Git_GitRepositoryUrlManager */
+    private $url_manager;
+
     public function __construct(
         GitPermissionsManager $permissions_manger,
         Git_RemoteServer_GerritServerFactory $gerrit_server_factory,
         Git_LogDao $log_dao,
-        \EventManager $event_manager
+        \EventManager $event_manager,
+        Git_GitRepositoryUrlManager $url_manager
     ) {
         $this->permissions_manger    = $permissions_manger;
         $this->gerrit_server_factory = $gerrit_server_factory;
         $this->log_dao               = $log_dao;
         $this->event_manager         = $event_manager;
+        $this->url_manager           = $url_manager;
     }
 
     /**
-     * @param PFUser $user
      * @param GitRepository[] $repositories
      * @param $fields
-     * @return \Generator
+     * @return GitRepositoryRepresentation[]
      */
-    public function buildWithList(PFUser $user, array $repositories, $fields)
+    public function buildWithList(PFUser $user, array $repositories, $fields): array
     {
+        $representations = [];
         if (count($repositories) > 0) {
             $this->cacheRepositoriesMetadata($repositories);
             foreach ($repositories as $repository) {
-                yield $this->build($user, $repository, $fields);
+                $representations[] = $this->build($user, $repository, $fields);
             }
         }
+
+        return $representations;
     }
 
     private function cacheRepositoriesMetadata(array $repositories)
@@ -114,8 +122,6 @@ class RepositoryRepresentationBuilder
 
     /**
      *
-     * @param PFUser $user
-     * @param GitRepository $repository
      * @param string $fields
      *
      * @return GitRepositoryRepresentation
@@ -127,26 +133,27 @@ class RepositoryRepresentationBuilder
         $additional_information = new AdditionalInformationRepresentationRetriever($repository);
         $this->event_manager->processEvent($additional_information);
 
-        $repository_representation = new GitRepositoryRepresentation();
-        $last_update_date          = $this->getLastUpdateDate($repository);
-        $repository_representation->build(
-            $repository,
-            $server_representation,
-            $last_update_date,
-            $additional_information->getAdditionalInformation()
-        );
+        $html_url         = $this->url_manager->getRepositoryBaseUrl($repository);
+        $last_update_date = $this->getLastUpdateDate($repository);
 
-        if ($fields == GitRepositoryRepresentation::FIELDS_ALL && $this->permissions_manger->userIsGitAdmin(
-            $user,
-            $repository->getProject()
-        )) {
-            $permission_representation = new GitRepositoryPermissionRepresentation();
-            $permission_representation->build($repository);
-
-            $repository_representation->permissions = $permission_representation;
+        $permission_representation = null;
+        if (
+            $fields == GitRepositoryRepresentation::FIELDS_ALL && $this->permissions_manger->userIsGitAdmin(
+                $user,
+                $repository->getProject()
+            )
+        ) {
+            $permission_representation = GitRepositoryPermissionRepresentation::build($repository);
         }
 
-        return $repository_representation;
+        return GitRepositoryRepresentation::build(
+            $repository,
+            $html_url,
+            $server_representation,
+            $last_update_date,
+            $additional_information->getAdditionalInformation(),
+            $permission_representation
+        );
     }
 
     /**
@@ -160,24 +167,18 @@ class RepositoryRepresentationBuilder
 
         $remote_server_id = $repository->getRemoteServerId();
         if ($this->remote_server[$remote_server_id] !== null) {
-            $server_representation = new GerritServerRepresentation();
-            $server_representation->build($this->remote_server[$remote_server_id]);
-            return $server_representation;
+            return new GerritServerRepresentation($this->remote_server[$remote_server_id]);
         }
 
         try {
             $server = $this->gerrit_server_factory->getServerById($remote_server_id);
-            $server_representation = new GerritServerRepresentation();
-            $server_representation->build($server);
-
-            return $server_representation;
+            return new GerritServerRepresentation($server);
         } catch (Git_RemoteServer_NotFoundException $ex) {
             return null;
         }
     }
 
     /**
-     * @param GitRepository $repository
      * @return string
      */
     private function getLastUpdateDate(GitRepository $repository)
@@ -191,6 +192,5 @@ class RepositoryRepresentationBuilder
             return $row['push_date'];
         }
         return (new DateTime($repository->getCreationDate()))->getTimestamp();
-
     }
 }

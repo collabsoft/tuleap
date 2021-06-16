@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,22 +22,21 @@
 /**
  * Encapsulate the orchestration between PermissionsManager and UgroupManager
  */
-class Git_Driver_Gerrit_UserFinder {
-
-    /** @var UGroupManager */
-    private $ugroup_manager;
+class Git_Driver_Gerrit_UserFinder
+{
 
     /** @var PermissionsManager */
     private $permissions_manager;
 
-    public function __construct(PermissionsManager $permissions_manager, UGroupManager $ugroup_manager) {
+    public function __construct(PermissionsManager $permissions_manager)
+    {
         $this->permissions_manager = $permissions_manager;
-        $this->ugroup_manager      = $ugroup_manager;
     }
 
 
     /** @return bool */
-    public function areRegisteredUsersAllowedTo($permission_type, GitRepository $repository) {
+    public function areRegisteredUsersAllowedTo($permission_type, GitRepository $repository)
+    {
         if ($permission_type == Git::SPECIAL_PERM_ADMIN) {
             return false;
         }
@@ -50,23 +49,26 @@ class Git_Driver_Gerrit_UserFinder {
                 return true;
             }
         }
+
+        return false;
     }
 
     /**
      * Return the list of UGroupIds according to Git permissions that can be managed by Gerrit
      *
-     * @param Integer $repository_id
+     * @param int $repository_id
      * @param String  $permission_type
      *
      * @return array
      */
-    public function getUgroups($repository_id, $permission_type) {
+    public function getUgroups($repository_id, $permission_type)
+    {
         if ($permission_type == Git::SPECIAL_PERM_ADMIN) {
-            return array(ProjectUGroup::PROJECT_ADMIN);
+            return [ProjectUGroup::PROJECT_ADMIN];
         }
 
         $ugroup_ids = $this->permissions_manager->getAuthorizedUgroups($repository_id, $permission_type, false);
-        $result = array();
+        $result     = [];
         foreach ($ugroup_ids as $row) {
             $result[] = $row['ugroup_id'];
         }
@@ -74,4 +76,3 @@ class Git_Driver_Gerrit_UserFinder {
         return $result;
     }
 }
-?>

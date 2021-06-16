@@ -1,7 +1,7 @@
-#!/usr/share/codendi/src/utils/php-launcher.sh
+#!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -23,56 +23,55 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Svn\AccessControl\AccessFileHistoryCreator;
-use Tuleap\Svn\AccessControl\AccessFileHistoryDao;
-use Tuleap\Svn\AccessControl\AccessFileHistoryFactory;
-use Tuleap\Svn\Admin\Destructor;
-use Tuleap\Svn\Admin\ImmutableTagCreator;
-use Tuleap\Svn\Admin\ImmutableTagDao;
-use Tuleap\Svn\Admin\ImmutableTagFactory;
-use Tuleap\Svn\Admin\MailNotificationDao;
-use Tuleap\Svn\Admin\MailNotificationManager;
-use Tuleap\Svn\Dao;
-use Tuleap\Svn\Migration\BareRepositoryCreator;
-use Tuleap\Svn\Migration\RepositoryCopier;
-use Tuleap\Svn\Migration\SettingsRetriever;
-use Tuleap\Svn\Migration\SvnMigratorException;
-use Tuleap\Svn\Notifications\NotificationsEmailsBuilder;
-use Tuleap\Svn\Notifications\UgroupsToNotifyDao;
-use Tuleap\Svn\Notifications\UsersToNotifyDao;
-use Tuleap\Svn\Repository\HookConfigChecker;
-use Tuleap\Svn\Repository\HookConfigRetriever;
-use Tuleap\Svn\Repository\HookConfigSanitizer;
-use Tuleap\Svn\Repository\HookConfigUpdator;
-use Tuleap\Svn\Repository\HookDao;
-use Tuleap\Svn\Repository\ProjectHistoryFormatter;
-use Tuleap\Svn\Repository\Repository;
-use Tuleap\Svn\Repository\RepositoryCreator;
-use Tuleap\Svn\Repository\RepositoryManager;
-use Tuleap\Svn\Repository\RepositoryRegexpBuilder;
-use Tuleap\Svn\SvnAdmin;
-use Tuleap\Svn\SvnPermissionManager;
+use Tuleap\SVN\AccessControl\AccessFileHistoryCreator;
+use Tuleap\SVN\AccessControl\AccessFileHistoryDao;
+use Tuleap\SVN\AccessControl\AccessFileHistoryFactory;
+use Tuleap\SVN\Repository\CoreRepository;
+use Tuleap\SVN\Repository\Destructor;
+use Tuleap\SVN\Admin\ImmutableTagCreator;
+use Tuleap\SVN\Admin\ImmutableTagDao;
+use Tuleap\SVN\Admin\ImmutableTagFactory;
+use Tuleap\SVN\Admin\MailNotificationDao;
+use Tuleap\SVN\Admin\MailNotificationManager;
+use Tuleap\SVN\Dao;
+use Tuleap\SVN\Migration\BareRepositoryCreator;
+use Tuleap\SVN\Migration\SettingsRetriever;
+use Tuleap\SVN\Migration\SvnMigratorException;
+use Tuleap\SVN\Notifications\NotificationsEmailsBuilder;
+use Tuleap\SVN\Notifications\UgroupsToNotifyDao;
+use Tuleap\SVN\Notifications\UsersToNotifyDao;
+use Tuleap\SVN\Repository\HookConfigChecker;
+use Tuleap\SVN\Repository\HookConfigRetriever;
+use Tuleap\SVN\Repository\HookConfigSanitizer;
+use Tuleap\SVN\Repository\HookConfigUpdator;
+use Tuleap\SVN\Repository\HookDao;
+use Tuleap\SVN\Repository\ProjectHistoryFormatter;
+use Tuleap\SVN\Repository\RepositoryCreator;
+use Tuleap\SVN\Repository\RepositoryManager;
+use Tuleap\SVN\Repository\RepositoryRegexpBuilder;
+use Tuleap\SVN\SvnAdmin;
+use Tuleap\SVN\SvnPermissionManager;
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/svnPlugin.php';
 
 function usage()
 {
     global $argv;
 
     echo <<< EOT
-Usage: $argv[0] project repository_name
+Usage: $argv[0] <project> <user>
 
 Migrate the core repository into plugin
 
   - <project>    The id of the project to import the archive
-  - <repository> The repository name we want to create
   - <user>       The user we want to use for creation
 
 EOT;
     exit(1);
 }
 
-if (count($argv) != 4) {
+if (count($argv) != 3) {
     usage();
 }
 
@@ -92,15 +91,13 @@ if (! $project->getID()) {
     exit(1);
 }
 
-$repository_name = $argv[2];
-$user_name       = $argv[3];
-
 $system_command = new System_Command();
-$logger         = new BackendLogger();
-$svn_admin      = new SvnAdmin($system_command, $logger, Backend::instance('SVN'));
-$dao            = new Dao();
+$logger         = BackendLogger::getDefaultLogger();
+$backend_svn    = Backend::instance('SVN');
+assert($backend_svn instanceof BackendSVN);
+$svn_admin = new SvnAdmin($system_command, $logger, $backend_svn);
+$dao       = new Dao();
 
-$repository                  = new Repository("", $repository_name, '', '', $project);
 $hook_dao                    = new HookDao();
 $immutable_tag_dao           = new ImmutableTagDao();
 $project_history_formatter   = new ProjectHistoryFormatter();
@@ -110,7 +107,8 @@ $access_file_history_creator = new AccessFileHistoryCreator(
     new AccessFileHistoryDao(),
     $access_file_factory,
     $project_history_dao,
-    $project_history_formatter
+    $project_history_formatter,
+    $backend_svn
 );
 
 $repository_creator = new RepositoryCreator(
@@ -118,7 +116,6 @@ $repository_creator = new RepositoryCreator(
     SystemEventManager::instance(),
     new ProjectHistoryDao(),
     new SvnPermissionManager(
-        new \User_ForgeUserGroupFactory(new \UserGroupDao()),
         \PermissionsManager::instance()
     ),
     new HookConfigUpdator(
@@ -153,34 +150,28 @@ $repository_manager = new RepositoryManager(
     $logger,
     $system_command,
     new Destructor(new Dao(), $logger),
-    $event_manager,
-    BackendSVN::instance(),
+    EventManager::instance(),
+    Backend::instanceSVN(),
     $access_file_factory
 );
 
 $svn_creator = new BareRepositoryCreator(
     $repository_creator,
-    $access_file_history_creator,
-    $repository_manager,
-    $user_manager,
-    Backend::instance(Backend::SVN),
-    Backend::instance(Backend::SYSTEM),
-    new RepositoryCopier($system_command),
     new SettingsRetriever(new SVN_Immutable_Tags_DAO(), new SvnNotificationDao(), new SVN_AccessFile_DAO())
 );
 
 $permission_manager = new SvnPermissionManager(
-    new User_ForgeUserGroupFactory(new UserGroupDao()),
     new PermissionsManager(new PermissionsDao())
 );
 
-$user = UserManager::instance()->getUserByUserName($user_name);
+$user = UserManager::instance()->getUserByUserName($argv[2]);
 if (! $permission_manager->isAdmin($project, $user)) {
     fwrite(STDERR, "User should be SVN administrator to be able to do the migration\n");
     exit(1);
 }
 
 try {
+    $repository = CoreRepository::buildToBeCreatedRepository($project);
     $svn_creator->create($repository, $user);
 } catch (SvnMigratorException $e) {
     fwrite(STDERR, $e->getMessage() . "\n");

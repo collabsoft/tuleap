@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,26 +25,19 @@ use GitRepository;
 use Feedback;
 use GitDaoException;
 use ProjectHistoryDao;
-use Git_SystemEventManager;
 
 class DescriptionUpdater
 {
-    const MAX_LENGTH = 1024;
-
-    /**
-     * @var Git_SystemEventManager
-     */
-    private $git_system_event_manager;
+    public const MAX_LENGTH = 1024;
 
     /**
      * @var ProjectHistoryDao
      */
     private $history_dao;
 
-    public function __construct(ProjectHistoryDao $history_dao, Git_SystemEventManager $git_system_event_manager)
+    public function __construct(ProjectHistoryDao $history_dao)
     {
-        $this->history_dao              = $history_dao;
-        $this->git_system_event_manager = $git_system_event_manager;
+        $this->history_dao = $history_dao;
     }
 
     public function updateDescription(GitRepository $repository, $description)
@@ -52,7 +45,7 @@ class DescriptionUpdater
         if (strlen($description) > self::MAX_LENGTH) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_git', 'actions_long_description')
+                dgettext('tuleap-git', 'Too long description')
             );
 
             $this->redirect($repository);
@@ -71,7 +64,7 @@ class DescriptionUpdater
 
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText('plugin_git', 'actions_save_repo_process')
+                dgettext('tuleap-git', 'Repository informations have been saved')
             );
 
             $this->redirect($repository);
@@ -92,12 +85,12 @@ class DescriptionUpdater
         $project_id    = $repository->getProjectId();
         $repository_id = $repository->getId();
 
-        $query_parts = array(
+        $query_parts = [
             'action'   => 'repo_management',
             'group_id' => $project_id,
             'repo_id'  => $repository_id,
             'pane'     => 'settings'
-        );
+        ];
 
         $url = "/plugins/git/?" . http_build_query($query_parts);
 

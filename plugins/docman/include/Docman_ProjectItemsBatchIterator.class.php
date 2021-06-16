@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,44 +18,44 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Docman_ProjectItemsBatchIterator {
+class Docman_ProjectItemsBatchIterator
+{
 
-    const ITEMS_PER_BATCH = 1000;
+    public const ITEMS_PER_BATCH = 1000;
 
     private $batches_processed;
 
     /* Docman_ItemFactory */
     private $item_factory;
 
-    private $project_id;
-
-    public function __construct(Docman_ItemFactory $item_factory, $project_id) {
+    public function __construct(Docman_ItemFactory $item_factory)
+    {
         $this->item_factory = $item_factory;
-        $this->project_id   = $project_id;
     }
 
     /**
-     * @return Docman_File[]
+     * @return Docman_Item[]
      */
-    public function next() {
+    public function next()
+    {
         $this->batches_processed++;
 
         return $this->current();
     }
 
     /**
-     * @return Docman_File[]
+     * @return Docman_Item[]
      */
-    public function current() {
-        $offset = max(array(self::ITEMS_PER_BATCH * $this->batches_processed, 0));
+    public function current()
+    {
+        $offset = max([self::ITEMS_PER_BATCH * $this->batches_processed, 0]);
         $limit  = self::ITEMS_PER_BATCH;
 
         return $this->item_factory->searchPaginatedWithVersionByGroupId($limit, $offset);
     }
 
-    public function rewind() {
+    public function rewind()
+    {
         $this->batches_processed = -1;
     }
 }
-
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ use Tuleap\Event\Dispatchable;
 
 class DefaultSettingsPanesCollection implements Dispatchable
 {
-    const NAME = 'collectDefaultSettingsPanes';
+    public const NAME = 'collectDefaultSettingsPanes';
 
     /**
      * @var Pane[]
@@ -42,7 +42,7 @@ class DefaultSettingsPanesCollection implements Dispatchable
 
     public function __construct(Project $project, $current_pane)
     {
-        $this->project = $project;
+        $this->project      = $project;
         $this->current_pane = $current_pane;
     }
 

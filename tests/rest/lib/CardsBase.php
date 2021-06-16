@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use RestBase;
 
 class CardsBase extends RestBase
 {
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 

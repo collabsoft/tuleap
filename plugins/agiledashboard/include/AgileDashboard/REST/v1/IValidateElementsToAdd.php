@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 
 namespace Tuleap\AgileDashboard\REST\v1;
 
-interface IValidateElementsToAdd {
+interface IValidateElementsToAdd
+{
 
     /**
      * Will throw exceptions if on of the element in $to_add is not valid

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,7 @@ namespace Tuleap\Tracker\REST\v1;
 
 class ArtifactMatchingReportCollection
 {
-    /** @var \Tracker_Artifact[] */
+    /** @var \Tuleap\Tracker\Artifact\Artifact[] */
     private $artifacts;
     /** @var int */
     private $total_size;
@@ -34,7 +34,7 @@ class ArtifactMatchingReportCollection
     }
 
     /**
-     * @return \Tracker_Artifact[]
+     * @return \Tuleap\Tracker\Artifact\Artifact[]
      */
     public function getArtifacts()
     {

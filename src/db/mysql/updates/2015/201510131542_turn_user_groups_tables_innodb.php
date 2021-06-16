@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,26 +18,28 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201510131542_turn_user_groups_tables_innodb extends ForgeUpgrade_Bucket {
+class b201510131542_turn_user_groups_tables_innodb extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'Turn user groups tables to innodb';
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
-
-        $tables = array(
+    public function up()
+    {
+        $tables = [
             'ugroup_user',
             'user_group '
-        );
+        ];
 
         foreach ($tables as $table) {
             if (! $this->isTableInnoDB($table)) {
-
                 $this->log->info("Convert $table");
 
                 $sql    = "ALTER TABLE $table ENGINE = InnoDB";
@@ -51,7 +53,8 @@ class b201510131542_turn_user_groups_tables_innodb extends ForgeUpgrade_Bucket {
         }
     }
 
-    private function isTableInnoDB($table) {
+    private function isTableInnoDB($table)
+    {
         $sql    = "SHOW TABLE STATUS WHERE Name = '$table' AND Engine = 'InnoDB'";
         $result = $this->db->dbh->query($sql);
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,18 +19,23 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class PaginatedWikiPagesFactory {
+use Tuleap\PHPWiki\WikiPage;
+
+class PaginatedWikiPagesFactory
+{
 
     /** @var WikiDao */
     private $dao;
 
-    public function __construct(WikiDao $dao) {
+    public function __construct(WikiDao $dao)
+    {
         $this->dao = $dao;
     }
 
     /** @return PaginatedWikiPages */
-    public function getPaginatedUserPages(PFUser $user, $project_id, $limit, $offset, $pagename) {
-        $pages = array();
+    public function getPaginatedUserPages(PFUser $user, $project_id, $limit, $offset, $pagename)
+    {
+        $pages = [];
 
         if ($pagename !== '') {
             $row_pages = $this->dao->searchPaginatedUserWikiPagesByPagename(
@@ -54,7 +59,6 @@ class PaginatedWikiPagesFactory {
             if ($wiki_page->isAutorized($user->getId())) {
                 $pages[] = $wiki_page;
             }
-
         }
 
         return new PaginatedWikiPages($pages, $total_size);

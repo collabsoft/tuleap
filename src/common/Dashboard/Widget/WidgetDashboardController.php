@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -25,8 +25,8 @@ use HTTPRequest;
 
 class WidgetDashboardController
 {
-    const USER_DASHBOARD_TYPE    = 'user';
-    const PROJECT_DASHBOARD_TYPE = 'project';
+    public const USER_DASHBOARD_TYPE    = 'user';
+    public const PROJECT_DASHBOARD_TYPE = 'project';
     /**
      * @var CSRFSynchronizerToken
      */
@@ -90,8 +90,8 @@ class WidgetDashboardController
         $new_line_rank   = $request->get('new-line-rank');
         $new_column_rank = $request->get('new-column-rank');
 
-        $new_ids     = array();
-        $deleted_ids = array();
+        $new_ids     = [];
+        $deleted_ids = [];
 
         if ($dashboard_id === false || $widget_id === false || $new_widget_rank === false) {
             return;
@@ -101,7 +101,8 @@ class WidgetDashboardController
         $widget_to_update = $this->widget_retriever->getWidgetById($widget_id);
         $old_column_id    = $widget_to_update->getColumnId();
 
-        if ($new_column_id === $old_column_id
+        if (
+            $new_column_id === $old_column_id
             && $widget_to_update->getRank() === $new_widget_rank
         ) {
             return;
@@ -142,11 +143,10 @@ class WidgetDashboardController
         $deleted_ids = $this->deleteColumnIfEmpty($old_column, $deleted_ids);
         $deleted_ids = $this->deleteLineIfEmpty($old_column, $deleted_ids);
 
-        $GLOBALS['Response']->sendJSON(array('new_ids' => $new_ids, 'deleted_ids' => $deleted_ids));
+        $GLOBALS['Response']->sendJSON(['new_ids' => $new_ids, 'deleted_ids' => $deleted_ids]);
     }
 
     /**
-     * @param HTTPRequest $request
      * @param $dashboard_type
      * @return bool
      */
@@ -155,7 +155,7 @@ class WidgetDashboardController
         $user = $request->getCurrentUser();
         if ($dashboard_type === self::USER_DASHBOARD_TYPE) {
             return $user->isLoggedIn();
-        } else if ($dashboard_type === self::PROJECT_DASHBOARD_TYPE) {
+        } elseif ($dashboard_type === self::PROJECT_DASHBOARD_TYPE) {
             $project = $request->getProject();
             return $user->isAdmin($project->getID());
         }
@@ -183,7 +183,7 @@ class WidgetDashboardController
         array $new_ids
     ) {
         if (empty($new_line_id) && empty($new_column_id)) {
-            $new_line_id = strval(
+            $new_line_id            = strval(
                 $this->widget_creator->createLine(
                     $dashboard_id,
                     $dashboard_type,
@@ -193,7 +193,7 @@ class WidgetDashboardController
             );
             $new_ids['new_line_id'] = $new_line_id;
         }
-        return array($new_line_id, $new_ids);
+        return [$new_line_id, $new_ids];
     }
 
     /**
@@ -206,8 +206,8 @@ class WidgetDashboardController
     private function createColumnIfDoesNotExist($new_line_id, $new_column_id, $new_column_rank, array $new_ids)
     {
         if ($new_line_id && empty($new_column_id)) {
-            $columns       = $this->widget_retriever->getColumnsByLineById($new_line_id);
-            $new_column_id = strval(
+            $columns                  = $this->widget_retriever->getColumnsByLineById($new_line_id);
+            $new_column_id            = strval(
                 $this->widget_creator->createColumn(
                     $new_line_id,
                     $columns,
@@ -216,11 +216,10 @@ class WidgetDashboardController
             );
             $new_ids['new_column_id'] = $new_column_id;
         }
-        return array($new_column_id, $new_ids);
+        return [$new_column_id, $new_ids];
     }
 
     /**
-     * @param DashboardWidgetColumn $old_column
      * @param array $deleted_ids
      * @return array
      */
@@ -234,7 +233,6 @@ class WidgetDashboardController
     }
 
     /**
-     * @param DashboardWidgetColumn $old_column
      * @param array $deleted_ids
      * @return array
      */

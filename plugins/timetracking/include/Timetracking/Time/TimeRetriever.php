@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,11 @@
 namespace Tuleap\Timetracking\Time;
 
 use PFUser;
-use Tracker_Artifact;
+use Project;
+use ProjectManager;
+use Tuleap\Timetracking\Admin\AdminDao;
 use Tuleap\Timetracking\Permissions\PermissionsRetriever;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class TimeRetriever
 {
@@ -35,24 +38,36 @@ class TimeRetriever
      */
     private $permissions_retriever;
 
-    public function __construct(TimeDao $dao, PermissionsRetriever $permissions_retriever)
+    /**
+     * @var ProjectManager
+     */
+    private $project_manager;
+
+    /**
+     * @var AdminDao
+     */
+    private $admin_dao;
+
+    public function __construct(TimeDao $dao, PermissionsRetriever $permissions_retriever, AdminDao $admin_dao, ProjectManager $project_manager)
     {
         $this->dao                   = $dao;
+        $this->admin_dao             = $admin_dao;
         $this->permissions_retriever = $permissions_retriever;
+        $this->project_manager       = $project_manager;
     }
 
     /**
      * @return Time[]
      */
-    public function getTimesForUser(PFUser $user, Tracker_Artifact $artifact)
+    public function getTimesForUser(PFUser $user, Artifact $artifact)
     {
-        $times = array();
+        $times = [];
 
-        if ($this->permissions_retriever->userCanSeeAggregatedTimesInTracker($user, $artifact->getTracker())) {
+        if ($this->permissions_retriever->userCanSeeAllTimesInTracker($user, $artifact->getTracker())) {
             foreach ($this->dao->getAllTimesAddedInArtifact($artifact->getId()) as $row_time) {
                 $times[] = $this->buildTimeFromRow($row_time);
             }
-        } else if ($this->permissions_retriever->userCanAddTimeInTracker($user, $artifact->getTracker())) {
+        } elseif ($this->permissions_retriever->userCanAddTimeInTracker($user, $artifact->getTracker())) {
             foreach ($this->dao->getTimesAddedInArtifactByUser($user->getId(), $artifact->getId()) as $row_time) {
                 $times[] = $this->buildTimeFromRow($row_time);
             }
@@ -61,13 +76,27 @@ class TimeRetriever
         return $times;
     }
 
+    /**
+     * @return Project[]
+     */
+    public function getProjectsWithTimetracking(PFUser $user, $limit, $offset)
+    {
+        $projects = [];
+        foreach ($this->admin_dao->getProjectstWithEnabledTimetracking($limit, $offset) as $project_id) {
+            if ($user->isMember($project_id["group_id"])) {
+                $projects[] = $this->project_manager->getProject($project_id["group_id"]);
+            }
+        }
+
+        return $projects;
+    }
 
     /**
      * @return PaginatedTimes
      */
     public function getPaginatedTimesForUserInTimePeriodByArtifact(PFUser $user, $start_date, $end_date, $limit, $offset)
     {
-        $times = [];
+        $times              = [];
         $matching_times_ids = $this->dao->searchTimesIdsForUserInTimePeriodByArtifact(
             $user->getId(),
             $start_date,
@@ -92,7 +121,7 @@ class TimeRetriever
     /**
      * @return Time
      */
-    public function getLastTime(PFUser $user, Tracker_Artifact $artifact)
+    public function getLastTime(PFUser $user, Artifact $artifact)
     {
         return $this->buildTimeFromRow($this->dao->getLastTime($user->getId(), $artifact->getId()));
     }

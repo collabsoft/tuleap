@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2011-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2011-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -30,18 +30,19 @@
  * https://github.com/sitaramc/gitolite/blob/pu/contrib/ldap/ldap-query-example.pl
  */
 
-require_once 'pre.php';
-require_once 'common/project/UGroupLiteralizer.class.php';
+use Tuleap\Project\UGroupLiteralizer;
 
-if (!isset($argv[1])) {
-    echo "Usage: ".$argv[0]." username".PHP_EOL;
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+
+if (! isset($argv[1])) {
+    echo "Usage: " . $argv[0] . " username" . PHP_EOL;
     exit(1);
 }
 
 $ugroup_literalizer = new UGroupLiteralizer();
-$groups = $ugroup_literalizer->getUserGroupsForUserName($argv[1]);
+$groups             = $ugroup_literalizer->getUserGroupsForUserName($argv[1]);
 if (count($groups) > 0) {
-    echo implode(' ', $groups).PHP_EOL;
+    echo implode(' ', $groups) . PHP_EOL;
 }
 
 ?>

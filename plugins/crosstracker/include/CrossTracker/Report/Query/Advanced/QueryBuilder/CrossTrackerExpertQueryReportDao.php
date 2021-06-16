@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -68,9 +68,9 @@ class CrossTrackerExpertQueryReportDao extends DataAccessObject
                 ORDER BY tracker_artifact.id DESC
                 LIMIT ?, ?";
 
-        $parameters = $this->getFromParameters($unique_parametrized_from);
-        $parameters = array_merge($parameters, $tracker_ids_statement->values());
-        $parameters = array_merge($parameters, $from_where->getWhereParameters());
+        $parameters   = $this->getFromParameters($unique_parametrized_from);
+        $parameters   = array_merge($parameters, $tracker_ids_statement->values());
+        $parameters   = array_merge($parameters, $from_where->getWhereParameters());
         $parameters[] = $offset;
         $parameters[] = $limit;
 

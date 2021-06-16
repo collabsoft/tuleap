@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,21 +18,30 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-require_once 'common/encoding/SupportedXmlCharEncoding.class.php';
+
+use Tuleap\Markdown\CommonMarkInterpreter;
+use Tuleap\Markdown\EnhancedCodeBlockExtension;
+use Tuleap\Tracker\Artifact\ChangesetValue\Text\FollowUpPresenter;
+use Tuleap\Tracker\Artifact\CodeBlockFeaturesOnArtifact;
+use Tuleap\Tracker\REST\Artifact\ArtifactFieldValueCommonmarkRepresentation;
+use Tuleap\Tracker\REST\Artifact\ArtifactFieldValueTextRepresentation;
 
 /**
  * Manage values in changeset for string fields
  */
-class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetValue {
+class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetValue
+{
     /**
      * @const Changeset comment format is text.
      */
-    const TEXT_CONTENT = 'text';
+    public const TEXT_CONTENT = 'text';
 
     /**
      * @const Changeset comment format is HTML
      */
-    const HTML_CONTENT = 'html';
+    public const HTML_CONTENT = 'html';
+
+    public const COMMONMARK_CONTENT = 'commonmark';
 
     private static $MAX_LENGTH_FOR_DIFF = 20000;
 
@@ -42,7 +51,8 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
     /** @var string */
     private $format;
 
-    public function __construct($id, Tracker_Artifact_Changeset $changeset, $field, $has_changed, $text, $format) {
+    public function __construct($id, Tracker_Artifact_Changeset $changeset, $field, $has_changed, $text, $format)
+    {
         parent::__construct($id, $changeset, $field, $has_changed);
         $this->text   = $text;
         $this->format = $format;
@@ -51,7 +61,8 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
     /**
      * @return mixed
      */
-    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor) {
+    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor)
+    {
         return $visitor->visitText($this);
     }
 
@@ -60,60 +71,52 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
      *
      * @return string the text
      */
-    public function getText() {
+    public function getText()
+    {
         return (string) $this->text;
     }
 
-    public function getFormat() {
-        if ($this->format == NULL) {
+    public function getFormat(): string
+    {
+        // Changing to === breaks some REST tests
+        if ($this->format == null) {
             return self::TEXT_CONTENT;
         }
+
         return $this->format;
     }
 
-    /**
-     * Return a string that will be use in SOAP API
-     * as the value of this ChangesetValue_Text
-     *
-     * @param PFUser $user
-     *
-     * @return string The value of this artifact changeset value for Soap API
-     */
-    public function getSoapValue(PFUser $user) {
-        return $this->encapsulateRawSoapValue($this->getText());
-    }
-
-    /**
-     * By default, changeset values are returned as string in 'value' field
-     */
-    protected function encapsulateRawSoapValue($value) {
-        $value = Encoding_SupportedXmlCharEncoding::getXMLCompatibleString($value);
-
-        return array('value' => $value);
-    }
-
-
-    public function getRESTValue(PFUser $user) {
+    public function getRESTValue(PFUser $user)
+    {
         return $this->getFullRESTValue($user);
     }
 
-    public function getFullRESTValue(PFUser $user) {
+    public function getFullRESTValue(PFUser $user)
+    {
         return $this->getFullRESTRepresentation($this->getText());
     }
 
-    protected function getFullRESTRepresentation($value) {
-        $classname_with_namespace = 'Tuleap\Tracker\REST\Artifact\ArtifactFieldValueTextRepresentation';
+    protected function getFullRESTRepresentation($value)
+    {
+        if ($this->format === self::COMMONMARK_CONTENT) {
+            $text_field_value = $this->interpretMarkdownContent($value);
+            $commonmark_value = $value;
+            return new ArtifactFieldValueCommonmarkRepresentation(
+                $this->field->getId(),
+                Tracker_FormElementFactory::instance()->getType($this->field),
+                $this->field->getLabel(),
+                $text_field_value,
+                $commonmark_value
+            );
+        }
 
-        $artifact_field_value_full_representation = new $classname_with_namespace;
-        $artifact_field_value_full_representation->build(
+        return new ArtifactFieldValueTextRepresentation(
             $this->field->getId(),
             Tracker_FormElementFactory::instance()->getType($this->field),
             $this->field->getLabel(),
             $value,
             $this->getFormat()
         );
-
-        return $artifact_field_value_full_representation;
     }
 
     /**
@@ -121,11 +124,14 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
      *
      * @return string The value of this artifact changeset value
      */
-    public function getValue() {
+    public function getValue()
+    {
         $hp = Codendi_HTMLPurifier::instance();
 
         if ($this->isInHTMLFormat()) {
             return $hp->purifyHTMLWithReferences($this->getText(), $this->field->getTracker()->getProject()->getID());
+        } elseif ($this->format === self::COMMONMARK_CONTENT) {
+            return $this->interpretMarkdownContent($this->getText());
         }
         return $hp->purifyTextWithReferences($this->getText(), $this->field->getTracker()->getProject()->getID());
     }
@@ -133,9 +139,9 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
     /**
      * Get the diff between this changeset value and the one passed in param
      *
-     * @return string The difference between another $changeset_value, false if no differences
+     * @return string|false The difference between another $changeset_value, false if no differences
      */
-    public function diff($changeset_value, $format = 'html', PFUser $user = null, $ignore_perms = false)
+    public function diff($changeset_value, $format = 'html', ?PFUser $user = null, $ignore_perms = false)
     {
         $previous_text = $changeset_value->getText();
         $next_text     = $this->getText();
@@ -148,17 +154,16 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
         return $this->fetchDiff($previous, $next, $format);
     }
 
-    public function modalDiff($changeset_value, $format = 'modal', PFUser $user = null) {
-        return $this->diff($changeset_value, 'modal', $user);
-    }
-
+    /**
+     * @return false|string
+     */
     public function mailDiff(
         $changeset_value,
         $artifact_id,
         $changeset_id,
         $ignore_perms,
         $format = 'html',
-        PFUser $user = null
+        ?PFUser $user = null
     ) {
         $previous = explode(PHP_EOL, $changeset_value->getText());
         $next     = explode(PHP_EOL, $this->getText());
@@ -166,7 +171,7 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
 
         switch ($format) {
             case 'html':
-                $formated_diff = $this->getFormatedDiff($previous, $next);
+                $formated_diff = $this->getFormattedDiff($previous, $next, CODENDI_PURIFIER_CONVERT_HTML);
                 if ($formated_diff) {
                     $string = $this->fetchHtmlMailDiff($formated_diff, $artifact_id, $changeset_id);
                 }
@@ -174,7 +179,7 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
             case 'text':
                 $diff      = new Codendi_Diff($previous, $next);
                 $formatter = new Codendi_UnifiedDiffFormatter();
-                $string    = PHP_EOL.$formatter->format($diff);
+                $string    = PHP_EOL . $formatter->format($diff);
                 break;
             default:
                 break;
@@ -186,10 +191,11 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
     /**
      * @return string text to be displayed in mail notifications when the text has been changed
      */
-    protected function fetchHtmlMailDiff($formated_diff, $artifact_id, $changeset_id) {
-        $url      = HTTPRequest::instance()->getServerUrl().TRACKER_BASE_URL.'/?aid='.$artifact_id.'#followup_'.$changeset_id;
+    protected function fetchHtmlMailDiff($formated_diff, $artifact_id, $changeset_id)
+    {
+        $url = HTTPRequest::instance()->getServerUrl() . TRACKER_BASE_URL . '/?aid=' . $artifact_id . '#followup_' . $changeset_id;
 
-        return '<a href="'.$url.'">' . $GLOBALS['Language']->getText('plugin_tracker_include_artifact', 'goto_diff') . '</a>';
+        return '<a href="' . $url . '">' . dgettext('tuleap-tracker', 'Go to diff') . '</a>';
     }
 
     /**
@@ -197,77 +203,102 @@ class Tracker_Artifact_ChangesetValue_Text extends Tracker_Artifact_ChangesetVal
      *
      * @return string The sentence to add in changeset
      */
-    public function nodiff($format = 'html') {
+    public function nodiff($format = 'html')
+    {
         $next = $this->getText();
         if ($next != '') {
-            $previous = array('');
+            $previous = [''];
             $next     = explode(PHP_EOL, $this->getText());
             return $this->fetchDiff($previous, $next, $format);
         }
     }
 
-    /**
-    * Display the diff in changeset
-    *
-    * @return string The text to display
-    */
-    public function fetchDiff($previous, $next, $format) {
-        $string = '';
-        switch ($format) {
-            case 'text':
-                $diff = new Codendi_Diff($previous, $next);
-                $f    = new Codendi_UnifiedDiffFormatter();
-                $string .= PHP_EOL.$f->format($diff);
-                break;
-            case 'html':
-                $formated_diff = $this->getFormatedDiff($previous, $next);
-                if ($formated_diff) {
-                    $string = $this->fetchDiffInFollowUp($formated_diff);
-                }
-                break;
-            case 'modal':
-                $formated_diff = $this->getFormatedDiff($previous, $next);
-                if ($formated_diff) {
-                    $string = '<div class="diff">'. $formated_diff .'</div>';
-                }
-            default:
-                break;
+    public function fetchDiff(array $previous, array $next, string $format): string
+    {
+        if ($previous === $next) {
+            return "";
         }
-        return $string;
+        return $this->fetchDiffInFollowUp("");
     }
 
-    /**
-     * @return string text to be displayed in web ui when the text has been changed
-     */
-    protected function fetchDiffInFollowUp($formated_diff) {
-        $html  = '';
-        $html .= '<button class="btn btn-mini toggle-diff">' . $GLOBALS['Language']->getText('plugin_tracker_include_artifact', 'toggle_diff') . '</button>';
-        $html .= '<div class="diff" style="display: none">'. $formated_diff .'</div>';
+    protected function fetchDiffInFollowUp(string $formated_diff): string
+    {
+        $renderer = TemplateRendererFactory::build()->getRenderer(TRACKER_TEMPLATE_DIR);
 
-        return $html;
+        $field = $this->getField();
+        if (! $field instanceof Tracker_FormElement_Field_Text) {
+            throw new LogicException("Field " . $field->getId() . " is not a text field");
+        }
+
+        $presenter = new FollowUpPresenter(
+            $this->getChangeset()->getArtifact(),
+            $field,
+            $this
+        );
+
+        return $renderer->renderToString(
+            'form-element/text/follow-up-content',
+            $presenter
+        );
     }
 
-    private function getFormatedDiff($previous, $next) {
-        $callback = array(Codendi_HTMLPurifier::instance(), 'purify');
+    public function getFormattedDiff(array $previous, array $next, int $purifier_level): string
+    {
+        $callback = [Codendi_HTMLPurifier::instance(), 'purify'];
         $formater = new Codendi_HtmlUnifiedDiffFormatter();
         $diff     = new Codendi_Diff(
-            array_map($callback, $previous, array_fill(0, count($previous), CODENDI_PURIFIER_CONVERT_HTML)),
-            array_map($callback, $next,     array_fill(0, count($next),     CODENDI_PURIFIER_CONVERT_HTML))
+            array_map($callback, $previous, array_fill(0, count($previous), $purifier_level)),
+            array_map($callback, $next, array_fill(0, count($next), $purifier_level))
         );
 
         return $formater->format($diff);
     }
 
-    public function getContentAsText() {
+    public function getContentAsText()
+    {
         $hp = Codendi_HTMLPurifier::instance();
         if ($this->isInHTMLFormat()) {
             return $hp->purify($this->getText(), CODENDI_PURIFIER_STRIP_HTML);
+        }
+        if ($this->format === self::COMMONMARK_CONTENT) {
+            return self::getCommonMarkInterpreter($hp)->getContentStrippedOfTags($this->getText());
         }
 
         return $this->getText();
     }
 
-    private function isInHTMLFormat() {
-        return $this->getFormat() == self::HTML_CONTENT;
+    public function getTextWithReferences(int $group_id): string
+    {
+        $hp = Codendi_HTMLPurifier::instance();
+        if ($this->isInHTMLFormat()) {
+            return $hp->purifyHTMLWithReferences($this->getText(), $group_id);
+        }
+
+        return $hp->purifyTextWithReferences($this->getText(), $group_id);
+    }
+
+    private function isInHTMLFormat(): bool
+    {
+        return $this->format === self::HTML_CONTENT;
+    }
+
+    private function interpretMarkdownContent(string $text): string
+    {
+        $content_interpreter = self::getCommonMarkInterpreter(Codendi_HTMLPurifier::instance());
+
+        $interpreted_content_with_references = $content_interpreter->getInterpretedContentWithReferences(
+            $text,
+            (int) $this->changeset->getTracker()->getGroupId()
+        );
+
+        return $interpreted_content_with_references;
+    }
+
+    private static function getCommonMarkInterpreter(Codendi_HTMLPurifier $purifier): CommonMarkInterpreter
+    {
+        return CommonMarkInterpreter::build(
+            Codendi_HTMLPurifier::instance(),
+            new EnhancedCodeBlockExtension(CodeBlockFeaturesOnArtifact::getInstance())
+        );
     }
 }

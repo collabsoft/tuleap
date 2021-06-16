@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,6 @@ use Tuleap\Tracker\Report\Query\Advanced\Grammar\Visitable;
 interface IBuildInvalidSearchablesCollection
 {
     /**
-     * @param Visitable $parsed_expert_query
      * @return InvalidSearchablesCollection
      */
     public function buildCollectionOfInvalidSearchables(Visitable $parsed_expert_query);

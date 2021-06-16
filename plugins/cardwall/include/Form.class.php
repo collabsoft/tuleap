@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 /**
  * A form presenter to let the use choose the columns on the cardwall
  */
-class Cardwall_Form {
+class Cardwall_Form
+{
 
     /**
      * @var int
@@ -63,26 +64,27 @@ class Cardwall_Form {
      */
     public $submit;
 
-    public function __construct($report_id, $renderer_id, $printer_version, $field, array $selectboxes) {
-        $this->report_id           = (int)$report_id;
-        $this->renderer_id         = (int)$renderer_id;
-        $this->printer_version     = (int)$printer_version;
+    public function __construct($report_id, $renderer_id, $printer_version, $field, array $selectboxes)
+    {
+        $this->report_id           = (int) $report_id;
+        $this->renderer_id         = (int) $renderer_id;
+        $this->printer_version     = (int) $printer_version;
         $this->has_printer_version = $printer_version === false;
-        $this->possible_columns    = array();
+        $this->possible_columns    = [];
         $this->one_selected        = false;
 
         $current_field_id = $field ? $field->getId() : false;
-        foreach($selectboxes as $form_element) {
+        foreach ($selectboxes as $form_element) {
             if ($form_element->userCanRead() && count($form_element->getAllValues())) {
                 $selected = false;
                 if ($form_element->getId() == $current_field_id) {
                     $selected           = true;
                     $this->one_selected = true;
                 }
-                $this->possible_columns[] = array(
+                $this->possible_columns[] = [
                     'field'    => $form_element,
                     'selected' => $selected
-                );
+                ];
             }
         }
         $this->has_possible_columns = count($this->possible_columns) > 0;
@@ -90,4 +92,3 @@ class Cardwall_Form {
         $this->please_choose_dashed = $GLOBALS['Language']->getText('global', 'please_choose_dashed');
     }
 }
-?>

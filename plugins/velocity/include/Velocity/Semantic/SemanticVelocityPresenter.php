@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -89,7 +89,7 @@ class SemanticVelocityPresenter
         BacklogRequiredTrackerCollection $backlog_required_tracker_collection,
         ChildrenRequiredTrackerCollection $children_required_tracker_collection,
         $has_at_least_one_tracker_correctly_configured,
-        Tracker_FormElement_Field $velocity_field = null
+        ?Tracker_FormElement_Field $velocity_field = null
     ) {
         $this->semantic_done_is_defined = $semantic_done_is_defined;
         $this->velocity_field           = $velocity_field;
@@ -107,9 +107,9 @@ class SemanticVelocityPresenter
         $this->are_all_backlog_trackers_misconfigured = $backlog_required_tracker_collection->areAllBacklogTrackersMisconfigured();
 
         $this->has_at_least_one_tracker_correctly_configured = $has_at_least_one_tracker_correctly_configured;
-        $this->nb_semantic_misconfigured = $children_required_tracker_collection->getNbTrackersWithoutVelocitySemantic()
+        $this->nb_semantic_misconfigured                     = $children_required_tracker_collection->getNbTrackersWithoutVelocitySemantic()
             + $backlog_required_tracker_collection->getNbMisconfiguredTrackers();
-        $this->semantics_not_correctly_set = $this->getMisconfiguredSemantics($backlog_required_tracker_collection);
+        $this->semantics_not_correctly_set                   = $this->getMisconfiguredSemantics($backlog_required_tracker_collection);
     }
 
     private function getMisconfiguredSemantics(BacklogRequiredTrackerCollection $backlog_required_tracker_collection)

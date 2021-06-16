@@ -14,14 +14,11 @@ project_admin_editgroupinfo	soft_required	Autre(s) logiciel(s) requis
 project_admin_editgroupinfo	comments	Autre commentaires&nbsp;:
 project_admin_editgroupinfo	autocompleter_placeholder	Nom du projet (auto completé à la volée)
 project_admin_editgroupinfo	visibility_section	Accès
-project_admin_editgroupinfo	private_label	privé
-project_admin_editgroupinfo	public_label	publique
 project_admin_editgroupinfo	use_truncated_emails	Utiliser les courriels tronqués
 project_admin_editgroupinfo	truncated_emails_title	Courriels Tronqués
 project_admin_editgroupinfo	truncated_emails_impacted_services_introduction	Les courriels tronqués sont des courriels dont le contenu a été vidé (pour des raisons de confidentialité) et a été remplacé par un lien vers la ressource modifée.
 project_admin_editgroupinfo	truncated_emails_impacted_services_no_available	Aucun service utilisant les courriels tronqués n'est activé.
 project_admin_editgroupinfo	truncated_emails_impacted_services_impacted_services	Services impactés :
-project_admin_editgroupinfo	unrestricted_label	publique incluant les utilisateurs restreints
 project_admin_editgroupinfo	restricted_warning	Seuls ses membres peuvent accéder à un projet <b>privé</b>. <br>Un projet <b>public</b> est accessible à tous, <b>sauf les utilsateurs restreints</b>. <br>Il est <b>déconseillé d'autoriser l'accès</b> à un projet public à des <b>utilsateurs restreints</b> sans bonne raison.<br />Notez que la visibilité <b>Publique incluant les utilisateurs restreints</b> ne s'applique qu'à <em>la page d'accueil du projet</em>, à <em>Mediawiki</em> et aux <em>dépôts Git</em>.
 project_admin_editgroupinfo	general_warning	Seuls ses membres peuvent accéder à un projet <b>privé</b> <br>Un projet <b>public</b> est accessible à tous.
 project_admin_editgroupinfo	under_construction	Page en cours de construction.
@@ -74,9 +71,6 @@ project_admin_editugroup	edit_ug	Modifier les groupes d'utilisateurs
 # Script: SF/www/project/admin/grouptrove.php
 #
 project_admin_grouptrove	changed_trove	Modifier la catégorisation du projet
-project_admin_grouptrove	g_trove_info	Information sur la catégorisation du projet
-project_admin_grouptrove	select_3_classifs	Veuillez sélectionner jusqu'à trois valeurs pour chaque catégorie de ce projet. Cela permettra aux utilisateurs de trouver rapidement votre projet. Si votre projet n'a pas besoin de toutes les catégories, sélectionner simplement "Aucune sélection".<P>REMARQUES IMPORTANTES&nbsp;: <ul><li>Les projets doivent être classifiés dans la catégorie la plus précise possible de l'arbre des projets.</li><li>Si vous sélectionnez simultanément une catégorie et une sous-catégorie plus spécialisée, seule cette dernière sera retenue.</li><li><em><b>Pour la catégorie Topic (Domaine) seulement</b></em>&nbsp;: Si votre projet ne correspond à aucune des valeurs de la catégorie, sélectionner simplement la valeur "Other/Non Listed Topics" ("Autre/Domaine non défini"). Au fur et à mesure de la soumission de nouveaux projets, l'équipe $1 enrichira la catégorie Topic (Domaine) avec des sous-catégories de 2ème ou de 3ème niveau. Toutes les suggestions à ce sujet sont les bienvenues. Vous pourrez à nouveau modifier cette classification quand vous le souhaitez.</li></ul>
-project_admin_grouptrove	submit_all_changes	Valider les changements de catégories
 #
 #-----------------------------------------------
 # Script: SF/www/project/admin/history.php
@@ -116,14 +110,14 @@ project_admin_index	member_request_delegation_ugroups_all_invalid	Les groupes d'
 project_admin_index	member_request_delegation_ugroups_some_invalid	Ces groupes d'utilisateurs ($1) ne peuvent pas etre ajoutés, ils ne contiennent aucun admin du projet ou sont vides
 project_admin_index	member_request_delegation_ugroups_non_admins	Certains groupes d'utilisateurs contiennent des utilisateurs non admins du projet ($1 non admin du projet en total, ils ne vont pas reçevoir les demandes de permission).
 project_admin_index	member_request_delegation_ugroups_msg	Le(s) groupe(s) d'utilisateur à  notifier pour la délégation d'opération d'admin ($1) ont été modifiés.
-project_admin_index	member_request_delegation_msg_to_requester	Veuillez soumettre un message pertinent afin d'aider l'administateur.
+project_admin_index	member_request_delegation_msg_to_requester	Veuillez soumettre un message pertinent afin d'aider l'administrateur.
 project_admin_index	member_request_delegation_msg_desc	Ci-dessous le message par défaut qui va être affiché aux utilisateurs qui requièrent l'accès à votre projet. Vous pouvez le personnaliser.
 project_admin_index	member_request_delegation_msg_info	Le message destiné aux utilisateurs a été modifié .
 project_admin_index	member_request_delegation_msg_error	Impossible de modifier le message destiné aux utilisateurs.
 project_admin_index	or	ou
 project_admin_index	changed_group_type	Type de projet modifié
 project_admin_index	import_user	[Importer une liste d'utilisateurs]
-project_admin_index	show_projects	Projets créés à partir de ce patron
+project_admin_index	show_projects	Projets créés à partir de ce modèle
 #
 #-----------------------------------------------
 # Script: SF/www/project/admin/permissions.php
@@ -142,19 +136,8 @@ project_admin_permissions	tracker_assignee_access	Accès à tous les artefacts c
 project_admin_permissions	tracker_field_submit	Peut soumettre ce champ dans l'outil de suivi
 project_admin_permissions	tracker_field_read	Peut lire ce champ dans l'outil de suivi
 project_admin_permissions	tracker_field_update	Peut éditer ce champ dans l'outil de suivi
-# message key below must comply with values returned by
-# the permission_get_object_type function
-project_admin_permissions	package	paquet $1
-project_admin_permissions	release	version $1
-project_admin_permissions	document	document $1
-project_admin_permissions	docgroup	groupe de document $1
-project_admin_permissions	wiki	wiki $1
-project_admin_permissions	wikipage	page wiki $1
-project_admin_permissions	wikiattachment	fichier joint du wiki $1
-project_admin_permissions	tracker	outil de suivi $1
-project_admin_permissions	tracker_field	champ d'outil de suivi $1
-project_admin_permissions	object	objet $1
-# ...end of values
+project_admin_permissions	wiki	wiki
+project_admin_permissions	wikiattachment	fichier joint du wiki
 project_admin_permissions	perm_type_not_def	permission_type '$1' indéfini
 project_admin_permissions	submit_perm	Valider les permissions
 project_admin_permissions	admins_create_modify_ug	Les administrateurs de projet peuvent aussi <a href="$1">créer ou modifier</a> des groupes d'utilisateurs.
@@ -179,54 +162,10 @@ project_admin_permissions	override	La permission $1 selectionnée pour $2 a ét�
 #-----------------------------------------------
 # Script: SF/www/project/admin/reference.php
 #
-project_reference	create_fail	Echec lors de la création du patron de référence : le mot clé choisi est invalide (réservé, ou déjà affecté)
-project_reference	create_for_tracker_fail	Patron de référence associé au tracker non créé : le nom court du tracker n'est pas valide (réservé, ou déjà affecté). Vous pourrez néanmoins référencer les artefacts de ce tracker avec le mot clé 'art'
-project_reference	create_s	Créer un nouveau patron de référence.
-project_reference	del?	Détruire ?
-project_reference	del_fail	- Echec de la destruction ! $1
-project_reference	del_r	Détruire ce patron de référence ?
-project_reference	disabled	<i>Inactif</i>
-project_reference	edit_fail	Echec lors de l'édition du patron de référence&nbsp;: le mot clé choisi est invalide (réservé, ou déjà affecté)
-project_reference	edit_r	Editer le patron de référence
-project_reference	edit_reference	Edition des patrons de référence
-project_reference	edit_s_for	Edition des patrons de référence de <B>$1</B>
-project_reference	edit_system_s	Edition des patrons de référence système
-project_reference	enabled	Actif
-project_reference	enabled_desc	Extrait automatiquement ce mot-clé ?
-project_reference	force	Ignore les filtres <em>(Administrateurs Site seulement)</em>&nbsp;:
-project_reference	force_desc	Force la création du patron de la référence
-project_reference	fields_required	champs obligatoires
-project_reference	id	Identifiant
-project_reference	keyword	Mot Clé
-project_reference	manage_sys_r	Gestion des patrons de référence système
-project_reference	manage_proj_r	Gestion des patrons de référence projet
-project_reference	missing_parameter	Il manque un paramètre. Merci de revenir en arrière et de compléter le formulaire
-project_reference	new_s	Nouveau patron de référence
-project_reference	project	projet
-project_reference	r_create_success	Patron de référence créé avec succès
-project_reference	r_creation	Créer un nouveau patron de référence
-project_reference	r_deleted	Patron de référence détruit
-project_reference	r_desc	Description
-project_reference	r_desc_in_tooltip	La description sera affichée dans une bulle lorsque le pointeur est au dessus d'une référence extraite.
-project_reference	r_keyword	Mot clé
-project_reference	r_keyword_desc	Mot clé qui déclenche la création d'une référence
-project_reference	r_link	Lien
-project_reference	r_scope	Portée du patron de référence&nbsp;: projet seulement ou système
-project_reference	r_service	Lié au service
-project_reference	r_service_desc	Si le patron de référence est spécifique à un service, le spécifier ici
-project_reference	r_nature	Nature
-project_reference	r_nature_desc	Spécifiez la nature de la référence, ou Autre sinon.
-project_reference	ref_scope_P	Projet
-project_reference	ref_scope_S	Système
-project_reference	scope	Portée
-project_reference	sr_deleted	Patron de référence système détruit
-project_reference	system	système
-project_reference	system_r_create_success	Patron de référence système créé avec succès, et ajouté à tous les projets
-project_reference	t_r_deleted	Patron de référence correspondant détruit
-project_reference	url	URL pointée par la référence
-project_reference	warning_del_r	*********** ATTENTION ***********  Voulez-vous détruire ce patron de référence ? Cela supprimera le patron de référence ($1) de TOUS les projets de ce serveur. Etes-vous SUR de vouloir continuer ?
-project_reference	extract_syntax	Paramètres :\n  group_id : projet qui définit les patrons de référence\n  text     : texte en entrée
-project_reference	insert_syntax	<p>Param&egrave;tres :<br>- group_id ou group_name : projet qui définit les patrons de référence<br>- text : texte en entr&eacute;e
+project_reference	create_for_tracker_fail	Modèle de référence associé au tracker non créé : le nom court du tracker n'est pas valide (réservé, ou déjà affecté). Vous pourrez néanmoins référencer les artefacts de ce tracker avec le mot clé 'art'
+project_reference	t_r_deleted	Modèle de référence correspondant détruit
+project_reference	extract_syntax	Paramètres :\n  group_id : projet qui définit les modèles de référence\n  text     : texte en entrée
+project_reference	insert_syntax	<p>Param&egrave;tres :<br>- group_id ou group_name : projet qui définit les modèles de référence<br>- text : texte en entr&eacute;e
 ## Description value here for each reference pattern name (system or project wide) that should be localised
 ## Naming rule for the key:
 ## reference_<reference keyword>_desc_key for the reference pattern description
@@ -548,9 +487,6 @@ project_export_bug_export	depend_on_bugs_desc	Liste des bus dont celui-ci dépen
 #-----------------------------------------------
 # Script: SF/www/project/export/index.php
 #
-project_export_index	proj_db_success	La base de données de votre projet a été créé avec succès. Vous pouvez maintenant utiliser votre application préférée et accéder à vos données en utilisant le pilote ODBC/JDBC de MySQL installé sur votre ordinateur. Les paramètres de connexion à la base de données pour le pilote ODB/JDC sont les suivants&nbsp;:
-project_export_index	proj_db_no_data	Aucune donnée exportable. Seuls les <strong>sondages</strong> et les <strong>outils de suivi v3</strong> sont exportables.
-project_export_index	export_to_csv_or_db	Les données de votre projet peuvent être exportées dans des fichiers texte (format CSV) ou dans une base de données spécifique à laquelle vous pouvez vous connecter depuis votre environnement de travail en utilisant le pilote ODBC/JDBC approprié. Voir l'$1 pour plus d'information.
 project_export_index	export_to_csv_hdr	Exporter au format texte $1
 project_export_index	export_to_csv_msg	Cliquer sur un des liens ci-dessous pour exporter les données au format texte (CSV format).
 project_export_index	online_help	aide en ligne
@@ -739,15 +675,6 @@ project_memberlist	developer	Membre
 project_memberlist	username	Nom d'utilisateur
 #
 #-----------------------------------------------
-# Script: SF/www/project/showdetails.php
-#
-project_showdetails	proj_details	Information détaillée sur le projet
-project_showdetails	no_detail	Aucune information détaillée disponible pour ce projet
-project_showdetails	proj_not_found	Erreur - Projet introuvable
-project_showdetails	back_main	[Retour au sommaire]
-project_showdetails	references	Patrons de référence
-#
-#-----------------------------------------------
 # Script:
 #
 project_ugroup	ugroup_anonymous_users_desc_key	Anonymes
@@ -811,9 +738,11 @@ project_desc_desc	int_prop	Brevets ou propositions d'invention relatifs à ce pr
 #
 project_privacy	private	Privé
 project_privacy	public	Public
-project_privacy	tooltip_private	<p class='project-privacy'>Le niveau de confidentialité du projet est : <big><strong>privé</strong></big>. <br />Seuls les membres du projets peuvent accèder à son contenu.</p>
-project_privacy	tooltip_public_w_anon	<p class='project-privacy'>Le niveau de confidentialité du projet est : <big><strong>public</strong></big>. <br />Par défault, son contenu est accessible à tout utilisateur (authentifié ou non).<br />Veuillez noter que des permissions plus restrictives peuvent être apposées sur certains items.</p>
-project_privacy	tooltip_public_wo_anon	<p class='project-privacy'>Le niveau de confidentialité du projet est : <big><strong>public</strong></big>. <br />Par défault, son contenu est accessible à tout utilisateur authentifié non restreint.<br />Veuillez noter que des permissions plus restrictives peuvent être apposées sur certains items.</p>
+
+project_privacy	email_visibility_change_title	Changement du niveau confidentialité du projet $1
+project_privacy	email_visibility_change_body_private	Le projet $1 est désormais privé.
+project_privacy	email_visibility_change_body_public	Le projet $1 est désormais public.
+project_privacy	email_visibility_change_body_unrestricted	Le projet $1 est désormais public et accessible aux utilisateurs restreints.
 
 project_service	service_not_used	Le service $1 n'est pas activé
 project	does_not_exist	Le projet n'existe pas

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,8 @@
  * This class is responsible of processing the TRACKER_EVENT_ARTIFACT_PARENTS_SELECTOR event
  * in the agiledashboard.
  */
-class Planning_ArtifactParentsSelectorEventListener {
+class Planning_ArtifactParentsSelectorEventListener
+{
 
     /**
      * @var Tracker_ArtifactFactory
@@ -52,19 +53,21 @@ class Planning_ArtifactParentsSelectorEventListener {
     /**
      * @param array $params the parameters of the event see TRACKER_EVENT_ARTIFACT_PARENTS_SELECTOR
      */
-    public function process($params) {
+    public function process($params)
+    {
         $source_artifact = $this->getSourceArtifact();
         if ($source_artifact) {
-            $params['label']             = $GLOBALS['Language']->getText('plugin_agiledashboard', 'available', $params['parent_tracker']->getName());
-            $params['possible_parents']  = $this->artifact_parents_selector->getPossibleParents($params['parent_tracker'], $source_artifact, $params['user']);
-            $we_are_linking_the_artifact_to_a_parent = ($params['possible_parents'] == array($source_artifact));
+            $params['label']                         = sprintf(dgettext('tuleap-agiledashboard', 'Available %1$s'), $params['parent_tracker']->getName());
+            $params['possible_parents']              = $this->artifact_parents_selector->getPossibleParents($params['parent_tracker'], $source_artifact, $params['user']);
+            $we_are_linking_the_artifact_to_a_parent = ($params['possible_parents'] == [$source_artifact]);
             if ($we_are_linking_the_artifact_to_a_parent) {
                 $params['display_selector'] = false;
             }
         }
     }
 
-    private function getSourceArtifact() {
+    private function getSourceArtifact()
+    {
         $source_artifact = null;
         if ($this->request->get('func') == 'new-artifact-link') {
             $source_artifact = $this->artifact_factory->getArtifactById($this->request->get('id'));
@@ -74,4 +77,3 @@ class Planning_ArtifactParentsSelectorEventListener {
         return $source_artifact;
     }
 }
-?>

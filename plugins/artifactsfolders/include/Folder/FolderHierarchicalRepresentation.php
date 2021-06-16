@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,12 +20,12 @@
 
 namespace Tuleap\ArtifactsFolders\Folder;
 
-use Tracker_Artifact;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class FolderHierarchicalRepresentation
 {
     /**
-     * @var Tracker_Artifact
+     * @var Artifact
      */
     private $folder;
 
@@ -35,11 +35,11 @@ class FolderHierarchicalRepresentation
     private $children;
 
     /**
-     * @var integer
+     * @var int
      */
     private $parent_id;
 
-    public function __construct(Tracker_Artifact $folder, $parent_id)
+    public function __construct(Artifact $folder, $parent_id)
     {
         $this->folder    = $folder;
         $this->parent_id = $parent_id;

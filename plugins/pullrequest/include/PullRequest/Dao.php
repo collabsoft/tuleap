@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -151,13 +151,14 @@ class Dao extends DataAccessObject
         $sql = "SELECT SQL_CALC_FOUND_ROWS *
                 FROM plugin_pullrequest_review
                 WHERE (repository_id = ? OR repo_dest_id = ?)
-                $where_status_statement
+                AND $where_status_statement
                 LIMIT ?
                 OFFSET ?";
 
         $parameters   =  array_merge([$repository_id, $repository_id], $where_status_statement->values());
         $parameters[] = $limit;
         $parameters[] = $offset;
+
         return $this->getDB()->safeQuery($sql, $parameters);
     }
 
@@ -173,11 +174,11 @@ class Dao extends DataAccessObject
         }
 
         if ($criterion->shouldRetrieveOpenPullRequests()) {
-            $statement->andIn('AND status IN (?*)', [PullRequest::STATUS_REVIEW]);
+            $statement->andIn('status IN (?*)', [PullRequest::STATUS_REVIEW]);
         }
 
         if ($criterion->shouldRetrieveClosedPullRequests()) {
-            $statement->andIn('AND status IN (?*)', [PullRequest::STATUS_ABANDONED, PullRequest::STATUS_MERGED]);
+            $statement->andIn('status IN (?*)', [PullRequest::STATUS_ABANDONED, PullRequest::STATUS_MERGED]);
         }
 
         return $statement;
@@ -209,15 +210,6 @@ class Dao extends DataAccessObject
                 WHERE id = ?';
 
         $this->getDB()->run($sql, $new_title, $new_description, $pull_request_id);
-    }
-
-    public function updateLastBuildStatus($pull_request_id, $build_status, $build_date)
-    {
-        $sql = 'UPDATE plugin_pullrequest_review
-                SET last_build_status=?, last_build_date=?
-                WHERE id=?';
-
-        $this->getDB()->run($sql, $build_status, $build_date, $pull_request_id);
     }
 
     public function deleteAllPullRequestsOfRepository($repository_id)

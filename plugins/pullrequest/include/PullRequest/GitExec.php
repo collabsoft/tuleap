@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,10 +27,11 @@ use Tuleap\PullRequest\Exception\UnknownReferenceException;
 
 class GitExec extends Git_Exec
 {
+    private const GIT_MERGE_CONFLICT_MARKER_REGEX = '^\+<<<<<<<';
 
     public function getBranchSha1($branch_name)
     {
-        $output = array();
+        $output = [];
 
         try {
             $this->gitCmdWithOutput('show-ref --hash ' . escapeshellarg($branch_name), $output);
@@ -45,9 +46,9 @@ class GitExec extends Git_Exec
         throw new UnknownBranchNameException($branch_name);
     }
 
-    public function getModifiedFiles($src_reference, $dest_reference)
+    public function getModifiedFilesNameStatus($src_reference, $dest_reference)
     {
-        $output = array();
+        $output = [];
 
         try {
             $this->gitCmdWithOutput(
@@ -61,12 +62,27 @@ class GitExec extends Git_Exec
         return $output;
     }
 
+    public function getModifiedFilesLineStat($ref_base, $ref_compare)
+    {
+        $ref_base    = escapeshellarg($ref_base);
+        $ref_compare = escapeshellarg($ref_compare);
+        $cmd         = "diff --no-renames --numstat $ref_base...$ref_compare";
+        $output      = [];
+
+        try {
+            $this->gitCmdWithOutput($cmd, $output);
+        } catch (Git_Command_Exception $exception) {
+            throw new UnknownReferenceException();
+        }
+        return $output;
+    }
+
     public function sharedCloneAndCheckout($remote, $branch_name)
     {
-        $output = array();
+        $output = [];
         $remote = escapeshellarg($remote);
         $branch = escapeshellarg($branch_name);
-        $cmd    = "clone --shared -b $branch $remote " . $this->getPath();
+        $cmd    = "clone --shared -b $branch $remote " . escapeshellarg($this->getPath());
 
         $retVal = 1;
         $git    = self::getGitCommand();
@@ -83,7 +99,7 @@ class GitExec extends Git_Exec
 
     public function merge($reference, $user)
     {
-        $output    = array();
+        $output    = [];
         $reference = escapeshellarg($reference);
 
         $this->setLocalCommiter($user->getRealName(), $user->getEmail());
@@ -110,26 +126,20 @@ class GitExec extends Git_Exec
         return $output;
     }
 
-    /**
-     * @return array
-     */
-    public function mergeTree($merge_base, $first_commit_reference, $second_commit_reference)
+    public function searchMergeConflictSymbolInMergeTree(string $merge_base, string $first_commit_reference, string $second_commit_reference): array
     {
         $output = [];
 
         $merge_base              = escapeshellarg($merge_base);
         $first_commit_reference  = escapeshellarg($first_commit_reference);
         $second_commit_reference = escapeshellarg($second_commit_reference);
+        $conflict_marker_regex   = escapeshellarg(self::GIT_MERGE_CONFLICT_MARKER_REGEX);
 
-        $this->gitCmdWithOutput("merge-tree $merge_base $second_commit_reference $first_commit_reference", $output);
+        $this->gitCmdWithOutput(
+            "merge-tree $merge_base $second_commit_reference $first_commit_reference | /usr/bin/grep --max-count=1 --only-matching $conflict_marker_regex || [[ $? == 1 ]]",
+            $output
+        );
 
-        return $output;
-    }
-
-    public function getAllBranchNames()
-    {
-        $output = array();
-        $this->gitCmdWithOutput("branch | cut -c 3-", $output);
         return $output;
     }
 
@@ -137,7 +147,7 @@ class GitExec extends Git_Exec
     {
         $ref    = escapeshellarg($ref);
         $cmd    = "log -1 $ref --pretty=%B";
-        $output = array();
+        $output = [];
 
         $this->gitCmdWithOutput($cmd, $output);
         return $output;
@@ -145,19 +155,9 @@ class GitExec extends Git_Exec
 
     public function getShortStat($ref_base, $ref_compare)
     {
-        return $this->getFileDiffStat($ref_base, $ref_compare, '*');
-    }
-
-    public function getFileDiffStat($ref_base, $ref_compare, $file_path)
-    {
-        $ref_base    = escapeshellarg($ref_base);
-        $ref_compare = escapeshellarg($ref_compare);
-        $file_path   = escapeshellarg($file_path);
-        $cmd         = "diff --no-renames --numstat $ref_base...$ref_compare -- $file_path";
-        $output      = array();
-
-        $this->gitCmdWithOutput($cmd, $output);
-        return $this->parseDiffNumStatOutput($output);
+        return $this->parseDiffNumStatOutput(
+            $this->getModifiedFilesLineStat($ref_base, $ref_compare)
+        );
     }
 
     public function getCommonAncestor($ref1, $ref2)
@@ -165,13 +165,13 @@ class GitExec extends Git_Exec
         $ref1   = escapeshellarg($ref1);
         $ref2   = escapeshellarg($ref2);
         $cmd    = "merge-base $ref1 $ref2";
-        $output = array();
+        $output = [];
 
         $this->gitCmdWithOutput($cmd, $output);
         return $output[0];
     }
 
-    /** @return true if $merged_ref is an ancestor of $base_ref */
+    /** @return bool true if $merged_ref is an ancestor of $base_ref */
     public function isAncestor($base_ref, $merged_ref)
     {
         $base_ref   = escapeshellarg($base_ref);
@@ -235,7 +235,7 @@ class GitExec extends Git_Exec
                 continue;
             }
             if (is_numeric($tokens[0])) {
-                $lines_added   += intval($tokens[0]);
+                $lines_added += intval($tokens[0]);
             }
             if (is_numeric($tokens[1])) {
                 $lines_removed += intval($tokens[1]);

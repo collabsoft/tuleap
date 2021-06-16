@@ -20,42 +20,40 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('ChartDataBuilderV5.class.php');
-
-class GraphOnTrackersV5_Chart_PieDataBuilder extends ChartDataBuilderV5 {
+class GraphOnTrackersV5_Chart_PieDataBuilder extends ChartDataBuilderV5
+{
     /**
      * build pie chart properties
      *
      * @param Pie_Engine $engine object
      */
-    function buildProperties($engine) {
-
+    public function buildProperties($engine)
+    {
         parent::buildProperties($engine);
-        $engine->data   = array();
+        $engine->data   = [];
         $engine->legend = null;
-        $result = array();
-        $ff = Tracker_FormElementFactory::instance();
-        /** @var Tracker_FormElement_Field_List $af */
-        $af = $ff->getUsedListFieldById($this->getTracker(), $this->chart->getField_base());
+        $result         = [];
+        $ff             = Tracker_FormElementFactory::instance();
+        $af             = $ff->getUsedListFieldById($this->getTracker(), $this->chart->getField_base());
         if (! $af) {
-            $this->displayNoFieldError();
-            return $result;
+            throw new \Tuleap\GraphOnTrackersV5\DataTransformation\ChartFieldNotFoundException($this->chart->getTitle());
         }
+        \assert($af instanceof Tracker_FormElement_Field_List);
 
         if ($af->userCanRead()) {
-            $select = " SELECT count(a.id) AS nb, ". $af->getQuerySelectWithDecorator();
-            $from   = " FROM tracker_artifact AS a INNER JOIN tracker_changeset AS c ON (c.artifact_id = a.id) ". $af->getQueryFromWithDecorator();
-            $where  = " WHERE a.id IN (". $this->artifacts['id'] .")
-                          AND c.id IN (". $this->artifacts['last_changeset_id'] .") ";
-            $sql = $select . $from . $where . ' GROUP BY ' . $af->getQueryGroupBy() . ' ORDER BY ' . $af->getQueryOrderby();
-            $res = db_query($sql);
-            while($data = db_fetch_array($res)) {
+            $select = " SELECT count(a.id) AS nb, " . $af->getQuerySelectWithDecorator();
+            $from   = " FROM tracker_artifact AS a INNER JOIN tracker_changeset AS c ON (c.artifact_id = a.id) " . $af->getQueryFromWithDecorator();
+            $where  = " WHERE a.id IN (" . $this->artifacts['id'] . ")
+                          AND c.id IN (" . $this->artifacts['last_changeset_id'] . ") ";
+            $sql    = $select . $from . $where . ' GROUP BY ' . $af->getQueryGroupBy() . ' ORDER BY ' . $af->getQueryOrderby();
+            $res    = db_query($sql);
+            while ($data = db_fetch_array($res)) {
                 $engine->data[]   = $data['nb'];
                 $engine->colors[] = $this->getColor($data);
                 if ($data[$af->name] !== null) {
                     $engine->legend[] = $af->fetchRawValue($data[$af->name]);
                 } else {
-                    $engine->legend[] = $GLOBALS['Language']->getText('global','none');
+                    $engine->legend[] = $GLOBALS['Language']->getText('global', 'none');
                 }
             }
         }

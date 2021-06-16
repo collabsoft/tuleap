@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -26,9 +26,7 @@ namespace Tuleap\Tracker\Artifact\ArtifactsDeletion;
 
 use PFUser;
 use SystemEventDao;
-use Tracker_Artifact;
-use Tuleap\Tracker\Admin\ArtifactDeletion\ArtifactsDeletionConfig;
-use Tuleap\Tracker\Admin\ArtifactsDeletion\UserDeletionRetriever;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class ArtifactsDeletionManager
 {
@@ -50,8 +48,8 @@ class ArtifactsDeletionManager
         ArtifactDeletor $artifact_deletor,
         ArtifactDeletionLimitRetriever $deletion_limit_retriever
     ) {
-        $this->dao                     = $dao;
-        $this->artifact_deletor        = $artifact_deletor;
+        $this->dao                      = $dao;
+        $this->artifact_deletor         = $artifact_deletor;
         $this->deletion_limit_retriever = $deletion_limit_retriever;
     }
 
@@ -62,10 +60,10 @@ class ArtifactsDeletionManager
      * @throws DeletionOfArtifactsIsNotAllowedException
      */
     public function deleteArtifact(
-        Tracker_artifact $artifact,
+        Artifact $artifact,
         PFUser $user
     ) {
-        $remaining_deletions = $this->deletion_limit_retriever->getNumberOfArtifactsAllowedToDelete($user) -1;
+        $remaining_deletions = $this->deletion_limit_retriever->getNumberOfArtifactsAllowedToDelete($user) - 1;
 
         $this->artifact_deletor->delete($artifact, $user);
         $this->dao->recordDeletionForUser($user->getId(), time());
@@ -80,10 +78,10 @@ class ArtifactsDeletionManager
      * @throws DeletionOfArtifactsIsNotAllowedException
      */
     public function deleteArtifactBeforeMoveOperation(
-        Tracker_artifact $artifact,
+        Artifact $artifact,
         PFUser $user
     ) {
-        $remaining_deletions = $this->deletion_limit_retriever->getNumberOfArtifactsAllowedToDelete($user) -1;
+        $remaining_deletions = $this->deletion_limit_retriever->getNumberOfArtifactsAllowedToDelete($user) - 1;
 
         $this->artifact_deletor->deleteWithoutTransaction($artifact, $user);
         $this->dao->recordDeletionForUser($user->getId(), time());

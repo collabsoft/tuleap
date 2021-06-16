@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -63,7 +63,7 @@ class NotifiedPeopleRetriever
     {
         //search for users who monitor the item or its parent
         $type  = PLUGIN_DOCMAN_NOTIFICATION;
-        $users = array();
+        $users = [];
         $this->getNotifiedUsersForAscendantHierarchy(
             $project,
             $item_id,
@@ -85,7 +85,7 @@ class NotifiedPeopleRetriever
         }
 
         if ($item = $this->item_factory->getItemFromDb($item_id)) {
-            $ugroups = array();
+            $ugroups = [];
             $this->aggregateUsers($item_id, $users, $type);
             $this->aggregateUgroups($item_id, $ugroups, $type);
             $this->addNotifedUgroupMembersToUsers(
@@ -119,11 +119,11 @@ class NotifiedPeopleRetriever
             }
 
             foreach ($ugroup_data->getMembers() as $user) {
-                $users[$user->getId()] = array(
+                $users[$user->getId()] = [
                     'item_id' => (string) $item_id,
                     'user_id' => $user->getId(),
                     'type'    => $type
-                );
+                ];
             }
         }
     }

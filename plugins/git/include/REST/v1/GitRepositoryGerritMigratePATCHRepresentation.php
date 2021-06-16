@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,11 @@
 
 namespace Tuleap\Git\REST\v1;
 
-class GitRepositoryGerritMigratePATCHRepresentation {
+/**
+ * @psalm-immutable
+ */
+class GitRepositoryGerritMigratePATCHRepresentation
+{
 
     /**
      * @var int {@type int}

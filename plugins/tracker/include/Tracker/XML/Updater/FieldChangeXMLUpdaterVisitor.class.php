@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 use Tuleap\Tracker\FormElement\TrackerFormElementExternalField;
 use Tuleap\Tracker\XML\Updater\FieldChange\FieldChangeComputedXMLUpdater;
 
-class Tracker_XML_Updater_FieldChangeXMLUpdaterVisitor implements Tracker_FormElement_FieldVisitor {
+class Tracker_XML_Updater_FieldChangeXMLUpdaterVisitor implements Tracker_FormElement_FieldVisitor
+{
 
     /**
      * @var Tracker_XML_Updater_FieldChange_FieldChangeOpenListXMLUpdater
@@ -102,92 +103,113 @@ class Tracker_XML_Updater_FieldChangeXMLUpdaterVisitor implements Tracker_FormEl
         Tracker_FormElement_Field $field,
         $submitted_value
     ) {
-        /* @var $updater Tracker_XML_Updater_FieldChange_FieldChangeXMLUpdater */
         $updater = $field->accept($this);
+        \assert($updater instanceof Tracker_XML_Updater_FieldChange_FieldChangeXMLUpdater);
         $updater->update($field_change_xml, $submitted_value);
     }
 
-    public function visitArtifactLink(Tracker_FormElement_Field_ArtifactLink $field) {
+    public function visitArtifactLink(Tracker_FormElement_Field_ArtifactLink $field)
+    {
         return $this->unknown_updater;
     }
 
-    public function visitDate(Tracker_FormElement_Field_Date $field) {
+    public function visitDate(Tracker_FormElement_Field_Date $field)
+    {
         return $this->date_updater;
     }
 
-    public function visitFile(Tracker_FormElement_Field_File $field) {
+    public function visitFile(Tracker_FormElement_Field_File $field)
+    {
         return $this->unknown_updater;
     }
 
-    public function visitFloat(Tracker_FormElement_Field_Float $field) {
+    public function visitFloat(Tracker_FormElement_Field_Float $field)
+    {
         return $this->float_updater;
     }
 
-    public function visitInteger(Tracker_FormElement_Field_Integer $field) {
+    public function visitInteger(Tracker_FormElement_Field_Integer $field)
+    {
         return $this->integer_updater;
     }
 
-    public function visitOpenList(Tracker_FormElement_Field_OpenList $field) {
+    public function visitOpenList(Tracker_FormElement_Field_OpenList $field)
+    {
         return $this->open_list_updater;
     }
 
-    public function visitPermissionsOnArtifact(Tracker_FormElement_Field_PermissionsOnArtifact $field) {
+    public function visitPermissionsOnArtifact(Tracker_FormElement_Field_PermissionsOnArtifact $field)
+    {
         return $this->perms_updater;
     }
 
-    public function visitString(Tracker_FormElement_Field_String $field) {
+    public function visitString(Tracker_FormElement_Field_String $field)
+    {
         return $this->string_updater;
     }
 
-    public function visitText(Tracker_FormElement_Field_Text $field) {
+    public function visitText(Tracker_FormElement_Field_Text $field)
+    {
         return $this->text_updater;
     }
 
-    public function visitArtifactId(Tracker_FormElement_Field_ArtifactId $field) {
+    public function visitArtifactId(Tracker_FormElement_Field_ArtifactId $field)
+    {
         return $this->unknown_updater;
     }
 
-    public function visitPerTrackerArtifactId(Tracker_FormElement_Field_PerTrackerArtifactId $field) {
+    public function visitPerTrackerArtifactId(Tracker_FormElement_Field_PerTrackerArtifactId $field)
+    {
         return $this->unknown_updater;
     }
 
-    public function visitBurndown(Tracker_FormElement_Field_Burndown $field) {
+    public function visitBurndown(Tracker_FormElement_Field_Burndown $field)
+    {
         return $this->unknown_updater;
     }
 
-    public function visitCheckbox(Tracker_FormElement_Field_Checkbox $field) {
+    public function visitCheckbox(Tracker_FormElement_Field_Checkbox $field)
+    {
         return $this->list_updater;
     }
 
-    public function visitCrossReferences(Tracker_FormElement_Field_CrossReferences $field) {
+    public function visitCrossReferences(Tracker_FormElement_Field_CrossReferences $field)
+    {
         return $this->unknown_updater;
     }
 
-    public function visitLastUpdateDate(Tracker_FormElement_Field_LastUpdateDate $field) {
+    public function visitLastUpdateDate(Tracker_FormElement_Field_LastUpdateDate $field)
+    {
         return $this->unknown_updater;
     }
 
-    public function visitMultiSelectbox(Tracker_FormElement_Field_MultiSelectbox $field) {
+    public function visitMultiSelectbox(Tracker_FormElement_Field_MultiSelectbox $field)
+    {
         return $this->list_updater;
     }
 
-    public function visitRadiobutton(Tracker_FormElement_Field_Radiobutton $field) {
+    public function visitRadiobutton(Tracker_FormElement_Field_Radiobutton $field)
+    {
         return $this->list_updater;
     }
 
-    public function visitSelectbox(Tracker_FormElement_Field_Selectbox $field) {
+    public function visitSelectbox(Tracker_FormElement_Field_Selectbox $field)
+    {
         return $this->list_updater;
     }
 
-    public function visitSubmittedBy(Tracker_FormElement_Field_SubmittedBy $field) {
+    public function visitSubmittedBy(Tracker_FormElement_Field_SubmittedBy $field)
+    {
         return $this->unknown_updater;
     }
 
-    public function visitLastModifiedBy(Tracker_FormElement_Field_LastModifiedBy $field) {
+    public function visitLastModifiedBy(Tracker_FormElement_Field_LastModifiedBy $field)
+    {
         return $this->unknown_updater;
     }
 
-    public function visitSubmittedOn(Tracker_FormElement_Field_SubmittedOn $field) {
+    public function visitSubmittedOn(Tracker_FormElement_Field_SubmittedOn $field)
+    {
         return $this->unknown_updater;
     }
 
@@ -197,6 +219,11 @@ class Tracker_XML_Updater_FieldChangeXMLUpdaterVisitor implements Tracker_FormEl
     }
 
     public function visitExternalField(TrackerFormElementExternalField $element)
+    {
+        return $this->unknown_updater;
+    }
+
+    public function visitPriority(Tracker_FormElement_Field_Priority $field)
     {
         return $this->unknown_updater;
     }

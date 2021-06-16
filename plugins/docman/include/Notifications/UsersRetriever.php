@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,11 +20,8 @@
 
 namespace Tuleap\Docman\Notifications;
 
-use ArrayIterator;
 use Docman_Item;
 use Docman_ItemFactory;
-use Project;
-use UGroupManager;
 
 class UsersRetriever
 {
@@ -44,8 +41,8 @@ class UsersRetriever
         UsersToNotifyDao $user_dao,
         Docman_ItemFactory $item_factory
     ) {
-        $this->user_dao       = $user_dao;
-        $this->item_factory   = $item_factory;
+        $this->user_dao     = $user_dao;
+        $this->item_factory = $item_factory;
     }
 
     public function getListeningUsers(Docman_Item $item, array $users, $type)

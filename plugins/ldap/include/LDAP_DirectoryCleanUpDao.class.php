@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2014. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -30,11 +30,12 @@ class LDAP_DirectoryCleanUpDao extends DataAccessObject
      *
      * @param Integer deletionDate date on which suspended user will be deleted
      *
-     * @return Boolean
+     * @return bool
      */
-    public function createForecastDeletionDate ($userId, $deletionDate) {
-        $sql = 'INSERT INTO plugin_ldap_suspended_user (user_id, deletion_date)'.
-               ' VALUES ('.$this->da->escapeInt($userId).','.$this->da->escapeInt($deletionDate).')';
+    public function createForecastDeletionDate($userId, $deletionDate)
+    {
+        $sql = 'INSERT INTO plugin_ldap_suspended_user (user_id, deletion_date)' .
+               ' VALUES (' . $this->da->escapeInt($userId) . ',' . $this->da->escapeInt($deletionDate) . ')';
         return $this->update($sql);
     }
 
@@ -45,12 +46,13 @@ class LDAP_DirectoryCleanUpDao extends DataAccessObject
      *
      * @param Integer deletionDate
      *
-     * @return Boolean
+     * @return bool
      */
-    public function resetForecastDeletionDate ($userId) {
-        $sql = 'UPDATE plugin_ldap_suspended_user'.
-               ' SET deletion_date = 0'.
-               ' WHERE user_id='.$this->da->escapeInt($userId);
+    public function resetForecastDeletionDate($userId)
+    {
+        $sql = 'UPDATE plugin_ldap_suspended_user' .
+               ' SET deletion_date = 0' .
+               ' WHERE user_id=' . $this->da->escapeInt($userId);
         return $this->update($sql);
     }
 
@@ -61,10 +63,11 @@ class LDAP_DirectoryCleanUpDao extends DataAccessObject
      *
      * @return DataAccessResult
      */
-    public function getAllSuspendedUsers ($deletionDate) {
-        $sql = 'SELECT user_id'.
-               ' FROM plugin_ldap_suspended_user'.
-               ' WHERE deletion_date <= '.$this->da->escapeInt($deletionDate).
+    public function getAllSuspendedUsers($deletionDate)
+    {
+        $sql = 'SELECT user_id' .
+               ' FROM plugin_ldap_suspended_user' .
+               ' WHERE deletion_date <= ' . $this->da->escapeInt($deletionDate) .
                ' AND deletion_date <> 0';
         return $this->retrieve($sql);
     }
@@ -74,13 +77,14 @@ class LDAP_DirectoryCleanUpDao extends DataAccessObject
      *
      * @return DataAccessResult
      */
-    public function getUsersDeletedTomorrow () {
+    public function getUsersDeletedTomorrow()
+    {
         $today      = strtotime('tomorrow midnight');
         $tomorrow   = strtotime('+1 day', $today);
-        $sql        = 'SELECT user_id'.
-                      ' FROM plugin_ldap_suspended_user'.
-                      ' WHERE deletion_date BETWEEN '.$this->da->escapeInt($today).
-                      ' AND '.$this->da->escapeInt($tomorrow);
+        $sql        = 'SELECT user_id' .
+                      ' FROM plugin_ldap_suspended_user' .
+                      ' WHERE deletion_date BETWEEN ' . $this->da->escapeInt($today) .
+                      ' AND ' . $this->da->escapeInt($tomorrow);
         $dataResult = $this->retrieve($sql);
         if ($dataResult->isError()) {
             return false;
@@ -89,4 +93,3 @@ class LDAP_DirectoryCleanUpDao extends DataAccessObject
         }
     }
 }
-?>

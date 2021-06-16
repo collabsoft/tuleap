@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All rights reserved
+ * Copyright (c) Enalean, 2012 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@
  * sh /usr/share/tuleap/src/utils/php-launcher.sh /usr/share/tuleap/plugins/mediawiki/bin/identify_lost_databases.php
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 $bad_projects_with_mw_sql = "SELECT g.group_id, g.group_name
     FROM groups g, group_plugin gp, plugins p
     WHERE g.group_id = gp.group_id
@@ -34,7 +34,7 @@ $bad_projects_with_mw_sql = "SELECT g.group_id, g.group_name
         SELECT project_id FROM plugin_mediawiki_database
     )";
 
-$data_access_object = new DataAccessObject;
+$data_access_object = new DataAccessObject();
 $data_access_object->enableExceptionsOnError();
 try {
     $projects = $data_access_object->retrieve($bad_projects_with_mw_sql);

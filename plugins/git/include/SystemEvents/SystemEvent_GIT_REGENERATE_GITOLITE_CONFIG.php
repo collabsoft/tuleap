@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,9 +19,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class SystemEvent_GIT_REGENERATE_GITOLITE_CONFIG extends SystemEvent {
+class SystemEvent_GIT_REGENERATE_GITOLITE_CONFIG extends SystemEvent
+{
 
-    const NAME = 'GIT_REGENERATE_GITOLITE_CONFIG';
+    public const NAME = 'GIT_REGENERATE_GITOLITE_CONFIG';
 
     /** @var Git_GitoliteDriver */
     private $gitolite_driver;
@@ -33,11 +34,12 @@ class SystemEvent_GIT_REGENERATE_GITOLITE_CONFIG extends SystemEvent {
         Git_GitoliteDriver $gitolite_driver,
         ProjectManager $project_manager
     ) {
-        $this->gitolite_driver  = $gitolite_driver;
-        $this->project_manager  = $project_manager;
+        $this->gitolite_driver = $gitolite_driver;
+        $this->project_manager = $project_manager;
     }
 
-    public function process() {
+    public function process()
+    {
         $project_id = $this->getProjectIdFromParameters();
 
         if (! $project_id) {
@@ -57,15 +59,17 @@ class SystemEvent_GIT_REGENERATE_GITOLITE_CONFIG extends SystemEvent {
         return true;
     }
 
-    private function getProjectIdFromParameters() {
+    private function getProjectIdFromParameters()
+    {
         $parameters = $this->getParametersAsArray();
 
         return $parameters[0];
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         $project_id = $this->getProjectIdFromParameters();
 
-        return 'Project: '.$this->verbalizeProjectId($project_id, $with_link);
+        return 'Project: ' . $this->verbalizeProjectId($project_id, $with_link);
     }
 }

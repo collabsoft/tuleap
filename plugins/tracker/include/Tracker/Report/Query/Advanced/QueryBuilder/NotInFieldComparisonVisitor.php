@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ use Tracker_FormElement_Field_MultiSelectbox;
 use Tracker_FormElement_Field_OpenList;
 use Tracker_FormElement_Field_PermissionsOnArtifact;
 use Tracker_FormElement_Field_PerTrackerArtifactId;
+use Tracker_FormElement_Field_Priority;
 use Tracker_FormElement_Field_Radiobutton;
 use Tracker_FormElement_Field_Selectbox;
 use Tracker_FormElement_Field_String;
@@ -129,11 +130,11 @@ class NotInFieldComparisonVisitor implements
 
     private function visitList(Tracker_FormElement_Field_List $field)
     {
-        $static_bind_builder = new NotInComparison\ForListBindStatic(
+        $static_bind_builder  = new NotInComparison\ForListBindStatic(
             new CollectionOfListValuesExtractor(),
             new FromWhereNotEqualComparisonListFieldBuilder()
         );
-        $users_bind_builder = new NotInComparison\ForListBindUsers(
+        $users_bind_builder   = new NotInComparison\ForListBindUsers(
             new CollectionOfListValuesExtractor(),
             new FromWhereNotEqualComparisonListFieldBuilder()
         );
@@ -213,6 +214,11 @@ class NotInFieldComparisonVisitor implements
     }
 
     public function visitExternalField(TrackerFormElementExternalField $element)
+    {
+        return null;
+    }
+
+    public function visitPriority(Tracker_FormElement_Field_Priority $field)
     {
         return null;
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,12 +37,12 @@ class PaginatedSystemEventRepresentationsBuilder
      */
     public function getAllMatchingEvents($status, $limit, $offset)
     {
-        $event_representations = array();
+        $event_representations = [];
         $event_rows            = $this->dao->searchAllMatchingEvents($status, $limit, $offset);
         $total_rows            = (int) $this->dao->foundRows();
 
         foreach ($event_rows as $event_row) {
-            $event = $this->manager->getInstanceFromRow($event_row);
+            $event          = $this->manager->getInstanceFromRow($event_row);
             $representation = new SystemEventRepresentation();
             $representation->build($event);
 

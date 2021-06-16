@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -29,7 +29,7 @@ use Tuleap\Event\Dispatchable;
 
 class TrackerReportSetToPrivate implements Dispatchable
 {
-    const NAME = 'trackerReportSetToPrivate';
+    public const NAME = 'trackerReportSetToPrivate';
 
     /**
      * @var Tracker_Report

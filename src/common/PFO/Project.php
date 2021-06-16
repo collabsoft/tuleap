@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,12 +18,13 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-interface PFO_Project {
+interface PFO_Project
+{
 
     /**
      * Returns project numeric id (aka group_id)
      *
-     * @return Integer
+     * @return int
      */
     public function getID();
 
@@ -57,5 +58,3 @@ interface PFO_Project {
      */
     public function getUsers();
 }
-
-?>

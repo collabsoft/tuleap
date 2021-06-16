@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,26 +18,24 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Templating\TemplateCacheInterface;
 use Tuleap\Templating\TemplateCache;
 
-/**
- * Handles TemplateRenderer's instanciation. 
- */
 class TemplateRendererFactory
 {
     /**
-     * @var TemplateCache
+     * @var TemplateCacheInterface
      */
     private $template_cache;
 
-    public function __construct(TemplateCache $template_cache)
+    final public function __construct(TemplateCacheInterface $template_cache)
     {
         $this->template_cache = $template_cache;
     }
 
     /**
      * Creates a new factory instance.
-     * 
+     *
      * Mostly used at places where renderers where instanciated manually, and
      * where injecting a factory needed a lot of refactoring.
      *
@@ -49,20 +47,21 @@ class TemplateRendererFactory
     }
 
     /**
-     * @return TemplateCache
+     * @return TemplateCacheInterface
      */
     public function getTemplateCache()
     {
         return $this->template_cache;
     }
-    
+
     /**
      * Returns a new TemplateRenderer according to Config.
-     * 
+     *
      * @param string $plugin_templates_dir
      * @return TemplateRenderer
      */
-    public function getRenderer($plugin_templates_dir) {
+    public function getRenderer($plugin_templates_dir)
+    {
         return new MustacheRenderer($this->template_cache, $plugin_templates_dir);
     }
 }

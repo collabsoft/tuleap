@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,10 +24,10 @@ use Tuleap\Event\Dispatchable;
 
 class CollectionOfLabelableDao implements Dispatchable
 {
-    const NAME = 'collectionOfLabelableDao';
+    public const NAME = 'collectionOfLabelableDao';
 
     /** @var LabelableDao[] */
-    private $daos = array();
+    private $daos = [];
 
     public function add(LabelableDao $dao)
     {

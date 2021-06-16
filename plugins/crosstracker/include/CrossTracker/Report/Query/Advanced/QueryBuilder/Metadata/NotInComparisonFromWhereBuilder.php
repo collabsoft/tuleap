@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -48,8 +48,6 @@ class NotInComparisonFromWhereBuilder implements FromWhereBuilder
     }
 
     /**
-     * @param Metadata $metadata
-     * @param Comparison $comparison
      * @param Tracker[] $trackers
      * @return IProvideParametrizedFromAndWhereSQLFragments
      */
@@ -58,13 +56,10 @@ class NotInComparisonFromWhereBuilder implements FromWhereBuilder
         switch ($metadata->getName()) {
             case AllowedMetadata::SUBMITTED_BY:
                 return $this->submitted_by_builder->getFromWhere($metadata, $comparison, $trackers);
-                break;
             case AllowedMetadata::LAST_UPDATE_BY:
                 return $this->last_update_by_builder->getFromWhere($metadata, $comparison, $trackers);
-                break;
             case AllowedMetadata::ASSIGNED_TO:
                 return $this->assigned_to_builder->getFromWhere($metadata, $comparison, $trackers);
-                break;
         }
     }
 }

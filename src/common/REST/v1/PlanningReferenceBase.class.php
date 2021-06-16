@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@ namespace Tuleap\REST\v1;
 /**
  * Basic reference of a planning
  */
-class PlanningReferenceBase {
+class PlanningReferenceBase
+{
 
     /**
      * @var int

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,22 +18,24 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-
 use Tuleap\Git\GerritServerResourceRestrictor;
 use Tuleap\Git\RestrictedGerritServerDao;
 
-class GitDataBuilder extends REST_TestDataBuilder {
+class GitDataBuilder extends REST_TestDataBuilder
+{
 
-    const PROJECT_TEST_GIT_SHORTNAME = 'test-git';
-    const REPOSITORY_GIT_ID          = 1;
+    public const PROJECT_TEST_GIT_SHORTNAME = 'test-git';
+    public const REPOSITORY_GIT_ID          = 1;
 
-    public function setUp() {
+    public function setUp()
+    {
         $project = $this->project_manager->getProjectByUnixName(self::PROJECT_TEST_GIT_SHORTNAME);
 
         $this->addGerritServers($project);
     }
 
-    private function addGerritServers(Project $project) {
+    private function addGerritServers(Project $project)
+    {
         echo "Creating Gerrit servers\n";
 
         $server_01 = new Git_RemoteServer_GerritServer(
@@ -47,8 +49,7 @@ class GitDataBuilder extends REST_TestDataBuilder {
             true,
             Git_RemoteServer_GerritServer::GERRIT_VERSION_2_8_PLUS,
             '',
-            '',
-            'Digest'
+            ''
         );
 
         $server_02 = new Git_RemoteServer_GerritServer(
@@ -60,10 +61,9 @@ class GitDataBuilder extends REST_TestDataBuilder {
             '',
             '',
             false,
-            Git_RemoteServer_GerritServer::DEFAULT_GERRIT_VERSION,
+            Git_RemoteServer_GerritServer::GERRIT_VERSION_2_5,
             '',
-            '',
-            'Digest'
+            ''
         );
 
         $server_03 = new Git_RemoteServer_GerritServer(
@@ -75,10 +75,9 @@ class GitDataBuilder extends REST_TestDataBuilder {
             '',
             '',
             false,
-            Git_RemoteServer_GerritServer::DEFAULT_GERRIT_VERSION,
+            Git_RemoteServer_GerritServer::GERRIT_VERSION_2_5,
             '',
-            '',
-            'Digest'
+            ''
         );
 
         $server_factory = new Git_RemoteServer_GerritServerFactory(

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,22 +18,27 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Planning_ArtifactParentsSelector_ParentInSameHierarchyCommand extends Planning_ArtifactParentsSelector_Command {
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Planning_ArtifactParentsSelector_ParentInSameHierarchyCommand extends Planning_ArtifactParentsSelector_Command
+{
 
     /**
      * @see Planning_ArtifactParentsSelector_Command
      *
      * @return array of Tracker_Artifact
      */
-    public function getPossibleParents(Tracker $parent_tracker, Tracker_Artifact $source_artifact, PFUser $user) {
+    public function getPossibleParents(Tracker $parent_tracker, Artifact $source_artifact, PFUser $user)
+    {
         $parent_in_same_hierarchy = $this->getParentInSameHierarchy($parent_tracker, $source_artifact, $user);
         if ($parent_in_same_hierarchy) {
-            return array($parent_in_same_hierarchy);
+            return [$parent_in_same_hierarchy];
         }
     }
 
-    private function getParentInSameHierarchy(Tracker $expected_parent_tracker, Tracker_Artifact $source_artifact, PFUser $user) {
-        if ($source_artifact->getTracker() == $expected_parent_tracker) {
+    private function getParentInSameHierarchy(Tracker $expected_parent_tracker, Artifact $source_artifact, PFUser $user)
+    {
+        if ((int) $source_artifact->getTracker()->getId() === (int) $expected_parent_tracker->getId()) {
             return $source_artifact;
         } else {
             $parent = $source_artifact->getParent($user);
@@ -43,4 +48,3 @@ class Planning_ArtifactParentsSelector_ParentInSameHierarchyCommand extends Plan
         }
     }
 }
-?>

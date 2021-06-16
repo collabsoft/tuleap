@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright 1999-2000 (c) The SourceForge Crew
- * Copyright (c) Enalean, 2016 - 2018. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,29 +20,27 @@
  */
 
 use Tuleap\Admin\AdminPageRenderer;
-use Tuleap\Layout\IncludeAssets;
 use Tuleap\Project\Admin\ProjectHistoryPresenter;
 use Tuleap\Project\Admin\ProjectHistoryResultsPresenter;
 use Tuleap\Project\Admin\ProjectHistorySearchPresenter;
 
-require_once('pre.php');
-require_once('www/project/export/project_export_utils.php');
-require_once('www/project/admin/project_history.php');
+require_once __DIR__ . '/../include/pre.php';
+require_once __DIR__ . '/../project/export/project_export_utils.php';
+require_once __DIR__ . '/../project/admin/project_history.php';
 
 $request = HTTPRequest::instance();
 $request->checkUserIsSuperUser();
 
-$assets_path    = ForgeConfig::get('tuleap_dir') . '/src/www/assets';
-$include_assets = new IncludeAssets($assets_path, '/assets');
+$include_assets = new \Tuleap\Layout\IncludeCoreAssets();
 
 $GLOBALS['HTML']->includeFooterJavascriptFile(
     $include_assets->getFileURL('site-admin-project-history.js')
 );
 
-$project = ProjectManager::instance()->getProject($group_id);
+$project = ProjectManager::instance()->getProject($group_id ?? 0);
 
 if (! $project || $project->isError()) {
-    $GLOBALS['Response']->addFeedback(Feedback::ERROR, $Language->getText('admin_groupedit', 'error_group'));
+    $GLOBALS['Response']->addFeedback(Feedback::ERROR, _('Invalid project was passed in.'));
     $GLOBALS['Response']->redirect('/admin');
 }
 
@@ -58,7 +56,7 @@ $results        = $dao->groupGetHistory($offset, $limit, $group_id, $history_fil
 
 $renderer = new AdminPageRenderer();
 $renderer->renderANoFramedPresenter(
-    $Language->getText('admin_groupedit', 'title'),
+    _('Editing Project'),
     ForgeConfig::get('codendi_dir') . '/src/templates/admin/projects/',
     'project-history',
     new ProjectHistoryPresenter(

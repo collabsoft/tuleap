@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: Comment.php,v 1.2 2004/02/17 12:11:36 rurban Exp $');
 /**
  * A WikiPlugin for putting comments in WikiPages
@@ -13,37 +14,42 @@ rcs_id('$Id: Comment.php,v 1.2 2004/02/17 12:11:36 rurban Exp $');
  * ?>
  */
 
-class WikiPlugin_Comment
-extends WikiPlugin
+class WikiPlugin_Comment extends WikiPlugin
 {
     // Five required functions in a WikiPlugin.
 
-    function getName() {
+    public function getName()
+    {
         return _("Comment");
     }
 
-    function getDescription() {
+    public function getDescription()
+    {
         return _("Embed hidden comments in WikiPages.");
-
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.2 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.2 $"
+        );
     }
 
     // No arguments here.
-    function getDefaultArguments() {
-        return array();
+    public function getDefaultArguments()
+    {
+        return [];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
     }
 
     // function handle_plugin_args_cruft(&$argstr, &$args) {
     // }
-
-};
+}
 
 // $Log: Comment.php,v $
 // Revision 1.2  2004/02/17 12:11:36  rurban
@@ -51,8 +57,6 @@ extends WikiPlugin
 //
 // Revision 1.1  2003/01/28 17:57:15  carstenklapp
 // Martin Geisler's clever Comment plugin.
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -61,4 +65,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,21 +22,24 @@ namespace Tuleap\AgileDashboard;
 
 use Tuleap\Layout\IncludeAssets;
 
-class KanbanJavascriptDependenciesProvider implements JavascriptDependenciesProvider
+final class KanbanJavascriptDependenciesProvider implements JavascriptDependenciesProvider
 {
-    public function getDependencies()
-    {
-        $kanban_include_assets = new IncludeAssets(
-            AGILEDASHBOARD_BASE_DIR . '/../www/js/kanban/dist',
-            AGILEDASHBOARD_BASE_URL . '/js/kanban/dist'
-        );
-        $ckeditor_path = '/scripts/ckeditor-4.3.2/';
+    /**
+     * @var IncludeAssets
+     */
+    private $agiledashboard_include_assets;
 
-        return array(
-            array('file' => $kanban_include_assets->getFileURL('angular.js'), 'unique-name' => 'angular'),
-            array('snippet' => 'window.CKEDITOR_BASEPATH = "' . $ckeditor_path . '";'),
-            array('file' => $ckeditor_path . 'ckeditor.js'),
-            array('file' => $kanban_include_assets->getFileURL('kanban.js')),
-        );
+    public function __construct(IncludeAssets $agiledashboard_include_assets)
+    {
+        $this->agiledashboard_include_assets = $agiledashboard_include_assets;
+    }
+
+    public function getDependencies(): array
+    {
+        $core_include_assets = new \Tuleap\Layout\IncludeCoreAssets();
+        return [
+            ['file' => $core_include_assets->getFileURL('ckeditor.js')],
+            ['file' => $this->agiledashboard_include_assets->getFileURL('kanban.js')],
+        ];
     }
 }

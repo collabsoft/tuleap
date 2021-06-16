@@ -1,41 +1,43 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2010. All Rights Reserved.
- * 
+ *
  * Originally written by Manuel VACELET, 2010.
- * 
- * This file is a part of Codendi.
- * 
- * Codendi is free software; you can redistribute it and/or modify
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
- * Codendi is distributed in the hope that it will be useful,
+ *
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
- * along with Codendi; if not, write to the Free Software
+ * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
-require_once 'common/user/User.class.php';
-require_once 'LDAPResult.class.php';
 
 /**
  * Handle synchro between LDAP and Codendi user.
  */
-class LDAP_UserSync {
-
+class LDAP_UserSync
+{
+    /**
+     * @var self
+     */
     private static $instance;
     protected $attributes;
 
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct()
+    {
     }
 
     /**
@@ -45,33 +47,38 @@ class LDAP_UserSync {
      *
      * @return LDAP_UserSync
      */
-    public static function instance() {
-        if (!isset(self::$instance)) {
-            $syncClass = __CLASS__;
+    public static function instance()
+    {
+        if (! isset(self::$instance)) {
+            $syncClass = self::class;
             // Allows site defined user update
             include_once($GLOBALS['Language']->getContent('synchronize_user', 'en_US', 'ldap'));
-            self::$instance = new $syncClass;
+            self::$instance = new $syncClass();
         }
         return self::$instance;
     }
 
     /**
      * Return the sync attributes
-     * 
+     *
+     * @param LDAP $ldap
+     *
      * @return array
      */
-    public function getSyncAttributes($ldap) {
+    public function getSyncAttributes($ldap)
+    {
         //Define the default sync attributes
-        $this->attributes = array($ldap->getLDAPParam('cn'), $ldap->getLDAPParam('mail'), $ldap->getLDAPParam('uid'));
+        $this->attributes = [$ldap->getLDAPParam('cn'), $ldap->getLDAPParam('mail'), $ldap->getLDAPParam('uid')];
         return $this->attributes;
     }
 
     /**
      * Set the sync attributes
-     * 
+     *
      * @param Array $values
      */
-    public function setSyncAttributes($values) {
+    public function setSyncAttributes($values)
+    {
         $this->attributes = $values;
     }
 
@@ -84,9 +91,10 @@ class LDAP_UserSync {
      * @param PFUser       $user Codendi user
      * @param LDAPResult $lr   Ldap result
      *
-     * @return Boolean True if the method modified the user object
+     * @return bool True if the method modified the user object
      */
-    public function sync(PFUser $user, LDAPResult $lr) {
+    public function sync(PFUser $user, LDAPResult $lr)
+    {
         $modified = false;
 
         if (($lr->getCommonName() !== null) && ($user->getRealName() != substr($lr->getCommonName(), 0, 32))) {
@@ -102,9 +110,8 @@ class LDAP_UserSync {
         return $modified;
     }
 
-    public function getCommonName(LDAPResult $lr) {
-        return $lr->getCommonName();;
+    public function getCommonName(LDAPResult $lr)
+    {
+        return $lr->getCommonName();
     }
 }
-
-?>

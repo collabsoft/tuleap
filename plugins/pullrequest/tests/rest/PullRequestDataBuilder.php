@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,18 +18,20 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-require_once __DIR__.'/DatabaseInitialization.class.php';
+require_once __DIR__ . '/DatabaseInitialization.class.php';
 
-class PullRequestDataBuilder extends REST_TestDataBuilder {
+class PullRequestDataBuilder extends REST_TestDataBuilder
+{
 
-    public function setUp() {
+    public function setUp()
+    {
         PluginManager::instance()->installAndActivate('pullrequest');
         $this->insertPullRequest();
     }
 
-    private function insertPullRequest() {
+    private function insertPullRequest()
+    {
         $initializer = new Tuleap\PullRequest\REST\DatabaseInitialization();
         $initializer->setUp();
     }
-
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,7 +29,5 @@ class PluginDescriptor extends \PluginDescriptor
             false,
             dgettext('tuleap-dynamic_credentials', 'Allow your support staff to access your instance when needed')
         );
-
-        $this->setVersionFromFile(__DIR__ . '/../../VERSION');
     }
 }

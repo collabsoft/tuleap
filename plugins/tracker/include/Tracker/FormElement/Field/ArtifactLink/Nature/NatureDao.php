@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,9 +23,11 @@ namespace Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature;
 
 use DataAccessObject;
 
-class NatureDao extends DataAccessObject {
+class NatureDao extends DataAccessObject
+{
 
-    public function create($shortname, $forward_label, $reverse_label) {
+    public function create($shortname, $forward_label, $reverse_label)
+    {
         $nature        = $this->getNatureByShortname($shortname);
         $shortname     = $this->da->quoteSmart($shortname);
         $forward_label = $this->da->quoteSmart($forward_label);
@@ -36,11 +38,7 @@ class NatureDao extends DataAccessObject {
         if ($nature->count() > 0) {
             $this->rollBack();
             throw new UnableToCreateNatureException(
-                $GLOBALS['Language']->getText(
-                    'plugin_tracker_artifact_links_natures',
-                    'create_same_name_error',
-                    $shortname
-                )
+                sprintf(dgettext('tuleap-tracker', 'a type with %1$s as shortname already exists.'), $shortname)
             );
         }
 
@@ -56,15 +54,17 @@ class NatureDao extends DataAccessObject {
         return true;
     }
 
-    public function getNatureByShortname($shortname) {
-        $shortname     = $this->da->quoteSmart($shortname);
+    public function getNatureByShortname($shortname)
+    {
+        $shortname = $this->da->quoteSmart($shortname);
 
         $sql = "SELECT * FROM plugin_tracker_artifactlink_natures WHERE shortname = $shortname";
 
         return $this->retrieve($sql);
     }
 
-    public function edit($shortname, $forward_label, $reverse_label) {
+    public function edit($shortname, $forward_label, $reverse_label)
+    {
         $shortname     = $this->da->quoteSmart($shortname);
         $forward_label = $this->da->quoteSmart($forward_label);
         $reverse_label = $this->da->quoteSmart($reverse_label);
@@ -85,7 +85,7 @@ class NatureDao extends DataAccessObject {
         $this->purgeDeletedTypeInArtifactLinkTypeUsage($shortname);
 
         $shortname = $this->da->quoteSmart($shortname);
-        $sql = "DELETE FROM plugin_tracker_artifactlink_natures WHERE shortname = $shortname";
+        $sql       = "DELETE FROM plugin_tracker_artifactlink_natures WHERE shortname = $shortname";
 
         $this->update($sql);
 
@@ -103,7 +103,8 @@ class NatureDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    private function deleteNatureInTableColumns($shortname) {
+    private function deleteNatureInTableColumns($shortname)
+    {
         $shortname = $this->da->quoteSmart($shortname);
 
         $sql = "DELETE FROM tracker_report_renderer_table_columns WHERE artlink_nature = $shortname";
@@ -111,20 +112,21 @@ class NatureDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function isOrHasBeenUsed($shortname) {
+    public function isOrHasBeenUsed($shortname)
+    {
         $shortname = $this->da->quoteSmart($shortname);
 
-        $sql = "SELECT nature
+        $sql = "SELECT 1
                   FROM tracker_changeset_value_artifactlink
                  WHERE nature = $shortname
                  LIMIT 1";
 
-        $row = $this->retrieve($sql)->getRow();
-
-        return (bool)$row['nature'];
+        $dar = $this->retrieve($sql);
+        return $dar && count($dar) !== 0;
     }
 
-    public function searchAllUsedNatureByProject($project_id) {
+    public function searchAllUsedNatureByProject($project_id)
+    {
         $project_id = $this->da->escapeInt($project_id);
 
         $sql = "SELECT DISTINCT nature
@@ -164,9 +166,11 @@ class NatureDao extends DataAccessObject {
                     INNER JOIN tracker_field                        AS f          ON (f.tracker_id = parent_art.tracker_id AND f.formElement_type = 'art_link' AND use_it = 1)
                     INNER JOIN tracker_changeset_value              AS cv         ON (cv.changeset_id = parent_art.last_changeset_id AND cv.field_id = f.id)
                     INNER JOIN tracker_changeset_value_artifactlink AS artlink    ON (artlink.changeset_value_id = cv.id)
-                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id )
-                    INNER JOIN tracker                              AS t          ON t.id = parent_art.tracker_id
-                WHERE parent_art.id  = $artifact_id";
+                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id)
+                    INNER JOIN tracker                              AS t          ON (t.id = linked_art.tracker_id)
+                    INNER JOIN groups ON (groups.group_id = t.group_id)
+                WHERE parent_art.id  = $artifact_id
+                    AND groups.status = 'A'";
 
         return $this->retrieve($sql);
     }
@@ -180,9 +184,11 @@ class NatureDao extends DataAccessObject {
                     INNER JOIN tracker_field                        AS f          ON (f.tracker_id = parent_art.tracker_id AND f.formElement_type = 'art_link' AND use_it = 1)
                     INNER JOIN tracker_changeset_value              AS cv         ON (cv.changeset_id = parent_art.last_changeset_id AND cv.field_id = f.id)
                     INNER JOIN tracker_changeset_value_artifactlink AS artlink    ON (artlink.changeset_value_id = cv.id)
-                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id )
-                    INNER JOIN tracker                              AS t          ON t.id = parent_art.tracker_id
-                WHERE linked_art.id  = $artifact_id";
+                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id)
+                    INNER JOIN tracker                              AS t          ON (t.id = parent_art.tracker_id)
+                    INNER JOIN groups ON (groups.group_id = t.group_id)
+                WHERE linked_art.id  = $artifact_id
+                    AND groups.status = 'A'";
 
         return $this->retrieve($sql);
     }
@@ -199,9 +205,12 @@ class NatureDao extends DataAccessObject {
                     INNER JOIN tracker_field                        AS f          ON (f.tracker_id = parent_art.tracker_id AND f.formElement_type = 'art_link' AND use_it = 1)
                     INNER JOIN tracker_changeset_value              AS cv         ON (cv.changeset_id = parent_art.last_changeset_id AND cv.field_id = f.id)
                     INNER JOIN tracker_changeset_value_artifactlink AS artlink    ON (artlink.changeset_value_id = cv.id)
-                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id )
-                    INNER JOIN tracker                              AS t          ON t.id = parent_art.tracker_id
+                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id)
+                    INNER JOIN tracker                              AS t          ON (t.id = linked_art.tracker_id)
+                    INNER JOIN groups ON (groups.group_id = t.group_id)
                 WHERE parent_art.id  = $artifact_id
+                    AND t.deletion_date IS NULL
+                    AND groups.status = 'A'
                     AND IFNULL(artlink.nature, '') = $nature
                 LIMIT $limit
                 OFFSET $offset";
@@ -221,9 +230,12 @@ class NatureDao extends DataAccessObject {
                     INNER JOIN tracker_field                        AS f          ON (f.tracker_id = parent_art.tracker_id AND f.formElement_type = 'art_link' AND use_it = 1)
                     INNER JOIN tracker_changeset_value              AS cv         ON (cv.changeset_id = parent_art.last_changeset_id AND cv.field_id = f.id)
                     INNER JOIN tracker_changeset_value_artifactlink AS artlink    ON (artlink.changeset_value_id = cv.id)
-                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id )
-                    INNER JOIN tracker                              AS t          ON t.id = parent_art.tracker_id
+                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id)
+                    INNER JOIN tracker                              AS t          ON (t.id = parent_art.tracker_id)
+                    INNER JOIN groups ON (groups.group_id = t.group_id)
                 WHERE linked_art.id  = $artifact_id
+                    AND t.deletion_date IS NULL
+                    AND groups.status = 'A'
                     AND IFNULL(artlink.nature, '') = $nature
                 LIMIT $limit
                 OFFSET $offset";
@@ -241,9 +253,11 @@ class NatureDao extends DataAccessObject {
                     INNER JOIN tracker_field                        AS f          ON (f.tracker_id = parent_art.tracker_id AND f.formElement_type = 'art_link' AND use_it = 1)
                     INNER JOIN tracker_changeset_value              AS cv         ON (cv.changeset_id = parent_art.last_changeset_id AND cv.field_id = f.id)
                     INNER JOIN tracker_changeset_value_artifactlink AS artlink    ON (artlink.changeset_value_id = cv.id)
-                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id )
-                    INNER JOIN tracker                              AS t          ON t.id = parent_art.tracker_id
+                    INNER JOIN tracker_artifact                     AS linked_art ON (linked_art.id = artlink.artifact_id)
+                    INNER JOIN tracker                              AS t          ON (t.id = parent_art.tracker_id)
+                    INNER JOIN groups ON (groups.group_id = t.group_id)
                 WHERE linked_art.id  = $artifact_id
+                    AND groups.status = 'A'
                     AND IFNULL(artlink.nature, '') = $nature
                 LIMIT 1";
 

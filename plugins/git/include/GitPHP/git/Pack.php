@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) 2011 Christopher Han <xiphux@gmail.com>
  *
  * Based on code from Glip by Patrik Fimml
@@ -26,18 +26,16 @@ namespace Tuleap\Git\GitPHP;
 /**
  * Pack class
  *
- * @package GitPHP
- * @subpackage Git
  */
 class Pack
 {
 
-    const OBJ_COMMIT = 1;
-    const OBJ_TREE = 2;
-    const OBJ_BLOB = 3;
-    const OBJ_TAG = 4;
-    const OBJ_OFS_DELTA = 6;
-    const OBJ_REF_DELTA = 7;
+    public const OBJ_COMMIT    = 1;
+    public const OBJ_TREE      = 2;
+    public const OBJ_BLOB      = 3;
+    public const OBJ_TAG       = 4;
+    public const OBJ_OFS_DELTA = 6;
+    public const OBJ_REF_DELTA = 7;
 
     /**
      * @var Project
@@ -57,7 +55,7 @@ class Pack
      * Caches object offsets
      *
      */
-    private $offsetCache = array();
+    private $offsetCache = [];
 
     /**
      * indexModified
@@ -79,16 +77,16 @@ class Pack
      */
     public function __construct($project, $hash)
     {
-        if (!(preg_match('/[0-9A-Fa-f]{40}/', $hash))) {
-            throw new \Exception(sprintf(__('Invalid hash %1$s'), $hash));
+        if (! (preg_match('/[0-9A-Fa-f]{40}/', $hash))) {
+            throw new \Exception(sprintf(dgettext("gitphp", 'Invalid hash %1$s'), $hash));
         }
-        $this->hash = $hash;
+        $this->hash    = $hash;
         $this->project = $project;
 
-        if (!file_exists($project->GetPath() . '/objects/pack/pack-' . $hash . '.idx')) {
+        if (! file_exists($project->GetPath() . '/objects/pack/pack-' . $hash . '.idx')) {
             throw new \Exception('Pack index does not exist');
         }
-        if (!file_exists($project->GetPath() . '/objects/pack/pack-' . $hash . '.pack')) {
+        if (! file_exists($project->GetPath() . '/objects/pack/pack-' . $hash . '.pack')) {
             throw new \Exception('Pack file does not exist');
         }
     }
@@ -113,11 +111,11 @@ class Pack
      *
      * @access public
      * @param string $hash object hash
-     * @return boolean true if object is in pack
+     * @return bool true if object is in pack
      */
     public function ContainsObject($hash) // @codingStandardsIgnoreLine
     {
-        if (!preg_match('/[0-9a-fA-F]{40}/', $hash)) {
+        if (! preg_match('/[0-9a-fA-F]{40}/', $hash)) {
             return false;
         }
 
@@ -135,14 +133,14 @@ class Pack
      */
     private function FindPackedObject($hash) // @codingStandardsIgnoreLine
     {
-        if (!preg_match('/[0-9a-fA-F]{40}/', $hash)) {
+        if (! preg_match('/[0-9a-fA-F]{40}/', $hash)) {
             return false;
         }
 
         $indexFile = $this->project->GetPath() . '/objects/pack/pack-' . $this->hash . '.idx';
-        $mTime = filemtime($indexFile);
+        $mTime     = filemtime($indexFile);
         if ($mTime > $this->indexModified) {
-            $this->offsetCache = array();
+            $this->offsetCache   = [];
             $this->indexModified = $mTime;
         }
 
@@ -157,7 +155,7 @@ class Pack
 
         $magic = fread($index, 4);
         if ($magic == "\xFFtOc") {
-            $version = Pack::fuint32($index);
+            $version = self::fuint32($index);
             if ($version == 2) {
                 $offset = $this->SearchIndexV2($index, $hash);
             }
@@ -208,11 +206,11 @@ class Pack
          */
         while ($low <= $high) {
             $mid = ($low + $high) >> 1;
-            fseek($index, 4*256 + 24*$mid);
+            fseek($index, 4 * 256 + 24 * $mid);
 
-            $off = Pack::fuint32($index);
+            $off     = self::fuint32($index);
             $binName = fread($index, 20);
-            $name = bin2hex($binName);
+            $name    = bin2hex($binName);
 
             $this->offsetCache[$name] = $off;
 
@@ -267,8 +265,8 @@ class Pack
         /*
          * get the object count from fanout[255]
          */
-        fseek($index, 8 + 4*255);
-        $objectCount = Pack::fuint32($index);
+        fseek($index, 8 + 4 * 255);
+        $objectCount = self::fuint32($index);
 
         /*
          * binary search for the index of the hash in the sha listing
@@ -277,10 +275,10 @@ class Pack
         $objIndex = false;
         while ($low <= $high) {
             $mid = ($low + $high) >> 1;
-            fseek($index, 8 + 4*256 + 20*$mid);
+            fseek($index, 8 + 4 * 256 + 20 * $mid);
 
             $binName = fread($index, 20);
-            $name = bin2hex($binName);
+            $name    = bin2hex($binName);
 
             $cmp = strcmp($hash, $name);
 
@@ -300,14 +298,14 @@ class Pack
         /*
          * get the offset from the same index in the offset table
          */
-        fseek($index, 8 + 4*256 + 24*$objectCount + 4*$objIndex);
+        fseek($index, 8 + 4 * 256 + 24 * $objectCount + 4 * $objIndex);
         $offset = self::fuint32($index);
         if (($offset & 0x80000000) === 0) {
             return $offset;
         }
 
         $offset_in_64bit_entries_index = ($offset ^ 0x80000000);
-        fseek($index, 8 + 4*256 + 24*$objectCount + 4*$objectCount + 8*$offset_in_64bit_entries_index);
+        fseek($index, 8 + 4 * 256 + 24 * $objectCount + 4 * $objectCount + 8 * $offset_in_64bit_entries_index);
         return self::fuint64($index);
     }
 
@@ -332,16 +330,16 @@ class Pack
          * starting with that byte can be found
          * (first level fan-out)
          */
-        if ($binaryHash{0} == "\x00") {
+        if ($binaryHash[0] == "\x00") {
             $low = 0;
             fseek($index, $offset);
-            $high = Pack::fuint32($index);
+            $high = self::fuint32($index);
         } else {
-            fseek($index, $offset + (ord($binaryHash{0}) - 1) * 4);
-            $low = Pack::fuint32($index);
-            $high = Pack::fuint32($index);
+            fseek($index, $offset + (ord($binaryHash[0]) - 1) * 4);
+            $low  = self::fuint32($index);
+            $high = self::fuint32($index);
         }
-        return array($low, $high);
+        return [$low, $high];
     }
 
     /**
@@ -364,8 +362,8 @@ class Pack
         $pack = fopen($this->project->GetPath() . '/objects/pack/pack-' . $this->hash . '.pack', 'rb');
         flock($pack, LOCK_SH);
 
-        $magic = fread($pack, 4);
-        $version = Pack::fuint32($pack);
+        $magic   = fread($pack, 4);
+        $version = self::fuint32($pack);
         if ($magic != 'PACK' || $version != 2) {
             flock($pack, LOCK_UN);
             fclose($pack);
@@ -403,24 +401,24 @@ class Pack
          * should be read as part of the size.  1 means continue reading the size,
          * 0 means the data is starting
          */
-        $c = ord(fgetc($pack));
+        $c    = ord(fgetc($pack));
         $type = ($c >> 4) & 0x07;
         $size = $c & 0x0F;
         for ($i = 4; $c & 0x80; $i += 7) {
-            $c = ord(fgetc($pack));
+            $c     = ord(fgetc($pack));
             $size |= (($c & 0x7f) << $i);
         }
 
-        if ($type == Pack::OBJ_COMMIT || $type == Pack::OBJ_TREE || $type == Pack::OBJ_BLOB || $type == Pack::OBJ_TAG) {
+        if ($type == self::OBJ_COMMIT || $type == self::OBJ_TREE || $type == self::OBJ_BLOB || $type == self::OBJ_TAG) {
             /*
              * regular gzipped object data
              */
-            return array($type, gzuncompress(fread($pack, $size+512), $size));
-        } elseif ($type == Pack::OBJ_OFS_DELTA) {
+            return [$type, gzuncompress(fread($pack, $size + 512), $size)];
+        } elseif ($type == self::OBJ_OFS_DELTA) {
             /*
              * delta of an object at offset
              */
-            $buf = fread($pack, $size+512+20);
+            $buf = fread($pack, $size + 512 + 20);
 
             /*
              * read the base object offset
@@ -434,7 +432,7 @@ class Pack
             $off = -1;
             do {
                 $off++;
-                $c = ord($buf{$pos++});
+                $c   = ord($buf[$pos++]);
                 $off = ($off << 7) + ($c & 0x7f);
             } while ($c & 0x80);
 
@@ -450,10 +448,10 @@ class Pack
                  * read base object at offset and apply delta to it
                  */
                 list($type, $base) = $this->UnpackObject($pack, $baseOffset);
-                $data = Pack::ApplyDelta($delta, $base);
-                return array($type, $data);
+                $data              = self::ApplyDelta($delta, $base);
+                return [$type, $data];
             }
-        } elseif ($type == Pack::OBJ_REF_DELTA) {
+        } elseif ($type == self::OBJ_REF_DELTA) {
             /*
              * delta of object with hash
              */
@@ -471,9 +469,9 @@ class Pack
              */
             $delta = gzuncompress(fread($pack, $size + 512), $size);
 
-            $data = Pack::ApplyDelta($delta, $base);
+            $data = self::ApplyDelta($delta, $base);
 
-            return array($type, $data);
+            return [$type, $data];
         }
 
         return false;
@@ -495,37 +493,37 @@ class Pack
         /*
          * algorithm from patch-delta.c
          */
-        $pos = 0;
-        $baseSize = Pack::ParseVarInt($delta, $pos);
-        $resultSize = Pack::ParseVarInt($delta, $pos);
+        $pos        = 0;
+        $baseSize   = self::ParseVarInt($delta, $pos);
+        $resultSize = self::ParseVarInt($delta, $pos);
 
-        $data = '';
+        $data     = '';
         $deltalen = strlen($delta);
         while ($pos < $deltalen) {
-            $opcode = ord($delta{$pos++});
+            $opcode = ord($delta[$pos++]);
             if ($opcode & 0x80) {
                 $off = 0;
                 if ($opcode & 0x01) {
-                    $off = ord($delta{$pos++});
+                    $off = ord($delta[$pos++]);
                 }
                 if ($opcode & 0x02) {
-                    $off |= ord($delta{$pos++}) <<  8;
+                    $off |= ord($delta[$pos++]) <<  8;
                 }
                 if ($opcode & 0x04) {
-                    $off |= ord($delta{$pos++}) << 16;
+                    $off |= ord($delta[$pos++]) << 16;
                 }
                 if ($opcode & 0x08) {
-                    $off |= ord($delta{$pos++}) << 24;
+                    $off |= ord($delta[$pos++]) << 24;
                 }
                 $len = 0;
                 if ($opcode & 0x10) {
-                    $len = ord($delta{$pos++});
+                    $len = ord($delta[$pos++]);
                 }
                 if ($opcode & 0x20) {
-                    $len |= ord($delta{$pos++}) <<  8;
+                    $len |= ord($delta[$pos++]) <<  8;
                 }
                 if ($opcode & 0x40) {
-                    $len |= ord($delta{$pos++}) << 16;
+                    $len |= ord($delta[$pos++]) << 16;
                 }
                 if ($len == 0) {
                     $len = 0x10000;
@@ -533,7 +531,7 @@ class Pack
                 $data .= substr($base, $off, $len);
             } elseif ($opcode > 0) {
                 $data .= substr($delta, $pos, $opcode);
-                $pos += $opcode;
+                $pos  += $opcode;
             }
         }
         return $data;
@@ -556,10 +554,10 @@ class Pack
      */
     private static function ParseVarInt($str, &$pos = 0) // @codingStandardsIgnoreLine
     {
-        $ret = 0;
+        $ret  = 0;
         $byte = 0x80;
         for ($shift = 0; $byte & 0x80; $shift += 7) {
-            $byte = ord($str{$pos++});
+            $byte = ord($str[$pos++]);
             $ret |= (($byte & 0x7F) << $shift);
         }
         return $ret;
@@ -593,7 +591,7 @@ class Pack
      */
     private static function fuint32($handle)
     {
-        return Pack::uint32(fread($handle, 4));
+        return self::uint32(fread($handle, 4));
     }
 
     private static function uint64($str)

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2013. All rights reserved
+ * Copyright (c) Enalean SAS 2013 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,16 +19,20 @@
 /**
  * Add rest_authentication_token table
  */
-class b201311081011_remove_codex_themes extends ForgeUpgrade_Bucket {
-    public function description() {
+class b201311081011_remove_codex_themes extends ForgeUpgrade_Bucket
+{
+    public function description()
+    {
         return "Remove CodeX and CodeX themes from user preferences";
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "UPDATE user SET theme = '' WHERE theme IN ('CodeX', 'CodeXTab')";
 
         $res = $this->db->dbh->exec($sql);
@@ -37,5 +41,3 @@ class b201311081011_remove_codex_themes extends ForgeUpgrade_Bucket {
         }
     }
 }
-
-?>

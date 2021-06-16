@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,6 +19,8 @@
  */
 
 namespace Tuleap\DynamicCredentials\Credential;
+
+use Tuleap\Cryptography\ConcealedString;
 
 class CredentialCreator
 {
@@ -46,10 +48,10 @@ class CredentialCreator
      * @throws CredentialInvalidUsernameException
      * @throws DuplicateCredentialException
      */
-    public function create($username, $password, \DateTimeImmutable $expiration)
+    public function create($username, ConcealedString $password, \DateTimeImmutable $expiration)
     {
-        $identifier          = $this->identifier_extractor->extract($username);
-        $hashed_password     = $this->password_handler->computeHashPassword($password);
+        $identifier      = $this->identifier_extractor->extract($username);
+        $hashed_password = $this->password_handler->computeHashPassword($password);
 
         try {
             $this->dao->save($identifier, $hashed_password, $expiration->getTimestamp());

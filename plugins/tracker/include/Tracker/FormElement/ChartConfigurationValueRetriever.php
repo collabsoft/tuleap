@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,12 @@
 
 namespace Tuleap\Tracker\FormElement;
 
-use Logger;
 use PFUser;
-use Tracker_Artifact;
+use Psr\Log\LoggerInterface;
+use TimePeriodWithoutWeekEnd;
 use Tracker_FormElement_Chart_Field_Exception;
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\Semantic\Timeframe\IComputeTimeframes;
 
 class ChartConfigurationValueRetriever
 {
@@ -32,22 +34,29 @@ class ChartConfigurationValueRetriever
      */
     private $configuration_field_retriever;
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
+    /**
+     * @var IComputeTimeframes
+     */
+    private $timeframe_calculator;
 
-    public function __construct(ChartConfigurationFieldRetriever $configuration_field_retriever, Logger $logger)
-    {
+    public function __construct(
+        ChartConfigurationFieldRetriever $configuration_field_retriever,
+        IComputeTimeframes $timeframe_calculator,
+        LoggerInterface $logger
+    ) {
         $this->configuration_field_retriever = $configuration_field_retriever;
+        $this->timeframe_calculator          = $timeframe_calculator;
         $this->logger                        = $logger;
     }
 
     /**
-     * @param Tracker_Artifact $artifact
      *
      * @return null|int
      */
-    public function getCapacity(Tracker_Artifact $artifact, PFUser $user)
+    public function getCapacity(Artifact $artifact, PFUser $user)
     {
         try {
             $field = $this->configuration_field_retriever->getCapacityField($artifact->getTracker());
@@ -57,64 +66,21 @@ class ChartConfigurationValueRetriever
             return null;
         }
 
-        $artifact_list = array($artifact->getId());
+        $artifact_list = [$artifact->getId()];
 
         return $field->getComputedValue($user, $artifact, null, $artifact_list, true);
     }
 
     /**
-     * @return Integer
      *
      * @throws Tracker_FormElement_Chart_Field_Exception
      */
-    public function getDuration(Tracker_Artifact $artifact, PFUser $user)
+    public function getTimePeriod(Artifact $artifact, PFUser $user): TimePeriodWithoutWeekEnd
     {
-        $field = $this->configuration_field_retriever->getDurationField($artifact, $user);
-
-        if ($artifact->getValue($field) === null) {
-            throw new Tracker_FormElement_Chart_Field_Exception(
-                $GLOBALS['Language']->getText('plugin_tracker', 'burndown_empty_duration_warning')
-            );
-        }
-
-        $duration = $artifact->getValue($field)->getValue();
-
-        if ($duration <= 0) {
-            throw new Tracker_FormElement_Chart_Field_Exception(
-                $GLOBALS['Language']->getText('plugin_tracker', 'burndown_empty_duration_warning')
-            );
-        }
-
-        if ($duration === 1) {
-            throw new Tracker_FormElement_Chart_Field_Exception(
-                $GLOBALS['Language']->getText('plugin_tracker', 'burndown_duration_too_short')
-            );
-        }
-
-        return $duration;
-    }
-
-    /**
-     * @param Tracker_Artifact $artifact
-     *
-     * @return Integer
-     *
-     * @throws Tracker_FormElement_Chart_Field_Exception
-     */
-    public function getStartDate(Tracker_Artifact $artifact, PFUser $user)
-    {
-        $start_date_field = $this->configuration_field_retriever->getStartDateField($artifact, $user);
-        if (! $artifact->getValue($start_date_field)) {
-            return;
-        }
-        $timestamp        = $artifact->getValue($start_date_field)->getTimestamp();
-
-        if (! $timestamp) {
-            throw new Tracker_FormElement_Chart_Field_Exception(
-                $GLOBALS['Language']->getText('plugin_tracker', 'burndown_empty_start_date_warning')
-            );
-        }
-
-        return $timestamp;
+        return $this->timeframe_calculator->buildTimePeriodWithoutWeekendForArtifactChartRendering(
+            $artifact,
+            $user,
+            $this->logger
+        );
     }
 }

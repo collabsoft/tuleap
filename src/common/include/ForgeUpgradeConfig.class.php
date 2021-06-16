@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2011. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -22,10 +22,11 @@
 /**
  * Manage interactions with ForgeUpgrade configuration
  */
-class ForgeUpgradeConfig {
-    const FORGEUPGRADE_PATH = '/usr/lib/forgeupgrade/bin/forgeupgrade';
+class ForgeUpgradeConfig
+{
+    public const FORGEUPGRADE_PATH = '/usr/lib/forgeupgrade/bin/forgeupgrade';
 
-    const COMMAND_CHECK_UPDATE = 'check-update';
+    public const COMMAND_CHECK_UPDATE = 'check-update';
 
     /**
      * @var System_Command
@@ -39,9 +40,10 @@ class ForgeUpgradeConfig {
      *
      * @param String $filePath Path to a .ini config file
      */
-    public function __construct(System_Command $command, $filePath=null) {
+    public function __construct(System_Command $command, $filePath = null)
+    {
         $this->command = $command;
-        if (is_file($filePath)) {
+        if ($filePath !== null && is_file($filePath)) {
             $this->setFilePath($filePath);
         }
     }
@@ -51,7 +53,8 @@ class ForgeUpgradeConfig {
      *
      * @param String $filePath Path to an .ini file
      */
-    public function setFilePath($filePath) {
+    public function setFilePath($filePath)
+    {
         $this->filePath = $filePath;
         $this->config   = parse_ini_file($this->filePath, true);
     }
@@ -59,12 +62,13 @@ class ForgeUpgradeConfig {
     /**
      * Load default codendi config as defined in configuration
      */
-    public function loadDefaults() {
-        if (isset($GLOBALS['forgeupgrade_file']) && is_file($GLOBALS['forgeupgrade_file'])) {
-            $this->setFilePath($GLOBALS['forgeupgrade_file']);
+    public function loadDefaults()
+    {
+        if (ForgeConfig::exists('forgeupgrade_file') && is_file(ForgeConfig::get('forgeupgrade_file'))) {
+            $this->setFilePath(ForgeConfig::get('forgeupgrade_file'));
         } else {
-            $localInc = getenv('CODENDI_LOCAL_INC')?getenv('CODENDI_LOCAL_INC'):'/etc/codendi/conf/local.inc';
-            throw new Exception('$forgeupgrade_file variable not defined in '.$localInc);
+            $localInc = getenv('CODENDI_LOCAL_INC') ? getenv('CODENDI_LOCAL_INC') : '/etc/tuleap/conf/local.inc';
+            throw new Exception('$forgeupgrade_file variable not defined in ' . $localInc);
         }
     }
 
@@ -73,9 +77,10 @@ class ForgeUpgradeConfig {
      *
      * @param String $path A path to test
      *
-     * @return Boolean
+     * @return bool
      */
-    public function existsInPath($path) {
+    public function existsInPath($path)
+    {
         if (isset($this->config['core']['path'])) {
             return in_array($path, $this->config['core']['path']);
         }
@@ -87,8 +92,9 @@ class ForgeUpgradeConfig {
      *
      * @param string $path
      */
-    public function recordOnlyPath($path) {
-        $this->command->exec(self::FORGEUPGRADE_PATH.' --dbdriver='.escapeshellarg($this->config['core']['dbdriver']).' --path='.escapeshellarg($path).' record-only');
+    public function recordOnlyPath($path)
+    {
+        $this->command->exec(self::FORGEUPGRADE_PATH . ' --dbdriver=' . escapeshellarg($this->config['core']['dbdriver']) . ' --path=' . escapeshellarg($path) . ' record-only');
     }
 
     /**
@@ -96,12 +102,13 @@ class ForgeUpgradeConfig {
      *
      * @param String $path The path to add
      */
-    public function addPath($path) {
-        if (!isset($this->config['core'])) {
-            $this->config['core'] = array();
+    public function addPath($path)
+    {
+        if (! isset($this->config['core'])) {
+            $this->config['core'] = [];
         }
-        if (!isset($this->config['core']['path'])) {
-            $this->config['core']['path'] = array();
+        if (! isset($this->config['core']['path'])) {
+            $this->config['core']['path'] = [];
         }
         $this->config['core']['path'][] = $path;
         $this->write();
@@ -112,7 +119,8 @@ class ForgeUpgradeConfig {
      *
      * @param String $path the path to remove
      */
-    public function removePath($path) {
+    public function removePath($path)
+    {
         if (isset($this->config['core']['path'])) {
             $confChanged = false;
             foreach ($this->config['core']['path'] as $k => $v) {
@@ -133,19 +141,22 @@ class ForgeUpgradeConfig {
      *
      * @see http://stackoverflow.com/questions/1268378/create-ini-file-write-values-in-php
      */
-    protected function write() {
+    protected function write()
+    {
         $content = '';
 
-        foreach ($this->config as $key=>$elem) {
-            $content .= '['.$key.']'.PHP_EOL;
-            foreach ($elem as $key2=>$elem2) {
-                if(is_array($elem2)) {
-                    foreach($elem2 as $value) {
-                        $content .= $key2.'[] = "'.$value.'"'.PHP_EOL;
+        foreach ($this->config as $key => $elem) {
+            $content .= '[' . $key . ']' . PHP_EOL;
+            foreach ($elem as $key2 => $elem2) {
+                if (is_array($elem2)) {
+                    foreach ($elem2 as $value) {
+                        $content .= $key2 . '[] = "' . $value . '"' . PHP_EOL;
                     }
+                } elseif ($elem2 == "") {
+                    $content .= $key2 . ' = ' . PHP_EOL;
+                } else {
+                    $content .= $key2 . ' = "' . $elem2 . '"' . PHP_EOL;
                 }
-                else if($elem2=="") $content .= $key2.' = '.PHP_EOL;
-                else $content .= $key2.' = "'.$elem2.'"'.PHP_EOL;
             }
         }
 
@@ -154,7 +165,8 @@ class ForgeUpgradeConfig {
         }
     }
 
-    public function isSystemUpToDate() {
+    public function isSystemUpToDate()
+    {
         $output = $this->execute(self::COMMAND_CHECK_UPDATE);
 
         if ($this->checkForgeUpgradeReturn($output)) {
@@ -163,7 +175,8 @@ class ForgeUpgradeConfig {
         return false;
     }
 
-    private function checkForgeUpgradeReturn(array $output) {
+    private function checkForgeUpgradeReturn(array $output)
+    {
         $string = implode('', $output);
         if (strpos($string, 'INFO - System up-to-date') !== false) {
             return true;
@@ -171,7 +184,8 @@ class ForgeUpgradeConfig {
         return false;
     }
 
-    private function execute($cmd) {
-        return $this->command->exec(self::FORGEUPGRADE_PATH.' --config='.escapeshellarg($this->filePath).' '.escapeshellarg($cmd));
+    private function execute($cmd)
+    {
+        return $this->command->exec(self::FORGEUPGRADE_PATH . ' --config=' . escapeshellarg($this->filePath) . ' ' . escapeshellarg($cmd));
     }
 }

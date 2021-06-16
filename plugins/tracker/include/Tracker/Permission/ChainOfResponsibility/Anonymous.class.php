@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,37 +23,40 @@
  * all permissions (except admin) to other groups (if anonymous has access it
  * makes no sense to remove permissions to some other authenticated users...)
  */
-class Tracker_Permission_ChainOfResponsibility_PermissionsOfAnonymous extends Tracker_Permission_Command {
+class Tracker_Permission_ChainOfResponsibility_PermissionsOfAnonymous extends Tracker_Permission_Command
+{
 
-    public function apply(Tracker_Permission_PermissionRequest $request, Tracker_Permission_PermissionSetter $permission_setter) {
+    public function apply(Tracker_Permission_PermissionRequest $request, Tracker_Permission_PermissionSetter $permissions_setter)
+    {
         switch ($request->getPermissionType(ProjectUGroup::ANONYMOUS)) {
             case Tracker_Permission_Command::PERMISSION_FULL:
-                $permission_setter->grantAccess(Tracker::PERMISSION_FULL, ProjectUGroup::ANONYMOUS);
-                foreach ($permission_setter->getAllGroupIds() as $stored_ugroup_id) {
+                $permissions_setter->grantAccess(Tracker::PERMISSION_FULL, ProjectUGroup::ANONYMOUS);
+                foreach ($permissions_setter->getAllGroupIds() as $stored_ugroup_id) {
                     if ($stored_ugroup_id !== ProjectUGroup::ANONYMOUS) {
-                        $this->revokeAllButAdmin($request, $permission_setter, $stored_ugroup_id);
+                        $this->revokeAllButAdmin($request, $permissions_setter, $stored_ugroup_id);
                     }
                 }
                 break;
 
             case Tracker_Permission_Command::PERMISSION_NONE:
-                $permission_setter->revokeAll(ProjectUGroup::ANONYMOUS);
+                $permissions_setter->revokeAll(ProjectUGroup::ANONYMOUS);
                 break;
         }
 
-        $this->applyNextCommand($request, $permission_setter);
+        $this->applyNextCommand($request, $permissions_setter);
     }
 
-    protected function warnAlreadyHaveFullAccess(Tracker_Permission_PermissionSetter $permission_setter, $ugroup_id) {
+    protected function warnAlreadyHaveFullAccess(Tracker_Permission_PermissionSetter $permission_setter, $ugroup_id)
+    {
         $GLOBALS['Response']->addFeedback(
             Feedback::WARN,
             $GLOBALS['Language']->getText(
                 'tracker_admin_permissions',
                 'tracker_ignore_g_anon_full',
-                array(
+                [
                     $permission_setter->getUGroupName($ugroup_id),
                     $permission_setter->getUGroupName(ProjectUGroup::ANONYMOUS),
-                )
+                ]
             )
         );
     }

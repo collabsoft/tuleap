@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2011. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -20,32 +20,35 @@
  */
 
 
-class Git_PostReceiveMailManager {
+class Git_PostReceiveMailManager
+{
 
-    var $dao;
+    public $dao;
 
     /**
      * Constructor of the class
      *
      * @return void
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->dao = $this->_getDao();
     }
 
     /**
      * Add a mail address to a repository to be notified
      *
-     * @param Integer $repositoryId
+     * @param int $repositoryId
      * @param String  $mail
      *
-     * @return Boolean
+     * @return bool
      */
-    function addMail($repositoryId, $mail) {
+    public function addMail($repositoryId, $mail)
+    {
         try {
             $this->dao->createNotification($repositoryId, $mail);
         } catch (PDOException $e) {
-            $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git', 'dao_error_create_notification'));
+            $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-git', 'Mail to notify not added'));
             return false;
         }
         return true;
@@ -58,14 +61,15 @@ class Git_PostReceiveMailManager {
      * @param GitRepository  $repository
      * @param String  $mail
      *
-     *  @return Boolean
+     *  @return bool
      */
-    public function removeMailByRepository($repository, $mail) {
+    public function removeMailByRepository($repository, $mail)
+    {
         if ($this->dao->removeNotification($repository->getId(), $mail)) {
             $repository->loadNotifiedMails();
             return $repository->getBackend()->changeRepositoryMailingList($repository);
         } else {
-            $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git', 'dao_error_remove_notification'));
+            $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-git', 'Mail not removed'));
             return false;
         }
     }
@@ -76,27 +80,28 @@ class Git_PostReceiveMailManager {
      * As repository is meant to be deleted, there is no need to propagate
      * change to backend.
      *
-     * @param GitRepository $repository
      *
-     * @return Boolean
+     * @return bool
      */
-    public function markRepositoryAsDeleted(GitRepository $repository) {
+    public function markRepositoryAsDeleted(GitRepository $repository)
+    {
         return $this->dao->removeNotification($repository->getId(), null);
     }
 
     /**
      * Returns the list of notified mails for post commit
      *
-     * @param Integer $repositoryId Id of the repository to retrieve itsnotification mails
+     * @param int $repositoryId Id of the repository to retrieve itsnotification mails
      *
      * @return array
      */
-    public function getNotificationMailsByRepositoryId($repositoryId) {
+    public function getNotificationMailsByRepositoryId($repositoryId)
+    {
         $dar = $this->dao->searchByRepositoryId($repositoryId);
 
-        $mailList = array();
+        $mailList = [];
         foreach ($dar as $row) {
-            $mailList [] = $row['recipient_mail'];
+            $mailList[] = $row['recipient_mail'];
         }
         return $mailList;
     }
@@ -106,27 +111,27 @@ class Git_PostReceiveMailManager {
      *
      * @return Git_PostReceiveMailDao
      */
-    function _getDao() {
-        if (!$this->dao) {
+    public function _getDao()
+    {
+        if (! $this->dao) {
             $this->dao = new Git_PostReceiveMailDao();
         }
-        return  $this->dao;
+        return $this->dao;
     }
 
     /**
      * Wrapper used for tests to get a new GitDao
      */
-    function _getGitDao() {
+    public function _getGitDao()
+    {
         return new GitDao();
     }
 
     /**
      * Wrapper used for tests to get a new GitRepository
      */
-    function _getGitRepository() {
+    public function _getGitRepository()
+    {
         return new GitRepository();
     }
-
 }
-
-?>

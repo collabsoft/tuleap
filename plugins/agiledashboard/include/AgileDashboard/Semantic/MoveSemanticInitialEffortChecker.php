@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,7 +27,7 @@ use Tuleap\Tracker\Action\MoveSemanticChecker;
 
 class MoveSemanticInitialEffortChecker extends MoveSemanticChecker
 {
-    const INITIAL_EFFORT_SEMANTIC_LABEL = 'initial effort';
+    public const INITIAL_EFFORT_SEMANTIC_LABEL = 'initial effort';
 
     /**
      * @var AgileDashboard_Semantic_InitialEffortFactory

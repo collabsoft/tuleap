@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,8 @@
 namespace Tuleap\ArtifactsFolders\Folder;
 
 use Codendi_HTMLPurifier;
-use Tracker_Artifact;
 use PFUser;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class ArtifactLinkInformationPrepender
 {
@@ -44,64 +44,68 @@ class ArtifactLinkInformationPrepender
     }
 
     public function prependArtifactLinkInformation(
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         PFUser $current_user,
         $reverse_artifact_links,
-        $read_only
+        $read_only,
+        array $additional_classes
     ) {
         if ($reverse_artifact_links) {
-            return;
+            return '';
         }
 
         $value            = false;
         $folder_hierarchy = $this->hierarchy_builder->getHierarchyOfFolderForArtifact($artifact);
-        if ($read_only) {
-            if ($folder_hierarchy) {
-                $value = $this->fetchLinkToFolder($folder_hierarchy);
-            }
-        } else {
+
+        if ($folder_hierarchy) {
+            $value = $this->fetchLinkToFolder($folder_hierarchy);
+        }
+
+        if (! $read_only) {
             $current_folder = null;
             if ($folder_hierarchy) {
                 $current_folder = end($folder_hierarchy);
             }
-            $value = $this->fetchSelectBox($artifact, $current_user, $current_folder);
+            $value .= $this->fetchSelectBox($artifact, $current_user, $additional_classes, $current_folder);
         }
 
-        if (! $value) {
-            return;
-        }
-
-        $current_folder = $GLOBALS['Language']->getText('plugin_folders', 'current_folder');
-
-        return '<p>' . $current_folder . ' ' . $value . '</p>';
+        return '<p>' . $this->fetchFolderLabel($folder_hierarchy)
+            . ' ' . $value .
+            '</p>';
     }
 
     private function fetchLinkToFolder(array $folder_hierarchy)
     {
         $purifier = Codendi_HTMLPurifier::instance();
-        $folders = array();
-        /** @var Tracker_Artifact $folder */
+        $folders  = [];
         foreach ($folder_hierarchy as $folder) {
-            $uri = $folder->getUri().'&view=artifactsfolders';
+            \assert($folder instanceof Artifact);
+            $uri = $folder->getUri() . '&view=artifactsfolders';
 
-            $link = '<a href="' . $purifier->purify($uri) . '" class="direct-link-to-artifact">';
+            $link  = '<a href="' . $purifier->purify($uri) . '" class="direct-link-to-artifact">';
             $link .= $purifier->purify($folder->getTitle());
             $link .= '</a>';
 
             $folders[] = $link;
         }
 
-        return implode(' <i class="icon-angle-right"></i> ', $folders);
+        return implode(' <i class="fa fa-angle-right"></i> ', $folders);
     }
 
     private function fetchSelectBox(
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         PFUser $current_user,
-        Tracker_Artifact $current_folder = null
+        array $additional_classes,
+        ?Artifact $current_folder = null
     ) {
+        $class = "";
+        if (count($additional_classes) === 0) {
+            $class = 'class=tracker-form-element-artifactlink-prepended';
+        }
+
         $project = $artifact->getTracker()->getProject();
 
-        $options    = array();
+        $options    = [];
         $collection = $this->builder->buildFolderHierarchicalRepresentationCollection(
             $artifact,
             $project,
@@ -113,9 +117,23 @@ class ArtifactLinkInformationPrepender
             return;
         }
 
-        return '<select name="new-artifact-folder">
+        $purifier = Codendi_HTMLPurifier::instance();
+        return '<select name="new-artifact-folder" ' . $purifier->purify($class) . '>
             <option value="" class="not-anymore-in-folder">'
-            . $GLOBALS['Language']->getText('plugin_folders', 'no_folder') . '</option>'
+            . dgettext('tuleap-artifactsfolders', 'Not in a folder') . '</option>'
             . implode('', $options) . '</select>';
+    }
+
+    private function fetchFolderLabel(array $folder_hierarchy)
+    {
+        $class = "";
+        if (empty($folder_hierarchy)) {
+            $class = 'class=tracker-form-element-artifactlink-prepended';
+        }
+
+        $purifier = Codendi_HTMLPurifier::instance();
+        return '<span ' . $purifier->purify($class) . '>' .
+            dgettext('tuleap-artifactsfolders', 'Currently in folder:') .
+            '</span>';
     }
 }

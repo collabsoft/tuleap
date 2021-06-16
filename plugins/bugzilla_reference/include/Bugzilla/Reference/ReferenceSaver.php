@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use ReferenceManager;
 use Tuleap\Cryptography\ConcealedString;
 use Tuleap\Cryptography\Symmetric\EncryptionKey;
 use Tuleap\Cryptography\Symmetric\SymmetricCrypto;
-use Tuleap\reference\ReferenceValidator;
+use Tuleap\Reference\ReferenceValidator;
 use Valid_HTTPURI;
 
 class ReferenceSaver
@@ -93,7 +93,8 @@ class ReferenceSaver
             throw new KeywordIsInvalidException();
         }
 
-        if ($this->reference_validator->isSystemKeyword($keyword)
+        if (
+            $this->reference_validator->isSystemKeyword($keyword)
             || $this->reference_validator->isReservedKeyword($keyword)
             || $this->reference_retriever->getReferenceByKeyword($keyword) !== null
         ) {
@@ -149,15 +150,15 @@ class ReferenceSaver
     private function getAPIKeyToStoreWithEncryptionStatus($id, $api_key)
     {
         if ($api_key !== '') {
-            return array(SymmetricCrypto::encrypt(new ConcealedString($api_key), $this->encryption_key), true);
+            return [SymmetricCrypto::encrypt(new ConcealedString($api_key), $this->encryption_key), true];
         }
 
         $reference = $this->dao->getReferenceById($id);
         if ($reference['api_key'] !== '') {
-            return array(SymmetricCrypto::encrypt(new ConcealedString($reference['api_key']), $this->encryption_key), false);
+            return [SymmetricCrypto::encrypt(new ConcealedString($reference['api_key']), $this->encryption_key), false];
         }
 
-        return array($reference['encrypted_api_key'], $reference['has_api_key_always_been_encrypted']);
+        return [$reference['encrypted_api_key'], $reference['has_api_key_always_been_encrypted']];
     }
 
     private function createReferenceForBugzillaServer($keyword, $server)

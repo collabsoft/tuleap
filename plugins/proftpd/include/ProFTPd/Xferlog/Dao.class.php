@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,15 +22,17 @@ namespace Tuleap\ProFTPd\Xferlog;
 
 use DataAccessObject;
 
-class Dao extends DataAccessObject {
-    const DIRECTION_UPLOAD  = 'i';
-    const DIRECTION_DOWNLOAD = 'o';
-    const DIRECTION_DELETE = 'd';
+class Dao extends DataAccessObject
+{
+    public const DIRECTION_UPLOAD   = 'i';
+    public const DIRECTION_DOWNLOAD = 'o';
+    public const DIRECTION_DELETE   = 'd';
 
-    const SERVICE_HTTP = 'http';
+    public const SERVICE_HTTP = 'http';
 
-    public function searchLatestEntryTimestamp() {
-        $sql = 'SELECT * FROM plugin_proftpd_xferlog WHERE service_name != "'.self::SERVICE_HTTP.'" ORDER BY id DESC LIMIT 1';
+    public function searchLatestEntryTimestamp()
+    {
+        $sql = 'SELECT * FROM plugin_proftpd_xferlog WHERE service_name != "' . self::SERVICE_HTTP . '" ORDER BY id DESC LIMIT 1';
         $dar =  $this->retrieve($sql);
         if ($dar && $dar->rowCount() == 1) {
             $row = $dar->getRow();
@@ -39,7 +41,8 @@ class Dao extends DataAccessObject {
         return 0;
     }
 
-    public function storeWebDownload($user_id, $group_id, $current_time, $file_path) {
+    public function storeWebDownload($user_id, $group_id, $current_time, $file_path)
+    {
         $user_id      = $this->da->escapeInt($user_id);
         $group_id     = $this->da->escapeInt($group_id);
         $time         = $this->da->escapeInt($current_time);
@@ -74,22 +77,22 @@ class Dao extends DataAccessObject {
         $group_id,
         Entry $entry
     ) {
-        $user_id                = $this->da->escapeInt($user_id);
-        $group_id               = $this->da->escapeInt($group_id);
-        $time                   = $this->da->escapeInt($entry->current_time);
-        $transfer_time          = $this->da->escapeInt($entry->transfer_time);
-        $remote_host            = $this->da->quoteSmart($entry->remote_host);
-        $file_size              = $this->da->escapeInt($entry->file_size);
-        $file_name              = $this->da->quoteSmart($entry->filename);
-        $transfer_type          = $this->da->quoteSmart($entry->transfer_type);
-        $special_action_flag    = $this->da->quoteSmart($entry->special_action_flag);
-        $direction              = $this->da->quoteSmart($entry->direction);
-        $access_mode            = $this->da->quoteSmart($entry->access_mode);
-        $username               = $this->da->quoteSmart($entry->username);
-        $service_name           = $this->da->quoteSmart($entry->service_name);
-        $authentication_method  = $this->da->escapeInt($entry->authentication_method);
-        $authenticated_user_id  = $this->da->escapeInt($entry->authenticated_user_id);
-        $completion_status      = $this->da->quoteSmart($entry->completion_status);
+        $user_id               = $this->da->escapeInt($user_id);
+        $group_id              = $this->da->escapeInt($group_id);
+        $time                  = $this->da->escapeInt($entry->current_time);
+        $transfer_time         = $this->da->escapeInt($entry->transfer_time);
+        $remote_host           = $this->da->quoteSmart($entry->remote_host);
+        $file_size             = $this->da->escapeInt($entry->file_size);
+        $file_name             = $this->da->quoteSmart($entry->filename);
+        $transfer_type         = $this->da->quoteSmart($entry->transfer_type);
+        $special_action_flag   = $this->da->quoteSmart($entry->special_action_flag);
+        $direction             = $this->da->quoteSmart($entry->direction);
+        $access_mode           = $this->da->quoteSmart($entry->access_mode);
+        $username              = $this->da->quoteSmart($entry->username);
+        $service_name          = $this->da->quoteSmart($entry->service_name);
+        $authentication_method = $this->da->escapeInt($entry->authentication_method);
+        $authenticated_user_id = $this->da->escapeInt($entry->authenticated_user_id);
+        $completion_status     = $this->da->quoteSmart($entry->completion_status);
 
         $sql = "INSERT INTO plugin_proftpd_xferlog
                 (
@@ -133,7 +136,8 @@ class Dao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function getLogQuery($group_id, $where_conditions) {
+    public function getLogQuery($group_id, $where_conditions)
+    {
         $group_id = $this->da->escapeInt($group_id);
 
         $download = $this->da->quoteSmart("Download");
@@ -143,9 +147,9 @@ class Dao extends DataAccessObject {
         $sql = "SELECT
                     log.time AS time,
                     CASE
-                        WHEN direction = '".self::DIRECTION_DOWNLOAD."' THEN $download
-                        WHEN direction = '".self::DIRECTION_UPLOAD."' THEN $upload
-                        WHEN direction = '".self::DIRECTION_DELETE."' THEN $deleted
+                        WHEN direction = '" . self::DIRECTION_DOWNLOAD . "' THEN $download
+                        WHEN direction = '" . self::DIRECTION_UPLOAD . "' THEN $upload
+                        WHEN direction = '" . self::DIRECTION_DELETE . "' THEN $deleted
                     END as type,
                     user.user_name AS user_name,
                     user.realname AS realname,

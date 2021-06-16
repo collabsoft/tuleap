@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -45,13 +45,10 @@ class NatureDeletor
     {
         $this->validator->checkIsNotOrHasNotBeenUsed($shortname);
 
-        try{
+        try {
             $this->dao->delete($shortname);
         } catch (Exception $exception) {
-            throw new UnableToDeleteNatureException($GLOBALS['Language']->getText(
-                'plugin_tracker_artifact_links_natures',
-                'db_error')
-            );
+            throw new UnableToDeleteNatureException(dgettext('tuleap-tracker', 'error while playing with the database.  Help us improve your experience by sending an error report.'));
         }
     }
 }

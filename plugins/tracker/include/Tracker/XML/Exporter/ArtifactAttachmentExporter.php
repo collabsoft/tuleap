@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,21 +19,25 @@
  */
 
 use Tuleap\Project\XML\Export\ArchiveInterface;
+use Tuleap\Tracker\Artifact\Artifact;
 
-class Tracker_XML_Exporter_ArtifactAttachmentExporter {
+class Tracker_XML_Exporter_ArtifactAttachmentExporter
+{
 
-    const FILE_PREFIX = 'Artifact';
+    public const FILE_PREFIX = 'Artifact';
 
     /**
      * @var Tracker_FormElementFactory
      */
     private $form_element_factory;
 
-    public function __construct(Tracker_FormElementFactory $form_element_factory) {
+    public function __construct(Tracker_FormElementFactory $form_element_factory)
+    {
         $this->form_element_factory = $form_element_factory;
     }
 
-    public function exportAttachmentsInArchive(Tracker_Artifact $artifact, ArchiveInterface $archive) {
+    public function exportAttachmentsInArchive(Artifact $artifact, ArchiveInterface $archive)
+    {
         $file_fields    = $this->form_element_factory->getUsedFileFields($artifact->getTracker());
         $last_changeset = $artifact->getLastChangeset();
 
@@ -50,7 +54,8 @@ class Tracker_XML_Exporter_ArtifactAttachmentExporter {
         }
     }
 
-    private function addFilesIntoArchive(Tracker_Artifact_ChangesetValue_File $value, ArchiveInterface $archive) {
+    private function addFilesIntoArchive(Tracker_Artifact_ChangesetValue_File $value, ArchiveInterface $archive)
+    {
         $archive->addEmptyDir(ArchiveInterface::DATA_DIR);
 
         foreach ($value->getFiles() as $file_info) {

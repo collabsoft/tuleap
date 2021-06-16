@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,6 +18,5 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once __DIR__ . '/../../../tests/lib/autoload.php';
-require_once __DIR__ . '/../include/pullrequestPlugin.class.php';
+require_once __DIR__ . '/../include/pullrequestPlugin.php';
 require_once __DIR__ . '/../../git/tests/bootstrap.php';

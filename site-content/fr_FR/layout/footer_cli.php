@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,4 +19,7 @@
  */
 ?>
 <h3 class="footer-section-title">API</h3>
-<p class="footer-paragraph"><?= $GLOBALS['sys_name']?> fournit une <a href="/help/api.php">API&nbsp;REST</a>.</p>
+<p class="footer-paragraph">
+    <?php echo \ForgeConfig::get('sys_name') ?>
+    fournit une <a href="<?php echo Codendi_HTMLPurifier::instance()->purify($endpoint_url); ?>">API&nbsp;REST</a>.
+</p>

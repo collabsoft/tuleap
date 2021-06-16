@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,12 +17,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class SVN_PermissionsManager {
-    
-    public function userCanRead(PFUser $user, Project $project, $svnpath) {
-        include_once 'www/svn/svn_utils.php';
+class SVN_PermissionsManager
+{
+
+    public function userCanRead(PFUser $user, Project $project, $svnpath)
+    {
+        include_once __DIR__ . '/../../www/svn/svn_utils.php';
         return svn_utils_check_access($user->getUserName(), $project->getSVNRootPath(), $svnpath);
     }
 }
-
-?>

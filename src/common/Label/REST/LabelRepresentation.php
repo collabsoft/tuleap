@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ use Tuleap\REST\JsonCast;
 
 class LabelRepresentation
 {
-    const ROUTE = 'labels';
+    public const ROUTE = 'labels';
 
     /**
      * @var int {@required false}

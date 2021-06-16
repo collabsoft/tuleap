@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  *  This file is a part of Tuleap.
  *
@@ -23,7 +23,7 @@ namespace Tuleap\Tracker\Config;
 class EmailGateWayPresenter extends SectionsPresenter
 {
     /**
-     * @var bool
+     * @var string
      */
     public $email_gateway_active = 'tlp-tab-active';
 }

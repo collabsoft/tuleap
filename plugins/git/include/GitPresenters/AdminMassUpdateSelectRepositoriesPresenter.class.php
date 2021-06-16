@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2015. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class GitPresenters_AdminMassUpdateSelectRepositoriesPresenter extends GitPresenters_AdminPresenter {
+class GitPresenters_AdminMassUpdateSelectRepositoriesPresenter extends GitPresenters_AdminPresenter
+{
 
     /**
      * @var CSRFSynchronizerToken
@@ -30,33 +31,41 @@ class GitPresenters_AdminMassUpdateSelectRepositoriesPresenter extends GitPresen
      */
     public $repositories;
 
-
-    public function __construct(CSRFSynchronizerToken $csrf, $project_id, array $repositories) {
+    public function __construct(
+        CSRFSynchronizerToken $csrf,
+        $project_id,
+        array $external_pane_presenters,
+        array $repositories
+    ) {
         $are_mirrors_defined = true;
-        parent::__construct($project_id, $are_mirrors_defined);
+        parent::__construct($project_id, $are_mirrors_defined, $external_pane_presenters);
 
-        $this->csrf_token                             = $csrf;
-        $this->manage_mass_update_select_repositories = true;
-        $this->repositories                           = $repositories;
+        $this->csrf_token   = $csrf;
+        $this->repositories = $repositories;
     }
 
-    public function title() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_title');
+    public function title()
+    {
+        return dgettext('tuleap-git', 'Mass update of repositories');
     }
 
-    public function select_repositories() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_select_repositories');
+    public function select_repositories()
+    {
+        return dgettext('tuleap-git', 'Select the repositories you want to update. You will be able to apply mass changes on the next page.');
     }
 
-    public function repository_list_name() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_repository_list_name');
+    public function repository_list_name()
+    {
+        return dgettext('tuleap-git', 'Repository name');
     }
 
-    public function mass_change() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_go_to_mass_change');
+    public function mass_change()
+    {
+        return dgettext('tuleap-git', 'Update selected repositories');
     }
 
-    public function form_action() {
-        return '/plugins/git/?group_id='. $this->project_id .'&action=admin-mass-update';
+    public function form_action(): string
+    {
+        return '/plugins/git/?group_id=' . $this->project_id . '&action=admin-mass-update';
     }
 }

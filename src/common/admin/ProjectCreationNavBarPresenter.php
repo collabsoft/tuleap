@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,11 @@
 namespace Tuleap\Admin;
 
 use Exception;
+use Tuleap\admin\ProjectCreation\ProjectVisibility\ProjectVisibilityConfigDisplayController;
 
+/**
+ * @psalm-immutable
+ */
 class ProjectCreationNavBarPresenter
 {
     public $moderation_is_active = false;
@@ -30,6 +34,8 @@ class ProjectCreationNavBarPresenter
     public $webhooks_is_active   = false;
     public $fields_is_active     = false;
     public $categories_is_active = false;
+    public $visibility_is_active = false;
+    public $widgets_is_active    = false;
 
     public $are_trove_categories_enabled = false;
 
@@ -51,6 +57,12 @@ class ProjectCreationNavBarPresenter
                 break;
             case 'categories':
                 $this->categories_is_active = true;
+                break;
+            case ProjectVisibilityConfigDisplayController::TAB_NAME:
+                $this->visibility_is_active = true;
+                break;
+            case ProjectWidgetsConfigurationDisplayController::TAB_NAME:
+                $this->widgets_is_active = true;
                 break;
             default:
                 throw new Exception('Must be implemented');

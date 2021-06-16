@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ use Tuleap\Event\Dispatchable;
 
 class CanProjectUseLabels implements Dispatchable
 {
-    const NAME = 'canProjectUseLabels';
+    public const NAME = 'canProjectUseLabels';
     /**
      * @var bool
      */

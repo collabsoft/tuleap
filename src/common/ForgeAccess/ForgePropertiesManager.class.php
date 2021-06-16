@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2015. All Rights Reserved.
+  * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
   *
   * This file is a part of Tuleap.
   *
@@ -24,7 +24,7 @@ use Tuleap\User\UserGroup\NameTranslator;
 
 class ForgeAccess_ForgePropertiesManager
 {
-    const POSSIBLE_ACCESS_VALUES = [ForgeAccess::ANONYMOUS, ForgeAccess::REGULAR, ForgeAccess::RESTRICTED];
+    public const POSSIBLE_ACCESS_VALUES = [ForgeAccess::ANONYMOUS, ForgeAccess::REGULAR, ForgeAccess::RESTRICTED];
 
     /**
      * @var EventManager
@@ -81,7 +81,7 @@ class ForgeAccess_ForgePropertiesManager
         $property_name = ForgeAccess::CONFIG;
         $this->config_dao->save($property_name, $new_value);
 
-        $this->event_manager->processEvent(Event::SITE_ACCESS_CHANGE, array('new_value' => $new_value, 'old_value' => $old_value));
+        $this->event_manager->processEvent(Event::SITE_ACCESS_CHANGE, ['new_value' => $new_value, 'old_value' => $old_value]);
 
         $this->frs_permission_creator->updateSiteAccess($old_value);
 
@@ -91,11 +91,8 @@ class ForgeAccess_ForgePropertiesManager
         }
     }
 
-    public function updateProjectAdminVisibility($new_value) {
-        return $this->config_dao->save(ForgeAccess::PROJECT_ADMIN_CAN_CHOOSE_VISIBILITY, $new_value);
-    }
-
-    public function updateLabels($authenticated_label, $registered_label) {
+    public function updateLabels($authenticated_label, $registered_label)
+    {
         $this->config_dao->save(NameTranslator::CONFIG_AUTHENTICATED_LABEL, $authenticated_label);
         $this->config_dao->save(NameTranslator::CONFIG_REGISTERED_LABEL, $registered_label);
     }

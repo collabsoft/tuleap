@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  * Copyright 1999-2000 (c) The SourceForge Crew
  *
  * This file is a part of Tuleap.
@@ -19,25 +19,33 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Cryptography\ConcealedString;
+use Tuleap\DB\DBFactory;
+use Tuleap\DB\DBTransactionExecutorWithConnection;
+use Tuleap\User\Password\Change\PasswordChanger;
 use Tuleap\User\Password\Reset\ExpiredTokenException;
+use Tuleap\User\SessionManager;
 
-require_once('pre.php');
+require_once __DIR__ . '/../include/pre.php';
 
 $request = HTTPRequest::instance();
 
-$confirm_hash = $request->get('confirm_hash');
+$confirm_hash = new \Tuleap\Cryptography\ConcealedString(
+    $request->get('confirm_hash') === false ? '' : $request->get('confirm_hash')
+);
 
-$reset_token_dao      = new Tuleap\User\Password\Reset\DataAccessObject();
-$password_handler     = PasswordHandlerFactory::getPasswordHandler();
-$user_manager         = UserManager::instance();
-$reset_token_verifier = new \Tuleap\User\Password\Reset\Verifier($reset_token_dao, $password_handler, $user_manager);
+$reset_token_dao          = new Tuleap\User\Password\Reset\LostPasswordDAO();
+$hasher                   = new \Tuleap\Authentication\SplitToken\SplitTokenVerificationStringHasher();
+$user_manager             = UserManager::instance();
+$reset_token_verifier     = new \Tuleap\User\Password\Reset\Verifier($reset_token_dao, $hasher, $user_manager);
+$reset_token_unserializer = new \Tuleap\User\Password\Reset\ResetTokenSerializer();
 
 try {
-    $token = \Tuleap\User\Password\Reset\Token::constructFromIdentifier($confirm_hash);
+    $token = $reset_token_unserializer->getSplitToken($confirm_hash);
     $user  = $reset_token_verifier->getUser($token);
 } catch (ExpiredTokenException $ex) {
     $GLOBALS['Response']->addFeedback(
-            Feedback::ERROR,
+        Feedback::ERROR,
         $GLOBALS['Language']->getText('account_lostlogin', 'expired_token')
     );
     $GLOBALS['Response']->redirect('/account/lostpw.php');
@@ -48,38 +56,49 @@ try {
     );
 }
 
-if ($request->isPost()
+if ($user->getUserPw() === null) {
+    exit_error(
+        $GLOBALS['Language']->getText('include_exit', 'error'),
+        $GLOBALS['Language']->getText('account_lostlogin', 'invalid_hash')
+    );
+}
+
+if (
+    $request->isPost()
     && $request->exist('Update')
     && $request->existAndNonEmpty('form_pw')
-    && !strcmp($request->get('form_pw'), $request->get('form_pw2'))) {
-
-    $user->setPassword($request->get('form_pw'));
-
-    $reset_token_revoker = new \Tuleap\User\Password\Reset\Revoker($reset_token_dao);
-    $reset_token_revoker->revokeTokens($user);
-
-    $user_manager->updateDb($user);
+    && ! strcmp($request->get('form_pw'), $request->get('form_pw2'))
+) {
+    $password_changer = new PasswordChanger(
+        $user_manager,
+        new SessionManager($user_manager, new SessionDao(), new RandomNumberGenerator()),
+        new \Tuleap\User\Password\Reset\Revoker(new \Tuleap\User\Password\Reset\LostPasswordDAO()),
+        EventManager::instance(),
+        new DBTransactionExecutorWithConnection(DBFactory::getMainTuleapDBConnection())
+    );
+    $password_changer->changePassword($user, new ConcealedString((string) $request->get('form_pw')));
 
     session_redirect("/");
 }
 
-$purifier =& Codendi_HTMLPurifier::instance();
+$purifier = Codendi_HTMLPurifier::instance();
 
-$HTML->header(array('title'=>$Language->getText('account_lostlogin', 'title')));
+$HTML->header(['title' => $Language->getText('account_lostlogin', 'title')]);
 ?>
 <p><b><?php echo $Language->getText('account_lostlogin', 'title'); ?></b>
-<P><?php echo $Language->getText('account_lostlogin', 'message', array($purifier->purify($user->getRealName(), CODENDI_PURIFIER_CONVERT_HTML))); ?>.
+<P><?php echo $Language->getText('account_lostlogin', 'message', [$purifier->purify($user->getRealName(), CODENDI_PURIFIER_CONVERT_HTML)]); ?>.
 
 <form action="lostlogin.php" method="post">
+<input type="hidden" value="<?php echo $purifier->purify($user->getUserName()) ?>" autocomplete="username">
 <p><?php echo $Language->getText('account_lostlogin', 'newpasswd'); ?>:
-<br><input type="password" name="form_pw">
+<br><input type="password" name="form_pw" autocomplete="new-password">
 <p><?php echo $Language->getText('account_lostlogin', 'newpasswd2'); ?>:
-<br><input type="password" name="form_pw2">
+<br><input type="password" name="form_pw2" autocomplete="new-password">
 <input type="hidden" name="confirm_hash" value="<?php echo $purifier->purify($confirm_hash); ?>">
 <p><input type="submit" name="Update" value="<?php echo $Language->getText('global', 'btn_update'); ?>">
 </form>
 
 <?php
-$HTML->footer(array());
+$HTML->footer([]);
 
 ?>

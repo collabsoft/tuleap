@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ArtifactUserListFieldXMLExporter extends ArtifactStaticListFieldXMLExporter {
-    const TV3_VALUE_INDEX  = 'valueInt';
-    const TV3_TYPE         = 'SB_5';
-    const TV5_TYPE         = 'list';
-    const TV5_BIND         = 'users';
+class ArtifactUserListFieldXMLExporter extends ArtifactStaticListFieldXMLExporter
+{
+    public const TV3_VALUE_INDEX = 'valueInt';
+    public const TV3_TYPE        = 'SB_5';
+    public const TV5_TYPE        = 'list';
+    public const TV5_BIND        = 'users';
 
-    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row) {
+    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row)
+    {
         $field_node = $this->getNode(self::TV5_TYPE, $row);
         $field_node->setAttribute('bind', self::TV5_BIND);
         $user_node = $this->getNodeValue($this->getValueLabel($row['new_value']));
@@ -33,7 +35,8 @@ class ArtifactUserListFieldXMLExporter extends ArtifactStaticListFieldXMLExporte
         $changeset_node->appendChild($field_node);
     }
 
-    private function getValueLabel($value) {
+    private function getValueLabel($value)
+    {
         if ($value == 100) {
             return '';
         }
@@ -42,11 +45,11 @@ class ArtifactUserListFieldXMLExporter extends ArtifactStaticListFieldXMLExporte
             $row = $dar->getRow();
             return $row['user_name'];
         }
-        throw new Exception_TV3XMLException('Unknown user '.$value);
+        throw new Exception_TV3XMLException('Unknown user ' . $value);
     }
 
-    public function getFieldValueIndex() {
+    public function getFieldValueIndex()
+    {
         return self::TV3_VALUE_INDEX;
     }
-
 }

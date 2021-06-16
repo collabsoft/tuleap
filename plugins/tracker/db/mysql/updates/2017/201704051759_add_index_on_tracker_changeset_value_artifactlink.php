@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -16,10 +16,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
- *
- * @codingStandardsIgnoreFile
  */
 
+// phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace,Squiz.Classes.ValidClassName.NotCamelCaps
 class b201704051759_add_index_on_tracker_changeset_value_artifactlink extends ForgeUpgrade_Bucket
 {
     public function description()
@@ -44,8 +43,9 @@ class b201704051759_add_index_on_tracker_changeset_value_artifactlink extends Fo
         $this->addIndex('tracker_changeset_value_artifactlink', 'idx_group_id_keyword', $sql);
     }
 
-    private function indexNameExists($table_name, $index) {
-        $sql = 'SHOW INDEX FROM '.$table_name.' WHERE Key_name LIKE '.$this->db->dbh->quote($index);
+    private function indexNameExists($table_name, $index)
+    {
+        $sql = 'SHOW INDEX FROM ' . $table_name . ' WHERE Key_name LIKE ' . $this->db->dbh->quote($index);
         $res = $this->db->dbh->query($sql);
         if ($res && $res->fetch() !== false) {
             return true;
@@ -54,19 +54,20 @@ class b201704051759_add_index_on_tracker_changeset_value_artifactlink extends Fo
         }
     }
 
-    private function addIndex($table_name, $index, $sql) {
-        $this->log->info('Add index '.$table_name);
-        if (!$this->indexNameExists($table_name, $index)) {
+    private function addIndex($table_name, $index, $sql)
+    {
+        $this->log->info('Add index ' . $table_name);
+        if (! $this->indexNameExists($table_name, $index)) {
             $res = $this->db->dbh->exec($sql);
             if ($res === false) {
                 $info = $this->db->dbh->errorInfo();
-                $msg  = 'An error occured adding index to '.$table_name.': '.$info[2].' ('.$info[1].' - '.$info[0].')';
+                $msg  = 'An error occured adding index to ' . $table_name . ': ' . $info[2] . ' (' . $info[1] . ' - ' . $info[0] . ')';
                 $this->log->error($msg);
                 throw new ForgeUpgrade_Bucket_Db_Exception($msg);
             }
-            $this->log->info($index.' successfully added index');
+            $this->log->info($index . ' successfully added index');
         } else {
-            $this->log->info($index.' already exists');
+            $this->log->info($index . ' already exists');
         }
     }
 }

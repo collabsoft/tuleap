@@ -1,4 +1,23 @@
 <?php
+/**
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
+ * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
@@ -7,23 +26,17 @@ namespace Tuleap\Git\GitPHP;
  *
  * Represents an archive (snapshot)
  *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Git
  */
 /**
  * Archive class
  *
- * @package GitPHP
- * @subpackage Git
  */
 class Archive
 {
-    const COMPRESS_TAR = 'tar';
-    const COMPRESS_BZ2 = 'tbz2';
-    const COMPRESS_GZ  = 'tgz';
-    const COMPRESS_ZIP = 'zip';
+    public const COMPRESS_TAR = 'tar';
+    public const COMPRESS_BZ2 = 'tbz2';
+    public const COMPRESS_GZ  = 'tgz';
+    public const COMPRESS_ZIP = 'zip';
 
     /**
      * gitObject
@@ -104,7 +117,7 @@ class Archive
      *
      * @access public
      * @param mixed $gitObject the object
-     * @param integer $format the format for the archive
+     * @param int $format the format for the archive
      * @return mixed git archive
      */
     public function __construct($project, $gitObject, $format = self::COMPRESS_ZIP, $path = '', $prefix = '')
@@ -122,7 +135,7 @@ class Archive
      * Gets the archive format
      *
      * @access public
-     * @return integer archive format
+     * @return int archive format
      */
     public function GetFormat() // @codingStandardsIgnoreLine
     {
@@ -135,12 +148,14 @@ class Archive
      * Sets the archive format
      *
      * @access public
-     * @param integer $format archive format
+     * @param int $format archive format
      */
     public function SetFormat($format) // @codingStandardsIgnoreLine
     {
-        if ((($format == self::COMPRESS_BZ2) && (!function_exists('bzcompress'))) ||
-            (($format == self::COMPRESS_GZ) && (!function_exists('gzencode')))) {
+        if (
+            (($format == self::COMPRESS_BZ2) && (! function_exists('bzcompress'))) ||
+            (($format == self::COMPRESS_GZ) && (! function_exists('gzencode')))
+        ) {
             /*
              * Trying to set a format but doesn't have the appropriate
              * compression function, fall back to tar
@@ -175,7 +190,7 @@ class Archive
     public function SetObject($object) // @codingStandardsIgnoreLine
     {
         // Archive only works for commits and trees
-        if (($object != null) && (!(($object instanceof Commit) || ($object instanceof Tree)))) {
+        if (($object != null) && (! (($object instanceof Commit) || ($object instanceof Tree)))) {
             throw new \Exception('Invalid source object for archive');
         }
 
@@ -226,7 +241,7 @@ class Archive
      */
     public function GetExtension() // @codingStandardsIgnoreLine
     {
-        return Archive::FormatToExtension($this->format);
+        return self::FormatToExtension($this->format);
     }
 
     /**
@@ -236,16 +251,18 @@ class Archive
      *
      * @access public
      * @return string filename
+     *
+     * @psalm-taint-escape header
      */
     public function GetFilename() // @codingStandardsIgnoreLine
     {
-        if (!empty($this->fileName)) {
+        if (! empty($this->fileName)) {
             return $this->fileName;
         }
 
         $fname = $this->GetProject()->GetSlug();
 
-        if (!empty($this->path)) {
+        if (! empty($this->path)) {
             $fname .= '-' . Util::MakeSlug($this->path);
         }
 
@@ -303,13 +320,13 @@ class Archive
      */
     public function GetPrefix() // @codingStandardsIgnoreLine
     {
-        if (!empty($this->prefix)) {
+        if (! empty($this->prefix)) {
             return $this->prefix;
         }
 
         $pfx = $this->GetProject()->GetSlug() . '/';
 
-        if (!empty($this->path)) {
+        if (! empty($this->path)) {
             $pfx .= $this->path . '/';
         }
 
@@ -344,11 +361,11 @@ class Archive
      * Opens a descriptor for reading archive data
      *
      * @access public
-     * @return boolean true on success
+     * @return bool true on success
      */
     public function Open() // @codingStandardsIgnoreLine
     {
-        if (!$this->gitObject) {
+        if (! $this->gitObject) {
             throw new \Exception('Invalid object for archive');
         }
 
@@ -358,7 +375,7 @@ class Archive
 
         $exe = new GitExe($this->GetProject());
 
-        $args = array();
+        $args = [];
 
         switch ($this->format) {
             case self::COMPRESS_ZIP:
@@ -393,7 +410,7 @@ class Archive
 
             $temphandle = gzopen($this->tempfile, $mode);
             if ($temphandle) {
-                while (!feof($this->handle)) {
+                while (! feof($this->handle)) {
                     gzwrite($temphandle, fread($this->handle, 1048576));
                 }
                 gzclose($temphandle);
@@ -416,17 +433,17 @@ class Archive
      * Close the archive data descriptor
      *
      * @access public
-     * @return boolean true on success
+     * @return bool true on success
      */
     public function Close() // @codingStandardsIgnoreLine
     {
-        if (!$this->handle) {
+        if (! $this->handle) {
             return true;
         }
 
         if ($this->format === self::COMPRESS_GZ) {
             fclose($this->handle);
-            if (!empty($this->tempfile)) {
+            if (! empty($this->tempfile)) {
                 unlink($this->tempfile);
                 $this->tempfile = '';
             }
@@ -450,7 +467,7 @@ class Archive
      */
     public function Read($size = 1048576) // @codingStandardsIgnoreLine
     {
-        if (!$this->handle) {
+        if (! $this->handle) {
             return false;
         }
 
@@ -482,16 +499,12 @@ class Archive
         switch ($format) {
             case self::COMPRESS_TAR:
                 return 'tar';
-                break;
             case self::COMPRESS_BZ2:
                 return 'tar.bz2';
-                break;
             case self::COMPRESS_GZ:
                 return 'tar.gz';
-                break;
             case self::COMPRESS_ZIP:
                 return 'zip';
-                break;
         }
     }
 
@@ -506,7 +519,7 @@ class Archive
      */
     public static function SupportedFormats() // @codingStandardsIgnoreLine
     {
-        $formats = array();
+        $formats = [];
 
         $formats[self::COMPRESS_TAR] = self::FormatToExtension(self::COMPRESS_TAR);
 

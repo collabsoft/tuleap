@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,23 +20,32 @@
 
 namespace Tuleap\SvnCore\Cache;
 
+/**
+ * @psalm-immutable
+ */
 class Parameters
 {
+    /**
+     * @var int
+     */
     private $maximum_credentials;
+    /**
+     * @var int
+     */
     private $lifetime;
 
-    public function __construct($maximum_credentials, $lifetime)
+    public function __construct(int $maximum_credentials, int $lifetime)
     {
         $this->maximum_credentials = $maximum_credentials;
         $this->lifetime            = $lifetime;
     }
 
-    public function getMaximumCredentials()
+    public function getMaximumCredentials(): int
     {
         return $this->maximum_credentials;
     }
 
-    public function getLifetime()
+    public function getLifetime(): int
     {
         return $this->lifetime;
     }

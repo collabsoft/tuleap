@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,32 +18,46 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Glyph\GlyphFinder;
-use Tuleap\layout\BreadCrumbDropdown\BreadCrumbPresenterBuilder;
+use Tuleap\BrowserDetection\BrowserDeprecationMessage;
+use Tuleap\BrowserDetection\DetectedBrowser;
+use Tuleap\BuildVersion\FlavorFinderFromFilePresence;
+use Tuleap\BuildVersion\VersionPresenter;
+use Tuleap\Dashboard\User\UserDashboardDao;
+use Tuleap\Dashboard\User\UserDashboardRetriever;
+use Tuleap\Dashboard\Widget\DashboardWidgetDao;
+use Tuleap\DB\DBFactory;
+use Tuleap\DB\DBTransactionExecutorWithConnection;
+use Tuleap\HelpDropdown\HelpDropdownPresenterBuilder;
+use Tuleap\HelpDropdown\ReleaseLinkDao;
+use Tuleap\HelpDropdown\ReleaseNoteManager;
+use Tuleap\HelpDropdown\VersionNumberExtractor;
+use Tuleap\InviteBuddy\InviteBuddiesPresenter;
+use Tuleap\Layout\BreadCrumbDropdown\BreadCrumb;
+use Tuleap\Layout\BreadCrumbDropdown\BreadCrumbLink;
+use Tuleap\Layout\BreadCrumbDropdown\BreadCrumbPresenterBuilder;
 use Tuleap\Layout\IncludeAssets;
+use Tuleap\Layout\JavascriptAsset;
+use Tuleap\Layout\Logo\CustomizedLogoDetector;
+use Tuleap\Layout\Logo\FileContentComparator;
+use Tuleap\layout\NewDropdown\NewDropdownPresenterBuilder;
 use Tuleap\OpenGraph\NoOpenGraphPresenter;
+use Tuleap\Project\Admin\Access\ProjectAdministrationLinkPresenter;
+use Tuleap\Project\Admin\Access\UserCanAccessProjectAdministrationVerifier;
+use Tuleap\Project\Admin\MembershipDelegationDao;
+use Tuleap\Project\Banner\BannerDisplay;
+use Tuleap\Project\Flags\ProjectFlagsBuilder;
+use Tuleap\Project\Flags\ProjectFlagsDao;
+use Tuleap\Project\ProjectPresentersBuilder;
+use Tuleap\Project\Registration\ProjectRegistrationUserPermissionChecker;
+use Tuleap\Sanitizer\URISanitizer;
+use Tuleap\User\Account\RegistrationGuardEvent;
+use Tuleap\User\SwitchToPresenterBuilder;
+use Tuleap\Widget\WidgetFactory;
 
-require_once 'common/templating/TemplateRenderer.class.php';
-require_once 'common/templating/TemplateRendererFactory.class.php';
-require_once 'HeaderPresenter.class.php';
-require_once 'BodyPresenter.class.php';
-require_once 'ContainerPresenter.class.php';
-require_once 'CurrentProjectNavbarInfoPresenter.php';
-require_once 'NavBarProjectPresenter.class.php';
-require_once 'NavBarPresenter.class.php';
-require_once 'NavBarItemPresentersCollection.php';
-require_once 'NavBarItemPresentersCollectionBuilder.php';
-require_once 'NavBarItemPresenter.php';
-require_once 'NavBarItemProjectsPresenter.php';
-require_once 'NavBarItemAdminPresenter.php';
-require_once 'NavBarItemLinkPresenter.php';
-require_once 'NavBarItemDropdownPresenter.php';
-require_once 'NavBarItemDropdownSectionPresenter.php';
-require_once 'SearchFormPresenter.class.php';
-require_once 'FlamingParrot_CSSFilesProvider.class.php';
-require_once 'keyboard_navigation/KeyboardNavigationModalPresenter.class.php';
+require_once __DIR__ . '/../../../themes/FlamingParrot/vendor/autoload.php';
 
-class FlamingParrot_Theme extends Layout {
+class FlamingParrot_Theme extends Layout // phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace,Squiz.Classes.ValidClassName.NotCamelCaps
+{
 
     /**
      * @var TemplateRenderer
@@ -51,50 +65,71 @@ class FlamingParrot_Theme extends Layout {
     protected $renderer;
 
     private $show_sidebar = false;
+    /**
+     * @var ProjectFlagsBuilder
+     */
+    private $project_flags_builder;
+    /**
+     * @var VersionPresenter
+     */
+    private $tuleap_version;
+    /**
+     * @var DetectedBrowser
+     */
+    private $detected_browser;
 
     public function __construct($root)
     {
         parent::__construct($root);
 
-        $this->renderer = TemplateRendererFactory::build()->getRenderer($this->getTemplateDir());
+        $this->renderer         = TemplateRendererFactory::build()->getRenderer($this->getTemplateDir());
+        $this->tuleap_version   = VersionPresenter::fromFlavorFinder(new FlavorFinderFromFilePresence());
+        $this->detected_browser = DetectedBrowser::detectFromTuleapHTTPRequest(HTTPRequest::instance());
+
+        $this->project_flags_builder = new ProjectFlagsBuilder(new ProjectFlagsDao());
     }
 
-    private function render($template_name, $presenter) {
+    private function render($template_name, $presenter)
+    {
         $this->renderer->renderToPage($template_name, $presenter);
     }
 
-    private function getTemplateDir() {
-        return dirname(__FILE__) . '/templates/';
+    private function getTemplateDir()
+    {
+        return __DIR__ . '/../../../themes/FlamingParrot/templates/';
     }
 
-    public static function getVariants() {
-        return array(
+    public static function getVariants()
+    {
+        return [
             "FlamingParrot_Orange",
             "FlamingParrot_Blue",
             "FlamingParrot_Green",
             "FlamingParrot_BlueGrey",
             "FlamingParrot_Purple",
             "FlamingParrot_Red",
-        );
+        ];
     }
 
-    public static function getColorOfCurrentTheme($theme) {
-        $array = array(
+    public static function getColorOfCurrentTheme($theme)
+    {
+        $array = [
             "FlamingParrot_Orange"          => "#F79514",
             "FlamingParrot_Blue"            => "#1593C4",
             "FlamingParrot_Green"           => "#67AF45",
             "FlamingParrot_BlueGrey"        => "#5B6C79",
             "FlamingParrot_Purple"          => "#79558A",
             "FlamingParrot_Red"             => "#BD2626",
-        );
+        ];
 
         return $array[$theme];
     }
 
-    public function header(array $params) {
-        $title = $GLOBALS['sys_name'];
-        if (!empty($params['title'])) {
-           $title = $params['title'] .' - '. $title;
+    public function header(array $params)
+    {
+        $title = ForgeConfig::get('sys_name');
+        if (! empty($params['title'])) {
+            $title = $params['title'] . ' - ' . $title;
         }
 
         $current_user    = UserManager::instance()->getCurrentUser();
@@ -111,6 +146,11 @@ class FlamingParrot_Theme extends Layout {
             $this->getColorOfCurrentTheme($current_variant)
         ));
 
+        if (! empty($params['group'])) {
+            $project = ProjectManager::instance()->getProject($params['group']);
+            $this->injectProjectBackground($project, $params);
+        }
+
         $this->displayJavascriptElements($params);
         $this->displayStylesheetElements($params);
         $this->displaySyndicationElements();
@@ -118,69 +158,59 @@ class FlamingParrot_Theme extends Layout {
         $this->body($params);
     }
 
-    protected function includeSubsetOfCombined() {
-        echo $this->include_asset->getHTMLSnippet('tuleap_subset_flamingparrot.js');
+    protected function includeSubsetOfCombined()
+    {
+        $this->includeJavascriptFile($this->include_asset->getFileURL('tuleap_subset_flamingparrot.js'));
     }
 
     protected function displayCommonStylesheetElements($params)
     {
-        $this->displayFontAwesomeStylesheetElements();
-
-        $core_flaming_parrot_include_assets = new IncludeAssets(
-            ForgeConfig::get('tuleap_dir') . '/src/www/themes/FlamingParrot/assets',
-            '/themes/FlamingParrot/assets'
-        );
+        $core_assets = new \Tuleap\Layout\IncludeCoreAssets();
 
         echo '<link rel="stylesheet" type="text/css" href="/themes/common/css/animate.min.css" />';
         echo '<link rel="stylesheet" type="text/css" href="/scripts/bootstrap/bootstrap-select/bootstrap-select.css" />';
-        echo '<link rel="stylesheet" type="text/css" href="/scripts/bootstrap/bootstrap-tour/bootstrap-tour.min.css" />';
         echo '<link rel="stylesheet" type="text/css" href="/scripts/select2/select2.css" />';
-        echo '<link rel="stylesheet" type="text/css" href="/scripts/vendor/at/css/atwho.min.css" />';
         echo '<link rel="stylesheet" type="text/css" href="/scripts/bootstrap/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css" />';
-        echo '<link rel="stylesheet" type="text/css" href="/scripts/jscrollpane/jquery.jscrollpane.css" />';
 
-        $style_css_url = $this->getCSSThemeFileURL($core_flaming_parrot_include_assets);
-        echo '<link rel="stylesheet" type="text/css" href="' . $style_css_url . '" />';
-        $print_css_url = $core_flaming_parrot_include_assets->getFileURL('print.css');
+        $style_css_urls = $this->getCSSThemeFileURLs($core_assets);
+        foreach ($style_css_urls as $style_css_url) {
+            echo '<link rel="stylesheet" type="text/css" href="' . $style_css_url . '" />';
+        }
+        $print_css_url = $core_assets->getFileURL('FlamingParrot/print.css');
         echo '<link rel="stylesheet" type="text/css" href="' . $print_css_url . '" media="print" />';
 
-        $custom_dir = $GLOBALS['codendi_dir'].'/src/www'.$this->getStylesheetTheme('').'custom';
-        foreach (glob($custom_dir.'/*.css') as $custom_css_file) {
-            echo '<link rel="stylesheet" type="text/css" href="'. $this->getStylesheetTheme('custom/'.basename($custom_css_file)) .'" />';
+        $custom_dir = ForgeConfig::get('codendi_dir') . '/src/www' . $this->getStylesheetTheme('') . 'custom';
+        foreach (glob($custom_dir . '/*.css') as $custom_css_file) {
+            echo '<link rel="stylesheet" type="text/css" href="' . $this->getStylesheetTheme('custom/' . basename($custom_css_file)) . '" />';
         }
-
-        $this->displayStylesheetForPluginsSidebarIcons();
     }
 
-    private function displayStylesheetForPluginsSidebarIcons() {
-        $list_of_icon_unicodes = $this->getListOfIconUnicodes();
-
-        echo '<style>'. PHP_EOL;
-
-        foreach ($list_of_icon_unicodes as $service_name => $unicode) {
-            echo ".tuleap-services-$service_name:before { content: '$unicode'; }". PHP_EOL;
-        }
-        echo '</style>';
-    }
-
-    private function getCSSThemeFileURL(IncludeAssets $include_assets)
+    /**
+     * @return string[]
+     */
+    private function getCSSThemeFileURLs(IncludeAssets $include_assets): array
     {
         $current_user = UserManager::instance()->getCurrentUser();
 
-        $theme_variant     = new ThemeVariant();
-        $css_file_provider = new FlamingParrot_CSSFilesProvider($theme_variant, $include_assets);
-        $variant_used      = $theme_variant->getVariantForUser($current_user);
+        $theme_variant = new ThemeVariant();
+        $variant_used  = $theme_variant->getVariantForUser($current_user);
 
-        return $css_file_provider->getCSSFileForVariant($variant_used);
+        $tlp_vars = new \Tuleap\Layout\CssAsset($include_assets, 'tlp-vars');
+
+        return [
+            $include_assets->getFileURL('FlamingParrot/style.css'),
+            $tlp_vars->getFileURL(new \Tuleap\Layout\ThemeVariation(ThemeVariantColor::buildFromVariant($variant_used), $current_user)),
+        ];
     }
 
-    private function body($params) {
-        $current_user = UserManager::instance()->getCurrentUser();
+    private function body($params)
+    {
+        $current_user    = UserManager::instance()->getCurrentUser();
+        $project_manager = ProjectManager::instance();
 
-        $selected_top_tab = isset($params['selected_top_tab']) ? $params['selected_top_tab'] : false;
-        $body_class       = isset($params['body_class']) ? $params['body_class'] : array();
-        $has_sidebar      = isset($params['group']) ? 'has-sidebar' : '';
-        $sidebar_state    = 'sidebar-expanded';
+        $body_class    = isset($params['body_class']) ? $params['body_class'] : [];
+        $has_sidebar   = isset($params['group']) ? 'has-sidebar' : '';
+        $sidebar_state = 'sidebar-expanded';
 
         $this->addBodyClassDependingThemeVariant($current_user, $body_class);
         $this->addBodyClassDependingUserPreference($current_user, $body_class);
@@ -189,147 +219,170 @@ class FlamingParrot_Theme extends Layout {
             $sidebar_state = $current_user->getPreference('sidebar_state');
         }
 
+        $banner  = null;
+        $project = null;
+        if (! empty($params['group'])) {
+            $project = $project_manager->getProject($params['group']);
+            $banner  = $this->getProjectBannerWithScript($project, $current_user, 'project/project-banner-fp.js');
+
+            if ($banner && $banner->isVisible()) {
+                $body_class[] = 'has-visible-project-banner';
+            }
+        }
+
         $body_class[] = $has_sidebar;
         $body_class[] = $sidebar_state;
 
+        $dropdown_presenter_builder = new HelpDropdownPresenterBuilder(
+            new ReleaseNoteManager(
+                new ReleaseLinkDao(),
+                new UserPreferencesDao(),
+                new VersionNumberExtractor(),
+                new DBTransactionExecutorWithConnection(
+                    DBFactory::getMainTuleapDBConnection()
+                )
+            ),
+            $this->getEventManager(),
+            new URISanitizer(new Valid_HTTPURI(), new Valid_LocalURI()),
+        );
+
+        $help_dropdown_presenter = $dropdown_presenter_builder->build(
+            $current_user,
+            $this->tuleap_version->version_number
+        );
+
+        $platform_banner = $this->getPlatformBannerWithScript($current_user, 'platform/platform-banner-fp.js');
         $this->render('body', new FlamingParrot_BodyPresenter(
             $current_user,
             $this->getNotificationPlaceholder(),
-            $body_class
+            $help_dropdown_presenter,
+            $body_class,
+            $this->detected_browser->isACompletelyBrokenBrowser(),
+            InviteBuddiesPresenter::build($current_user),
+            $platform_banner,
         ));
 
-        $this->navbar($params, $current_user, $selected_top_tab);
+        $this->navbar($params, $current_user, $project, $banner, $platform_banner);
     }
 
-    private function addBodyClassDependingThemeVariant(PFUser $user, array &$body_class) {
+    private function addBodyClassDependingThemeVariant(PFUser $user, array &$body_class)
+    {
         $theme_variant   = new ThemeVariant();
         $current_variant = $theme_variant->getVariantForUser($user);
         $body_class[]    = $current_variant;
     }
 
-    private function addBodyClassDependingUserPreference(PFUser $user, array &$body_class) {
+    private function addBodyClassDependingUserPreference(PFUser $user, array &$body_class)
+    {
         $edition_default_format = $user->getPreference(PFUser::EDITION_DEFAULT_FORMAT);
         if ($edition_default_format && $edition_default_format === 'html') {
             $body_class[] = 'default_format_' . $edition_default_format;
         }
     }
 
-    private function navbar($params, PFUser $current_user, $selected_top_tab) {
-        list($search_options, $selected_entry, $hidden_fields) = $this->getSearchEntries();
+    private function navbar(
+        $params,
+        PFUser $current_user,
+        ?Project $project,
+        ?BannerDisplay $project_banner,
+        ?\Tuleap\Platform\Banner\BannerDisplay $platform_banner
+    ) {
+        $csrf_logout_token = new CSRFSynchronizerToken('logout_action');
+        $event_manager     = EventManager::instance();
+        $url_redirect      = new URLRedirect($event_manager);
+        $main_classes      = $params['main_classes'] ?? [];
 
-        $project_id_from_params = $this->getProjectIdFromParams($params);
-        $event_manager          = EventManager::instance();
+        $current_context_section = $this->getNewDropdownCurrentContextSectionFromParams($params);
 
-        $search_type = $selected_entry['value'];
-        $event_manager->processEvent(
-            Event::REDEFINE_SEARCH_TYPE,
-            array(
-                'type'         => &$search_type,
-                'service_name' => (isset($params['service_name'])) ? $params['service_name'] : '',
-                'project_id'   => $project_id_from_params,
-                'user'         => $current_user
-            )
+        $widget_factory           = new WidgetFactory(
+            UserManager::instance(),
+            new User_ForgeUserGroupPermissionsManager(new User_ForgeUserGroupPermissionsDao()),
+            $event_manager
         );
-        $selected_entry['value'] = $search_type;
+        $user_dashboard_retriever = new UserDashboardRetriever(new UserDashboardDao(new DashboardWidgetDao($widget_factory)));
 
-        $search_form_presenter = new FlamingParrot_SearchFormPresenter($selected_entry, $hidden_fields);
-        $project_manager       = ProjectManager::instance();
-        $projects              = $project_manager->getActiveProjectsForUser($current_user);
-        $projects_presenters   = $this->getPresentersForProjects($projects);
-        $navbar_items_builder  = new FlamingParrot_NavBarItemPresentersCollectionBuilder(
-            $current_user,
-            $_SERVER['REQUEST_URI'],
-            $selected_top_tab,
-            $this->getExtraTabs(),
-            $projects_presenters
+        $registration_user_permission_checker = new ProjectRegistrationUserPermissionChecker(
+            new ProjectDao()
         );
-        $csrf_logout_token     = new CSRFSynchronizerToken('logout_action');
-        $url_redirect          = new URLRedirect($event_manager);
-        $glyph_finder          = new GlyphFinder($event_manager);
+        $new_dropdown_presenter_builder       = new NewDropdownPresenterBuilder(
+            $event_manager,
+            $registration_user_permission_checker
+        );
 
-        $current_project_navbar_info = $this->getCurrentProjectNavbarInfo($project_manager, $params);
+        $switch_to_presenter_builder = new SwitchToPresenterBuilder(
+            new ProjectPresentersBuilder(),
+            new \Tuleap\Layout\SearchFormPresenterBuilder($event_manager, HTTPRequest::instance())
+        );
 
-        $this->showFlamingParrotBurningParrotUnificationTour($current_user);
+        $switch_to = $switch_to_presenter_builder->build($current_user);
+
+        $customized_logo_detector = new \Tuleap\Layout\Logo\CachedCustomizedLogoDetector(
+            new CustomizedLogoDetector(new LogoRetriever(), new FileContentComparator()),
+            BackendLogger::getDefaultLogger(),
+        );
+
+        $is_legacy_logo_customized = $customized_logo_detector->isLegacyOrganizationLogoCustomized();
+        $is_svg_logo_customized    = $customized_logo_detector->isSvgOrganizationLogoCustomized();
 
         $this->render('navbar', new FlamingParrot_NavBarPresenter(
-                $this->imgroot,
-                $current_user,
-                $current_project_navbar_info,
-                $_SERVER['REQUEST_URI'],
-                $selected_top_tab,
-                HTTPRequest::instance(),
-                $params['title'],
-                $search_form_presenter,
-                $this->displayNewAccount(),
-                $this->getMOTD(),
-                $navbar_items_builder->buildNavBarItemPresentersCollection(),
-                $this->getUserActions($current_user),
-                $csrf_logout_token,
-                $url_redirect,
-                $glyph_finder
-            )
-        );
+            $this->imgroot,
+            $current_user,
+            $this->displayNewAccount(),
+            $csrf_logout_token,
+            $url_redirect,
+            $user_dashboard_retriever->getAllUserDashboards($current_user),
+            $new_dropdown_presenter_builder->getPresenter($current_user, $project, $current_context_section),
+            $this->shouldLogoBeDisplayed($params, $project),
+            $switch_to,
+            $is_legacy_logo_customized,
+            $is_svg_logo_customized,
+            InviteBuddiesPresenter::build($current_user),
+            $platform_banner
+        ));
 
-        $this->container($params, $project_manager, $current_user);
-    }
-
-    private function getCurrentProjectNavbarInfo(ProjectManager $project_manager, array $params)
-    {
-        if (empty($params['group'])) {
-            return false;
-        }
-
-        $project = $project_manager->getProject($params['group']);
-
-        return new FlamingParrot_CurrentProjectNavbarInfoPresenter(
-            $project,
-            $this->getProjectPrivacy($project)
+        $this->container(
+            $params,
+            $current_user,
+            $project_banner,
+            $switch_to,
+            $is_legacy_logo_customized,
+            $is_svg_logo_customized,
+            $main_classes,
         );
     }
 
-    private function showFlamingParrotBurningParrotUnificationTour(PFUser $current_user)
+    private function shouldLogoBeDisplayed(array $params, ?Project $project): bool
     {
-        if ($current_user->getPreference(Tuleap_Tour_WelcomeTour::TOUR_NAME) &&
-            ! $current_user->getPreference(Tuleap_Tour_FlamingParrotBurningParrotUnificationTour::TOUR_NAME)
-        ) {
-            $GLOBALS['Response']->addTour(new Tuleap_Tour_FlamingParrotBurningParrotUnificationTour());
-        }
+        return ! $this->isInSiteAdmin($params) && ! isset($project);
     }
 
-    private function getProjectIdFromParams(array $params) {
-        $project_id  = (isset($params['project_id'])) ? $params['project_id'] : null;
-        $project_id  = (! $project_id && isset($params['group_id'])) ? $params['group_id'] : $project_id;
-
-        return $project_id;
+    private function isInSiteAdmin(array $params): bool
+    {
+        return isset($params['in_siteadmin']) && $params['in_siteadmin'] === true;
     }
 
-    private function getPresentersForProjects($list_of_projects) {
-        $presenters = array();
-        foreach ($list_of_projects as $project) {
-            $presenters[] = new FlamingParrot_NavBarProjectPresenter($project);
-        }
-
-        return $presenters;
+    private function displayNewAccount(): bool
+    {
+        $registration_guard = EventManager::instance()->dispatch(new RegistrationGuardEvent());
+        assert($registration_guard instanceof RegistrationGuardEvent);
+        return $registration_guard->isRegistrationPossible();
     }
 
-    private function getExtraTabs() {
-        include $GLOBALS['Language']->getContent('layout/extra_tabs', null, null, '.php');
-
-        return $additional_tabs;
-    }
-
-    private function displayNewAccount() {
-        $display_new_user = true;
-        EventManager::instance()->processEvent('display_newaccount', array('allow' => &$display_new_user));
-        return $display_new_user;
-    }
-
-    private function container(array $params, ProjectManager $project_manager, PFUser $current_user) {
-        $project_tabs        = null;
+    private function container(
+        array $params,
+        PFUser $current_user,
+        ?BannerDisplay $banner,
+        ?\Tuleap\User\SwitchToPresenter $switch_to,
+        bool $is_legacy_logo_customized,
+        bool $is_svg_logo_customized,
+        array $main_classes
+    ): void {
+        $sidebar             = null;
         $project_name        = null;
         $project_link        = null;
-        $project_is_public   = null;
-        $project_privacy     = null;
+        $project             = null;
+        $privacy             = null;
+        $project_context     = null;
         $sidebar_collapsable = false;
 
         if (! empty($params['group'])) {
@@ -337,12 +390,28 @@ class FlamingParrot_Theme extends Layout {
 
             $project = ProjectManager::instance()->getProject($params['group']);
 
-            $project_tabs        = $this->getProjectSidebar($params, $project);
+            $sidebar             = $this->getProjectSidebar($params, $project);
             $project_name        = $project->getPublicName();
             $project_link        = $this->getProjectLink($project);
-            $project_is_public   = $project->isPublic();
-            $project_privacy     = $this->getProjectPrivacy($project);
             $sidebar_collapsable = (! $current_user->isAnonymous() && $current_user->isLoggedIn()) ? true : false;
+
+            $crumb = new BreadCrumb(new BreadCrumbLink($project->getPublicName(), $project->getUrl()));
+            $crumb->setAdditionalClassname("breadcrumb-project");
+            $this->breadcrumbs->addFirst($crumb);
+
+            $administration_link = ProjectAdministrationLinkPresenter::fromProject(
+                new UserCanAccessProjectAdministrationVerifier(new MembershipDelegationDao()),
+                $project,
+                $current_user
+            );
+
+            $project_context = \Tuleap\Project\ProjectContextPresenter::build(
+                $project,
+                \Tuleap\Project\ProjectPrivacyPresenter::fromProject($project),
+                $administration_link,
+                $this->project_flags_builder->buildProjectFlags($project),
+                $banner
+            );
         }
 
         $breadcrumb_presenter_builder = new BreadCrumbPresenterBuilder();
@@ -354,36 +423,46 @@ class FlamingParrot_Theme extends Layout {
             $this->toolbar,
             $project_name,
             $project_link,
-            $project_is_public,
-            $project_privacy,
-            $project_tabs,
+            $sidebar,
             $this->_feedback,
             $this->_getFeedback(),
-            $this->getForgeVersion(),
-            $sidebar_collapsable
+            $this->tuleap_version,
+            $sidebar_collapsable,
+            $current_user,
+            $project_context,
+            $switch_to,
+            $is_legacy_logo_customized,
+            $is_svg_logo_customized,
+            $main_classes,
         ));
-
-        $this->keyboardModal();
     }
 
-    private function getForgeVersion() {
-        return trim(file_get_contents($GLOBALS['codendi_dir'].'/VERSION'));
-    }
-
-    private function keyboardModal() {
-        $this->render('keyboard_navigation_help_modal', new KeyboardNavigationModalPresenter());
-    }
-
-    private function getProjectLink(Project $project) {
+    private function getProjectLink(Project $project)
+    {
         return '/projects/' . $project->getUnixName() . '/';
     }
 
-    public function footer(array $params) {
+    public function footer(array $params)
+    {
+        $this->displayBrowserDeprecationMessage();
         if ($this->canShowFooter($params)) {
-            $this->render('footer', array());
+            $this->render('footer', []);
         }
 
         $this->endOfPage();
+    }
+
+    private function displayBrowserDeprecationMessage(): void
+    {
+        $browser_deprecation_message = BrowserDeprecationMessage::fromDetectedBrowser(
+            $this->getUser(),
+            $this->detected_browser
+        );
+        if ($browser_deprecation_message === null) {
+            return;
+        }
+        $this->addJavascriptAsset(new JavascriptAsset(new \Tuleap\Layout\IncludeCoreAssets(), 'browser-deprecation-fp.js'));
+        $this->render('browser-deprecation', $browser_deprecation_message);
     }
 
     /**
@@ -393,9 +472,10 @@ class FlamingParrot_Theme extends Layout {
      * Although this is the case, it's worth bearing in mind when refactoring.
      *
      * @param array $params
-     * @return boolean
+     * @return bool
      */
-    private function canShowFooter($params) {
+    private function canShowFooter($params)
+    {
         if (! empty($params['without_content'])) {
             return false;
         }
@@ -407,50 +487,15 @@ class FlamingParrot_Theme extends Layout {
         return false;
     }
 
-    private function endOfPage() {
-        $current_user = UserManager::instance()->getCurrentUser();
-        $tour_factory = new Tuleap_TourFactory(ProjectManager::instance(), new URL());
-        $custom_tours = $tour_factory->getToursForPage($current_user, $_SERVER['REQUEST_URI']);
-
-        foreach ($custom_tours as $custom_tour) {
-            if (! $current_user->getPreference($custom_tour->name)) {
-                $this->addTour($custom_tour);
-            }
-        }
-
-        if (! empty($this->tours)) {
-            $this->appendJsonEncodedVariable('tuleap.tours', $this->tours);
-        }
-
+    private function endOfPage()
+    {
         $this->displayFooterJavascriptElements();
-
-        if ($this->isInDebugMode()) {
-            $this->showDebugInfo();
-        }
 
         $this->render('end-of-page', null);
     }
 
-    private function isInDebugMode() {
-        return (ForgeConfig::get('DEBUG_MODE') && (ForgeConfig::get('DEBUG_DISPLAY_FOR_ALL') || user_ismember(1, 'A')));
-    }
-
-    private function getUserActions(PFUser $current_user)
-    {
-        $user_actions = array();
-        EventManager::instance()->processEvent(
-            Event::USER_ACTIONS,
-            array(
-                'user'    => $current_user,
-                'actions' => &$user_actions
-            )
-        );
-
-        return $user_actions;
-    }
-
     protected function includeJavascriptPolyfills()
     {
-        echo $this->include_asset->getHTMLSnippet('flamingparrot-with-polyfills.js');
+        $this->includeJavascriptFile($this->include_asset->getFileURL('flamingparrot-with-polyfills.js'));
     }
 }

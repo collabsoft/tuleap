@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2015. All Rights Reserved.
+  * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
   *
   * This file is a part of Tuleap.
   *
@@ -18,12 +18,14 @@
   * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 
-class Admin_Homepage_HeadlinePresenter {
+class Admin_Homepage_HeadlinePresenter
+{
 
     public $headline;
     public $language_id;
 
-    public function __construct($language_id, $headline) {
+    public function __construct($language_id, $headline)
+    {
         $this->language_id = $language_id;
         $this->headline    = $headline;
     }

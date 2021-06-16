@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2014. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -20,12 +20,13 @@
  */
 
 
-class LDAP_SyncMail {
+class LDAP_SyncMail
+{
 
     private $projectManager;
     private $logger;
 
-    function __construct(ProjectManager $projectManager)
+    public function __construct(ProjectManager $projectManager)
     {
         $this->logger         = new \Tuleap\LDAP\LdapLogger();
         $this->projectManager = $projectManager;
@@ -38,7 +39,8 @@ class LDAP_SyncMail {
      *
      * @return Array
      */
-    private function getProjectsForUser(PFUser $user) {
+    private function getProjectsForUser(PFUser $user)
+    {
         return $this->projectManager->getActiveProjectsForUser($user);
     }
 
@@ -49,14 +51,15 @@ class LDAP_SyncMail {
      *
      * @return Array
      */
-    public function getNotificationRecipients(PFUser $user) {
+    public function getNotificationRecipients(PFUser $user)
+    {
         $projectList = $this->getProjectsForUser($user);
-        $recipient   = array();
+        $recipient   = [];
         foreach ($projectList as $project) {
-            $projectRecipient = array();
+            $projectRecipient = [];
             $projectAdmins    = $project->getAdmins();
-            $unixProjectName      = $project->getUnixName();
-            foreach($projectAdmins as $admin) {
+            $unixProjectName  = $project->getUnixName();
+            foreach ($projectAdmins as $admin) {
                 $projectRecipient[$admin->getId()] = $admin->getEmail();
             }
             $recipient[$unixProjectName] = $projectRecipient;
@@ -73,18 +76,19 @@ class LDAP_SyncMail {
      * @param String  $subject          The subject of the notification mail
      * @param String  $body             The content of the notification mail
      *
-     * @return boolean
+     * @return bool
      */
-    public function notifyProjectsAdmins($recipients, $unixProjectName, $user, $subject, $body) {
+    public function notifyProjectsAdmins($recipients, $unixProjectName, $user, $subject, $body)
+    {
         $notificationStatus = true;
         try {
             $mail = $this->prepareMail($recipients, $unixProjectName, $subject, $body);
             if (! $mail->send()) {
-                $this->logger->error("LDAP daily synchro job has suspended this user ".$user->getRealName()." (".$user->getEmail().", but failed to notify administrators of <$unixProjectName> project (unix name)");
+                $this->logger->error("LDAP daily synchro job has suspended this user " . $user->getRealName() . " (" . $user->getEmail() . ", but failed to notify administrators of <$unixProjectName> project (unix name)");
                 $notificationStatus = false;
             }
         } catch (InvalidArgumentException $e) {
-            $this->logger->warn("LDAP daily synchro job has suspended this user ".$user->getRealName()." (".$user->getEmail().":".$e->getMessage());
+            $this->logger->warning("LDAP daily synchro job has suspended this user " . $user->getRealName() . " (" . $user->getEmail() . ":" . $e->getMessage());
             $notificationStatus = false;
         }
         return $notificationStatus;
@@ -94,23 +98,22 @@ class LDAP_SyncMail {
      * Prepare the mail to be sent after daily user sync
      *
      * @param String  $recipients       List of project administrators emails we want to notify
-     * @param Integer $unixProjectName  Unix name of the project we want to notify its administrators
+     * @param int $unixProjectName Unix name of the project we want to notify its administrators
      * @param String  $subject          The subject of the notification mail
      * @param String  $body             The content of the notification mail
      *
      * @return Codendi_Mail
      */
-    protected function prepareMail($recipients, $unixProjectName, $subject,$body) {
+    protected function prepareMail($recipients, $unixProjectName, $subject, $body)
+    {
         $mail = new Codendi_Mail();
-        $mail->setFrom($GLOBALS['sys_noreply']);
+        $mail->setFrom(ForgeConfig::get('sys_noreply'));
         if (empty($recipients)) {
-            throw new InvalidArgumentException('Cannot send notification without any valid receiver, Perhaps the project <'.$unixProjectName.'> (unix name) has no administrators.');
+            throw new InvalidArgumentException('Cannot send notification without any valid receiver, Perhaps the project <' . $unixProjectName . '> (unix name) has no administrators.');
         }
         $mail->setSubject($subject);
         $mail->setTo($recipients);
         $mail->setBody($body);
         return $mail;
     }
-
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@ class InvalidSearchablesCollection
 
     public function __construct()
     {
-        $this->searchables_not_exist     = array();
-        $this->invalid_searchable_errors = array();
+        $this->searchables_not_exist     = [];
+        $this->invalid_searchable_errors = [];
     }
 
     public function addNonexistentSearchable($searchable_name)
@@ -39,7 +39,7 @@ class InvalidSearchablesCollection
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasInvalidSearchable()
     {

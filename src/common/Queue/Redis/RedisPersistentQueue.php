@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,62 +21,68 @@
 
 namespace Tuleap\Queue\Redis;
 
-use Redis;
+use Tuleap\Queue\QueueInstrumentation;
+use Tuleap\Queue\TaskWorker\TaskWorkerTimedOutException;
+use Tuleap\Redis;
 use RedisException;
-use Logger;
-use ForgeConfig;
+use Psr\Log\LoggerInterface;
 use Tuleap\Queue\PersistentQueue;
 use Tuleap\Queue\QueueServerConnectionException;
 
 /**
- * Class RedisQueue
+ *
  *
  * @see https://stackoverflow.com/questions/27986649/redis-better-way-of-cleaning-the-processing-queuereliable-while-using-brpopl
  */
 class RedisPersistentQueue implements PersistentQueue
 {
-    const MAX_MESSAGES = 1000;
+    private const MAX_MESSAGES               = 1000;
+    private const MAX_RETRY_PROCESSING_EVENT = 3;
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
-
     /**
-     * @var Redis
+     * @var BackOffDelayFailedMessage
+     */
+    private $back_off_delay_failed_message;
+    /**
+     * @var \Redis|null
      */
     private $redis;
     private $event_queue_name;
 
-    public function __construct(Logger $logger, $event_queue_name)
+    public function __construct(LoggerInterface $logger, BackOffDelayFailedMessage $back_off_delay_failed_message, $event_queue_name)
     {
-        $this->logger           = $logger;
-        $this->event_queue_name = $event_queue_name;
+        $this->logger                        = $logger;
+        $this->back_off_delay_failed_message = $back_off_delay_failed_message;
+        $this->event_queue_name              = $event_queue_name;
     }
 
     /**
-     * @param $worker_id
-     * @param $topic
-     * @param $callback
-     *
      * @throws QueueServerConnectionException|RedisException
      */
-    public function listen($worker_id, $topic, $callback)
+    public function listen($queue_id, $topic, callable $callback)
     {
-        $reconnect = false;
-        $processing_queue = $this->event_queue_name.'-processing-'.$worker_id;
+        $reconnect        = false;
+        $processing_queue = $this->event_queue_name . '-processing-' . $queue_id;
         do {
             try {
+                $this->logger->debug('Connecting to redis server');
                 $this->connect();
+                $this->logger->debug('Connect OK');
                 if ($this->redis->echo("This is Tuleap") !== "This is Tuleap") {
                     throw new QueueServerConnectionException("Unable to echo with redis server");
                 }
-                $this->queuePastEvents($processing_queue);
-                $this->waitForEvents($processing_queue, $callback);
+                $this->logger->debug('Echoed to redis');
+                $this->queuePastEvents($this->redis, $processing_queue);
+                $this->waitForEvents($this->redis, $processing_queue, $callback);
             } catch (RedisException $e) {
                 // we get that due to default_socket_timeout
-                if (strtolower($e->getMessage()) === 'read error on connection') {
-                    $reconnect = true;
+                if (stripos($e->getMessage(), 'read error on connection') === 0) {
+                    $this->redis = null;
+                    $reconnect   = true;
                 } else {
                     throw $e;
                 }
@@ -88,44 +94,81 @@ class RedisPersistentQueue implements PersistentQueue
      * In case of crash of the worker, the processing queue might contain events not processed yet.
      *
      * This ensure events are re-queued on main event queue before going further
-     *
-     * @param $processing_queue
      */
-    private function queuePastEvents($processing_queue)
+    private function queuePastEvents(\Redis $redis, string $processing_queue): void
     {
+        $this->connect();
+        $this->logger->debug('queuePastEvents');
         do {
-            $value = $this->redis->rpoplpush($processing_queue, $this->event_queue_name);
-        } while ($value !== false);
+            $this->redis->watch($processing_queue);
+
+            $potential_events_to_requeue = $this->redis->lRange($processing_queue, 0, -1);
+            $this->redis->multi();
+            foreach ($potential_events_to_requeue as $potential_event_to_requeue) {
+                $message = RedisEventMessageForPersistentQueue::fromSerializedEventMessageValue($potential_event_to_requeue);
+
+                if ($message->getNumberOfTimesMessageHasBeenQueued() > self::MAX_RETRY_PROCESSING_EVENT) {
+                    $this->logger->debug(
+                        sprintf('Discarding message after too many attempts to process it (%s)', $message->toSerializedEventMessageValue())
+                    );
+                    QueueInstrumentation::increment($this->event_queue_name, $message->getTopic(), QueueInstrumentation::STATUS_DISCARDED);
+                    continue;
+                }
+
+                $this->back_off_delay_failed_message->delay($message);
+                $this->pushMessageIntoEventQueue($message);
+                QueueInstrumentation::increment($this->event_queue_name, $message->getTopic(), QueueInstrumentation::STATUS_REQUEUED);
+            }
+            $this->redis->del($processing_queue);
+        } while ($this->redis->exec() === null);
     }
 
-    private function waitForEvents($processing_queue, callable $callback)
+    /**
+     * @psalm-param callable(string): void $callback
+     */
+    private function waitForEvents(\Redis $redis, string $processing_queue, callable $callback): void
     {
+        $this->logger->debug('Wait for events');
         $message_counter = 0;
         while ($message_counter < self::MAX_MESSAGES) {
-            $value = $this->redis->brpoplpush($this->event_queue_name, $processing_queue, 0);
-            $callback($value);
-            $this->redis->lRem($processing_queue, $value, 1);
+            $value            = $redis->brpoplpush($this->event_queue_name, $processing_queue, 0);
+            $message_metadata = RedisEventMessageForPersistentQueue::fromSerializedEventMessageValue($value);
+            $topic            = $message_metadata->getTopic();
+            $enqueue_time     = $message_metadata->getEnqueueTime();
+            QueueInstrumentation::increment($this->event_queue_name, $topic, QueueInstrumentation::STATUS_DEQUEUED);
+            try {
+                $callback($value);
+                QueueInstrumentation::increment($this->event_queue_name, $topic, QueueInstrumentation::STATUS_DONE);
+            } catch (TaskWorkerTimedOutException $exception) {
+                $this->logger->error($exception->getMessage());
+                QueueInstrumentation::increment($this->event_queue_name, $topic, QueueInstrumentation::STATUS_TIMEDOUT);
+            }
+            $redis->lRem($processing_queue, $value, 1);
+            if ($enqueue_time > 0) {
+                $elapsed_time = microtime(true) - $enqueue_time;
+                QueueInstrumentation::durationHistogram($elapsed_time);
+                $this->logger->info(sprintf('Message processed in %.3f seconds [%d/%d]', $elapsed_time, $message_counter, self::MAX_MESSAGES));
+            } else {
+                $this->logger->info(sprintf('Message processed [%d/%d]', $message_counter, self::MAX_MESSAGES));
+            }
             $message_counter++;
-            $this->logger->info("Message processed [{$message_counter}/".self::MAX_MESSAGES."]");
         }
         $this->logger->info('Max messages reached');
     }
 
     /**
      * @throws QueueServerConnectionException
+     * @psalm-assert !null $this->redis
      */
-    private function connect()
+    private function connect(): void
     {
-        $this->logger->debug('Connect to Redis server '.ForgeConfig::get('redis_server').':'.ForgeConfig::get('redis_port'));
-        $this->redis = new Redis();
-        if (! $this->redis->connect(ForgeConfig::get('redis_server'), ForgeConfig::get('redis_port'))) {
-            throw new QueueServerConnectionException('Unable to connect to server');
-        }
-
-        $redis_password = ForgeConfig::get('redis_password');
-        if (trim($redis_password) !== '') {
-            if (! $this->redis->auth($redis_password)) {
-                throw new QueueServerConnectionException('Queue to redis: Unable to authenticate with given password');
+        if ($this->redis === null || ! $this->redis->isConnected()) {
+            try {
+                $this->redis = Redis\ClientFactory::fromForgeConfig();
+            } catch (Redis\RedisConnectionException $exception) {
+                throw new QueueServerConnectionException($exception->getMessage());
+            } catch (RedisException $exception) {
+                throw new QueueServerConnectionException($exception->getMessage());
             }
         }
     }
@@ -133,17 +176,21 @@ class RedisPersistentQueue implements PersistentQueue
     /**
      * @throws QueueServerConnectionException
      */
-    public function pushSinglePersistentMessage($topic, $content)
+    public function pushSinglePersistentMessage(string $topic, $content): void
+    {
+        QueueInstrumentation::increment($this->event_queue_name, $topic, QueueInstrumentation::STATUS_ENQUEUED);
+        $this->pushMessageIntoEventQueue(RedisEventMessageForPersistentQueue::fromTopicAndPayload($topic, $content));
+    }
+
+    /**
+     * @throws QueueServerConnectionException
+     */
+    private function pushMessageIntoEventQueue(RedisEventMessageForPersistentQueue $message_to_queue): void
     {
         $this->connect();
         $this->redis->lPush(
             $this->event_queue_name,
-            json_encode(
-                [
-                    'event_name' => $topic,
-                    'payload'    => $content,
-                ]
-            )
+            $message_to_queue->toSerializedEventMessageValue()
         );
     }
 }

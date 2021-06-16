@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,22 +19,22 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once 'pre.php';
-require_once dirname(__FILE__).'/../include/Statistics_ServicesUsageDao.class.php';
-require_once dirname(__FILE__).'/../include/Statistics_Services_UsageFormatter.class.php';
-require_once dirname(__FILE__).'/../include/Statistics_Formatter.class.php';
-require_once dirname(__FILE__).'/../include/Statistics_DiskUsageHtml.class.php';
-require_once dirname(__FILE__).'/../include/CSV/CSVBuilder.php';
-require_once('www/project/export/project_export_utils.php');
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/Statistics_ServicesUsageDao.class.php';
+require_once __DIR__ . '/../include/Statistics_Services_UsageFormatter.class.php';
+require_once __DIR__ . '/../include/Statistics_Formatter.class.php';
+require_once __DIR__ . '/../include/Statistics_DiskUsageHtml.class.php';
+require_once __DIR__ . '/../include/CSV/CSVBuilder.php';
+require_once __DIR__ . '/../../../src/www/project/export/project_export_utils.php';
 
-use Tuleap\SVN\DiskUsage\Collector as SVNCollector;
-use Tuleap\SVN\DiskUsage\Retriever as SVNRetriever;
-use Tuleap\CVS\DiskUsage\Retriever as CVSRetriever;
-use Tuleap\CVS\DiskUsage\Collector as CVSCollector;
-use Tuleap\CVS\DiskUsage\FullHistoryDao;
+use Tuleap\Statistics\DiskUsage\Subversion\Collector as SVNCollector;
+use Tuleap\Statistics\DiskUsage\Subversion\Retriever as SVNRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Retriever as CVSRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Collector as CVSCollector;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\FullHistoryDao;
 
 $pluginManager = PluginManager::instance();
-$p = $pluginManager->getPluginByName('statistics');
+$p             = $pluginManager->getPluginByName('statistics');
 if (! $p || ! $pluginManager->isPluginAvailable($p)) {
     $GLOBALS['Response']->redirect('/');
 }
@@ -71,15 +71,14 @@ if ($request->valid($vEndDate)) {
 if ($startDate > $endDate) {
     $GLOBALS['Response']->addFeedback(
         Feedback::ERROR,
-        $GLOBALS['Language']->getText('plugin_statistics', 'period_error')
+        dgettext('tuleap-statistics', 'You made a mistake in selecting period. Please try again!')
     );
     $GLOBALS['Response']->redirect('/plugins/statistics/data_export.php');
 }
 
 if ($request->exist('export') && $startDate && $endDate) {
-
     header('Content-Type: text/csv');
-    header('Content-Disposition: filename=services_usage_'.$startDate.'_'.$endDate.'.csv');
+    header('Content-Disposition: filename=services_usage_' . $startDate . '_' . $endDate . '.csv');
     echo "Start date : $startDate \n";
     echo "End date : $endDate \n\n";
 

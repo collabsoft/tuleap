@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,15 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Markdown\ContentInterpretor;
 use Tuleap\Git\History\GitPhpAccessLogger;
 
-class GitViews_ShowRepo_Content {
-
-    const PAGE_TYPE       = 'a';
-    const PAGE_TYPE_TREE  = 'tree';
-    const FOLDER_TREE     = 'f';
-    const OLD_COMMIT_TREE = 'hb';
+class GitViews_ShowRepo_Content
+{
 
     /**
      * @var HTTPRequest
@@ -64,97 +59,38 @@ class GitViews_ShowRepo_Content {
 
     public function display()
     {
-        $html = '';
-
         if ($this->repository->isCreated()) {
-            $is_download = false;
-            $html       .= $this->gitphp_viewer->getContent($is_download);
+            $this->gitphp_viewer->displayContent($this->request);
 
             $this->access_logger->logAccess($this->repository, $this->request->getCurrentUser());
         } else {
-            $html .= $this->getWaitingForRepositoryCreationInfo();
+            echo $this->getWaitingForRepositoryCreationInfo();
         }
-        if ($this->isATreePage()) {
-            $html .= $this->getMarkdownFilesDiv();
-        }
-
-        echo $html;
-    }
-
-    private function isATreePage()
-    {
-        return ! $this->request->exist(self::PAGE_TYPE) ||
-            $this->request->get(self::PAGE_TYPE) === self::PAGE_TYPE_TREE;
-    }
-
-    private function getMarkdownFilesDiv()
-    {
-        $commit_sha1       = $this->getCurrentCommitSha1();
-        $node              = $this->getCurrentNode();
-        $repository_path   = ForgeConfig::get('sys_data_dir') . '/gitolite/repositories/' . $this->repository->getPath();
-        $git_markdown_file = new GitMarkdownFile(
-            new Git_Exec($repository_path, $repository_path),
-            new ContentInterpretor()
-        );
-
-        $readme_file = $git_markdown_file->getReadmeFileContent($node, $commit_sha1);
-
-        if ($readme_file) {
-            $presenter = new ReadmeMarkdownPresenter($readme_file['file_name'], $readme_file['file_content']);
-            $renderer  = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR).'/templates');
-
-            return $renderer->renderToString('readme_markdown', $presenter);
-        }
-    }
-
-    private function getCurrentNode()
-    {
-        if ($this->request->exist(self::FOLDER_TREE)) {
-            return $this->request->get(self::FOLDER_TREE).'/';
-        }
-
-        return '';
-    }
-
-    private function getCurrentCommitSha1()
-    {
-        if ($this->request->exist(self::OLD_COMMIT_TREE)) {
-            return $this->request->get(self::OLD_COMMIT_TREE);
-        }
-
-        return 'HEAD';
     }
 
     private function getWaitingForRepositoryCreationInfo()
     {
-        $html = '<div class="alert alert-info wait_creation">';
-        $html .= $GLOBALS['Language']->getText('plugin_git', 'waiting_for_repo_creation');
+        $html = '<div class="tlp-alert-info">';
+
+        $html .= dgettext('tuleap-git', 'The repository is in queue for creation. Please check back here in a few minutes');
 
         $default_mirrors = $this->mirror_data_mapper->fetchAllRepositoryMirrors($this->repository);
 
         if ($default_mirrors) {
             $default_mirrors_names = array_map(
-                array($this, 'extractMirrorName'),
+                static function (Git_Mirror_Mirror $mirror): string {
+                    $purifier = Codendi_HTMLPurifier::instance();
+
+                    return $purifier->purify($mirror->name);
+                },
                 $default_mirrors
             );
 
             $html .= '<br/>';
-            $html .= $GLOBALS['Language']->getText(
-                'plugin_git',
-                'waiting_for_repo_creation_default_mirrors',
-                implode(', ', $default_mirrors_names)
-            );
+            $html .= sprintf(dgettext('tuleap-git', 'The repository will be automatically mirrored on: %1$s.'), implode(', ', $default_mirrors_names));
         }
 
         $html .= '</div>';
         return $html;
     }
-
-    private function extractMirrorName(Git_Mirror_Mirror $mirror)
-    {
-        $purifier = Codendi_HTMLPurifier::instance();
-
-        return $purifier->purify($mirror->name);
-    }
-
 }

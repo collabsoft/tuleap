@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,17 +18,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ArtifactStaticMultiListFieldXMLExporter extends ArtifactFieldXMLExporter {
-    const LABEL_VALUES_INDEX  = 'valueLabelList';
-    const TV3_VALUE_INDEX     = 'valueInt';
-    const TV3_TYPE            = 'MB_2';
-    const TV5_TYPE            = 'list';
-    const TV5_BIND            = 'static';
+class ArtifactStaticMultiListFieldXMLExporter extends ArtifactFieldXMLExporter
+{
+    public const LABEL_VALUES_INDEX = 'valueLabelList';
+    public const TV3_VALUE_INDEX    = 'valueInt';
+    public const TV3_TYPE           = 'MB_2';
+    public const TV5_TYPE           = 'list';
+    public const TV5_BIND           = 'static';
 
-    const SYS_VALUE_NONE_FR = 'Aucun';
-    const SYS_VALUE_NONE_EN = 'None';
-    const SYS_VALUE_ANY_EN  = 'Any';
-    const SYS_VALUE_ANY_FR  = 'Tous';
+    public const SYS_VALUE_NONE_FR = 'Aucun';
+    public const SYS_VALUE_NONE_EN = 'None';
+    public const SYS_VALUE_ANY_EN  = 'Any';
+    public const SYS_VALUE_ANY_FR  = 'Tous';
 
     /** @var ArtifactXMLExporterDao */
     private $dao;
@@ -48,14 +49,14 @@ class ArtifactStaticMultiListFieldXMLExporter extends ArtifactFieldXMLExporter {
 
     /**
      *
-     * @param DOMElement $changeset_node
      * @param int $tracker_id
      * @param int $artifact_id
      * @param array $row
      *
      * @throws Exception_TV3XMLException
      */
-    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row) {
+    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row)
+    {
         $all_labels = $this->getListValueLabels($row, $tracker_id);
         $values     = explode(',', $row['new_value']);
         $field_name = $row['field_name'];
@@ -77,7 +78,8 @@ class ArtifactStaticMultiListFieldXMLExporter extends ArtifactFieldXMLExporter {
         $changeset_node->appendChild($field_node);
     }
 
-    private function getValueLabel($value) {
+    private function getValueLabel($value)
+    {
         if ($this->valueIsSystemValueNone($value)) {
             return '';
         }
@@ -85,11 +87,13 @@ class ArtifactStaticMultiListFieldXMLExporter extends ArtifactFieldXMLExporter {
         return $value;
     }
 
-    public function getFieldValueIndex() {
+    public function getFieldValueIndex()
+    {
         return self::LABEL_VALUES_INDEX;
     }
 
-    public function getCurrentFieldValue(array $field_value_row, $tracker_id) {
+    public function getCurrentFieldValue(array $field_value_row, $tracker_id)
+    {
         return $this->current_value_exporter->getCurrentFieldValue($field_value_row, $tracker_id);
     }
 
@@ -120,35 +124,40 @@ class ArtifactStaticMultiListFieldXMLExporter extends ArtifactFieldXMLExporter {
      * @param string $field_name
      * @param array  $all_labels
      *
-     * @return boolean
+     * @return bool
      */
-    private function valueCannotBeParsed($value, $number_of_values, $field_name, array $all_labels) {
+    private function valueCannotBeParsed($value, $number_of_values, $field_name, array $all_labels)
+    {
         return $this->valueIsNotAnExistingLabel($value, $field_name, $all_labels) ||
-               $this->valueIsSystemValueAny($value)                               ||
+               $this->valueIsSystemValueAny($value) ||
                is_numeric($value) && $number_of_values === 1;
     }
 
-    private function valueIsSystemValueAny($value) {
-        return $value === self::SYS_VALUE_ANY_EN  ||
+    private function valueIsSystemValueAny($value)
+    {
+        return $value === self::SYS_VALUE_ANY_EN ||
                $value === self::SYS_VALUE_ANY_FR;
     }
 
-    private function valueIsSystemValueNone($value) {
-        return $value === self::SYS_VALUE_NONE_EN  ||
+    private function valueIsSystemValueNone($value)
+    {
+        return $value === self::SYS_VALUE_NONE_EN ||
                $value === self::SYS_VALUE_NONE_FR;
     }
 
-    private function valueIsNotAnExistingLabel($value, $field_name, array $all_labels) {
+    private function valueIsNotAnExistingLabel($value, $field_name, array $all_labels)
+    {
         if ($this->valueIsSystemValueNone($value)) {
             return false;
         }
 
-        return ((boolean) array_search($value, $all_labels)) === false;
+        return ((bool) array_search($value, $all_labels)) === false;
     }
 
-    private function getListValueLabels(array $field_value_row, $tracker_id) {
+    private function getListValueLabels(array $field_value_row, $tracker_id)
+    {
         $field_name        = $field_value_row['field_name'];
-        $labels            = array();
+        $labels            = [];
         $values_label_rows = $this->dao->searchFieldValuesList($tracker_id, $field_name);
         foreach ($values_label_rows as $values_label_row) {
             $labels[$values_label_row['value_id']] = $values_label_row['value'];
@@ -156,5 +165,4 @@ class ArtifactStaticMultiListFieldXMLExporter extends ArtifactFieldXMLExporter {
 
         return $labels;
     }
-
 }

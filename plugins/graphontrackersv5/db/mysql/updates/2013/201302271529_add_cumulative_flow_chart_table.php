@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,20 +20,24 @@
  */
 
 
-class b201302271529_add_cumulative_flow_chart_table extends ForgeUpgrade_Bucket {
+class b201302271529_add_cumulative_flow_chart_table extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Add new table plugin_graphontrackersv5_cumulative_flow_chart to manage a new type of chart.
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
-        if (!$this->db->tableNameExists('plugin_graphontrackersv5_cumulative_flow_chart')) {
+    public function up()
+    {
+        if (! $this->db->tableNameExists('plugin_graphontrackersv5_cumulative_flow_chart')) {
             $sql = "CREATE TABLE plugin_graphontrackersv5_cumulative_flow_chart(
   id int(11)  NOT NULL PRIMARY KEY ,
   field_id int(11),
@@ -43,15 +47,15 @@ EOT;
 )";
             $res = $this->db->dbh->exec($sql);
             if ($res === false) {
-                throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while adding table plugin_graphontrackersv5_cumulative_flow_chart: '.implode(', ', $this->db->dbh->errorInfo()));
+                throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while adding table plugin_graphontrackersv5_cumulative_flow_chart: ' . implode(', ', $this->db->dbh->errorInfo()));
             }
         }
     }
 
-    public function postUp() {
-        if (!$this->db->tableNameExists('plugin_graphontrackersv5_cumulative_flow_chart')) {
+    public function postUp()
+    {
+        if (! $this->db->tableNameExists('plugin_graphontrackersv5_cumulative_flow_chart')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('An error occured while adding table plugin_graphontrackersv5_cumulative_flow_chart');
         }
     }
 }
-?>

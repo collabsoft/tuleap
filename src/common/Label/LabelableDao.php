@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,7 +37,8 @@ interface LabelableDao
 
     /**
      * @param int $project_id
-     * @return \DataAccessResult
+     * @return \DataAccessResult|false
+     * @psalm-ignore-falsable-return
      */
     public function searchLabelsUsedInProject($project_id);
 

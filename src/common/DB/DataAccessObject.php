@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,38 +18,38 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\DB;
 
 use ParagonIE\EasyDB\EasyDB;
 
-class DataAccessObject
+abstract class DataAccessObject
 {
     /**
-     * @var EasyDB
+     * @var DBConnection
      */
-    private $db;
+    private $db_connection;
 
-    public function __construct()
+    public function __construct(?DBConnection $db_connection = null)
     {
-        $this->db = DBFactory::getMainTuleapDB();
+        $this->db_connection = $db_connection;
+        if ($this->db_connection === null) {
+            $this->db_connection = DBFactory::getMainTuleapDBConnection();
+        }
     }
 
-    /**
-     * @return EasyDB
-     */
-    protected function getDB()
+    final protected function getDB(): EasyDB
     {
-        return $this->db;
+        return $this->db_connection->getDB();
     }
 
     /**
      * Returns the number of affected rows by the LAST query.
      * Must be called immediately after performing a query.
-     *
-     * @return int
      */
-    public function foundRows()
+    public function foundRows(): int
     {
-        return $this->db->single('SELECT FOUND_ROWS()');
+        return (int) $this->getDB()->single('SELECT FOUND_ROWS()');
     }
 }

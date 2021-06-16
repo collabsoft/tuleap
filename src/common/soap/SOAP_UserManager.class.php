@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class SOAP_UserManager {
+class SOAP_UserManager
+{
     private $user_manager;
 
-    public function __construct(UserManager $user_manager) {
+    public function __construct(UserManager $user_manager)
+    {
         $this->user_manager = $user_manager;
     }
 
@@ -32,7 +34,8 @@ class SOAP_UserManager {
      *
      * @return PFUser
      */
-    public function continueSession($sessionKey) {
+    public function continueSession($sessionKey)
+    {
         $user = $this->user_manager->getCurrentUser($sessionKey);
         if ($user->isLoggedIn()) {
             return $user;
@@ -40,5 +43,3 @@ class SOAP_UserManager {
         throw new SoapFault('3001', 'Invalid session');
     }
 }
-
-?>

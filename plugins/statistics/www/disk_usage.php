@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2009. All Rights Reserved.
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * Originally written by Manuel VACELET, 2009
  *
@@ -29,18 +29,18 @@ use Tuleap\Statistics\DiskUsageServicesPresenterBuilder;
 use Tuleap\Statistics\DiskUsageTopUsersPresenterBuilder;
 use Tuleap\Statistics\DiskUsageProjectsPresenterBuilder;
 use Tuleap\Statistics\DiskUsageUserDetailsPresenterBuilder;
-use Tuleap\SVN\DiskUsage\Collector as SVNCollector;
-use Tuleap\SVN\DiskUsage\Retriever as SVNRetriever;
-use Tuleap\CVS\DiskUsage\Retriever as CVSRetriever;
-use Tuleap\CVS\DiskUsage\Collector as CVSCollector;
-use Tuleap\CVS\DiskUsage\FullHistoryDao;
+use Tuleap\Statistics\DiskUsage\Subversion\Collector as SVNCollector;
+use Tuleap\Statistics\DiskUsage\Subversion\Retriever as SVNRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Retriever as CVSRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Collector as CVSCollector;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\FullHistoryDao;
 
-require 'pre.php';
-require_once dirname(__FILE__).'/../include/Statistics_DiskUsageHtml.class.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/Statistics_DiskUsageHtml.class.php';
 
 // First, check plugin availability
 $pluginManager = PluginManager::instance();
-$p = $pluginManager->getPluginByName('statistics');
+$p             = $pluginManager->getPluginByName('statistics');
 if (! $p || ! $pluginManager->isPluginAvailable($p)) {
     $GLOBALS['Response']->redirect('/');
 }
@@ -66,10 +66,10 @@ $duMgr           = new Statistics_DiskUsageManager(
 
 $duHtml = new Statistics_DiskUsageHtml($duMgr);
 
-$disk_usage_output = new Statistics_DiskUsageOutput(
+$disk_usage_output                = new Statistics_DiskUsageOutput(
     $duMgr
 );
-$disk_usage_graph = new Statistics_DiskUsageGraph(
+$disk_usage_graph                 = new Statistics_DiskUsageGraph(
     $duMgr
 );
 $disk_usage_search_fields_builder = new SearchFieldsPresenterBuilder();
@@ -80,7 +80,7 @@ $disk_usage_services_builder      = new DiskUsageServicesPresenterBuilder(
     $disk_usage_graph,
     $disk_usage_search_fields_builder
 );
-$disk_usage_projects_builder = new DiskUsageProjectsPresenterBuilder(
+$disk_usage_projects_builder      = new DiskUsageProjectsPresenterBuilder(
     $duMgr,
     $disk_usage_output,
     $disk_usage_search_fields_builder,
@@ -105,7 +105,6 @@ $user_details_builder = new DiskUsageUserDetailsPresenterBuilder(
 );
 
 $disk_usage_router = new DiskUsageRouter(
-    $duMgr,
     $disk_usage_services_builder,
     $disk_usage_projects_builder,
     $top_users_builder,

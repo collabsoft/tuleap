@@ -1,0 +1,10 @@
+{
+    "packages": [
+        "src/scripts/**/",
+        "src/themes/tlp/",
+        "src/",
+        "src/themes/BurningParrot/",
+        "plugins/**/"
+    ],
+    "version": "independent"
+}

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,14 +22,15 @@ namespace Tuleap\OpenIDConnectClient\Administration;
 
 use ForgeConfig;
 
-class Presenter {
+class Presenter
+{
     /**
-     * @var ProviderPresenter[]
+     * @var GenericProviderPresenter[]
      */
     public $providers_presenters;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $is_a_provider_configured_as_unique_authentication_endpoint;
 
@@ -47,157 +48,183 @@ class Presenter {
      * @var string
      */
     public $csrf_token;
-    const TEMPLATE = 'administration-providers';
+    public const TEMPLATE = 'administration-providers';
+    /**
+     * @var AzureADTenantSetupPresenter[]
+     */
+    public $azure_ad_tenant_setups;
 
+    /**
+     * @param AzureADTenantSetupPresenter[] $azure_ad_tenant_setups
+     */
     public function __construct(
         array $providers_presenters,
         $is_a_provider_configured_as_unique_authentication_endpoint,
         array $icons_presenters,
         array $colors_presenters,
+        array $azure_ad_tenant_setups,
         $csrf_token
     ) {
         $this->providers_presenters                                       = $providers_presenters;
         $this->is_a_provider_configured_as_unique_authentication_endpoint = $is_a_provider_configured_as_unique_authentication_endpoint;
         $this->icons_presenters                                           = $icons_presenters;
         $this->colors_presenters                                          = $colors_presenters;
+        $this->azure_ad_tenant_setups                                     = $azure_ad_tenant_setups;
         $this->csrf_token                                                 = $csrf_token;
     }
 
-    public function title() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'title');
+    public function title()
+    {
+        return dgettext('tuleap-openidconnectclient', 'OpenID Connect');
     }
 
-    public function title_provider_configuration() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'title_provider_configuration');
+    public function title_provider_configuration()
+    {
+        return dgettext('tuleap-openidconnectclient', 'OpenID Connect providers');
     }
 
-    public function name() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'name');
+    public function name()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Name');
     }
 
-    public function authorization_endpoint() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'authorization_endpoint');
+    public function authorization_endpoint()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Authorization endpoint');
     }
 
-    public function token_endpoint() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'token_endpoint');
+    public function token_endpoint()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Token endpoint');
     }
 
-    public function userinfo_endpoint() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'userinfo_endpoint');
+    public function userinfo_endpoint()
+    {
+        return dgettext('tuleap-openidconnectclient', 'User information endpoint');
     }
 
-    public function client_id() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'client_id');
+    public function client_id()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Client ID');
     }
 
-    public function client_secret() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'client_secret');
+    public function client_secret()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Client secret');
     }
 
-    public function client_help() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'client_help');
+    public function client_help()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Following information have to be generated on the OpenID Connect provider side. You\'ll need to give a callback url to do that, here it is:');
     }
 
-    public function callback_url() {
+    public function callback_generic_url()
+    {
         $host = urlencode(ForgeConfig::get('sys_default_domain'));
 
         return strtolower('https://' . $host . OPENIDCONNECTCLIENT_BASE_URL . '/');
     }
 
-    public function icon() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'icon');
+    public function callback_azure_url()
+    {
+        $host = urlencode(ForgeConfig::get('sys_default_domain'));
+
+        return strtolower('https://' . $host . OPENIDCONNECTCLIENT_BASE_URL . '/azure/');
     }
 
-    public function color() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'color');
+    public function icon()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Icon');
     }
 
-    public function preview() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'preview');
+    public function color()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Color');
+    }
+
+    public function preview()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Preview of the login page button');
     }
 
     public function unique_authentication_source()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'unique_authentication_source');
+        return dgettext('tuleap-openidconnectclient', 'Unique authentication source');
     }
 
     public function unique_authentication_source_disabled()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'unique_authentication_source_disabled');
+        return dgettext('tuleap-openidconnectclient', 'Disabled');
     }
 
     public function unique_authentication_source_form_description()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'unique_authentication_source_form');
+        return dgettext('tuleap-openidconnectclient', 'This provider is the only authentication method.');
     }
 
     public function unique_authentication_source_prerequisites()
     {
-        return $GLOBALS['Language']->getText(
-            'plugin_openidconnectclient_admin',
-            'unique_authentication_source_prerequisites'
-        );
+        return dgettext('tuleap-openidconnectclient', 'Be sure that your provider can provide the profile and email scopes otherwise users will not have an account created automatically.');
     }
 
     public function unique_authentication_source_user_must_be_linked()
     {
-        return $GLOBALS['Language']->getText(
-            'plugin_openidconnectclient_admin',
-            'unique_authentication_source_user_must_be_linked'
-        );
+        return dgettext('tuleap-openidconnectclient', 'You can only enable this provider as unique authentication method if you are yourself linked to it.');
     }
 
-    public function add_new_provider() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'add_new_provider');
+    public function update_provider()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Edit provider');
     }
 
-    public function update_provider() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'update_provider');
+    public function https_placeholder()
+    {
+        return dgettext('tuleap-openidconnectclient', 'https://');
     }
 
-    public function https_placeholder() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'https_placeholder');
+    public function btn_cancel()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Cancel');
     }
 
-    public function btn_cancel() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'btn_cancel');
+    public function btn_create()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Create the provider');
     }
 
-    public function btn_create() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'btn_create');
+    public function btn_delete()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Delete');
     }
 
-    public function btn_delete() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'btn_delete');
-    }
-
-    public function btn_edit() {
+    public function btn_edit()
+    {
         return $GLOBALS['Language']->getText('global', 'btn_edit');
     }
 
-    public function btn_update() {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'btn_update');
+    public function btn_update()
+    {
+        return dgettext('tuleap-openidconnectclient', 'Update the provider');
     }
 
     public function delete_modal_title()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'delete_modal_title');
+        return dgettext('tuleap-openidconnectclient', 'Delete a provider');
     }
 
     public function delete_modal_content()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'delete_modal_content');
+        return dgettext('tuleap-openidconnectclient', 'You are about to delete a provider. This action is irreversible. Do you confirm this deletion?');
     }
 
     public function btn_close()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'btn_close');
+        return dgettext('tuleap-openidconnectclient', 'Cancel');
     }
 
     public function delete_modal_submit()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'delete_modal_submit');
+        return dgettext('tuleap-openidconnectclient', 'Delete');
     }
 
     public function there_are_providers()
@@ -207,21 +234,21 @@ class Presenter {
 
     public function empty_content()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'empty_content');
+        return dgettext('tuleap-openidconnectclient', 'Empty');
     }
 
     public function empty_providers_text_start()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'empty_providers_text_start');
+        return dgettext('tuleap-openidconnectclient', 'There is nothing here,');
     }
 
     public function empty_providers_text_end()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'empty_providers_text_end');
+        return dgettext('tuleap-openidconnectclient', 'start by adding a provider.');
     }
 
     public function btn_preview()
     {
-        return $GLOBALS['Language']->getText('plugin_openidconnectclient_admin', 'btn_preview');
+        return dgettext('tuleap-openidconnectclient', 'Preview');
     }
 }

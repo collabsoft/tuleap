@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,22 +20,20 @@
 
 namespace Tuleap\Tracker\Tests\REST\TQL;
 
-use Guzzle\Http\Exception\ClientErrorResponseException;
-use REST_TestDataBuilder;
 use RestBase;
 
-require_once dirname(__FILE__).'/../bootstrap.php';
+require_once dirname(__FILE__) . '/../bootstrap.php';
 
 /**
  * @group TrackerTests
  */
 class TQLTest extends RestBase
 {
-    const PROJECT_NAME = 'tql';
+    public const PROJECT_NAME = 'tql';
 
     private $tracker_id;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         $this->tracker_id = $this->getTrackerId();
@@ -43,35 +41,37 @@ class TQLTest extends RestBase
 
     public function testTQLQueries()
     {
-        $tests = array(
-            ''                                                             => array('bug1', 'bug2', 'bug3'),
-            'summary = "bug1"'                                             => array('bug1'),
-            'summary = "bug"'                                              => array('bug1', 'bug2', 'bug3'),
-            'summary = "bug" and details = "original2"'                    => array('bug2'),
-            'remaining_effort between(1, 42)'                              => array('bug1'),
-            'remaining_effort > 3.14'                                      => array('bug2'),
-            'story_points <= 21'                                           => array('bug1', 'bug2'),
-            'story_points = ""'                                            => array('bug3'),
-            'story_points != ""'                                           => array('bug1', 'bug2'),
-            'due_date = "2017-01-10"'                                      => array('bug2'),
-            'timesheeting < "2017-01-18 14:36"'                            => array('bug1'),
-            'last_update_date between("2017-01-01", now() + 1w)'           => array('bug1', 'bug2', 'bug3'),
-            'submitted_by = MYSELF()'                                      => array('bug1', 'bug2', 'bug3'),
-            'submitted_by != MYSELF()'                                     => array(),
-            'submitted_by IN (MYSELF())'                                   => array('bug1', 'bug2', 'bug3'),
-            'submitted_by NOT IN (MYSELF())'                               => array(),
-            'status IN ("todo", "doing") OR ugroups = "Membres du projet"' => array('bug1', 'bug2'),
-            'status = ""'                                                  => array('bug2', 'bug3'),
-            'ugroups = "Contractors"'                                      => array('bug1'),
-            '@comments != ""'                                              => array('bug1'),
-            '@comments = "comment"'                                        => array('bug1'),
-            '@comments = ""'                                               => array('bug2', 'bug3'),
-            'attachment = "file"'                                          => array('bug3'),
-            'attachment = "awesome"'                                       => array('bug3'),
-            'attachment != "document"'                                     => array('bug1', 'bug2', 'bug3'),
-        );
+        $tests = [
+            ''                                                             => ['bug1', 'bug2', 'bug3'],
+            'summary = "bug1"'                                             => ['bug1'],
+            'summary = "bug"'                                              => ['bug1', 'bug2', 'bug3'],
+            'summary = "bug" and details = "original2"'                    => ['bug2'],
+            'remaining_effort between(1, 42)'                              => ['bug1'],
+            'remaining_effort > 3.14'                                      => ['bug2'],
+            'story_points <= 21'                                           => ['bug1', 'bug2'],
+            'story_points = ""'                                            => ['bug3'],
+            'story_points != ""'                                           => ['bug1', 'bug2'],
+            'due_date = "2017-01-10"'                                      => ['bug2'],
+            'timesheeting < "2017-01-18 14:36"'                            => ['bug1'],
+            'last_update_date between("2017-01-01", now() + 1w)'           => ['bug1', 'bug2', 'bug3'],
+            'submitted_by = MYSELF()'                                      => ['bug1', 'bug2', 'bug3'],
+            'submitted_by != MYSELF()'                                     => [],
+            'submitted_by IN (MYSELF())'                                   => ['bug1', 'bug2', 'bug3'],
+            'submitted_by NOT IN (MYSELF())'                               => [],
+            'status IN ("todo", "doing") OR ugroups = "Membres du projet"' => ['bug1', 'bug2'],
+            'status = ""'                                                  => ['bug2', 'bug3'],
+            'ugroups = "Contractors"'                                      => ['bug1'],
+            '@comments != ""'                                              => ['bug1', 'bug2'],
+            '@comments = "comment"'                                        => ['bug1'],
+            '@comments = ""'                                               => ['bug3'],
+            '@comments = "private followup"'                               => [],
+            '@comments = "Everybody can see it"'                           => ['bug2'],
+            'attachment = "file"'                                          => ['bug3'],
+            'attachment = "awesome"'                                       => ['bug3'],
+            'attachment != "document"'                                     => ['bug1', 'bug2', 'bug3'],
+        ];
         foreach ($tests as $query => $expectation) {
-            $message = "Query $query should returns ". implode(', ', $expectation);
+            $message = "Query $query should returns " . implode(', ', $expectation);
 
             $response = $this->performExpertQuery($query);
             $this->assertEquals($response->getStatusCode(), 200, $message);
@@ -86,82 +86,46 @@ class TQLTest extends RestBase
 
     public function testInvalidQuery()
     {
-        $exception_thrown = false;
-        try {
-            $this->performExpertQuery('summary="bug1');
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $this->assertEquals(400, $response->getStatusCode());
-
-            $body = $response->json();
-            $this->assertContains(
-                "Error during parsing expert query",
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
+        $response = $this->performExpertQuery('summary="bug1');
+        $this->assertEquals(400, $response->getStatusCode());
+        $body = $response->json();
+        $this->assertStringContainsString(
+            "Error during parsing expert query",
+            $body['error']['message']
+        );
     }
 
     public function testUnknownValueForListFields()
     {
-        $exception_thrown = false;
-        try {
-            $this->performExpertQuery('status = "pouet"');
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $this->assertEquals(400, $response->getStatusCode());
-
-            $body = $response->json();
-            $this->assertContains(
-                "The value 'pouet' doesn't exist for the list field 'status'",
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
+        $response = $this->performExpertQuery('status = "pouet"');
+        $this->assertEquals(400, $response->getStatusCode());
+        $body = $response->json();
+        $this->assertStringContainsString(
+            "The value 'pouet' doesn't exist for the list field 'status'",
+            $body['error']['message']
+        );
     }
 
     public function testInvalidDateTime()
     {
-        $exception_thrown = false;
-        try {
-            $this->performExpertQuery('due_date = "2017-01-10 12:12"');
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $this->assertEquals(400, $response->getStatusCode());
-
-            $body = $response->json();
-            $this->assertContains(
-                "The date field 'due_date' cannot be compared to the string value '2017-01-10 12:12'",
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
+        $response = $this->performExpertQuery('due_date = "2017-01-10 12:12"');
+        $this->assertEquals(400, $response->getStatusCode());
+        $body = $response->json();
+        $this->assertStringContainsString(
+            "The date field 'due_date' cannot be compared to the string value '2017-01-10 12:12'",
+            $body['error']['message']
+        );
     }
 
     public function testUnknownField()
     {
-        $exception_thrown = false;
-        try {
-            $this->performExpertQuery('test = "bug1"');
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $this->assertEquals(400, $response->getStatusCode());
-
-            $body = $response->json();
-            $this->assertContains(
-                "We cannot search on 'test', we don't know what it refers to",
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
+        $response = $this->performExpertQuery('test = "bug1"');
+        $this->assertEquals(400, $response->getStatusCode());
+        $body = $response->json();
+        $this->assertStringContainsString(
+            "We cannot search on 'test', we don't know what it refers to",
+            $body['error']['message']
+        );
     }
 
     private function getTrackerId()

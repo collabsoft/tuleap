@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,11 @@
  * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-class BackendSVNFileForSimlinkAlreadyExistsException extends Exception {
+class BackendSVNFileForSimlinkAlreadyExistsException extends Exception
+{
 
-    public function __construct($message) {
+    public function __construct($message)
+    {
         parent::__construct($message);
     }
 }

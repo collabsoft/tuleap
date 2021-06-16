@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,9 @@
 
 namespace Tuleap\Cardwall\Semantic;
 
-class BackgroundColorSemanticFactory
+use Tuleap\Tracker\Semantic\IDuplicateSemantic;
+
+class BackgroundColorSemanticFactory implements IDuplicateSemantic
 {
     /**
      * @var BackgroundColorDao
@@ -32,7 +34,7 @@ class BackgroundColorSemanticFactory
         $this->background_color_dao = $background_color_dao;
     }
 
-    public function duplicate($from_tracker_id, $to_tracker_id, array $field_mapping)
+    public function duplicate(int $from_tracker_id, int $to_tracker_id, array $field_mapping): void
     {
         $old_background_field = $this->background_color_dao->searchBackgroundColor($from_tracker_id);
         if (! $old_background_field) {
@@ -40,7 +42,7 @@ class BackgroundColorSemanticFactory
         }
 
         foreach ($field_mapping as $mapping) {
-            if ((int)$mapping['from'] === $old_background_field) {
+            if ((int) $mapping['from'] === $old_background_field) {
                 $to_field_id = $mapping['to'];
                 $this->background_color_dao->save($to_tracker_id, $to_field_id);
             }

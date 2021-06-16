@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,7 +29,5 @@ class PluginDescriptor extends \PluginDescriptor
             false,
             dgettext('tuleap-velocity', 'Adds velocity chart into Agiledashboard')
         );
-
-        $this->setVersionFromFile(VELOCITY_BASE_DIR . '/VERSION');
     }
 }

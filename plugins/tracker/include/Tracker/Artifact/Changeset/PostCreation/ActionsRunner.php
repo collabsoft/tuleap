@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,24 +24,34 @@ namespace Tuleap\Tracker\Artifact\Changeset\PostCreation;
 use ConfigNotificationAssignedTo;
 use ConfigNotificationAssignedToDao;
 use Exception;
-use ForgeConfig;
-use Logger;
+use Psr\Log\LoggerInterface;
 use Tracker_Artifact_Changeset;
 use Tracker_Artifact_MailGateway_RecipientFactory;
 use Tracker_FormElementFactory;
 use Tracker_GlobalNotificationDao;
 use Tuleap\Http\HttpClientFactory;
-use Tuleap\Http\MessageFactoryBuilder;
+use Tuleap\Http\HTTPFactoryBuilder;
+use Tuleap\Mail\MailLogger;
+use Tuleap\Markdown\CommonMarkInterpreter;
 use Tuleap\Queue\QueueFactory;
 use Tuleap\Queue\Worker;
+use Tuleap\Queue\WorkerAvailability;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\CachingTrackerPrivateCommentInformationRetriever;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\PermissionChecker;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentInformationRetriever;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentUGroupEnabledDao;
 use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfig;
 use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfigDao;
-use Tuleap\Tracker\Notifications\RecipientsManager;
 use Tuleap\Tracker\Notifications\ConfigNotificationEmailCustomSender;
 use Tuleap\Tracker\Notifications\ConfigNotificationEmailCustomSenderDao;
+use Tuleap\Tracker\Notifications\InvolvedNotificationDao;
+use Tuleap\Tracker\Notifications\RecipientsManager;
 use Tuleap\Tracker\Notifications\Settings\UserNotificationSettingsRetriever;
 use Tuleap\Tracker\Notifications\UnsubscribersNotificationDAO;
 use Tuleap\Tracker\Notifications\UserNotificationOnlyStatusChangeDAO;
+use Tuleap\Tracker\REST\Artifact\Changeset\ChangesetRepresentationBuilder;
+use Tuleap\Tracker\REST\Artifact\Changeset\Comment\CommentRepresentationBuilder;
+use Tuleap\Tracker\Webhook\ArtifactPayloadBuilder;
 use Tuleap\Tracker\Webhook\WebhookDao;
 use Tuleap\Tracker\Webhook\WebhookFactory;
 use Tuleap\Tracker\Webhook\WebhookStatusLogger;
@@ -53,7 +63,7 @@ use WrapperLogger;
 class ActionsRunner
 {
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
     /**
@@ -61,38 +71,56 @@ class ActionsRunner
      */
     private $actions_runner_dao;
     /**
+     * @var QueueFactory
+     */
+    private $queue_factory;
+    /**
+     * @var WorkerAvailability
+     */
+    private $worker_availability;
+    /**
      * @var PostCreationTask[]
      */
     private $post_creation_tasks;
 
     public function __construct(
-        Logger $logger,
+        LoggerInterface $logger,
         ActionsRunnerDao $actions_runner_dao,
+        QueueFactory $queue_factory,
+        WorkerAvailability $worker_availability,
         PostCreationTask ...$post_creation_tasks
     ) {
-        $this->logger              = new WrapperLogger($logger, __CLASS__);
+        $this->logger              = new WrapperLogger($logger, self::class);
         $this->actions_runner_dao  = $actions_runner_dao;
+        $this->queue_factory       = $queue_factory;
+        $this->worker_availability = $worker_availability;
         $this->post_creation_tasks = $post_creation_tasks;
     }
 
-    public static function build(Logger $logger)
+    public static function build(LoggerInterface $logger): self
     {
-        $webhook_dao = new WebhookDao();
+        $webhook_dao          = new WebhookDao();
+        $user_manager         = UserManager::instance();
+        $form_element_factory = Tracker_FormElementFactory::instance();
 
         return new ActionsRunner(
             $logger,
             new ActionsRunnerDao(),
+            new QueueFactory($logger),
+            new WorkerAvailability(),
+            new ClearArtifactChangesetCacheTask(),
             new EmailNotificationTask(
-                $logger,
+                new MailLogger(),
                 UserHelper::instance(),
                 new RecipientsManager(
-                    Tracker_FormElementFactory::instance(),
-                    UserManager::instance(),
-                    new UnsubscribersNotificationDAO,
+                    $form_element_factory,
+                    $user_manager,
+                    new UnsubscribersNotificationDAO(),
                     new UserNotificationSettingsRetriever(
                         new Tracker_GlobalNotificationDao(),
                         new UnsubscribersNotificationDAO(),
-                        new UserNotificationOnlyStatusChangeDAO()
+                        new UserNotificationOnlyStatusChangeDAO(),
+                        new InvolvedNotificationDao()
                     ),
                     new UserNotificationOnlyStatusChangeDAO()
                 ),
@@ -107,11 +135,22 @@ class ActionsRunner
             new WebhookNotificationTask(
                 $logger,
                 new WebhookEmitter(
-                    MessageFactoryBuilder::build(),
-                    HttpClientFactory::createClient(),
+                    HTTPFactoryBuilder::requestFactory(),
+                    HTTPFactoryBuilder::streamFactory(),
+                    HttpClientFactory::createAsyncClient(),
                     new WebhookStatusLogger($webhook_dao)
                 ),
-                new WebhookFactory($webhook_dao)
+                new WebhookFactory($webhook_dao),
+                new ArtifactPayloadBuilder(
+                    new ChangesetRepresentationBuilder(
+                        $user_manager,
+                        $form_element_factory,
+                        new CommentRepresentationBuilder(
+                            CommonMarkInterpreter::build(\Codendi_HTMLPurifier::instance())
+                        ),
+                        new PermissionChecker(new CachingTrackerPrivateCommentInformationRetriever(new TrackerPrivateCommentInformationRetriever(new TrackerPrivateCommentUGroupEnabledDao())))
+                    )
+                )
             )
         );
     }
@@ -119,11 +158,10 @@ class ActionsRunner
     /**
      * Manage notification for a changeset
      *
-     * @param Tracker_Artifact_Changeset $changeset
      */
     public function executePostCreationActions(Tracker_Artifact_Changeset $changeset)
     {
-        if ($this->useAsyncNotifications($changeset)) {
+        if ($this->worker_availability->canProcessAsyncTasks()) {
             $this->queuePostCreationEvent($changeset);
         } else {
             $this->processPostCreationActions($changeset);
@@ -133,7 +171,6 @@ class ActionsRunner
     /**
      * Process notification when executed in background (should not be called by front-end)
      *
-     * @param Tracker_Artifact_Changeset $changeset
      */
     public function processAsyncPostCreationActions(Tracker_Artifact_Changeset $changeset)
     {
@@ -142,33 +179,11 @@ class ActionsRunner
         $this->actions_runner_dao->addEndDate($changeset->getId());
     }
 
-    private function useAsyncNotifications(Tracker_Artifact_Changeset $changeset)
-    {
-        $async_emails = ForgeConfig::get('sys_async_emails');
-        switch ($async_emails) {
-            case 'all':
-                return true;
-            case false:
-                return false;
-            default:
-                $project_ids = array_map(
-                    function ($val) {
-                        return (int) trim($val);
-                    },
-                    explode(',', $async_emails)
-                );
-                if (in_array($changeset->getTracker()->getProject()->getID(), $project_ids)) {
-                    return true;
-                }
-        }
-        return false;
-    }
-
     private function queuePostCreationEvent(Tracker_Artifact_Changeset $changeset)
     {
         try {
             $this->actions_runner_dao->addNewPostCreationEvent($changeset->getId());
-            $queue = QueueFactory::getPersistentQueue($this->logger, Worker::EVENT_QUEUE_NAME, QueueFactory::REDIS);
+            $queue = $this->queue_factory->getPersistentQueue(Worker::EVENT_QUEUE_NAME, QueueFactory::REDIS);
             $queue->pushSinglePersistentMessage(
                 AsynchronousActionsRunner::TOPIC,
                 [
@@ -177,7 +192,7 @@ class ActionsRunner
                 ]
             );
         } catch (Exception $exception) {
-            $this->logger->error("Unable to queue notification for {$changeset->getId()}, fallback to online notif");
+            $this->logger->error("Unable to queue notification for {$changeset->getId()}, fallback to online notif", ['exception' => $exception]);
             $this->processPostCreationActions($changeset);
             $this->actions_runner_dao->addEndDate($changeset->getId());
         }

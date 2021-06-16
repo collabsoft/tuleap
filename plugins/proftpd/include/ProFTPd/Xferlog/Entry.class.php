@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,8 @@
 
 namespace Tuleap\ProFTPd\Xferlog;
 
-class Entry {
+class Entry
+{
 
     /** @var int */
     public $current_time;

@@ -1,38 +1,6 @@
 #!/usr/bin/env groovy
 
-def npm_credentials = [usernamePassword(credentialsId: 'nexus.enalean.com_readonly', passwordVariable: 'NPM_PASSWORD', usernameVariable: 'NPM_USER')];
-
-def runRESTTests(String version) {
-    sh """
-    mkdir -p working_copy/api-$version
-    cp -R sources/* working_copy/api-$version/
-    mkdir -p results/api-$version
-    docker run --rm -v \$WORKSPACE/working_copy/api-$version/:/usr/share/tuleap --mount type=tmpfs,destination=/tmp -v \$WORKSPACE/results/api-$version:/output \$DOCKER_REGISTRY/enalean/tuleap-test-rest:$version
-    """
-    junit "results/api-$version/rest_tests.xml"
-}
-
-def runKarmaTests(String name, String path) {
-    sh """
-    cid="\$(docker create -v \$WORKSPACE/sources:/sources:ro --security-opt seccomp=\$WORKSPACE/sources/tests/karma/seccomp_chrome.json \$DOCKER_REGISTRY/enalean/tuleap-test-karma:latest --path $path)"
-    docker start --attach "\$cid" || true
-    mkdir -p 'results/karma'
-    docker cp "\$cid":/output/test-results.xml results/karma/test-$name-results.xml
-    docker rm -fv "\$cid"
-    """
-    junit "results/karma/test-$name-results.xml"
-}
-
-def runSOAPTests(String name, String image_version) {
-    sh """
-    cid="\$(docker create -v \$WORKSPACE/sources:/usr/share/tuleap:ro \$DOCKER_REGISTRY/enalean/tuleap-test-soap:${image_version})"
-    docker start --attach "\$cid" || true
-    mkdir -p 'results/api-soap'
-    docker cp "\$cid":/output/soap_tests.xml results/api-soap/soap_tests_${name}.xml || true
-    docker rm -fv "\$cid"
-    """
-    junit "results/api-soap/soap_tests_${name}.xml"
-}
+def actions
 
 pipeline {
     agent {
@@ -47,22 +15,38 @@ pipeline {
         }
 
         stage('Prepare') {
+            agent {
+                dockerfile {
+                    dir 'sources/tools/utils/nix/'
+                    filename 'build-tools.dockerfile'
+                    reuseNode true
+                    args '--tmpfs /tmp/tuleap_build:rw,noexec,nosuid --read-only'
+                }
+            }
             steps {
                 dir ('results') {
                     deleteDir()
                 }
-                withCredentials(npm_credentials) {
-                    sh 'docker run --rm -e NPM_REGISTRY="$NPM_REGISTRY" -e NPM_USER="$NPM_USER" -e NPM_PASSWORD="$NPM_PASSWORD" -e NPM_EMAIL="$NPM_EMAIL" -v "$WORKSPACE/sources/":/tuleap -v "$WORKSPACE/sources/":/output --tmpfs /tmp/tuleap_build:rw,noexec,nosuid --read-only $DOCKER_REGISTRY/tuleap-generated-files-builder dev'
+                dir ('sources') {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'nexus.enalean.com_readonly',
+                            passwordVariable: 'NPM_PASSWORD',
+                            usernameVariable: 'NPM_USER'
+                        ),
+                        string(credentialsId: 'github-token-composer', variable: 'COMPOSER_GITHUB_AUTH')
+                    ]) {
+                        sh 'tools/utils/scripts/generated-files-builder.sh dev'
+                    }
                 }
             }
         }
 
         stage('Check lockfiles') {
-            steps {
-                dir ('sources') {
-                    sh 'tests/files_status_checker/verify.sh lockfiles package-lock.json composer.lock'
-                }
-            }
+            steps { script {
+                actions = load 'sources/tests/actions.groovy'
+                actions.runFilesStatusChangesDetection('.', 'lockfiles', 'package-lock.json composer.lock')
+            } }
             post {
                 failure {
                     dir ('sources') {
@@ -73,66 +57,153 @@ pipeline {
         }
 
         stage('Tests') {
-            steps {
-                parallel 'UT SimpleTest 1.1.x PHP 5.6': {
-                    sh "make -C $WORKSPACE/sources simpletest11x-56-ci"
-                    junit 'results/ut-simpletest11x-php-56/results.xml'
-                },
-                'UT SimpleTest PHP 7.2': {
-                    sh "make -C $WORKSPACE/sources simpletest-72-ci"
-                    junit 'results/ut-simpletest-php-72/results.xml'
-                },
-                'UT PHPUnit PHP 5.6': {
-                    sh "make -C $WORKSPACE/sources phpunit-ci-56"
-                    junit 'results/ut-phpunit-php-56/phpunit_tests_results.xml'
-                },
-                'UT PHPUnit PHP 7.2': {
-                    sh "make -C $WORKSPACE/sources phpunit-ci-72"
-                    junit 'results/ut-phpunit-php-72/phpunit_tests_results.xml'
-                },
-                'Karma AgileDashboard PlanningV2': { runKarmaTests('planning', 'plugins/agiledashboard/www/js/planning-v2') },
-                'Karma AgileDashboard Kanban': { runKarmaTests('kanban', 'plugins/agiledashboard/www/js/kanban') },
-                'Karma Tracker': { runKarmaTests('tracker', 'plugins/tracker/www/scripts') },
-                'Karma FRS plugin': { runKarmaTests('frs', 'plugins/frs/www/js/angular') },
-                'Karma Label plugin': { runKarmaTests('label', 'plugins/label/www/scripts') },
-                'Karma PullRequest plugin': { runKarmaTests('pullrequest', 'plugins/pullrequest/www/scripts') },
-                'Karma CrossTracker plugin': { runKarmaTests('crosstracker', 'plugins/crosstracker/www/scripts') },
-                'Karma TimeTracking plugin': { runKarmaTests('timetracking', 'plugins/timetracking/www/scripts') },
-                'Karma Git plugin': { runKarmaTests('git', 'plugins/git/www/scripts') },
-                'REST CentOS 6 PHP 5.6 MySQL 5.6': { runRESTTests('c6-php56-mysql56') },
-                'REST CentOS 6 PHP 7.2 MySQL 5.6': { runRESTTests('c6-php72-mysql56') },
-                'SOAP PHP 5.6': { runSOAPTests('php-56', '3') },
-                'SOAP PHP 7.2': { runSOAPTests('php-72', '4') },
-                'Distributed SVN integration': {
-                    dir ('sources') {
-                        sh """
-                        tests/e2e/distlp/wrap.sh "$WORKSPACE/results/distlp-integration"
-                        """
+            failFast false
+            parallel {
+                stage('UT PHPUnit') {
+                    stages {
+                        stage('UT PHPUnit PHP 7.4') {
+                            steps { script { actions.runPHPUnitTests('74') } }
+                        }
                     }
-                    junit 'results/distlp-integration/distlp-svn-cli.xml'
-                    junit 'results/distlp-integration/results-*.xml'
-                },
-                'Build and run CentOS 6': {
-                    dir ('sources') {
-                        sh 'OS=centos6 tests/build_and_run/test.sh'
+                    post { always { junit 'results/ut-phpunit/*/phpunit_tests_results.xml' } }
+                }
+                stage ('Jest') {
+                    agent {
+                        dockerfile {
+                            dir 'sources/tools/utils/nix/'
+                            filename 'build-tools.dockerfile'
+                            reuseNode true
+                            args '--network none --tmpfs /tmp/jest_rt:rw,noexec,nosuid'
+                        }
                     }
-                },
-                'Build CentOS 7': {
-                    dir ('sources') {
-                        sh 'OS=centos7 tests/build_and_run/test.sh'
+                    steps { script { actions.runJestTests('Tuleap', '.') } }
+                    post {
+                        always { junit 'results/jest/test-*-results.xml' }
                     }
-                },
-                'Check translation files': {
-                    dir ('sources') {
-                        sh 'tests/files_status_checker/verify.sh "translation files" "*.po\$"'
+                }
+                stage('REST') {
+                    stages {
+                        stage('REST PHP 7.4 MySQL 5.7') {
+                            steps { script { actions.runRESTTests('mysql57', '74') } }
+                        }
                     }
-                },
-                failFast: false
+                    post { always { junit 'results/api-rest/*/*' } }
+                }
+                stage('DB Integration') {
+                    stages {
+                        stage('DB CentOS 7 PHP 7.4 MySQL 5.7') {
+                            steps { script { actions.runDBTests('mysql57', '74') } }
+                        }
+                    }
+                    post { always { junit 'results/db/*/db_tests.xml' } }
+                }
+                stage('SOAP') {
+                    stages {
+                        stage('SOAP PHP 7.4') { steps { script { actions.runSOAPTests('mysql57', '74') } } }
+                    }
+                    post { always { junit "results/soap/*/soap_tests.xml" } }
+                }
+                stage('Build and run CentOS 7') { steps { script { actions.runBuildAndRun('centos7') } } }
+                stage('Translations') {
+                    stages {
+                        stage('Check .po files') {
+                            steps { script {
+                                actions.runFilesStatusChangesDetection('.', 'translation files', '"*.po\$"')
+                            } }
+                        }
+                        stage('Check .tab files') {
+                            steps { script {
+                                sh 'sources/src/utils/analyse_language_files.pl sources/'
+                            } }
+                        }
+                    }
+                }
+                stage('Code conformity') {
+                    stages {
+                        stage('ESLint static analysis') {
+                            agent {
+                                dockerfile {
+                                    dir 'sources/tools/utils/nix/'
+                                    filename 'build-tools.dockerfile'
+                                    reuseNode true
+                                    args '--network none'
+                                }
+                            }
+                            steps { script { actions.runESLint() } }
+                            post {
+                                always {
+                                    recordIssues enabledForFailure: true, tools: [checkStyle(id: 'checkstyle_eslint', pattern: 'results/eslint/checkstyle.xml')]
+                                }
+                            }
+                        }
+                        stage('PHP coding standards') {
+                            steps {
+                                script {
+                                    def filesToAnalyze = '.'
+                                    if (env.GIT_BRANCH != 'origin/master') {
+                                        def helpers = load 'sources/tests/helpers.groovy'
+                                        filesToAnalyze = helpers.getModifiedFilesSinceFirstParentOfCurrentCommit('sources/')
+                                    }
+                                    actions.runPHPCodingStandards(
+                                        './src/vendor/bin/phpcs',
+                                        './tests/phpcs/tuleap-ruleset-minimal.xml',
+                                        filesToAnalyze
+                                    )
+                                }
+                            }
+                        }
+                        stage('Psalm static analysis') {
+                            agent {
+                                docker {
+                                    image 'enalean/tuleap-test-phpunit:c7-php74'
+                                    reuseNode true
+                                    args '--network none'
+                                }
+                            }
+                            steps {
+                                script {
+                                    def filesToAnalyze = '.'
+                                    if (env.GIT_BRANCH != 'origin/master') {
+                                        def helpers = load 'sources/tests/helpers.groovy'
+                                        filesToAnalyze = helpers.getModifiedFilesSinceFirstParentOfCurrentCommit('sources/')
+                                    }
+                                    actions.runPsalm('tests/psalm/psalm.xml', filesToAnalyze)
+                                }
+                            }
+                            post {
+                                always {
+                                    recordIssues enabledForFailure: true, minimumSeverity: 'NORMAL', tools: [checkStyle(id: 'checkstyle_psalm', pattern: 'results/psalm/checkstyle.xml')]
+                                }
+                            }
+                        }
+                        stage('Architecture') {
+                            agent {
+                                docker {
+                                    image 'enalean/tuleap-test-phpunit:c7-php74'
+                                    reuseNode true
+                                    args '--network none'
+                                }
+                            }
+                            steps { script { actions.runDeptrac('tests/deptrac/core_on_plugins.yml', 'core_on_plugins') } }
+                            post { failure { junit 'results/deptrac/*.xml' } }
+                        }
+                        stage('SCSS coding standards') {
+                            agent {
+                                dockerfile {
+                                    dir 'sources/tools/utils/nix/'
+                                    filename 'build-tools.dockerfile'
+                                    reuseNode true
+                                    args '--network none'
+                                }
+                            }
+                            steps { script { actions.runStylelint() } }
+                        }
+                    }
+                }
             }
             post {
                 always {
                     archiveArtifacts allowEmptyArchive: true, artifacts: 'results/'
-                    sh 'rm -rf working_copy || echo "Cleanup of the working copies has failed, please stop writing files as root"'
                 }
             }
         }

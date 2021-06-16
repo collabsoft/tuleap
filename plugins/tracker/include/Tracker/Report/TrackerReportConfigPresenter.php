@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -23,7 +23,6 @@ namespace Tuleap\Tracker\Report;
 
 use CSRFSynchronizerToken;
 use Tuleap\Tracker\Config\ReportPresenter;
-use Tuleap\Tracker\Config\SectionsPresenter;
 
 class TrackerReportConfigPresenter
 {
@@ -47,11 +46,10 @@ class TrackerReportConfigPresenter
         $this->query_limit         = $query_limit;
         $this->default_query_limit = 15;
 
-        $this->report_config_pane_title = $GLOBALS['Language']->getText('plugin_tracker_report_config', 'report_config_pane_title');
-        $this->report_config_desc       = $GLOBALS['Language']->getText('plugin_tracker_report_config', 'report_config_desc');
-        $this->query_limit_label        = $GLOBALS['Language']->getText('plugin_tracker_report_config', 'query_limit_label');
+        $this->report_config_pane_title = dgettext('tuleap-tracker', 'Report configuration');
+        $this->report_config_desc       = dgettext('tuleap-tracker', 'Set a limit on expert queries to avoid too complex ones. Be careful, higher the limit is, higher the time to process the query by the server can be.');
+        $this->query_limit_label        = dgettext('tuleap-tracker', 'Limit');
         $this->artifacts_deletion_label = dgettext('tuleap-tracker', 'Artifacts deletion');
-        $this->save_conf                = $GLOBALS['Language']->getText('admin_main', 'save_conf');
 
         $this->sections = new ReportPresenter();
     }

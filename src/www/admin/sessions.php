@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) Enalean, 2011 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('pre.php');
-require_once('common/dao/SessionDao.class.php');
+require_once __DIR__ . '/../include/pre.php';
 
 $request = HTTPRequest::instance();
 $request->checkUserIsSuperUser();

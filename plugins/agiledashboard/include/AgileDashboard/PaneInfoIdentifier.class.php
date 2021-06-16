@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,13 +26,13 @@ class AgileDashboard_PaneInfoIdentifier
     /**
      * @param string $pane_info_identifier
      *
-     * @return boolean
+     * @return bool
      */
     public function isPaneAPlanningV2($pane_info_identifier)
     {
-        return in_array($pane_info_identifier, array(
+        return in_array($pane_info_identifier, [
             PlanningV2PaneInfo::IDENTIFIER,
             TopPlanningV2PaneInfo::IDENTIFIER
-        ));
+        ]);
     }
 }

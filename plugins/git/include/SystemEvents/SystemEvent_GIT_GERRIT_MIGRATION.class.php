@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,11 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/backend/BackendLogger.class.php';
+class SystemEvent_GIT_GERRIT_MIGRATION extends SystemEvent
+{
 
-class SystemEvent_GIT_GERRIT_MIGRATION extends SystemEvent {
-
-    const NAME = "GIT_GERRIT_MIGRATION";
+    public const NAME = "GIT_GERRIT_MIGRATION";
 
     /** @var GitDao */
     private $dao;
@@ -34,7 +32,7 @@ class SystemEvent_GIT_GERRIT_MIGRATION extends SystemEvent {
     /** @var Git_RemoteServer_GerritServerFactory */
     private $server_factory;
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
     /** @var Git_Driver_Gerrit_ProjectCreator */
@@ -49,9 +47,10 @@ class SystemEvent_GIT_GERRIT_MIGRATION extends SystemEvent {
     /** @var MailBuilder */
     private $mail_builder;
 
-    public function process() {
-        $repo_id           = (int)$this->getParameter(0);
-        $remote_server_id  = (int)$this->getParameter(1);
+    public function process()
+    {
+        $repo_id          = (int) $this->getParameter(0);
+        $remote_server_id = (int) $this->getParameter(1);
         $this->dao->switchToGerrit($repo_id, $remote_server_id);
 
         $repository = $this->repository_factory->getRepositoryById($repo_id);
@@ -61,16 +60,16 @@ class SystemEvent_GIT_GERRIT_MIGRATION extends SystemEvent {
         }
 
         try {
-            $server                = $this->server_factory->getServer($repository);
-            $gerrit_template_id    = $this->getParameter(2);
-            $gerrit_project        = $this->project_creator->createGerritProject($server, $repository, $gerrit_template_id);
+            $server             = $this->server_factory->getServer($repository);
+            $gerrit_template_id = $this->getParameter(2);
+            $gerrit_project     = $this->project_creator->createGerritProject($server, $repository, $gerrit_template_id);
             $this->project_creator->removeTemporaryDirectory();
             $this->project_creator->finalizeGerritProjectCreation($server, $repository, $gerrit_template_id);
             $this->dao->setGerritMigrationSuccess($repository->getId());
             $repository->setRemoteServerMigrationStatus(Git_Driver_Gerrit_ProjectCreatorStatus::DONE);
             $repository->getBackend()->updateRepoConf($repository);
 
-            $this->done("Created project $gerrit_project on ". $server->getBaseUrl());
+            $this->done("Created project $gerrit_project on " . $server->getBaseUrl());
             return true;
         } catch (Git_Driver_Gerrit_ProjectCreator_ProjectAlreadyExistsException $e) {
             $this->logError($repository, "gerrit: ", "Gerrit failure: ", $e);
@@ -83,25 +82,27 @@ class SystemEvent_GIT_GERRIT_MIGRATION extends SystemEvent {
         }
     }
 
-    private function logError(GitRepository $repository, $sysevent_prefix, $log_prefix, Exception $e) {
+    private function logError(GitRepository $repository, $sysevent_prefix, $log_prefix, Exception $e)
+    {
         $this->dao->setGerritMigrationError($repository->getId());
         $this->error($sysevent_prefix . $e->getMessage());
-        $this->logger->error($log_prefix . $this->verbalizeParameters(null), $e);
+        $this->logger->error($log_prefix . $this->verbalizeParameters(null), ['exception' => $e]);
         $this->sendErrorNotification($repository);
     }
 
-    private function sendErrorNotification(GitRepository $repository) {
+    private function sendErrorNotification(GitRepository $repository)
+    {
         $user = $this->getRequester();
         if (! $user->isAnonymous()) {
-            $factory = new BaseLanguageFactory();
+            $factory  = new BaseLanguageFactory();
             $language = $factory->getBaseLanguage($user->getLocale());
-            $url = get_server_url() . GIT_BASE_URL . '/?action=repo_management&group_id='.$repository->getProjectId().'&repo_id='.$repository->getId().'&pane=gerrit';
+            $url      = HTTPRequest::instance()->getServerUrl() . GIT_BASE_URL . '/?action=repo_management&group_id=' . $repository->getProjectId() . '&repo_id=' . $repository->getId() . '&pane=gerrit';
 
             $notification = new Notification(
-                array($user->getEmail()),
-                $language->getText('plugin_git', 'delegated_to_gerrit_error_mail_subject', array($repository->getFullName())),
-                $language->getText('plugin_git', 'delegated_to_gerrit_error_mail_body', array($repository->getFullName(), $url)),
-                $language->getText('plugin_git', 'delegated_to_gerrit_error_mail_body', array($repository->getFullName(), $url)),
+                [$user->getEmail()],
+                sprintf(dgettext('tuleap-git', 'Migration of %1$s to gerrit error'), $repository->getFullName()),
+                sprintf(dgettext('tuleap-git', 'An error occured while migrating repository %1$s on gerrit. Please check <a href="%2$s">gerrit settings</a> and contact site administration.'), $repository->getFullName(), $url),
+                sprintf(dgettext('tuleap-git', 'An error occured while migrating repository %1$s on gerrit. Please check <a href="%2$s">gerrit settings</a> and contact site administration.'), $repository->getFullName(), $url),
                 $url,
                 'git'
             );
@@ -112,41 +113,45 @@ class SystemEvent_GIT_GERRIT_MIGRATION extends SystemEvent {
     /**
      * @return string a human readable representation of parameters
      */
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         $txt = '';
 
-        $repo_id          = (int)$this->getParameter(0);
-        $remote_server_id = (int)$this->getParameter(1);
+        $repo_id          = (int) $this->getParameter(0);
+        $remote_server_id = (int) $this->getParameter(1);
 
-        $txt .= 'repo: '. $this->verbalizeRepoId($repo_id, $with_link) .', remote server: '. $this->verbalizeRemoteServerId($remote_server_id, $with_link).$this->verbalizeAccessRightMigration();
+        $txt .= 'repo: ' . $this->verbalizeRepoId($repo_id, $with_link) . ', remote server: ' . $this->verbalizeRemoteServerId($remote_server_id, $with_link) . $this->verbalizeAccessRightMigration();
         $user = $this->getRequester();
         if (! $user->isAnonymous()) {
             if ($with_link) {
-                $txt .= ' <a href="/admin/usergroup.php?user_id='.$user->getId().'">'.$user->getRealName().'</a>';
+                $txt .= ' <a href="/admin/usergroup.php?user_id=' . $user->getId() . '">' . $user->getRealName() . '</a>';
             } else {
-                $txt .= ' '.$user->getRealName();
+                $txt .= ' ' . $user->getRealName();
             }
         }
 
         return $txt;
     }
 
-    private function getRequester() {
-        $user_id = (int)$this->getParameter(3);
+    private function getRequester()
+    {
+        $user_id = (int) $this->getParameter(3);
         return $this->user_manager->getUserById($user_id);
     }
 
-    private function verbalizeAccessRightMigration() {
+    private function verbalizeAccessRightMigration()
+    {
         $migrate_access_rights = $this->getParameter(2);
-        if (!$migrate_access_rights) {
+        if (! $migrate_access_rights) {
             return ', without access rights';
         }
     }
 
-    private function verbalizeRepoId($repo_id, $with_link) {
-        $txt = '#'. $repo_id;
+    private function verbalizeRepoId($repo_id, $with_link)
+    {
+        $txt = '#' . $repo_id;
         if ($with_link) {
-            $hp = Codendi_HTMLPurifier::instance();
+            $hp   = Codendi_HTMLPurifier::instance();
             $repo = $this->repository_factory->getRepositoryById($repo_id);
             if ($repo) {
                 $txt = $repo->getHTMLLink($this->url_manager);
@@ -155,8 +160,9 @@ class SystemEvent_GIT_GERRIT_MIGRATION extends SystemEvent {
         return $txt;
     }
 
-    private function verbalizeRemoteServerId($remote_server_id, $with_link) {
-        $txt = '#'. $remote_server_id;
+    private function verbalizeRemoteServerId($remote_server_id, $with_link)
+    {
+        $txt = '#' . $remote_server_id;
         if ($with_link) {
             try {
                 $server = $this->server_factory->getServerById($remote_server_id);
@@ -171,8 +177,8 @@ class SystemEvent_GIT_GERRIT_MIGRATION extends SystemEvent {
     public function injectDependencies(
         GitDao $dao,
         GitRepositoryFactory $repository_factory,
-        Git_RemoteServer_GerritServerFactory  $server_factory,
-        Logger  $logger,
+        Git_RemoteServer_GerritServerFactory $server_factory,
+        \Psr\Log\LoggerInterface $logger,
         Git_Driver_Gerrit_ProjectCreator $project_creator,
         Git_GitRepositoryUrlManager $url_manager,
         UserManager $user_manager,

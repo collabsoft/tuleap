@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,30 +18,55 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once __DIR__ . '/../../Configuration/vendor/autoload.php';
+use Symfony\Component\Process\Process;
+use TuleapCfg\Command\SiteDeploy\FPM\FPMSessionRedis;
+use TuleapCfg\Command\SiteDeploy\FPM\SiteDeployFPM;
+use TuleapCfg\Command\SiteDeploy\Nginx\SiteDeployNginx;
+
+require_once __DIR__ . '/../../../src/vendor/autoload.php';
 
 // Make all warnings or notices fatal
 set_error_handler(function ($errno, $errstr, $errfile, $errline) {
     die("$errno $errstr $errfile $errline");
 }, E_ALL | E_STRICT);
 
-$logger = new Tuleap\Configuration\Logger\Console();
+$logger = new \Monolog\Logger('backend-svn');
+$logger->pushHandler(new \Monolog\Handler\StreamHandler(STDOUT));
 
-$fpm      = Tuleap\Configuration\FPM\TuleapWeb::buildForPHP56($logger, 'codendiadm', true);
-$nginx    = new \Tuleap\Configuration\Nginx\BackendWeb($logger, '/usr/share/tuleap', '/etc/nginx', 'reverse-proxy');
-$rabbitmq = new Tuleap\Configuration\RabbitMQ\BackendWeb('codendiadm');
+$redis_conf_file = '/etc/tuleap/conf/redis.inc';
+$fpm             = new SiteDeployFPM(
+    $logger,
+    'codendiadm',
+    true,
+    new FPMSessionRedis(
+        $redis_conf_file,
+        'codendiadm',
+        'redis',
+    ),
+    SiteDeployFPM::PHP74_DST_CONF_DIR,
+    SiteDeployFPM::PHP74_SRC_CONF_DIR,
+    [],
+);
+$nginx           = new SiteDeployNginx($logger, '/usr/share/tuleap', '/etc/nginx', 'reverse-proxy', true);
 
-$fpm->configure();
+$fpm->forceDeploy();
 $nginx->configure();
-$rabbitmq->configure();
-
-$exec = new \Tuleap\Configuration\Common\Exec();
 
 if (isset($argv[1]) && $argv[1] == 'test') {
     try {
-        $exec->command('/usr/share/tuleap/tools/distlp/backend-web/prepare-instance.sh');
+        $process = new Process(['/usr/share/tuleap/tools/distlp/backend-web/prepare-instance.sh']);
+        $process
+            ->setTimeout(0)
+            ->mustRun();
     } catch (Exception $e) {
         die($e->getMessage());
     }
-    file_put_contents('/etc/tuleap/conf/local.inc', preg_replace('/\$sys_trusted_proxies = \'\'/', '$sys_trusted_proxies = \''.gethostbyname('reverse-proxy').'\'', file_get_contents('/etc/tuleap/conf/local.inc')));
+    file_put_contents(
+        '/etc/tuleap/conf/local.inc',
+        preg_replace(
+            '/\$sys_trusted_proxies = \'\'/',
+            '$sys_trusted_proxies = \'10.0.0.0/8,172.16.0.0/12,192.168.0.0/16\'',
+            file_get_contents('/etc/tuleap/conf/local.inc')
+        )
+    );
 }

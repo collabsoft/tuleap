@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,23 +20,23 @@
 
 namespace Tuleap\HudsonSvn\Job;
 
-use Tuleap\Svn\Repository\Repository;
+use Tuleap\SVN\Repository\Repository;
 
-class Factory {
+class Factory
+{
 
     /**
      * @var Dao
      */
     private $dao;
 
-    public function __construct(Dao $dao) {
+    public function __construct(Dao $dao)
+    {
         $this->dao = $dao;
     }
 
-    /**
-     * @return Job | null
-     */
-    public function getJobById($job_id) {
+    public function getJobById(int $job_id): ?Job
+    {
         $row = $this->dao->getJob($job_id);
 
         if (! $row) {
@@ -55,9 +55,10 @@ class Factory {
     /**
      * @return array
      */
-    public function getJobsByRepository(Repository $repository) {
+    public function getJobsByRepository(Repository $repository)
+    {
         $rows = $this->dao->getJobByRepositoryId($repository->getId());
-        $jobs = array();
+        $jobs = [];
 
         foreach ($rows as $row) {
             $jobs[] = new Job(
@@ -71,5 +72,4 @@ class Factory {
 
         return $jobs;
     }
-
 }

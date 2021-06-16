@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (C) Enalean SAS, 2016. All Rights Reserved.
+ * Copyright (C) Enalean SAS, 2016 - Present. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,14 +26,13 @@ class CollectionOfLinksFormatter
 
     /**
      * @param Tracker_ArtifactLinkInfo[] $list_of_artifactlinkinfo
-     * @param PFUser $user
      * @param string $format
      *
      * @return string
      */
     public function format(array $list_of_artifactlinkinfo, PFUser $user, $format, $ignore_perms)
     {
-        $formatted_links_user_can_see = array();
+        $formatted_links_user_can_see = [];
 
         foreach ($list_of_artifactlinkinfo as $link) {
             if (! $link->userCanView($user) && ! $ignore_perms) {

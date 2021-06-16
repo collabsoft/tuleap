@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,26 +18,29 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ArtifactFloatFieldXMLExporter extends ArtifactAlphaNumFieldXMLExporter {
-    const TV3_VALUE_INDEX  = 'valueFloat';
-    const TV3_TYPE         = 'TF_3';
-    const TV5_TYPE         = 'float';
-    const DEFAULT_VALUE    = 0.0;
+class ArtifactFloatFieldXMLExporter extends ArtifactAlphaNumFieldXMLExporter
+{
+    public const TV3_VALUE_INDEX = 'valueFloat';
+    public const TV3_TYPE        = 'TF_3';
+    public const TV5_TYPE        = 'float';
+    public const DEFAULT_VALUE   = 0.0;
 
-    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row) {
+    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row)
+    {
         $this->setNewValue($row);
 
         $this->appendStringNode($changeset_node, self::TV5_TYPE, $row);
     }
 
-    public function setNewValue(array &$row) {
+    public function setNewValue(array &$row)
+    {
         if (! $row['new_value']) {
             $row['new_value'] = self::DEFAULT_VALUE;
         }
     }
 
-    public function getFieldValueIndex() {
+    public function getFieldValueIndex()
+    {
         return self::TV3_VALUE_INDEX;
     }
-
 }

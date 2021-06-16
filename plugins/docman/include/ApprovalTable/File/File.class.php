@@ -20,20 +20,28 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Docman_ApprovalTableFile extends Docman_ApprovalTableVersionned {
-    var $versionId = null;
+class Docman_ApprovalTableFile extends Docman_ApprovalTableVersionned
+{
+    public $versionId = null;
 
-    function setVersionId($v) {
+    public function setVersionId($v)
+    {
         $this->versionId = $v;
     }
 
-    function getVersionId() {
+    public function getVersionId()
+    {
         return $this->versionId;
     }
 
-    function initFromRow($row) {
+    public function initFromRow($row)
+    {
         parent::initFromRow($row);
-        if(isset($row['version_id'])) $this->versionId = $row['version_id'];
-        if(isset($row['version_number'])) $this->versionNumber = $row['version_number'];
+        if (isset($row['version_id'])) {
+            $this->versionId = $row['version_id'];
+        }
+        if (isset($row['version_number'])) {
+            $this->versionNumber = $row['version_number'];
+        }
     }
 }

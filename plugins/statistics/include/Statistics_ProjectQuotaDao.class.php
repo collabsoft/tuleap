@@ -20,35 +20,38 @@
  * DAO class for Project Quota
  */
 
-class Statistics_ProjectQuotaDao extends DataAccessObject {
+class Statistics_ProjectQuotaDao extends DataAccessObject
+{
 
-    protected $tableName       = 'plugin_statistics_disk_quota_exception';
-    const GROUP_ID             = 'group_id'; //PK
-    const REQUESTER_ID         = 'requester_id';
-    const REQUEST_SIZE         = 'requested_size';
-    const EXCEPTION_MOTIVATION = 'exception_motivation';
-    const REQUEST_DATE         = 'request_date';
+    protected $tableName              = 'plugin_statistics_disk_quota_exception';
+    public const GROUP_ID             = 'group_id'; //PK
+    public const REQUESTER_ID         = 'requester_id';
+    public const REQUEST_SIZE         = 'requested_size';
+    public const EXCEPTION_MOTIVATION = 'exception_motivation';
+    public const REQUEST_DATE         = 'request_date';
 
     /**
      * Get the dao table name
      *
      * @return String
      */
-    public function getTable() {
+    public function getTable()
+    {
         return $this->tableName;
     }
 
     /**
      * This function add a disk quota exception in the database
      *
-     * @param Integer $groupId             Id of the project we want to add excpetion for its disk quota
-     * @param Integer $requesterId         Id of the user that performed the request
-     * @param Integer $requestedSize       New disk size we want to apply as quota
+     * @param int $groupId Id of the project we want to add excpetion for its disk quota
+     * @param int $requesterId Id of the user that performed the request
+     * @param int $requestedSize New disk size we want to apply as quota
      * @param String  $exceptionMotivation A text that should justify a given exception request
      *
-     * @return Boolean
+     * @return bool
      */
-    public function addException($groupId, $requesterId, $requestedSize, $exceptionMotivation) {
+    public function addException($groupId, $requesterId, $requestedSize, $exceptionMotivation)
+    {
         $groupId             = $this->da->escapeInt($groupId);
         $requesterId         = $this->da->escapeInt($requesterId);
         $requestedSize       = $this->da->escapeInt($requestedSize);
@@ -72,29 +75,30 @@ class Statistics_ProjectQuotaDao extends DataAccessObject {
      *
      * @return DataAccessResult
      */
-    public function getAllCustomQuota($list, $offset, $count, $sort, $sortOrder) {
+    public function getAllCustomQuota($list, $offset, $count, $sort, $sortOrder)
+    {
         $condition = '';
         $order     = '';
         $limit     = '';
         $list      = $this->da->escapeIntImplode($list);
 
-        if (!empty($list)) {
-            $condition = "WHERE ".self::GROUP_ID." IN ($list)";
+        if (! empty($list)) {
+            $condition = "WHERE " . self::GROUP_ID . " IN ($list)";
         }
 
         if (isset($offset) && isset($count)) {
-            $limit = " LIMIT ".$this->da->escapeInt($offset).", ".$this->da->escapeInt($count);
+            $limit = " LIMIT " . $this->da->escapeInt($offset) . ", " . $this->da->escapeInt($count);
         }
 
         if (isset($sort)) {
             $sortOrder = $sortOrder == 'DESC' ? 'DESC' : 'ASC';
-            $order = 'ORDER BY ';
+            $order     = 'ORDER BY ';
             switch ($sort) {
                 case 'quota':
-                    $order .= self::REQUEST_SIZE .' '. $sortOrder;
+                    $order .= self::REQUEST_SIZE . ' ' . $sortOrder;
                     break;
                 case 'date':
-                    $order .= self::REQUEST_DATE .' '. $sortOrder;
+                    $order .= self::REQUEST_DATE . ' ' . $sortOrder;
                     break;
                 default:
                     $order .= self::REQUEST_SIZE;
@@ -112,25 +116,24 @@ class Statistics_ProjectQuotaDao extends DataAccessObject {
     /**
      * Get custom quota for a given project
      *
-     * @param Integer $groupId Id of the project
+     * @param int $groupId Id of the project
      *
      * @return DataAccessResult
      */
-    public function getProjectCustomQuota($groupId) {
+    public function getProjectCustomQuota($groupId)
+    {
         $groupId = $this->da->escapeInt($groupId);
-        $sql = "SELECT *
-                FROM ".$this->getTable()."
-                WHERE ".self::GROUP_ID." = ".$groupId;
+        $sql     = "SELECT *
+                FROM " . $this->getTable() . "
+                WHERE " . self::GROUP_ID . " = " . $groupId;
         return $this->retrieve($sql);
     }
 
-    public function deleteCustomQuota($project_id) {
+    public function deleteCustomQuota($project_id)
+    {
         $project_id = $this->da->escapeInt($project_id);
-        $sql = "DELETE FROM ".$this->getTable()."
-                WHERE ".self::GROUP_ID." = $project_id";
+        $sql        = "DELETE FROM " . $this->getTable() . "
+                WHERE " . self::GROUP_ID . " = $project_id";
         return $this->update($sql);
     }
-
 }
-
-?>

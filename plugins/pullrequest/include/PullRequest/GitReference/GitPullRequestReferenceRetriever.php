@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -42,7 +42,7 @@ class GitPullRequestReferenceRetriever
     {
         $row = $this->dao->getReferenceByPullRequestId($pull_request->getId());
         if (empty($row)) {
-            throw new GitPullRequestReferenceNotFoundException;
+            throw new GitPullRequestReferenceNotFoundException();
         }
         return new GitPullRequestReference($row['reference_id'], $row['status']);
     }

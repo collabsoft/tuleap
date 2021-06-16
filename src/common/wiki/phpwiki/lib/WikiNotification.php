@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,8 +20,11 @@
 
 use Tuleap\Mail\MailFilter;
 use Tuleap\Mail\MailLogger;
+use Tuleap\Project\ProjectAccessChecker;
+use Tuleap\Project\RestrictedUserCanAccessProjectVerifier;
 
-class WikiNotification {
+class WikiNotification
+{
     /** @var Notification */
     private $notification;
     /** @var Project */
@@ -29,12 +32,13 @@ class WikiNotification {
     /** @var MailEnhancer */
     private $mail_enhancer;
 
-    public function __construct(array $emails, $wiki_name, $subject, $body, $goto_link, $project_id) {
+    public function __construct(array $emails, $wiki_name, $subject, $body, $goto_link, $project_id)
+    {
         $project_manager     = ProjectManager::instance();
         $this->project       = $project_manager->getProject($project_id);
         $this->mail_enhancer = new MailEnhancer();
 
-        $subject            = '[' . $wiki_name . '] '. $subject;
+        $subject            = '[' . $wiki_name . '] ' . $subject;
         $this->notification = new Notification($emails, $subject, '', $body, $goto_link, 'Wiki');
     }
 
@@ -47,7 +51,10 @@ class WikiNotification {
             TemplateRendererFactory::build(),
             new MailFilter(
                 UserManager::instance(),
-                new URLVerification(),
+                new ProjectAccessChecker(
+                    new RestrictedUserCanAccessProjectVerifier(),
+                    EventManager::instance()
+                ),
                 new MailLogger()
             )
         );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,20 +20,44 @@
 
 namespace Tuleap\OpenIDConnectClient\Authentication;
 
-use InoOicClient\Oic\Authorization\State\Storage\Session;
+class StateStorage
+{
+    public const AUTHORIZATION_STATE = 'tuleap_oidc_authorization_state';
 
-class StateStorage extends Session {
+    /**
+     * @var array
+     */
+    private $storage;
 
-    public function saveState(\InoOicClient\Oic\Authorization\State\State $state) {
-        $stored_state = new SessionState(
-            $state->getSecretKey(),
-            $state->getReturnTo(),
-            $state->getNonce()
-        );
-        $this->container->offsetSet(self::VAR_AUTHORIZATION_STATE, $stored_state);
+    public function __construct(array &$storage)
+    {
+        $this->storage =& $storage;
     }
 
-    public function clear() {
-        $this->container->offsetUnset(self::VAR_AUTHORIZATION_STATE);
+    public function saveState(State $state): void
+    {
+        $stored_state                             = new SessionState(
+            $state->getSecretKey(),
+            $state->getReturnTo(),
+            $state->getNonce(),
+            $state->getPKCECodeVerifier()
+        );
+        $this->storage[self::AUTHORIZATION_STATE] = $stored_state->convertToMinimalRepresentation();
+    }
+
+    /**
+     * @return null|SessionState
+     */
+    public function loadState()
+    {
+        if (! isset($this->storage[self::AUTHORIZATION_STATE])) {
+            return null;
+        }
+        return SessionState::buildFromMinimalRepresentation($this->storage[self::AUTHORIZATION_STATE]);
+    }
+
+    public function clear()
+    {
+        unset($this->storage[self::AUTHORIZATION_STATE]);
     }
 }

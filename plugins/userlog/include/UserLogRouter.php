@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,14 +41,12 @@ class UserLogRouter
 
     public function __construct(UserLogExporter $user_log_exporter, UserLogManager $user_log_manager)
     {
-
         $this->user_log_exporter = $user_log_exporter;
         $this->user_log_manager  = $user_log_manager;
     }
 
     /**
      * Routes the request to the correct controller
-     * @param HTTPRequest $request
      * @return void
      */
     public function route(HTTPRequest $request)

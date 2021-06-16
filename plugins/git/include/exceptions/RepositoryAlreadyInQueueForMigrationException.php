@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -22,9 +22,11 @@ namespace Tuleap\Git\Exceptions;
 
 use Exception;
 
-class RepositoryAlreadyInQueueForMigrationException extends Exception {
+class RepositoryAlreadyInQueueForMigrationException extends Exception
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct("The repository is already in queue for migration");
     }
 }

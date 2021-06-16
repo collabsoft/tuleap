@@ -1,6 +1,6 @@
 <?php
 /**
- *  Copyright (c) Enalean, 2017. All Rights Reserved.
+ *  Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  *  This file is a part of Tuleap.
  *
@@ -29,7 +29,7 @@ class ProjectLabelConfigurationLabelsFormatter
      */
     public function getLabelsIds(array $config_labels)
     {
-        $label_ids = array();
+        $label_ids = [];
 
         foreach ($config_labels as $label) {
             $label_ids[] = (int) $label['id'];

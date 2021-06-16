@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,13 +21,11 @@
 /**
  * Use This file to add stuff in the service top bar
  */
-$additional_tabs = array(
+$additional_tabs = [
     // // This example adds a service thats link to a specific project
     // array(
     //     'selected' => (boolean) (strstr(getStringFromServer('REQUEST_URI'),'/projects/gpig/')),
     //     'link'     => '/projects/gpig/',
     //     'title'    => 'Guinea Pig',
     // ),
-);
-
-?>
+];

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -27,8 +27,9 @@ use HTTPRequest;
 use Project;
 use Feedback;
 
-class AdminController {
-    const NAME = 'admin';
+class AdminController
+{
+    public const NAME = 'admin';
 
     /** @var PermissionsManager */
     private $permissions_manager;
@@ -36,24 +37,27 @@ class AdminController {
     /** @var SystemEventManager */
     private $system_event_manager;
 
-    public function __construct(PermissionsManager $permissions_manager, SystemEventManager $system_event_manager) {
+    public function __construct(PermissionsManager $permissions_manager, SystemEventManager $system_event_manager)
+    {
         $this->permissions_manager  = $permissions_manager;
         $this->system_event_manager = $system_event_manager;
     }
 
-    public function getName() {
+    public function getName()
+    {
         return self::NAME;
     }
 
     /**
-     * @param HTTPRequest $request
      * @return bool
      */
-    private function userIsAdmin(HTTPRequest $request) {
+    private function userIsAdmin(HTTPRequest $request)
+    {
         return $request->getProject()->userIsAdmin($request->getCurrentUser());
     }
 
-    public function index(ServiceProFTPd $service, HTTPRequest $request) {
+    public function index(ServiceProFTPd $service, HTTPRequest $request)
+    {
         $this->checkUserIsAdmin($request);
 
         $service->renderInPage(
@@ -64,7 +68,8 @@ class AdminController {
         );
     }
 
-    private function getPresenter(Project $project) {
+    private function getPresenter(Project $project)
+    {
         return new AdminPresenter(
             $project->getID(),
             $this->permissions_manager->getUGroups($project),
@@ -73,13 +78,15 @@ class AdminController {
         );
     }
 
-    public function save(ServiceProFTPd $service, HTTPRequest $request) {
+    public function save(ServiceProFTPd $service, HTTPRequest $request)
+    {
         $this->checkUserIsAdmin($request);
 
         $this->saveForAdmin($request);
     }
 
-    private function checkUserIsAdmin(HTTPRequest $request) {
+    private function checkUserIsAdmin(HTTPRequest $request)
+    {
         if (! $this->userIsAdmin($request)) {
             exit_error(
                 $GLOBALS['Language']->getText('global', 'error_perm_denied'),
@@ -88,14 +95,16 @@ class AdminController {
         }
     }
 
-    private function saveForAdmin(HTTPRequest $request) {
+    private function saveForAdmin(HTTPRequest $request)
+    {
         $project = $request->getProject();
         if ($project && ! $project->isError()) {
             $this->saveForProject($project, $request);
         }
     }
 
-    private function saveForProject(Project $project, HTTPRequest $request) {
+    private function saveForProject(Project $project, HTTPRequest $request)
+    {
         $this->savePermissions($project, $request);
         $this->system_event_manager->queueACLUpdate($project->getUnixName());
 
@@ -104,14 +113,15 @@ class AdminController {
             dgettext('tuleap-proftpd', 'Permissions will be propagated on filesystem shortly')
         );
 
-        $GLOBALS['Response']->redirect('?'.http_build_query(array(
+        $GLOBALS['Response']->redirect('?' . http_build_query([
             'group_id'   => $project->getID(),
             'controller' => self::NAME,
             'action'     => 'index',
-        )));
+        ]));
     }
 
-    private function savePermissions(Project $project, HTTPRequest $request) {
+    private function savePermissions(Project $project, HTTPRequest $request)
+    {
         $this->permissions_manager->savePermission(
             $project,
             PermissionsManager::PERM_READ,
@@ -130,9 +140,10 @@ class AdminController {
         );
     }
 
-    private function getUGroupsForPermission(HTTPRequest $request, $permission) {
-        return array(
+    private function getUGroupsForPermission(HTTPRequest $request, $permission)
+    {
+        return [
             (int) $request->getInArray('permissions', $permission)
-        );
+        ];
     }
 }

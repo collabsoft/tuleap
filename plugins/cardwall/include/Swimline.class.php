@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 /**
  * A swimline in the dashboard
  */
-class Cardwall_Swimline {
+class Cardwall_Swimline
+{
 
     /**
      * @var Cardwall_CardInCellPresenter
@@ -31,7 +32,7 @@ class Cardwall_Swimline {
     /**
      * @var array
      */
-    public $cells = array();
+    public $cells = [];
 
     /**
      * @var int
@@ -42,21 +43,23 @@ class Cardwall_Swimline {
      * @var bool
      */
     public $is_no_matching_column = false;
-    
+
     /**
      * @param string $title
      * @param array  $cells
      */
-    public function __construct(Cardwall_CardInCellPresenter $swimline_artifact_presenter, array $cells) {
+    public function __construct(Cardwall_CardInCellPresenter $swimline_artifact_presenter, array $cells)
+    {
         $this->cells                  = $cells;
         $this->card_in_cell_presenter = $swimline_artifact_presenter;
         $this->swimline_id            = $swimline_artifact_presenter->getId();
     }
 
     /**
-     * @return Tracker_CardPresenter
+     * @return Tracker_CardPresenter|null
      */
-    public function getCardPresenter() {
+    public function getCardPresenter()
+    {
         return $this->card_in_cell_presenter->getCardPresenter();
     }
 
@@ -64,20 +67,23 @@ class Cardwall_Swimline {
      *
      * @return Cardwall_CardInCellPresenter
      */
-    public function getCardInCellPresenter() {
+    public function getCardInCellPresenter()
+    {
         return $this->card_in_cell_presenter;
     }
 
-    public function stack_cards_title() {
-        return $GLOBALS['Language']->getText('plugin_cardwall', 'cell_stack');
+    public function stack_cards_title()
+    {
+        return dgettext('tuleap-cardwall', 'Stack cards');
     }
 
-    public function expand_cards_title() {
-        return $GLOBALS['Language']->getText('plugin_cardwall', 'cell_unstack');
+    public function expand_cards_title()
+    {
+        return dgettext('tuleap-cardwall', 'Expand cards');
     }
 
-    public function getCells() {
+    public function getCells()
+    {
         return $this->cells;
     }
 }
-?>

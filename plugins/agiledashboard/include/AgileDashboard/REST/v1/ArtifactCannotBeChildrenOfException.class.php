@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +19,12 @@
 
 namespace Tuleap\AgileDashboard\REST\v1;
 
-use \Exception;
+use Exception;
 
-class ArtifactCannotBeChildrenOfException extends Exception {
-    public function __construct($parent_id, $child_id) {
+class ArtifactCannotBeChildrenOfException extends Exception
+{
+    public function __construct($parent_id, $child_id)
+    {
         parent::__construct("Item $child_id cannot be children of $parent_id according to tracker hierarchy");
     }
 }

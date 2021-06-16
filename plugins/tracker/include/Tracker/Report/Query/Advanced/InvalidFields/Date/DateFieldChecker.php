@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,8 +43,6 @@ class DateFieldChecker implements InvalidFieldChecker
     }
 
     /**
-     * @param Comparison $comparison
-     * @param Tracker_FormElement_Field $field
      * @throws InvalidFieldException
      */
     public function checkFieldIsValidForComparison(Comparison $comparison, Tracker_FormElement_Field $field)

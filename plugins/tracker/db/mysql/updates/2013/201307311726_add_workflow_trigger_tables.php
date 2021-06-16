@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,17 +18,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201307311726_add_workflow_trigger_tables extends ForgeUpgrade_Bucket {
+class b201307311726_add_workflow_trigger_tables extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'Add tables for workflow trigger';
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE tracker_workflow_trigger_rule_static_value (
                     id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
                     value_id INT(11) NOT NULL,
@@ -46,14 +50,14 @@ class b201307311726_add_workflow_trigger_tables extends ForgeUpgrade_Bucket {
         $this->db->createTable('tracker_workflow_trigger_rule_trg_field_static_value', $sql);
     }
 
-    public function postUp() {
-        if (!$this->db->tableNameExists('tracker_workflow_trigger_rule_static_value')) {
+    public function postUp()
+    {
+        if (! $this->db->tableNameExists('tracker_workflow_trigger_rule_static_value')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('tracker_workflow_trigger_rule_static_value');
         }
 
-        if (!$this->db->tableNameExists('tracker_workflow_trigger_rule_trg_field_static_value')) {
+        if (! $this->db->tableNameExists('tracker_workflow_trigger_rule_trg_field_static_value')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('tracker_workflow_trigger_rule_trg_field_static_value');
         }
     }
 }
-?>

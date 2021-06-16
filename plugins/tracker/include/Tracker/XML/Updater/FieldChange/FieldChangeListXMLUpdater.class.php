@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,22 +18,23 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Updater_FieldChange_FieldChangeListXMLUpdater implements Tracker_XML_Updater_FieldChange_FieldChangeXMLUpdater {
+class Tracker_XML_Updater_FieldChange_FieldChangeListXMLUpdater implements Tracker_XML_Updater_FieldChange_FieldChangeXMLUpdater
+{
 
     /**
-     * @param SimpleXMLElement $field_change_xml
      * @param mixed            $submitted_value
      */
-    public function update(SimpleXMLElement $field_change_xml, $submitted_value) {
+    public function update(SimpleXMLElement $field_change_xml, $submitted_value)
+    {
         $this->removeExistingValuesNodes($field_change_xml);
 
         if (! is_array($submitted_value)) {
-            $submitted_value = array($submitted_value);
+            $submitted_value = [$submitted_value];
         }
 
         array_walk(
             $submitted_value,
-            array($this, 'appendValuesToFieldChangeNode'),
+            [$this, 'appendValuesToFieldChangeNode'],
             $field_change_xml
         );
     }
@@ -43,11 +44,12 @@ class Tracker_XML_Updater_FieldChange_FieldChangeListXMLUpdater implements Track
         $index,
         SimpleXMLElement $field_xml
     ) {
-        $value_xml = $field_xml->addChild('value', $value);
-        $value_xml->addAttribute('format', 'id');
+        $cdata = new \XML_SimpleXMLCDATAFactory();
+        $cdata->insertWithAttributes($field_xml, 'value', $value, ['format' => 'id']);
     }
 
-    protected function removeExistingValuesNodes($field_change_xml) {
+    protected function removeExistingValuesNodes($field_change_xml)
+    {
         unset($field_change_xml->value);
     }
 }

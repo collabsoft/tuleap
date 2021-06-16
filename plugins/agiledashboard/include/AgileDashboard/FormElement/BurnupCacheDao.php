@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -30,10 +30,10 @@ class BurnupCacheDao extends DataAccessObject
         $total_effort,
         $team_effort
     ) {
-        $artifact_id             = $this->da->escapeInt($artifact_id);
-        $timestamp               = $this->da->escapeInt($timestamp);
-        $team_effort             = $team_effort === null ? 'NULL' : $this->da->quoteSmart($team_effort);
-        $total_effort            = $total_effort === null ? 'NULL' : $this->da->quoteSmart($total_effort);
+        $artifact_id  = $this->da->escapeInt($artifact_id);
+        $timestamp    = $this->da->escapeInt($timestamp);
+        $team_effort  = $team_effort === null ? 'NULL' : $this->da->quoteSmart($team_effort);
+        $total_effort = $total_effort === null ? 'NULL' : $this->da->quoteSmart($total_effort);
 
         $sql = "REPLACE INTO plugin_agiledashboard_tracker_field_burnup_cache
                     (artifact_id, timestamp, total_effort, team_effort)
@@ -62,13 +62,14 @@ class BurnupCacheDao extends DataAccessObject
         return $this->retrieveFirstRow($sql);
     }
 
-    public function searchCachedDaysValuesByArtifactId($artifact_id)
+    public function searchCachedDaysValuesByArtifactId($artifact_id, $start_timestamp)
     {
         $artifact_id = $this->da->escapeInt($artifact_id);
 
         $sql = "SELECT timestamp, team_effort, total_effort
                 FROM plugin_agiledashboard_tracker_field_burnup_cache
-                WHERE artifact_id = $artifact_id";
+                WHERE artifact_id = $artifact_id
+                AND timestamp >= $start_timestamp";
 
         return $this->retrieve($sql);
     }

@@ -1,0 +1,11 @@
+.pull-request-source-destination {
+    padding: 2px;
+    border: 1px solid var(--tlp-theme-color);
+    border-radius: 3px;
+    color: var(--tlp-theme-color);
+    font-size: 12px;
+
+    > .repository {
+        font-weight: 600;
+    }
+}

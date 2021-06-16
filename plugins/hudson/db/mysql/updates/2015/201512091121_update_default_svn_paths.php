@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,19 +18,23 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201512091121_update_default_svn_paths extends ForgeUpgrade_Bucket {
+class b201512091121_update_default_svn_paths extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Add svn_paths column in plugin_hudson_job
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "UPDATE plugin_hudson_job
                 SET svn_paths = ''
                 WHERE svn_paths = '*'";

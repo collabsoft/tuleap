@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2013 - 2018. All rights reserved.
+ * Copyright Enalean (c) 2013 - present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -22,10 +22,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\date\RelativeDatesAssetsRetriever;
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\Artifact\CodeBlockFeaturesOnArtifact;
+use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfig;
+use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfigDao;
+use Tuleap\Tracker\Artifact\RecentlyVisited\VisitRecorder;
+use Tuleap\Tracker\Artifact\Renderer\GetAdditionalJavascriptFilesForArtifactDisplay;
+use Tuleap\Tracker\Artifact\Renderer\ListPickerIncluder;
+use Tuleap\Tracker\Artifact\View\Nature;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureIsChildLinkRetriever;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\ParentOfArtifactCollection;
-use Tuleap\Tracker\Artifact\View\Nature;
-use Tuleap\Tracker\RecentlyVisited\VisitRecorder;
+use Tuleap\Tracker\Workflow\PostAction\HiddenFieldsets\HiddenFieldsetsDetector;
 
 class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRenderer
 {
@@ -38,12 +46,7 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
      *  - request   Codendi_Request
      *  - user  PFUser
      */
-    const EVENT_ADD_VIEW_IN_COLLECTION = 'tracker_artifact_editrenderer_add_view_in_collection';
-
-    /**
-     * @var Tracker_FormElementFactory
-     */
-    private $formelement_factory;
+    public const EVENT_ADD_VIEW_IN_COLLECTION = 'tracker_artifact_editrenderer_add_view_in_collection';
 
     /**
      * @var Tracker_IDisplayTrackerLayout
@@ -52,23 +55,27 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
     private $retriever;
 
     /**
-     * @var Tracker_Artifact[]
+     * @var HiddenFieldsetsDetector
+     */
+    private $hidden_fieldsets_detector;
+
+    /**
+     * @var Artifact[]
      */
     private $hierarchy;
 
     public function __construct(
         EventManager $event_manager,
-        Tracker_Artifact $artifact,
-        Tracker_FormElementFactory $formelement_factory,
+        Artifact $artifact,
         Tracker_IDisplayTrackerLayout $layout,
         NatureIsChildLinkRetriever $retriever,
-        VisitRecorder $visit_recorder
-
+        VisitRecorder $visit_recorder,
+        HiddenFieldsetsDetector $hidden_fieldsets_detector
     ) {
         parent::__construct($artifact, $event_manager, $visit_recorder);
-        $this->formelement_factory = $formelement_factory;
-        $this->layout              = $layout;
-        $this->retriever           = $retriever;
+        $this->layout                    = $layout;
+        $this->retriever                 = $retriever;
+        $this->hidden_fieldsets_detector = $hidden_fieldsets_detector;
     }
 
     /**
@@ -80,7 +87,8 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
      *
      * @return void
      */
-    public function display(Codendi_Request $request, PFUser $current_user) {
+    public function display(Codendi_Request $request, PFUser $current_user)
+    {
         // the following statement needs to be called before displayHeader
         // in order to get the feedback, if any
         $this->hierarchy = $this->artifact->getAllAncestors($current_user);
@@ -89,13 +97,13 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
 
     protected function fetchFormContent(Codendi_Request $request, PFUser $current_user)
     {
-        $html  = parent::fetchFormContent($request, $current_user);
+        $html = parent::fetchFormContent($request, $current_user);
 
         if ($this->artifact->getTracker()->isProjectAllowedToUseNature()) {
             $parents = $this->retriever->getParentsHierarchy($this->artifact);
             if ($parents->isGraph()) {
-                $html .= "<div class='alert alert-warning'>".
-                $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', 'error_multiple_parents')."</div>";
+                $html .= "<div class='alert alert-warning'>" .
+                dgettext('tuleap-tracker', 'The artifact has more than one parent. Cannot display rest of hierarchy.') . "</div>";
             }
             $html .= $this->fetchTitleIsGraph($parents);
         } else {
@@ -106,7 +114,8 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
         return $html;
     }
 
-    protected function enhanceRedirect(Codendi_Request $request) {
+    protected function enhanceRedirect(Codendi_Request $request)
+    {
         $from_aid = $request->get('from_aid');
         if ($from_aid != null) {
             $this->redirect->query_parameters['from_aid'] = $from_aid;
@@ -114,32 +123,64 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
         parent::enhanceRedirect($request);
     }
 
-    protected function displayHeader() {
-        $hp          = Codendi_HTMLPurifier::instance();
-        $title       = $hp->purify($this->tracker->getItemName(), CODENDI_PURIFIER_CONVERT_HTML)  .' #'. $this->artifact->getId();
-        $breadcrumbs = array(
-            array('title' => $title,
-                  'url'   => TRACKER_BASE_URL.'/?aid='. $this->artifact->getId())
+    protected function displayHeader()
+    {
+        $title       = sprintf(
+            '%s - %s #%d',
+            mb_substr($this->artifact->getTitle() ?? '', 0, 64),
+            $this->tracker->getItemName(),
+            $this->artifact->getId()
         );
-        $toolbar = $this->tracker->getDefaultToolbar();
-        $params = [
-            'body_class' => ['widgetable'],
+        $breadcrumbs = [
+            ['title' => $this->artifact->getXRef(),
+                  'url'   => TRACKER_BASE_URL . '/?aid=' . $this->artifact->getId()]
+        ];
+        $request     = HTTPRequest::instance();
+        $params      = [
+            'body_class' => ['widgetable', 'has-sidebar-with-pinned-header', 'tracker-artifact-view-body'],
             'open_graph' => new \Tuleap\OpenGraph\OpenGraphPresenter(
-                HTTPRequest::instance()->getServerUrl() . $this->artifact->getUri(),
+                $request->getServerUrl() . $this->artifact->getUri(),
                 $this->artifact->getTitle(),
                 $this->artifact->getDescription()
             )
         ];
-        $this->tracker->displayHeader($this->layout, $title, $breadcrumbs, $toolbar, $params);
+
+        $GLOBALS['HTML']->includeFooterJavascriptFile(RelativeDatesAssetsRetriever::retrieveAssetsUrl());
+        ListPickerIncluder::includeListPickerAssets($request, $this->tracker->getId());
+
+        $event = new GetAdditionalJavascriptFilesForArtifactDisplay();
+        $this->event_manager->dispatch($event);
+        foreach ($event->getFileURLs() as $file_url) {
+            $GLOBALS['HTML']->includeFooterJavascriptFile($file_url);
+        }
+
+        $assets = new \Tuleap\Layout\IncludeCoreAssets();
+        $GLOBALS['HTML']->addCssAsset(new \Tuleap\Layout\CssAssetWithoutVariantDeclinaisons($assets, 'syntax-highlight'));
+
+        $this->tracker->displayHeader($this->layout, $title, $breadcrumbs, [], $params);
+
+
+        $status = new Tracker_ArtifactByEmailStatus(
+            new MailGatewayConfig(
+                new MailGatewayConfigDao()
+            )
+        );
+        if ($status->canUpdateArtifactInInsecureMode($this->tracker)) {
+            $renderer = TemplateRendererFactory::build()->getRenderer(__DIR__ . '/../../../../templates/artifact');
+            $renderer->renderToPage("reply-by-mail-modal-info", [
+                'email' => $this->artifact->getInsecureEmailAddress()
+            ]);
+        }
     }
 
-    protected function fetchView(Codendi_Request $request, PFUser $user) {
+    protected function fetchView(Codendi_Request $request, PFUser $user)
+    {
         $view_collection = new Tracker_Artifact_View_ViewCollection();
-        $view_collection->add(new Tracker_Artifact_View_Edit($this->artifact, $request, $user, $this, $this->event_manager));
+        $view_collection->add(new Tracker_Artifact_View_Edit($this->artifact, $request, $user, $this));
 
         if ($this->artifact->getTracker()->isProjectAllowedToUseNature()) {
             $artifact_links = $this->retriever->getChildren($this->artifact);
-            if ($artifact_links->count() > 0) {
+            if (count($artifact_links) > 0) {
                 $view_collection->add(new Nature($this->artifact, $request, $user));
             }
         } else {
@@ -150,22 +191,24 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
 
         EventManager::instance()->processEvent(
             self::EVENT_ADD_VIEW_IN_COLLECTION,
-            array(
+            [
                 'artifact'   => $this->artifact,
                 'collection' => $view_collection,
                 'request'    => $request,
                 'user'       => $user
-            )
+            ]
         );
 
         return $view_collection->fetchRequestedView($request);
     }
 
-    protected function fetchTitle() {
+    protected function fetchTitle()
+    {
         return $this->artifact->fetchTitle();
     }
 
-    private function fetchTitleIsGraph(ParentOfArtifactCollection $parents) {
+    private function fetchTitleIsGraph(ParentOfArtifactCollection $parents)
+    {
         $html  = '';
         $html .= $this->artifact->fetchHiddenTrackerId();
         $html .= $this->fetchMultipleParentsTitle($this->artifact, $parents);
@@ -173,7 +216,8 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
         return $html;
     }
 
-    private function fetchTitleInHierarchy(array $hierarchy) {
+    private function fetchTitleInHierarchy(array $hierarchy)
+    {
         $html  = '';
         $html .= $this->artifact->fetchHiddenTrackerId();
         if ($hierarchy) {
@@ -185,14 +229,15 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
         return $html;
     }
 
-    private function fetchMultipleParentsTitle(Tracker_Artifact $artifact, ParentOfArtifactCollection $hierarchy) {
+    private function fetchMultipleParentsTitle(Artifact $artifact, ParentOfArtifactCollection $hierarchy)
+    {
         $tab_level = 0;
         $html      = '';
         $html     .= '<ul class="tracker-hierarchy">';
-        $parents = array_reverse($hierarchy->getArtifacts());
+        $parents   = array_reverse($hierarchy->getArtifacts());
 
-        foreach($parents as $parent) {
-            foreach($parent as $father) {
+        foreach ($parents as $parent) {
+            foreach ($parent as $father) {
                 $html .= '<li>';
                 $html .= $this->displayANumberOfBlankTab($tab_level);
                 $html .= '<div class="tree-last">&nbsp;</div>';
@@ -211,11 +256,28 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
         $html .= '</li>';
         $html .= '</ul>';
         $html .= $artifact->fetchActionButtons();
+        $html .= $this->fetchShowHideFieldSetsButton();
         $html .= '</div>';
         return $html;
     }
 
-    private function displayANumberOfBlankTab($number) {
+    private function fetchShowHideFieldSetsButton(): string
+    {
+        if (! $this->hidden_fieldsets_detector->doesArtifactContainHiddenFieldsets($this->artifact)) {
+            return '';
+        }
+
+        return '<div class="header-spacer"></div>
+            <div class="show-hide-fieldsets">' . dgettext('tuleap-tracker', 'Hidden fieldsets:') . '
+                <div class="btn-group" data-toggle="buttons-radio">
+                    <button type="button" class="btn show-fieldsets"><i class="fa fa-eye"></i></button>
+                    <button type="button" class="btn active hide-fieldsets"><i class="fa fa-eye-slash"></i></button>
+                </div>
+            </div>';
+    }
+
+    private function displayANumberOfBlankTab($number)
+    {
         $html = "";
         for ($i = 1; $i <= $number; $i++) {
             $html .= '<div class="tree-blank">&nbsp;</div> ';
@@ -223,41 +285,64 @@ class Tracker_Artifact_EditRenderer extends Tracker_Artifact_EditAbstractRendere
         return $html;
     }
 
-    private function fetchParentsTitle(array $parents, $padding_prefix = '') {
+    /**
+     * @param Artifact[] $parents
+     * @param string     $padding_prefix
+     *
+     * @return string
+     */
+    private function fetchParentsTitle(array $parents, $padding_prefix = '')
+    {
         $html   = '';
         $parent = array_pop($parents);
         if ($parent) {
             $html .= '<ul class="tracker-hierarchy">';
+
             $html .= '<li>';
             $html .= $padding_prefix;
-            $html .= '<div class="tree-last">&nbsp;</div>';
+
+            $html .= '<span class="tree-last">&nbsp;</span>';
             if ($parents) {
                 $html .= $parent->fetchDirectLinkToArtifactWithTitle();
             } else {
                 $html .= $parent->getXRefAndTitle();
             }
             if ($parents) {
-                $html .= '</a>';
+                $html .= "</li><li>";
+
                 $div_prefix = '';
                 $div_suffix = '';
-                if (count($parents) == 1) {
-                    $div_prefix = '<div class="tracker_artifact_title">';
-                    $div_suffix = '</div>';
+                if (count($parents) === 1) {
+                    $div_prefix = '<span class="tracker_artifact_title">';
+                    $div_suffix = '</span>';
                 }
                 $html .= $div_prefix;
-                $html .= $this->fetchParentsTitle($parents, $padding_prefix . '<div class="tree-blank">&nbsp;</div>');
+                $html .= $this->fetchParentsTitle(
+                    $parents,
+                    $padding_prefix . '<span class="tree-blank">&nbsp;</span>'
+                );
                 $html .= $div_suffix;
+            } else {
+                $html .= $parent->fetchActionButtons();
             }
+
             $html .= '</li>';
             $html .= '</ul>';
-
-
-            $html .= $parent->fetchActionButtons();
         }
         return $html;
     }
 
-    protected function displayFooter() {
+    protected function displayFooter()
+    {
+        $code_block_features = CodeBlockFeaturesOnArtifact::getInstance();
+        $assets              = new \Tuleap\Layout\IncludeCoreAssets();
+        if ($code_block_features->isMermaidNeeded()) {
+            $GLOBALS['HTML']->addJavascriptAsset(new \Tuleap\Layout\JavascriptAsset($assets, 'mermaid.js'));
+        }
+        if ($code_block_features->isSyntaxHighlightNeeded()) {
+            $GLOBALS['HTML']->addJavascriptAsset(new \Tuleap\Layout\JavascriptAsset($assets, 'syntax-highlight.js'));
+        }
+
         $this->tracker->displayFooter($this->layout);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Exporter_ChildrenXMLExporter {
+class Tracker_XML_Exporter_ChildrenXMLExporter
+{
 
     /**
      * @var Tracker_XML_ChildrenCollector
@@ -52,7 +53,8 @@ class Tracker_XML_Exporter_ChildrenXMLExporter {
         $this->children_collector   = $children_collector;
     }
 
-    public function exportChildren(SimpleXMLElement $xml) {
+    public function exportChildren(SimpleXMLElement $xml)
+    {
         while ($artifact_id = $this->children_collector->pop()) {
             $artifact = $this->artifact_factory->getArtifactById($artifact_id);
             if (! $artifact) {

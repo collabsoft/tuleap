@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -38,7 +38,7 @@ class ArtifactsDeletionDAO extends DataAccessObject
                     AND user_id = ?
         ";
 
-        return $this->getDB()->single($sql, [ $timestamp, $user_id ]);
+        return $this->getDB()->single($sql, [$timestamp, $user_id]);
     }
 
     public function recordDeletionForUser(

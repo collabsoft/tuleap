@@ -1,6 +1,6 @@
 <?php
 /**
- *  Copyright (c) Enalean, 2017. All Rights Reserved.
+ *  Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  *  This file is a part of Tuleap.
  *
@@ -23,14 +23,13 @@ namespace Tuleap\SVN\REST\v1;
 class SettingsRepresentationValidator
 {
     /**
-     * @param SettingsRepresentation $settings
      *
      * @return array
      */
-    private function getNonUniquePath(SettingsRepresentation $settings = null)
+    private function getNonUniquePath(?SettingsRepresentation $settings = null)
     {
-        $already_seen_path = array();
-        $non_unique_path   = array();
+        $already_seen_path = [];
+        $non_unique_path   = [];
 
         if (isset($settings->email_notifications)) {
             foreach ($settings->email_notifications as $notification) {
@@ -47,7 +46,7 @@ class SettingsRepresentationValidator
 
     private function getNonUniqueEmail(SettingsRepresentation $settings)
     {
-        $non_unique_mail = array();
+        $non_unique_mail = [];
 
         if (! isset($settings->email_notifications)) {
             return $non_unique_mail;
@@ -63,12 +62,12 @@ class SettingsRepresentationValidator
         return $non_unique_mail;
     }
 
-    private function isAccessFileKeySent(SettingsRepresentation $settings = null)
+    private function isAccessFileKeySent(?SettingsRepresentation $settings = null)
     {
         return isset($settings->access_file);
     }
 
-    public function validateForPUTRepresentation(SettingsPUTRepresentation $settings = null)
+    public function validateForPUTRepresentation(?SettingsPUTRepresentation $settings = null)
     {
         if (isset($settings)) {
             if (! $this->isAccessFileKeySent($settings)) {
@@ -81,7 +80,7 @@ class SettingsRepresentationValidator
         }
     }
 
-    public function validateForPOSTRepresentation(SettingsPOSTRepresentation $settings = null)
+    public function validateForPOSTRepresentation(?SettingsPOSTRepresentation $settings = null)
     {
         if (isset($settings)) {
             $this->validatePathAreUnique($settings);
@@ -98,9 +97,9 @@ class SettingsRepresentationValidator
         }
     }
 
-    private function validateAtLeastOneNotificationSent(SettingsRepresentation $settings = null)
+    private function validateAtLeastOneNotificationSent(?SettingsRepresentation $settings = null)
     {
-        $empty_notification = array();
+        $empty_notification = [];
         if ($settings && $settings->email_notifications) {
             foreach ($settings->email_notifications as $notification) {
                 if (count($notification->emails) === 0 && count($notification->users) === 0) {
@@ -121,7 +120,7 @@ class SettingsRepresentationValidator
     {
         $non_unique_mail = $this->getNonUniqueEmail($settings);
 
-        $exceptions = array();
+        $exceptions = [];
         foreach ($non_unique_mail as $path => $mail) {
             $exceptions[] = $path . ' : ' . implode(', ', $mail);
         }

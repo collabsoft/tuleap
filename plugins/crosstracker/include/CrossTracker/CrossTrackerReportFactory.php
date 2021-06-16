@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -39,6 +39,11 @@ class CrossTrackerReportFactory
         $this->tracker_factory = $tracker_factory;
     }
 
+    /**
+     * @param $id
+     * @return CrossTrackerReport
+     * @throws CrossTrackerReportNotFoundException
+     */
     public function getById($id)
     {
         $report_row = $this->report_dao->searchReportById($id);
@@ -47,7 +52,7 @@ class CrossTrackerReportFactory
         }
         $expert_query = $report_row['expert_query'];
 
-        $report_trackers = array();
+        $report_trackers = [];
         $tracker_rows    = $this->report_dao->searchReportTrackersById($id);
         foreach ($tracker_rows as $row) {
             $tracker = $this->tracker_factory->getTrackerById($row['tracker_id']);

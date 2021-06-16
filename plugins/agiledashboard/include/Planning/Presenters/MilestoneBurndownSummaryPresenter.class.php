@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Planning_Presenter_MilestoneBurndownSummaryPresenter extends Planning_Presenter_MilestoneSummaryPresenterAbstract{
+use Tuleap\AgileDashboard\Planning\Presenters\AlternativeBoardLinkPresenter;
+
+class Planning_Presenter_MilestoneBurndownSummaryPresenter extends Planning_Presenter_MilestoneSummaryPresenterAbstract
+{
 
     /** @var Tracker_Chart_Data_Burndown */
     private $burndown_data;
@@ -26,20 +29,21 @@ class Planning_Presenter_MilestoneBurndownSummaryPresenter extends Planning_Pres
     public function __construct(
         Planning_Milestone $milestone,
         $plugin_path,
-        $has_cardwall,
+        ?AlternativeBoardLinkPresenter $alternative_board_link,
         Tracker_Chart_Data_Burndown $burndown_data
     ) {
-        parent::__construct($milestone, $plugin_path, $has_cardwall);
+        parent::__construct($milestone, $plugin_path, $alternative_board_link);
 
         $this->burndown_data = $burndown_data;
     }
 
-    public function has_burndown() {
+    public function has_burndown()
+    {
         return true;
     }
 
-    public function burndown_data() {
+    public function burndown_data()
+    {
         return $this->burndown_data->getJsonRepresentation();
     }
 }
-?>

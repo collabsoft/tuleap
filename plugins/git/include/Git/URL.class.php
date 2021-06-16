@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 /**
  * I return project and repository information from the request uri
  */
-class Git_URL {
+class Git_URL implements \Tuleap\Git\HTTP\GitHTTPOperation
+{
 
     /** @var string */
     private $friendly_url_pattern = '%^/plugins/git
@@ -54,9 +55,6 @@ class Git_URL {
           $%x';
 
     /** @var string */
-    private $standard_index_pattern = '%^/plugins/git/\?group_id=(?P<project_id>\d+)$%x';
-
-    /** @var string */
     private $uri;
 
     /** @var bool **/
@@ -64,9 +62,6 @@ class Git_URL {
 
     /** @var bool **/
     private $is_standard = false;
-
-    /** @var bool **/
-    private $is_smart_http = false;
 
     /** @var ProjectManager **/
     private $project_manager;
@@ -77,7 +72,7 @@ class Git_URL {
     /** @var array */
     private $matches;
 
-    /** @var GitRepository */
+    /** @var GitRepository|null */
     private $repository;
 
     /** @var string */
@@ -107,25 +102,28 @@ class Git_URL {
     /**
      * @return GitRepository|null
      */
-    public function getRepository() {
+    public function getRepository()
+    {
         return $this->repository;
     }
 
     /**
      * @return string
      */
-    public function getParameters() {
+    public function getParameters()
+    {
         return isset($this->matches['parameters']) ? $this->matches['parameters'] : '';
     }
 
-    private function setIsFriendly() {
+    private function setIsFriendly()
+    {
         if (! preg_match($this->friendly_url_pattern, $this->uri, $this->matches)) {
             return;
         }
 
         $this->repository = $this->repository_factory->getByProjectNameAndPath(
             $this->matches['project_name'],
-            $this->matches['path'].'.git'
+            $this->matches['path'] . '.git'
         );
         if (! $this->repository) {
             return;
@@ -134,7 +132,8 @@ class Git_URL {
         $this->is_friendly = true;
     }
 
-    private function setIsStandard() {
+    private function setIsStandard()
+    {
         if (! preg_match($this->standard_url_pattern, $this->uri, $this->matches)) {
             return;
         }
@@ -147,8 +146,9 @@ class Git_URL {
         $this->is_standard = true;
     }
 
-    private function setIsSmartHTTP() {
-        $uri = $this->uri;
+    private function setIsSmartHTTP()
+    {
+        $uri             = $this->uri;
         $params_position = strpos($uri, '?');
         if ($params_position !== false) {
             $uri = substr($uri, 0, $params_position);
@@ -171,35 +171,42 @@ class Git_URL {
             return;
         }
 
-        $this->path_info    = '/'.$this->matches['project_name'].'/'.$repository_path.'/'.$this->matches['smart_http'];
+        $this->path_info = '/' . $this->matches['project_name'] . '/' . $repository_path . '/' . $this->matches['smart_http'];
         if ($params_position !== false) {
-            $this->query_string = substr($this->uri, $params_position+1);
+            $this->query_string = substr($this->uri, $params_position + 1);
         }
-
-        $this->is_smart_http = true;
     }
 
-    public function getPathInfo() {
+    public function getPathInfo()
+    {
         return $this->path_info;
     }
 
-    public function getQueryString() {
+    public function getQueryString()
+    {
         return $this->query_string;
     }
 
-    public function isGitPush() {
-        return preg_match('%.*(/|\?service=)git-receive-pack$%', $this->uri);
+    public function isWrite()
+    {
+        return preg_match('%(/|\?service=)git-receive-pack$%', $this->uri) === 1;
+    }
+
+    public function isRead()
+    {
+        return ! $this->isWrite();
     }
 
     /**
      * @return GitRepository|null
      */
-    private function getRepositoryFromStandardURL() {
+    private function getRepositoryFromStandardURL()
+    {
         $repository_id          = $this->matches['repository_id'];
         $repository_id_is_a_int = preg_match('/^([0-9]+)$/', $repository_id);
 
         if ($repository_id_is_a_int) {
-            return $this->repository_factory->getRepositoryById($repository_id);
+            return $this->repository_factory->getRepositoryById((int) $repository_id);
         } else {
             $project = $this->getProjectFromStandardURL();
             if (! $project->isError()) {
@@ -212,7 +219,8 @@ class Git_URL {
     /**
      * @return Project
      */
-    private function getProjectFromStandardURL() {
+    private function getProjectFromStandardURL()
+    {
         return $this->project_manager->getProject($this->matches['project_id']);
     }
 
@@ -224,8 +232,6 @@ class Git_URL {
         $action_type = $request->get('a');
         return $request->get('noheader') == 1 ||
             $action_type === 'snapshot' ||
-            $action_type === 'atom' ||
-            $action_type === 'rss' ||
             $action_type === 'commitdiff_plain' ||
             $action_type === 'blob_plain';
     }

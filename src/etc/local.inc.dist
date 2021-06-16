@@ -1,5 +1,5 @@
 <?php
-// Copyright (c) Enalean, 2011-2018. All rights reserved
+// Copyright (c) Enalean, 2011-Present. All rights reserved
 // Copyright (c) STMicroelectronics, 2009-2011. All rights reserved
 // Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
 //
@@ -140,9 +140,6 @@ $codendi_bin_prefix = '/usr/lib/tuleap/bin';
 // Tuleap database configuration file
 $db_config_file = $sys_custom_dir . '/conf/database.inc';
 
-// Rabbitmq config file
-$rabbitmq_config_file = '/etc/tuleap/conf/rabbitmq.inc';
-
 // Redis config file
 $redis_config_file = '/etc/tuleap/conf/redis.inc';
 
@@ -191,7 +188,7 @@ $svn_root_file = '/etc/httpd/conf.d/tuleap-svnroot.conf'; // File containing SVN
 $svn_log_path  = 'logs/svn_log'; // Where apache logs files for svn should go to
 
 // FRS paths - do *not* use variables in the following parameters
-$ftp_frs_dir_prefix  = '/var/lib/tuleap/ftp/codendi';   // Where the released files are located
+$ftp_frs_dir_prefix  = '/var/lib/tuleap/ftp/tuleap';   // Where the released files are located
 $ftp_incoming_dir    = '/var/lib/tuleap/ftp/incoming';// Where files are placed when uploaded
 $ftp_anon_dir_prefix = '/var/lib/tuleap/ftp/pub';     // prefix to add to the anon ftp project homedir
 
@@ -226,17 +223,6 @@ $sys_plugins_editable_configuration = 1;
 
 $sys_plugins_that_can_not_be_disabled_from_the_web_ui = '';
 
-// Themeing related paths
-$sys_themeroot = $codendi_dir . '/src/www/themes/';
-$sys_custom_themeroot = $sys_custom_dir . '/themes';
-
-// 3rd Party libraries
-$jpgraph_dir      = '/usr/share/jpgraph';
-$ckeditor_dir     = '/usr/share/ckeditor';
-
-// TrueType font dir (be careful, the leading / is mandatory).
-$ttf_font_dir     = '/usr/share/fonts/';
-
 // ForgeUpgrade config file
 $forgeupgrade_file = '/etc/tuleap/forgeupgrade/config.ini';
 
@@ -265,10 +251,6 @@ $sys_dbauth_passwd = '%sys_dbauth_passwd%';
 // (was group 714 in SourceForge - sfnews)
 $sys_news_group = 46;
 
-// Default trove category in software map welcome page.
-// Default is 1 ('topic')
-$sys_default_trove_cat = 1;
-
 // Make project categorisation mandatory. If a project has not categorized itself,
 // it will result in a warning in project summary page.
 $sys_trove_cat_mandatory = 1;
@@ -279,12 +261,6 @@ $sys_lf = "\n";
 // Disable sub-domains (like cvs.proj.example.com)
 // Should be disabled if no DNS delegation
 $sys_disable_subdomains = 0;
-
-// Display boxes (Site stats, most active, ...) on Home Page
-$sys_display_homepage_boxes = 1;
-
-// Display site news on Home Page
-$sys_display_homepage_news = 1;
 
 //
 // Authentication scheme
@@ -318,19 +294,6 @@ $sys_supported_languages = 'en_US,fr_FR';
 // Default language for the system
 $sys_lang = 'en_US';
 
-// Default theme
-$sys_themedefault = 'FlamingParrot';
-
-// Default theme for old browsers (currently netscape 4)
-$sys_themedefault_old = 'savannah';
-
-// If set to 1 (one) the user registration must be approved by site
-// admin. If 0 user can register by themselves
-$sys_user_approval = 0;
-
-// Project default privacy status (1 is public, 0 is private)
-$sys_is_project_public = 1;
-
 // if set to 0 (zero) then the project privacy radio buttons are hidden during the project registration
 $sys_user_can_choose_project_privacy = 1;
 
@@ -346,10 +309,10 @@ $sys_exchange_policy_url = '';
 // Default value is about 2 weeks: 3600*24*14=1209600
 $sys_session_lifetime = 1209600;
 
-// Delay between 2 updates of "last access" date for a user
-// Default is 6 hours, it's good enough if you want to know the day a user was seen
+// Delay (in seconds) between 2 updates of "last access" date for a user
+// Default is 1 hour, it's good enough if you want to know the day a user was seen
 // A number to low will degrade performances
-$last_access_resolution = 21600;
+$last_access_resolution = 3600;
 
 // Duration before deleting pending accounts which have not been activated
 // (in days)
@@ -381,10 +344,6 @@ $sys_file_deletion_delay = 3;
 // are also configured to allow this size.
 $sys_max_size_upload = 67108864;
 
-// Max upload size for attachments (bugs, SR, artifacts, etc.)
-// in bytes. E.g. 16777216 for 16 MB
-$sys_max_size_attachment = 16777216;
-
 //Proxy used to access to Internet. "host:port"
 $sys_proxy = '';
 
@@ -396,9 +355,6 @@ $sys_use_trove = 1;
 // (1 to enable, 0 to disable)
 $sys_use_project_registration = 1;
 
-//Enable users avatar?
-// (1 to enable, 0 to disable)
-$sys_enable_avatars = 1;
 
 //User's avatar path
 $sys_avatar_path = $sys_data_dir . '/user/avatar/';
@@ -453,11 +409,11 @@ $sys_available_theme_variants = 'FlamingParrot_Orange,FlamingParrot_Blue,Flaming
 //  Possible levels:
 // - debug
 // - info
-// - warn
+// - warning
 // - error
 //
 // Note: as of today, not all loggers respects this value
-$sys_logger_level = 'warn';
+$sys_logger_level = 'warning';
 
 
 // Define the email domain for email gateway feature
@@ -502,22 +458,9 @@ $sys_mail_secure_mode = 0;
 // Should be toggled to 1 in dev only otherwise it means that your server is exposed to security vulnerabilities
 $sys_use_unsecure_ssl_certificate = 0;
 
-// Allow backend processing of emails
-// /!\ WARNING /!\
-// Only enable this if you have
-// - RabbitMQ configured (see /usr/share/tuleap/src/etc/rabbitmq.inc.dist)
-// - Backend workers (below) is set to a positive value
-// Otherwise you will loose email notifications.
-//
-// Possible values:
-// - 'all' => all projects will use async emails
-// - "X, Y, Z" => ids of projects that use async emails (progressive deployment)
-// $sys_async_emails = 0;
-
 // Backend workers
 //
 // Number of backend workers to process background jobs.
 // To be adapted given your server workload.
 // 2 is a good starting value, you can increase it
-// RabbitMQ must be configured prior to set this.
 // $sys_nb_backend_workers = 0;

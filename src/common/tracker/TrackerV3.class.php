@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,7 @@
 
 class TrackerV3
 {
-    const REFERENCE_NATURE = 'artifact';
+    public const REFERENCE_NATURE = 'artifact';
 
     /**
      * @var ArtifactDao
@@ -33,7 +33,7 @@ class TrackerV3
     private static $instance;
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $available = null;
 
@@ -48,7 +48,7 @@ class TrackerV3
     public static function instance()
     {
         if (! self::$instance) {
-            self::$instance = new TrackerV3(new ArtifactDao);
+            self::$instance = new TrackerV3(new ArtifactDao());
         }
         return self::$instance;
     }
@@ -56,7 +56,7 @@ class TrackerV3
     /**
      * Return True if Trackerv3 are available on the platform
      *
-     * @return boolean
+     * @return bool
      */
     public function available()
     {

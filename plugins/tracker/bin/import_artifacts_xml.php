@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,23 +18,23 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 try {
     $user_manager = UserManager::instance();
-    $user_manager->forceLogin($argv[1]);
+    $user         = $user_manager->forceLogin($argv[1]);
 
     $tracker = TrackerFactory::instance()->getTrackerById($argv[2]);
     if ($tracker) {
         $xml_import_builder = new Tracker_Artifact_XMLImportBuilder();
-        $xml_import = $xml_import_builder->build(
+        $xml_import         = $xml_import_builder->build(
             new XMLImportHelper($user_manager),
             new Log_ConsoleLogger()
         );
 
         $zip = new ZipArchive();
         if ($zip->open($argv[3]) !== true) {
-            echo 'Impossible to open archive '.$argv[3].PHP_EOL;
+            echo 'Impossible to open archive ' . $argv[3] . PHP_EOL;
             exit(1);
         }
         $archive = new Tracker_Artifact_XMLImport_XMLImportZipArchive(
@@ -43,11 +43,11 @@ try {
             ForgeConfig::get('tmp_dir')
         );
 
-        $xml_import->importFromArchive($tracker, $archive);
+        $xml_import->importFromArchive($tracker, $archive, $user);
     }
 } catch (XML_ParseException $exception) {
-    echo $exception->getMessage().PHP_EOL;
-    echo $exception->getIndentedXml().PHP_EOL;
-    echo implode(PHP_EOL, $exception->getErrors()).PHP_EOL;
+    echo $exception->getMessage() . PHP_EOL;
+    echo $exception->getIndentedXml() . PHP_EOL;
+    echo implode(PHP_EOL, $exception->getErrors()) . PHP_EOL;
     exit(1);
 }

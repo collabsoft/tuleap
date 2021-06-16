@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,22 +19,24 @@
  */
 
 
-class Cardwall_OnTop_Config_TrackerMappingNoField extends Cardwall_OnTop_Config_TrackerMapping {
+class Cardwall_OnTop_Config_TrackerMappingNoField extends Cardwall_OnTop_Config_TrackerMapping
+{
 
     /**
      * @pattern Visitor
      */
-    public function accept($visitor) {
+    public function accept($visitor)
+    {
         return $visitor->visitTrackerMappingNoField($this);
     }
 
-    public function getField() {
+    public function getField()
+    {
         return null;
     }
 
-    public function getValueMappings() {
-        return array();
+    public function getValueMappings()
+    {
+        return [];
     }
-    
 }
-?>

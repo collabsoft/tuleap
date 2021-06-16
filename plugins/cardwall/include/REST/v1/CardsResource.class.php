@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,6 +37,7 @@ use Tuleap\Cardwall\AccentColor\AccentColorBuilder;
 use Tuleap\Cardwall\BackgroundColor\BackgroundColorBuilder;
 use Tuleap\REST\Header;
 use Tuleap\REST\ProjectAuthorization;
+use Tuleap\REST\ProjectStatusVerificator;
 use Tuleap\Tracker\FormElement\Field\ListFields\Bind\BindDecoratorRetriever;
 use URLVerification;
 use UserManager;
@@ -65,11 +66,10 @@ class CardsResource
             $this->formelement_factory
         );
 
-        $bind_decorator_retriever = new BindDecoratorRetriever();
+        $bind_decorator_retriever  = new BindDecoratorRetriever();
         $this->single_card_builder = new Cardwall_SingleCardBuilder(
             $this->config_factory,
             new Cardwall_CardFields(
-                $this->user_manager,
                 $this->formelement_factory
             ),
             Tracker_ArtifactFactory::instance(),
@@ -82,7 +82,8 @@ class CardsResource
     /**
      * @url OPTIONS
      */
-    public function options() {
+    public function options()
+    {
         Header::allowOptions();
     }
 
@@ -93,10 +94,11 @@ class CardsResource
      *
      * @param string $id Id of the card
      *
-     * @throws 403
-     * @throws 404
+     * @throws RestException 403
+     * @throws RestException 404
      */
-    public function optionsId($id) {
+    public function optionsId($id)
+    {
         Header::allowOptionsPut();
     }
 
@@ -115,16 +117,22 @@ class CardsResource
      * </ol>
      *
      * @url PUT {id}
-     * @param string $id        Id of the card (format: planningId_artifactId, @see milestones/:id/cardwall)
-     * @param string $label     Label of the card {@from body}
-     * @param array  $values    Card's fields values {@from body}
-     * @param int    $column_id Where the card should stands {@from body}
+     * @param string $id Id of the card (format: planningId_artifactId, @see milestones/:id/cardwall)
+     * @param string $label Label of the card {@from body}
+     * @param array $values Card's fields values {@from body}
+     * @param int $column_id Where the card should stands {@from body}
      *
+     * @throws RestException 403
      */
-    protected function putId($id, $label, array $values, $column_id = null) {
+    protected function putId($id, $label, array $values, $column_id = null)
+    {
         try {
             $current_user = $this->user_manager->getCurrentUser();
             $single_card  = $this->getSingleCard($current_user, $id);
+
+            ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+                $single_card->getArtifact()->getTracker()->getProject()
+            );
 
             $card_updater = new CardUpdater();
             $card_updater->updateCard($current_user, $single_card, $label, $values, $column_id);
@@ -140,16 +148,17 @@ class CardsResource
         Header::allowOptionsPut();
     }
 
-    private function getSingleCard(PFUser $user, $id) {
+    private function getSingleCard(PFUser $user, $id)
+    {
         try {
             $this->checkIdIsWellFormed($id);
             list($planning_id, $artifact_id) = explode('_', $id);
-            $single_card = $this->single_card_builder->getSingleCard($user, $artifact_id, $planning_id);
+            $single_card                     = $this->single_card_builder->getSingleCard($user, $artifact_id, $planning_id);
             if ($single_card->getArtifact()->userCanView($user)) {
                 ProjectAuthorization::userCanAccessProject(
                     $user,
                     $single_card->getArtifact()->getTracker()->getProject(),
-                     new URLVerification()
+                    new URLVerification()
                 );
                 return $single_card;
             }
@@ -161,7 +170,6 @@ class CardsResource
         } catch (CardControllerBuilderRequestPlanningIdException $exception) {
             throw new RestException(404, $exception->getMessage());
         }
-        throw new RestException(404);
     }
 
     /**
@@ -169,11 +177,12 @@ class CardsResource
      *
      * @param string $id Id of the card (format: planningId_artifactId)
      *
-     * @return boolean
+     * @return bool
      *
-     * @throws 400
+     * @throws RestException 400
      */
-    private function checkIdIsWellFormed($id) {
+    private function checkIdIsWellFormed($id)
+    {
         $regexp = '/^[0-9]+_[0-9]+$/';
 
         if (! preg_match($regexp, $id)) {

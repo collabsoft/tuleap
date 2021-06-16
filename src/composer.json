@@ -1,4 +1,38 @@
 {
+  "name": "tuleap/tuleap",
+  "description": "Tuleap Core",
+  "autoload": {
+    "psr-4": {
+      "Tuleap\\": ["common/"],
+      "Tuleap\\Core\\": ["core/"],
+      "TuleapCfg\\": ["tuleap-cfg/"]
+    },
+    "classmap": ["common/", "embedded_vendor/"],
+    "exclude-from-classmap": ["common/wiki/phpwiki/"],
+    "files": [
+      "common/constants.php",
+      "www/include/database.php",
+      "www/include/session.php",
+      "www/include/html.php",
+      "www/include/exit.php",
+      "www/include/help.php",
+      "www/include/utils.php",
+      "www/include/user.php",
+      "www/project/admin/permissions.php",
+      "www/svn/svn_utils.php",
+      "www/include/nusoap.php",
+      "embedded_vendor/jpgraph/jpgraph_utils_func.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tuleap\\Test\\": ["../tests/lib/"],
+      "TuleapCodingStandard\\": ["../tests/phpcs/TuleapCodingStandard", "../tests/phpcs/tests/"],
+      "Tuleap\\": ["../tests/unit/common"],
+      "TuleapCfg\\": ["../tests/unit/tuleap-cfg"]
+    },
+    "classmap": ["../tests/lib/", "../tests/unit"]
+  },
   "repositories": [
     {
       "type": "vcs",
@@ -10,40 +44,72 @@
     }
   ],
   "require": {
-    "paragonie/random_compat": "<9.99",
-    "mustache/mustache": "dev-feature/strict-variables",
+    "embed/embed": "^4.3",
     "ezyang/htmlpurifier": "^4.10",
-    "firebase/php-jwt": "^5.0.0",
-    "paragonie/sodium_compat": "^1.6",
-    "Luracast/Restler": "dev-3.0.0-RC6-July2018-FixURLDecoding",
-    "php-amqplib/php-amqplib": "^2.7",
-    "delight-im/cookie": "^3.1",
-    "paragonie/easydb": "^1.3",
+    "graylog2/gelf-php": "^1.6",
+    "gumlet/php-image-resize": "^2.0",
+    "http-interop/http-factory-guzzle": "^1.0",
+    "laminas/laminas-cache": "^2.8",
+    "laminas/laminas-cache-storage-adapter-filesystem": "^1.1",
+    "laminas/laminas-feed": "^2.10",
+    "laminas/laminas-httphandlerrunner": "^1.1",
+    "laminas/laminas-mail": "^2.10",
+    "lasserafn/php-initial-avatar-generator": "^4.1",
+    "lcobucci/jwt": "^4.1",
+    "league/commonmark": "^1.3",
+    "luracast/restler": "dev-master-tuleap#20201118",
+    "monolog/monolog": "^2.0",
+    "mustache/mustache": "dev-master-tuleap#master-tuleap-20191219",
     "nikic/fast-route": "^1.2",
-    "embed/embed": "^3.3",
-    "michelf/php-markdown": "^1.1",
-    "symfony/console": "^3.4",
-    "jimdo/prometheus_client_php": "^0.9.1",
-    "php-http/guzzle6-adapter": "^1.1",
-    "php-http/message": "^1.6",
-    "php-http/client-common": "^1.7",
-    "zendframework/zend-mail": "^2.10"
+    "paragonie/easydb": "^2",
+    "php-http/client-common": "^2.0",
+    "php-http/guzzle7-adapter": "^0.1.0",
+    "php-http/message": "^1.7",
+    "phpdocumentor/reflection-docblock": "^5.1",
+    "psr/event-dispatcher": "^1.0",
+    "psr/http-client": "^1.0",
+    "psr/http-factory": "^1.0",
+    "psr/http-message": "^1.0",
+    "psr/http-server-handler": "^1.0",
+    "psr/http-server-middleware": "^1.0",
+    "psr/log": "^1.1",
+    "symfony/console": "^5.0",
+    "symfony/lock": "^5.0",
+    "symfony/process": "^5.0",
+    "symfony/var-exporter": "^5.0",
+    "tuleap/prometheus-client": "^1.0",
+    "webimpress/safe-writer": "^2.0",
+    "willdurand/negotiation": "^3.0"
+  },
+  "replace": {
+    "laminas/laminas-cache-storage-adapter-apc": "*",
+    "laminas/laminas-cache-storage-adapter-apcu": "*",
+    "laminas/laminas-cache-storage-adapter-blackhole": "*",
+    "laminas/laminas-cache-storage-adapter-dba": "*",
+    "laminas/laminas-cache-storage-adapter-ext-mongodb": "*",
+    "laminas/laminas-cache-storage-adapter-memory": "*",
+    "laminas/laminas-cache-storage-adapter-memcache": "*",
+    "laminas/laminas-cache-storage-adapter-memcached": "*",
+    "laminas/laminas-cache-storage-adapter-mongodb": "*",
+    "laminas/laminas-cache-storage-adapter-redis": "*",
+    "laminas/laminas-cache-storage-adapter-session": "*",
+    "laminas/laminas-cache-storage-adapter-wincache": "*",
+    "laminas/laminas-cache-storage-adapter-xcache": "*",
+    "laminas/laminas-cache-storage-adapter-zend-server": "*"
   },
   "config": {
-    "platform": {
-      "php": "5.6.25",
-      "ext-bcmath": "0",
-      "ext-mbstring": "0",
-      "ext-curl": "0",
-      "ext-iconv": "0"
-    }
+    "sort-packages": true
   },
   "require-dev": {
-    "phpunit/phpunit": "^5",
-    "mockery/mockery": "^1.0",
-    "simpletest/simpletest": "^1.1",
-    "mikey179/vfsStream": "^1.6",
-    "php-http/mock-client": "^1.1",
-    "squizlabs/php_codesniffer": "^3.3"
+    "mikey179/vfsstream": "^1.6",
+    "mockery/mockery": "^1.3",
+    "php-http/mock-client": "^1.2",
+    "phpcompatibility/php-compatibility": "^9.1",
+    "phpunit/phpunit": "^9.1",
+    "psalm/plugin-phpunit": "^0.15.1",
+    "qossmic/deptrac-shim": "^0.12.0",
+    "slevomat/coding-standard": "^6.0",
+    "squizlabs/php_codesniffer": "^3.4",
+    "vimeo/psalm": "^4.0"
   }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013-2018. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,6 +22,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Git\DefaultBranch\DefaultBranchPostReceiveUpdater;
+use Tuleap\Git\Hook\PostReceiveExecuteEvent;
 use Tuleap\Git\Hook\PostReceiveMailSender;
 use Tuleap\Git\MarkTechnicalReference;
 use Tuleap\Git\Webhook\WebhookRequestSender;
@@ -62,6 +64,7 @@ class Git_Hook_PostReceive
      * @var PostReceiveMailSender
      */
     private $mail_sender;
+    private DefaultBranchPostReceiveUpdater $default_branch_post_receive_updater;
 
     public function __construct(
         Git_Hook_LogAnalyzer $log_analyzer,
@@ -72,35 +75,38 @@ class Git_Hook_PostReceive
         Git_SystemEventManager $system_event_manager,
         EventManager $event_manager,
         WebhookRequestSender $webhook_request_sender,
-        PostReceiveMailSender $mail_sender
+        PostReceiveMailSender $mail_sender,
+        DefaultBranchPostReceiveUpdater $default_branch_post_receive_updater
     ) {
-        $this->log_analyzer           = $log_analyzer;
-        $this->repository_factory     = $repository_factory;
-        $this->user_manager           = $user_manager;
-        $this->ci_launcher            = $ci_launcher;
-        $this->parse_log              = $parse_log;
-        $this->system_event_manager   = $system_event_manager;
-        $this->event_manager          = $event_manager;
-        $this->webhook_request_sender = $webhook_request_sender;
-        $this->mail_sender            = $mail_sender;
+        $this->log_analyzer                        = $log_analyzer;
+        $this->repository_factory                  = $repository_factory;
+        $this->user_manager                        = $user_manager;
+        $this->ci_launcher                         = $ci_launcher;
+        $this->parse_log                           = $parse_log;
+        $this->system_event_manager                = $system_event_manager;
+        $this->event_manager                       = $event_manager;
+        $this->webhook_request_sender              = $webhook_request_sender;
+        $this->mail_sender                         = $mail_sender;
+        $this->default_branch_post_receive_updater = $default_branch_post_receive_updater;
     }
 
-    public function beforeParsingReferences($repository_path) {
+    public function beforeParsingReferences($repository_path): void
+    {
         $repository = $this->repository_factory->getFromFullPath($repository_path);
         if ($repository !== null) {
             $this->system_event_manager->queueGrokMirrorManifestFollowingAGitPush($repository);
-            $this->event_manager->processEvent(GIT_HOOK_POSTRECEIVE, array(
-                'repository' => $repository
-            ));
+
+            $this->default_branch_post_receive_updater->updateDefaultBranchWhenNeeded(Git_Exec::buildFromRepository($repository));
         }
     }
 
-    public function execute($repository_path, $user_name, $oldrev, $newrev, $refname) {
+    public function execute($repository_path, $user_name, $oldrev, $newrev, $refname)
+    {
         $repository = $this->repository_factory->getFromFullPath($repository_path);
         if ($repository !== null) {
             $user = $this->user_manager->getUserByUserName($user_name);
             if ($user === null) {
-                $user = new PFUser(array('user_id' => 0));
+                $user = new PFUser(['user_id' => 0]);
             }
 
             $technical_reference_event = new MarkTechnicalReference($refname);
@@ -110,19 +116,21 @@ class Git_Hook_PostReceive
                 $this->executeForRepositoryAndUser($repository, $user, $oldrev, $newrev, $refname);
             }
             $this->processGitWebhooks($repository, $user, $oldrev, $newrev, $refname);
-            $this->event_manager->processEvent(GIT_HOOK_POSTRECEIVE_REF_UPDATE, array(
-                'repository'                    => $repository,
-                'oldrev'                        => $oldrev,
-                'newrev'                        => $newrev,
-                'refname'                       => $refname,
-                'user'                          => $user,
-                'is_technical_reference_update' => $technical_reference_event->isATechnicalReference()
-            ));
 
+            $event = new PostReceiveExecuteEvent(
+                $repository,
+                $user,
+                $oldrev,
+                $newrev,
+                $refname,
+                $technical_reference_event->isATechnicalReference()
+            );
+            $this->event_manager->processEvent($event);
         }
     }
 
-    private function executeForRepositoryAndUser(GitRepository $repository, PFUser $user, $oldrev, $newrev, $refname) {
+    private function executeForRepositoryAndUser(GitRepository $repository, PFUser $user, $oldrev, $newrev, $refname)
+    {
         $this->ci_launcher->executeForRepository($repository);
 
         $push_details = $this->log_analyzer->getPushDetails($repository, $user, $oldrev, $newrev, $refname);

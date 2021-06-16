@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,7 +41,7 @@ class ProtectedReferencePermission implements Permission
     }
 
     /**
-     * @return []
+     * @return array
      */
     public function getWritersUgroup()
     {
@@ -49,7 +49,7 @@ class ProtectedReferencePermission implements Permission
     }
 
     /**
-     * @return []
+     * @return array
      */
     public function getRewindersUgroup()
     {

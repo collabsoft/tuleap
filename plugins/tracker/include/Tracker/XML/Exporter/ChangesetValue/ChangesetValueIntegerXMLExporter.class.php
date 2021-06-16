@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,16 +18,20 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Exporter_ChangesetValue_ChangesetValueIntegerXMLExporter extends Tracker_XML_Exporter_ChangesetValue_ChangesetValueXMLExporter {
+use Tuleap\Tracker\Artifact\Artifact;
 
-    protected function getFieldChangeType() {
+class Tracker_XML_Exporter_ChangesetValue_ChangesetValueIntegerXMLExporter extends Tracker_XML_Exporter_ChangesetValue_ChangesetValueXMLExporter
+{
+
+    protected function getFieldChangeType()
+    {
         return 'int';
     }
 
     public function export(
         SimpleXMLElement $artifact_xml,
         SimpleXMLElement $changeset_xml,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Tracker_Artifact_ChangesetValue $changeset_value
     ) {
         $field_change = $this->createFieldChangeNodeInChangesetNode(
@@ -35,6 +39,7 @@ class Tracker_XML_Exporter_ChangesetValue_ChangesetValueIntegerXMLExporter exten
             $changeset_xml
         );
 
-        $field_change->addChild('value', $changeset_value->getValue());
+        $cdata = new \XML_SimpleXMLCDATAFactory();
+        $cdata->insert($field_change, 'value', $changeset_value->getValue());
     }
 }

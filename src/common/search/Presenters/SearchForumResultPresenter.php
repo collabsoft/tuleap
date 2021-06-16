@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,36 +18,33 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Search_SearchForumResultPresenter {
-    /** @var  string */
-    private $project_name;
-
-    /** @var  string */
-    private $project_unix_name;
-
-    /** @var  string */
-    private $project_description;
-
-    public function __construct(array $result) {
+class Search_SearchForumResultPresenter
+{
+    public function __construct(array $result)
+    {
         $this->message_id      = $result['msg_id'];
         $this->message_subject = $result['subject'];
         $this->message_author  = $result['user_name'];
         $this->message_date    = $result['date'];
     }
 
-    public function message_subject() {
+    public function message_subject()
+    {
         return $this->message_subject;
     }
 
-    public function message_uri() {
-        return "/forum/message.php?msg_id=".$this->message_id;
+    public function message_uri()
+    {
+        return "/forum/message.php?msg_id=" . $this->message_id;
     }
 
-    public function message_author() {
+    public function message_author()
+    {
         return $this->message_author;
     }
 
-    public function message_date() {
+    public function message_date()
+    {
         return format_date($GLOBALS['Language']->getText('system', 'datefmt'), $this->message_date);
     }
 }

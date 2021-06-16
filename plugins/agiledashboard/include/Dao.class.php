@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,10 +18,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class AgileDashboard_Dao extends DataAccessObject {
+class AgileDashboard_Dao extends DataAccessObject
+{
 
 
-    public function getProjectsWithADActivated() {
+    public function getProjectsWithADActivated()
+    {
         $sql = "SELECT group_id, is_used AS result
                 FROM service
                 WHERE short_name = 'plugin_agiledashboard'

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,14 +21,14 @@
 namespace Tuleap\ArtifactsFolders\Folder;
 
 use Codendi_HTMLPurifier;
-use Tracker_Artifact;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class FolderHierarchicalRepresentationCollection
 {
-    const DEFAULT_PREFIX = ' ';
+    public const DEFAULT_PREFIX = ' ';
 
     /** @var FolderHierarchicalRepresentation[] */
-    private $collection = array();
+    private $collection = [];
 
     public function add(FolderHierarchicalRepresentation $folder_hierarchical_representation)
     {
@@ -37,13 +37,13 @@ class FolderHierarchicalRepresentationCollection
         $this->collection[$folder_id] = $folder_hierarchical_representation;
     }
 
-    public function contains(Tracker_Artifact $artifact)
+    public function contains(Artifact $artifact)
     {
         return isset($this->collection[$artifact->getId()]);
     }
 
     /** @return FolderHierarchicalRepresentation */
-    public function get(Tracker_Artifact $artifact)
+    public function get(Artifact $artifact)
     {
         return $this->collection[$artifact->getId()];
     }
@@ -63,7 +63,7 @@ class FolderHierarchicalRepresentationCollection
         return $this->collection;
     }
 
-    public function collectOptions(array &$options, Tracker_Artifact $current_folder = null, $prefix = self::DEFAULT_PREFIX)
+    public function collectOptions(array &$options, ?Artifact $current_folder = null, $prefix = self::DEFAULT_PREFIX)
     {
         if ($prefix === self::DEFAULT_PREFIX) {
             $prefix_for_children = "└─$prefix";
@@ -73,15 +73,15 @@ class FolderHierarchicalRepresentationCollection
 
         $purify = Codendi_HTMLPurifier::instance();
         foreach ($this->collection as $folder_representation) {
-            $folder = $folder_representation->getFolder();
+            $folder   = $folder_representation->getFolder();
             $selected = '';
             if ($current_folder && $current_folder->getId() === $folder->getId()) {
                 $selected = 'selected';
             }
-            $option = '<option value="' . $folder->getId() . '" ' . $selected . '>';
-            $option .= $prefix;
-            $option .= $purify->purify($folder->getTitle());
-            $option .= '</option>';
+            $option    = '<option value="' . $folder->getId() . '" ' . $selected . '>';
+            $option   .= $prefix;
+            $option   .= $purify->purify($folder->getTitle());
+            $option   .= '</option>';
             $options[] = $option;
 
             $folder_representation->getChildren()->collectOptions($options, $current_folder, $prefix_for_children);

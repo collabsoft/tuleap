@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_BatchIterator {
+use Tuleap\Tracker\Artifact\Artifact;
 
-    const ITEMS_PER_BATCH = 100;
+class Tracker_Artifact_BatchIterator
+{
+
+    public const ITEMS_PER_BATCH = 100;
 
     private $batches_processed;
 
@@ -29,32 +32,36 @@ class Tracker_Artifact_BatchIterator {
 
     private $tracker_id;
 
-    public function __construct(Tracker_ArtifactFactory $tracker_artifact_factory, $tracker_id) {
+    public function __construct(Tracker_ArtifactFactory $tracker_artifact_factory, $tracker_id)
+    {
         $this->tracker_artifact_factory = $tracker_artifact_factory;
         $this->tracker_id               = $tracker_id;
     }
 
     /**
-     * @return Tracker_Artifact[]
+     * @return Artifact[]
      */
-    public function next() {
+    public function next()
+    {
         $this->batches_processed++;
 
         return $this->current();
     }
 
     /**
-     * @return Tracker_Artifact[]
+     * @return Artifact[]
      */
-    public function current() {
-        $offset = max(array(self::ITEMS_PER_BATCH * $this->batches_processed, 0));
+    public function current()
+    {
+        $offset = max([self::ITEMS_PER_BATCH * $this->batches_processed, 0]);
         $limit  = self::ITEMS_PER_BATCH;
 
         $paginated_artifacts = $this->tracker_artifact_factory->getPaginatedArtifactsByTrackerId($this->tracker_id, $limit, $offset, false);
         return $paginated_artifacts->getArtifacts();
     }
 
-    public function rewind() {
+    public function rewind()
+    {
         $this->batches_processed = -1;
     }
 }

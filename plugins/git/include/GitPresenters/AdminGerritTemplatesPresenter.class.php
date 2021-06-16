@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -54,107 +54,129 @@ class GitPresenters_AdminGerritTemplatesPresenter extends GitPresenters_AdminPre
         $parent_templates_list,
         $project_id,
         $are_mirrors_defined,
+        array $external_pane_presenters,
         $has_gerrit_servers_set_up
     ) {
-        parent::__construct($project_id, $are_mirrors_defined);
+        parent::__construct($project_id, $are_mirrors_defined, $external_pane_presenters);
 
-        $this->manage_gerrit_templates   = true;
         $this->repository_list           = $repository_list;
         $this->templates_list            = $templates_list;
         $this->parent_templates_list     = $parent_templates_list;
         $this->has_gerrit_servers_set_up = $has_gerrit_servers_set_up;
     }
 
-    public function configurations_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_repos_list');
+    public function configurations_text()
+    {
+        return dgettext('tuleap-git', 'Configurations');
     }
 
-    public function templates_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_templates_list');
+    public function templates_text()
+    {
+        return dgettext('tuleap-git', 'Templates');
     }
 
-    public function edit_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_edit_configuration_label');
+    public function edit_text()
+    {
+        return dgettext('tuleap-git', 'You can edit the template. The <b>%projectname%</b> variable is available; it will be replaced by the project\'s name during the migration process:');
     }
 
-    public function file_name_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_file_name_label');
+    public function file_name_text()
+    {
+        return dgettext('tuleap-git', 'Template file name');
     }
 
-    public function save_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_submit_button');
+    public function save_text()
+    {
+        return dgettext('tuleap-git', 'Save');
     }
 
-    public function config_option() {
+    public function config_option()
+    {
         return array_values($this->repository_list);
     }
 
-    public function templates_option() {
+    public function templates_option()
+    {
         return $this->templates_list;
     }
 
-    public function parent_templates_option() {
+    public function parent_templates_option()
+    {
         return $this->parent_templates_list;
     }
 
-    public function templates_form_action() {
-        return '/plugins/git/?group_id='. $this->project_id .'&action=admin-gerrit-templates';
+    public function form_action(): string
+    {
+        return '/plugins/git/?group_id=' . $this->project_id . '&action=admin-gerrit-templates';
     }
 
-    public function template_action_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_template_table_action');
+    public function template_action_text()
+    {
+        return dgettext('tuleap-git', 'Action');
     }
 
-    public function template_name_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_template_table_name');
+    public function template_name_text()
+    {
+        return dgettext('tuleap-git', 'Template name');
     }
 
-    public function edit() {
-        return $GLOBALS['Language']->getText('plugin_git', 'edit');
+    public function edit()
+    {
+        return dgettext('tuleap-git', 'edit');
     }
 
-    public function view() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view');
+    public function view()
+    {
+        return dgettext('tuleap-git', 'view');
     }
 
-    public function template_section_title() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_template_section_title');
+    public function template_section_title()
+    {
+        return dgettext('tuleap-git', 'Gerrit permission configuration templates');
     }
 
-    public function template_section_description() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_template_section_description');
+    public function template_section_description()
+    {
+        return dgettext('tuleap-git', 'This section allows you to choose a Gerrit project configuration and create a reusable template from it');
     }
 
-    public function please_choose() {
-        return $GLOBALS['Language']->getText('plugin_git', 'please_choose');
+    public function please_choose()
+    {
+        return dgettext('tuleap-git', 'Please choose');
     }
 
-    public function cancel() {
-        return $GLOBALS['Language']->getText('plugin_git', 'cancel');
+    public function cancel()
+    {
+        return dgettext('tuleap-git', 'Cancel');
     }
 
-    public function create_new_template_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_create_new_template_text');
+    public function create_new_template_text()
+    {
+        return dgettext('tuleap-git', 'Create new');
     }
 
-    public function template_from_gerrit_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_template_from_gerrit_text');
+    public function template_from_gerrit_text()
+    {
+        return dgettext('tuleap-git', 'from gerrit config');
     }
 
-    public function template_from_template_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_template_from_template_text');
+    public function template_from_template_text()
+    {
+        return dgettext('tuleap-git', 'from template');
     }
 
-    public function template_from_scratch_text() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_template_from_scratch_text');
+    public function template_from_scratch_text()
+    {
+        return dgettext('tuleap-git', 'from scratch');
     }
 
     public function no_gerrit_servers()
     {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_no_gerrit_server', [GIT_SITE_ADMIN_BASE_URL]);
+        return sprintf(dgettext('tuleap-git', 'It does not appear to be any <em><a href="%1$s">gerrit server</a></em> set-up for this platform! Please contact your site administrator.'), GIT_SITE_ADMIN_BASE_URL);
     }
 
-    public function delete_label() {
-        return $GLOBALS['Language']->getText('plugin_git', 'gerrit_template_delete');
+    public function delete_label()
+    {
+        return dgettext('tuleap-git', 'Delete');
     }
 }

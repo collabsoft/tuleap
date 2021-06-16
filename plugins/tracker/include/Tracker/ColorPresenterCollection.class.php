@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,62 +19,46 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class Tracker_ColorPresenterCollection implements Iterator {
+use Tuleap\Tracker\TrackerColor;
+
+class Tracker_ColorPresenterCollection implements Iterator
+{
 
     /** @var array */
-    private $colors = array();
+    private $colors = [];
 
-    /** @var Tracker */
-    private $tracker;
-
-    /** @var array() */
-    private $existing_colors = array(
-       'inca_silver',
-       'chrome_silver',
-       'teddy_brown',
-       'red_wine',
-       'fiesta_red',
-       'clockwork_orange',
-       'acid_green',
-       'army_green',
-       'sherwood_green',
-       'ocean_turquoise',
-       'daphne_blue',
-       'lake_placid_blue',
-       'deep_blue',
-       'plum_crazy',
-       'peggy_pink',
-       'flamingo_pink',
-    );
-
-    public function __construct(Tracker $tracker) {
-        $this->tracker = $tracker;
-
-        foreach ($this->existing_colors as $color) {
-             $this->colors[] = array(
+    public function __construct(Tracker $tracker)
+    {
+        foreach (TrackerColor::COLOR_NAMES as $color) {
+             $this->colors[] = [
                  'color'    => $color,
-                 'selected' => $color === $this->tracker->getColor()
-             );
+                 'selected' => $color === $tracker->getColor()->getName()
+             ];
         }
     }
 
-    public function current() {
+    public function current()
+    {
         return current($this->colors);
     }
 
-    public function key() {
+    public function key()
+    {
         return key($this->colors);
     }
 
-    public function next() {
-        return next($this->colors);
+    public function next()
+    {
+        next($this->colors);
     }
 
-    public function rewind() {
+    public function rewind()
+    {
         reset($this->colors);
     }
 
-    public function valid() {
+    public function valid()
+    {
         return current($this->colors) !== false;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,176 +20,92 @@
 
 namespace Tuleap\OpenIDConnectClient\Authentication;
 
-use InoOicClient\Flow\Basic;
-use InoOicClient\Client\ClientInfo;
-use InoOicClient\Flow\Exception\AuthorizationException;
-use InoOicClient\Flow\Exception\TokenRequestException;
-use InoOicClient\Flow\Exception\UserInfoRequestException;
-use Tuleap\OpenIDConnectClient\Provider\Provider;
-use ForgeConfig;
+use Tuleap\OpenIDConnectClient\Authentication\Authorization\AuthorizationResponse;
+use Tuleap\OpenIDConnectClient\Authentication\Token\TokenRequestCreator;
+use Tuleap\OpenIDConnectClient\Authentication\Token\TokenRequestSender;
+use Tuleap\OpenIDConnectClient\Authentication\UserInfo\UserInfoRequestCreator;
+use Tuleap\OpenIDConnectClient\Authentication\UserInfo\UserInfoRequestSender;
 use Tuleap\OpenIDConnectClient\Provider\ProviderManager;
-use Firebase\JWT\JWT;
-use Exception;
 
-class Flow extends Basic {
+class Flow
+{
+    /**
+     * @var StateManager
+     */
+    private $state_manager;
     /**
      * @var ProviderManager
      */
     private $provider_manager;
-
+    /**
+     * @var TokenRequestCreator
+     */
+    private $token_request_creator;
+    /**
+     * @var TokenRequestSender
+     */
+    private $token_request_sender;
     /**
      * @var IDTokenVerifier
      */
     private $id_token_verifier;
+    /**
+     * @var UserInfoRequestCreator
+     */
+    private $user_info_request_creator;
+    /**
+     * @var UserInfoRequestSender
+     */
+    private $user_info_request_sender;
 
     public function __construct(
         StateManager $state_manager,
-        AuthorizationDispatcher $authorization_dispatcher,
         ProviderManager $provider_manager,
-        IDTokenVerifier $id_token_verifier
+        TokenRequestCreator $token_request_creator,
+        TokenRequestSender $token_request_sender,
+        IDTokenVerifier $id_token_verifier,
+        UserInfoRequestCreator $user_info_request_creator,
+        UserInfoRequestSender $user_info_request_sender
     ) {
-        $this->setStateManager($state_manager);
-        $this->setAuthorizationDispatcher($authorization_dispatcher);
-        $this->provider_manager   = $provider_manager;
-        $this->id_token_verifier = $id_token_verifier;
-    }
-
-    public function setOptions(Provider $provider) {
-        $configuration = $this->generateConfiguration($provider);
-        parent::setOptions($configuration);
-    }
-
-    /**
-     * @return array
-     */
-    private function generateConfiguration(Provider $provider) {
-        return array(
-            'client_info' => array(
-                'client_id'    => $provider->getClientId(),
-                'redirect_uri' => $this->getRedirectUri(),
-
-                'authorization_endpoint' => $provider->getAuthorizationEndpoint(),
-                'token_endpoint'         => $provider->getTokenEndpoint(),
-                'user_info_endpoint'     => $provider->getUserInfoEndpoint(),
-
-                'authentication_info' => array(
-                    'method' => 'client_secret_post',
-                    'params' => array(
-                        'client_secret' => $provider->getClientSecret()
-                    )
-                )
-            ),
-            'token_dispatcher' => array(
-                'http_options' => array(
-                    'headers' => array(
-                        'Accept' => 'application/json'
-                    )
-                )
-            )
-        );
+        $this->state_manager             = $state_manager;
+        $this->provider_manager          = $provider_manager;
+        $this->token_request_creator     = $token_request_creator;
+        $this->token_request_sender      = $token_request_sender;
+        $this->id_token_verifier         = $id_token_verifier;
+        $this->user_info_request_creator = $user_info_request_creator;
+        $this->user_info_request_sender  = $user_info_request_sender;
     }
 
     /**
-     * @return string
+     * @throws MalformedIDTokenException
+     * @throws \Http\Client\Exception
+     * @throws \Tuleap\OpenIDConnectClient\Provider\ProviderNotFoundException
      */
-    private function getRedirectUri() {
-        return 'https://'. ForgeConfig::get('sys_https_host') . '/plugins/openidconnectclient/';
-    }
-
-    /**
-     * @param Provider $provider
-     * @param $return_to
-     * @return string
-     */
-    public function getAuthorizationRequestUri(Provider $provider, $return_to) {
-        $this->setOptions($provider);
-        $scope = 'openid';
-        if ($provider->isUniqueAuthenticationEndpoint()) {
-            $scope = 'openid profile email';
-        }
-        $authorization_request = $this->createAuthorizationRequest($scope);
-        return $this->getAuthorizationDispatcher()->createAuthorizationRequestUri(
-            $authorization_request,
-            $provider,
-            $return_to
-        );
-    }
-
-    /**
-     * @return FlowResponse
-     * @throws AuthorizationException
-     * @throws TokenRequestException
-     * @throws UserInfoRequestException
-     */
-    public function process() {
-        try {
-            $authorization_response = $this->getAuthorizationDispatcher()->getAuthorizationResponse();
-            $signed_state           = $authorization_response->getState();
-            $state                  = $this->getStateManager()->validateState($signed_state);
-            $provider               = $this->provider_manager->getById($state->getProviderId());
-            $this->setOptions($provider);
-            $authorization_code     = $authorization_response->getCode();
-        } catch(Exception $ex) {
-            throw new AuthorizationException(
-                sprintf("Exception during authorization: [%s] %s", get_class($ex), $ex->getMessage()),
-                null,
-                $ex
-            );
-        }
-
-        try {
-            $token_request    = $this->createTokenRequest($authorization_code);
-            $token_response   = $this->getTokenDispatcher()->sendTokenRequest($token_request);
-            $access_token     = $token_response->getAccessToken();
-            $encoded_id_token = $token_response->getIdToken();
-            $id_token         = $this->id_token_verifier->validate($provider, $state->getNonce(), $encoded_id_token);
-        } catch (Exception $ex) {
-            throw new TokenRequestException(
-                sprintf("Exception during token request: [%s] %s", get_class($ex), $ex->getMessage()),
-                null,
-                $ex
-            );
-        }
-
-
-        try {
-            $user_informations = $this->getUserInfo($access_token);
-        } catch (Exception $ex) {
-            throw new UserInfoRequestException(
-                sprintf("Exception during user info request: [%s] %s", get_class($ex), $ex->getMessage()),
-                null,
-                $ex
-            );
-        }
-
-        $this->getStateManager()->clearState();
-
-        return new FlowResponse($provider, $state->getReturnTo(), $id_token['sub'], $user_informations);
-    }
-
-    /**
-     * @return ClientInfo
-     */
-    public function getClientInfo() {
-        if (! $this->clientInfo instanceof ClientInfo) {
-            $this->clientInfo = new ClientInfo();
-        }
-        $this->clientInfo->fromArray($this->options->get(self::OPT_CLIENT_INFO, array()));
-        return $this->clientInfo;
-    }
-
-    /**
-     * @return array
-     */
-    public function getUserInfo($access_token)
+    public function process(\HTTPRequest $request): FlowResponse
     {
-        $user_info_endpoint = $this->getClientInfo()->getUserInfoEndpoint();
-        if (empty($user_info_endpoint)) {
-            return array();
-        }
+        $authorization_response = AuthorizationResponse::buildFromHTTPRequest($request);
+        $signed_state           = $authorization_response->getState();
+        $state                  = $this->state_manager->validateState($signed_state);
+        $provider               = $this->provider_manager->getById($state->getProviderId());
 
-        $user_info_request  = $this->createUserInfoRequest($access_token);
-        $user_info_response = $this->getUserInfoDispatcher()->sendUserInfoRequest($user_info_request);
-        return $user_info_response->getClaims();
+        $token_request  = $this->token_request_creator->createTokenRequest(
+            $provider,
+            $authorization_response,
+            $provider->getRedirectUri(),
+            $state->getPKCECodeVerifier()
+        );
+        $token_response = $this->token_request_sender->sendTokenRequest($token_request);
+        $id_token_sub   = $this->id_token_verifier->validate(
+            $provider,
+            $state->getNonce(),
+            $token_response->getIDToken()
+        );
+
+        $user_info_request  = $this->user_info_request_creator->createUserInfoRequest($provider, $token_response);
+        $user_info_response = $this->user_info_request_sender->sendUserInfoRequest($user_info_request);
+
+        $this->state_manager->clearState();
+
+        return new FlowResponse($provider, $state->getReturnTo(), $id_token_sub, $user_info_response->getClaims());
     }
 }

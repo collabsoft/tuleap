@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: EditMetaData.php,v 1.11 2004/06/01 16:48:11 rurban Exp $');
 /**
  Copyright 1999, 2000, 2001, 2002 $ThePhpWikiProgrammingTeam
@@ -38,20 +39,25 @@ rcs_id('$Id: EditMetaData.php,v 1.11 2004/06/01 16:48:11 rurban Exp $');
  *
  * Array support added by ReiniUrban.
  */
-class WikiPlugin_EditMetaData
-extends WikiPlugin
+class WikiPlugin_EditMetaData extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return _("EditMetaData");
     }
 
-    function getDescription () {
+    public function getDescription()
+    {
         return sprintf(_("Edit metadata for %s"), '[pagename]');
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.11 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.11 $"
+        );
     }
 
     // Arguments:
@@ -59,65 +65,71 @@ extends WikiPlugin
     //  page - page whose metadata is editted
 
 
-    function getDefaultArguments() {
-        return array('page'       => '[pagename]'
-                    );
+    public function getDefaultArguments()
+    {
+        return ['page'       => '[pagename]'
+                    ];
     }
 
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         $this->_args = $this->getArgs($argstr, $request);
         extract($this->_args);
-        if (!$page)
+        if (! $page) {
             return '';
+        }
 
-        $hidden_pagemeta = array ('_cached_html');
-        $readonly_pagemeta = array ('hits');
-        $dbi = $request->getDbh();
-        $p = $dbi->getPage($page);
-        $pagemeta = $p->getMetaData();
+        $hidden_pagemeta   =  ['_cached_html'];
+        $readonly_pagemeta =  ['hits'];
+        $dbi               = $request->getDbh();
+        $p                 = $dbi->getPage($page);
+        $pagemeta          = $p->getMetaData();
 
         // Look at arguments to see if submit was entered. If so,
         // process this request before displaying.
-        //
         if ($request->isPost() and $request->_user->isAdmin() and $request->getArg('metaedit')) {
             $metafield = trim($request->getArg('metafield'));
             $metavalue = trim($request->getArg('metavalue'));
-            if (!in_array($metafield, $readonly_pagemeta)) {
+            if (! in_array($metafield, $readonly_pagemeta)) {
                 if (preg_match('/^(.*?)\[(.*?)\]$/', $metafield, $matches)) {
                     list(,$array_field, $array_key) = $matches;
-                    $array_value = $pagemeta[$array_field];
-                    $array_value[$array_key] = $metavalue;
+                    $array_value                    = $pagemeta[$array_field];
+                    $array_value[$array_key]        = $metavalue;
                     $p->set($array_field, $array_value);
                 } else {
                     $p->set($metafield, $metavalue);
                 }
             }
             $dbi->touch();
-            $url = $request->getURLtoSelf(false, 
-                                          array('metaedit','metafield','metavalue'));
+            $url = $request->getURLtoSelf(
+                false,
+                ['metaedit', 'metafield', 'metavalue']
+            );
             $request->redirect($url);
             // The rest of the output will not be seen due to the
             // redirect.
-
         }
 
         // Now we show the meta data and provide entry box for new data.
 
         $html = HTML();
 
-        $html->pushContent(fmt("Existing page-level metadata for %s:",
-                               $page));
+        $html->pushContent(fmt(
+            "Existing page-level metadata for %s:",
+            $page
+        ));
         $dl = HTML::dl();
         foreach ($pagemeta as $key => $val) {
-            if (is_string($val) and (substr($val,0,2) == 'a:')) {
-                $dl->pushContent(HTML::dt("\n$key => $val\n",
-                                          $dl1 = HTML::dl()));
+            if (is_string($val) and (substr($val, 0, 2) == 'a:')) {
+                $dl->pushContent(HTML::dt(
+                    "\n$key => $val\n",
+                    $dl1 = HTML::dl()
+                ));
                 foreach (unserialize($val) as $akey => $aval) {
                     $dl1->pushContent(HTML::dt(HTML::strong("$key" . '['
                                                             . $akey
-                                                            . "] => $aval\n"))
-                                      );
+                                                            . "] => $aval\n")));
                 }
                 $dl->pushContent($dl1);
             } elseif (is_array($val)) {
@@ -125,15 +137,15 @@ extends WikiPlugin
                 foreach ($val as $akey => $aval) {
                     $dl1->pushContent(HTML::dt(HTML::strong("$key" . '['
                                                             . $akey
-                                                            . "] => $aval\n"))
-                                      );
+                                                            . "] => $aval\n")));
                 }
                 $dl->pushContent($dl1);
-            } elseif (in_array($key,$hidden_pagemeta)) {
-                ;
-            } elseif (in_array($key,$readonly_pagemeta)) {
-                $dl->pushContent(HTML::dt(array('style' => 'background: #dddddd'),
-                                          "$key => $val\n"));
+            } elseif (in_array($key, $hidden_pagemeta)) {
+            } elseif (in_array($key, $readonly_pagemeta)) {
+                $dl->pushContent(HTML::dt(
+                    ['style' => 'background: #dddddd'],
+                    "$key => $val\n"
+                ));
             } else {
                 $dl->pushContent(HTML::dt(HTML::strong("$key => $val\n")));
             }
@@ -141,20 +153,25 @@ extends WikiPlugin
         $html->pushContent($dl);
 
         if ($request->_user->isAdmin()) {
-            $action = $request->getPostURL();
-            $hiddenfield = HiddenInputs($request->getArgs());
+            $action       = $request->getPostURL();
+            $hiddenfield  = HiddenInputs($request->getArgs());
             $instructions = _("Add or change a page-level metadata 'key=>value' pair. Note that you can remove a key by leaving the value-box empty.");
-            $keyfield = HTML::input(array('name' => 'metafield'), '');
-            $valfield = HTML::input(array('name' => 'metavalue'), '');
-            $button = Button('submit:metaedit', _("Submit"), false);
-            $form = HTML::form(array('action' => $action,
+            $keyfield     = HTML::input(['name' => 'metafield'], '');
+            $valfield     = HTML::input(['name' => 'metavalue'], '');
+            $button       = Button('submit:metaedit', _("Submit"), false);
+            $form         = HTML::form(
+                ['action' => $action,
                                      'method' => 'post',
-                                     'accept-charset' => $GLOBALS['charset']),
-                               $hiddenfield,
-                               $instructions, HTML::br(),
-                               $keyfield, ' => ', $valfield,
-                               HTML::raw('&nbsp;'), $button
-                               );
+                                     'accept-charset' => $GLOBALS['charset']],
+                $hiddenfield,
+                $instructions,
+                HTML::br(),
+                $keyfield,
+                ' => ',
+                $valfield,
+                HTML::raw('&nbsp;'),
+                $button
+            );
 
             $html->pushContent(HTML::br(), $form);
         } else {
@@ -162,7 +179,7 @@ extends WikiPlugin
         }
         return $html;
     }
-};
+}
 
 // $Log: EditMetaData.php,v $
 // Revision 1.11  2004/06/01 16:48:11  rurban
@@ -195,8 +212,6 @@ extends WikiPlugin
 // Code cleanup:
 // Reformatting & tabs to spaces;
 // Added copyleft, getVersion, getDescription, rcs_id.
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -205,4 +220,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

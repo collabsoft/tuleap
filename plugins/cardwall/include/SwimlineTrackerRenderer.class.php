@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,9 @@
 /**
  * A swimline for the tracker's cardwall renderer
  */
-class Cardwall_SwimlineTrackerRenderer extends Cardwall_Swimline{
-    const FAKE_SWIMLINE_ID_FOR_TRACKER_RENDERER = 'FAKE_SWIMLINE_ID_FOR_TRACKER_RENDERER';
+class Cardwall_SwimlineTrackerRenderer extends Cardwall_Swimline
+{
+    public const FAKE_SWIMLINE_ID_FOR_TRACKER_RENDERER = 'FAKE_SWIMLINE_ID_FOR_TRACKER_RENDERER';
 
     /**
      * @var int
@@ -33,12 +34,13 @@ class Cardwall_SwimlineTrackerRenderer extends Cardwall_Swimline{
      * @param string $title
      * @param array  $cells
      */
-    public function __construct(array $cells) {
+    public function __construct(array $cells)
+    {
         $this->cells = $cells;
     }
 
-    public function getCardPresenter() {
-        return false;
+    public function getCardPresenter()
+    {
+        return null;
     }
 }
-?>

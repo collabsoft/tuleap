@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class LDAP_Exception_AddException extends RuntimeException {
+class LDAP_Exception_AddException extends RuntimeException
+{
 
-    public function __construct($message, $dn) {
+    public function __construct($message, $dn)
+    {
         parent::__construct("An error occured while adding new LDAP entry $dn: $message");
     }
 }

@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,11 +19,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-function usage() {
+function usage()
+{
     echo "Usage: .../mw-maintenance-wrapper.php <projectname> <script> [ arguments... ]
 For instance: .../mw-maintenance-wrapper.php projectname importDump.php /tmp/wikidump.xml
               .../mw-maintenance-wrapper.php projectname rebuildrecentchanges.php
-" ;
+";
     exit(1);
 }
 
@@ -32,20 +33,20 @@ if (count($argv) < 3) {
 }
 
 $GLOBALS['TULEAP_MW_PROJECT'] = $argv[1];
-require_once __DIR__.'/../www/setenv.php';
+require_once __DIR__ . '/../www/setenv.php';
 
-$wrapperscript = array_shift ($argv);
+$wrapperscript      = array_shift($argv);
 $fusionforgeproject = array_shift($argv);
-$mwscript = array_shift($argv) ;
+$mwscript           = array_shift($argv);
 
-$tuleap_src = dirname(__FILE__).'/../../../src/';
-$tuleap_src_include = dirname(__FILE__).'/../../../src/www/include';
+$tuleap_src         = dirname(__FILE__) . '/../../../src/';
+$tuleap_src_include = dirname(__FILE__) . '/../../../src/www/include';
 
 set_include_path("$tuleap_src:$tuleap_src_include");
-$mwscript_abs_path = $IP."/maintenance/$mwscript";
+$mwscript_abs_path = $IP . "/maintenance/$mwscript";
 array_unshift($argv, $mwscript_abs_path, '--conf', '/usr/share/tuleap/plugins/mediawiki/www/LocalSettings.php');
-require_once(__DIR__.'/../include/constants.php');
-$GLOBALS['sys_pluginsroot'] = '/usr/share/tuleap/plugins';
+require_once(__DIR__ . '/../include/constants.php');
+ForgeConfig::set('sys_pluginsroot', '/usr/share/tuleap/plugins');
 
 
 require_once $mwscript_abs_path;

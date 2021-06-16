@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -89,7 +89,7 @@ class FineGrainedPermissionReplicator
         Project $project,
         GitRepository $repository
     ) {
-        $warnings           = array();
+        $warnings           = [];
         $branch_permissions = $this->default_factory->getBranchesFineGrainedPermissionsForProject($project);
         $tags_permissions   = $this->default_factory->getTagsFineGrainedPermissionsForProject($project);
 
@@ -129,7 +129,7 @@ class FineGrainedPermissionReplicator
         }
 
         if (count($warnings) > 0) {
-            $GLOBALS['Response']->addFeedback('warning', $GLOBALS['Language']->getText('plugin_git', 'feedback_permissions_not_duplicated', implode(',', $warnings)));
+            $GLOBALS['Response']->addFeedback('warning', sprintf(dgettext('tuleap-git', 'Your platform does not allow regular expression usage, permissions %1$s not duplicated.'), implode(',', $warnings)));
         }
     }
 
@@ -137,7 +137,7 @@ class FineGrainedPermissionReplicator
         GitRepository $source_repository,
         GitRepository $repository
     ) {
-        $warnings           = array();
+        $warnings           = [];
         $branch_permissions = $this->factory->getBranchesFineGrainedPermissionsForRepository($source_repository);
         $tags_permissions   = $this->factory->getTagsFineGrainedPermissionsForRepository($source_repository);
 
@@ -177,7 +177,7 @@ class FineGrainedPermissionReplicator
         }
 
         if (count($warnings) > 0) {
-            $GLOBALS['Response']->addFeedback('warning', $GLOBALS['Language']->getText('plugin_git', 'feedback_permissions_not_duplicated', implode(',', $warnings)));
+            $GLOBALS['Response']->addFeedback('warning', sprintf(dgettext('tuleap-git', 'Your platform does not allow regular expression usage, permissions %1$s not duplicated.'), implode(',', $warnings)));
         }
     }
 

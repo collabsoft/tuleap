@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,7 +19,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Codendi_Request {
+class Codendi_Request
+{
     /**
      * @var array
      */
@@ -41,12 +42,14 @@ class Codendi_Request {
     /**
      * Constructor
      */
-    public function __construct($params, ProjectManager $project_manager = null) {
-        $this->params                = $params;
-        $this->project_manager       = $project_manager ? $project_manager : ProjectManager::instance();
+    public function __construct($params, ?ProjectManager $project_manager = null)
+    {
+        $this->params          = $params;
+        $this->project_manager = $project_manager ? $project_manager : ProjectManager::instance();
     }
 
-    public function isAjax() {
+    public function isAjax()
+    {
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtoupper($_SERVER['HTTP_X_REQUESTED_WITH']) == 'XMLHTTPREQUEST';
     }
 
@@ -56,8 +59,11 @@ class Codendi_Request {
      * @param string $variable Name of the parameter to get.
      * @return mixed If the variable exist, the value is returned (string)
      * otherwise return false;
+     *
+     * @psalm-taint-source input
      */
-    public function get($variable) {
+    public function get($variable)
+    {
         return $this->_get($variable, $this->params);
     }
 
@@ -65,7 +71,8 @@ class Codendi_Request {
      * Add a param and/or set its value
      *
      */
-    public function set($name, $value) {
+    public function set($name, $value)
+    {
         $this->params[$name] = $value;
     }
 
@@ -82,9 +89,12 @@ class Codendi_Request {
      *
      * @return mixed If the variable exist, the value is returned (string)
      * otherwise return false;
+     *
+     * @psalm-taint-source input
      */
-    public function getInArray($idx, $variable) {
-        if(is_array($this->params[$idx])) {
+    public function getInArray($idx, $variable)
+    {
+        if (is_array($this->params[$idx])) {
             return $this->_get($variable, $this->params[$idx]);
         } else {
             return false;
@@ -97,8 +107,11 @@ class Codendi_Request {
      * @access protected
      * @param string $variable Name of the parameter to get.
      * @param array $array Name of the parameter to get.
+     *
+     * @psalm-taint-source input
      */
-    function _get($variable, $array) {
+    public function _get($variable, $array)
+    {
         if ($this->_exist($variable, $array)) {
             return $array[$variable];
         } else {
@@ -110,9 +123,10 @@ class Codendi_Request {
      * Check if $variable exists in user submitted parameters.
      *
      * @param string $variable Name of the parameter.
-     * @return boolean
+     * @return bool
      */
-    public function exist($variable) {
+    public function exist($variable)
+    {
         return $this->_exist($variable, $this->params);
     }
 
@@ -121,9 +135,10 @@ class Codendi_Request {
      *
      * @access protected
      * @param string $variable Name of the parameter.
-     * @return boolean
+     * @return bool
      */
-    protected function _exist($variable, $array) {
+    protected function _exist($variable, $array)
+    {
         return isset($array[$variable]);
     }
 
@@ -131,9 +146,10 @@ class Codendi_Request {
      * Check if $variable exists and is not empty in user submitted parameters.
      *
      * @param string $variable Name of the parameter.
-     * @return boolean
+     * @return bool
      */
-    public function existAndNonEmpty($variable) {
+    public function existAndNonEmpty($variable)
+    {
         return ($this->exist($variable) && trim($this->params[$variable]) != '');
     }
 
@@ -141,9 +157,10 @@ class Codendi_Request {
      * Apply validator on submitted user value.
      *
      * @param Valid  Validator to apply
-     * @return boolean
+     * @return bool
      */
-    public function valid(&$validator) {
+    public function valid($validator)
+    {
         return $validator->validate($this->get($validator->getKey()));
     }
 
@@ -151,15 +168,16 @@ class Codendi_Request {
      * Apply validator on all values of a submitted user array.
      *
      * @param Valid  Validator to apply
-     * @return boolean
+     * @return bool
      */
-    public function validArray(&$validator) {
+    public function validArray($validator)
+    {
         $isValid = true;
-        $array = $this->get($validator->getKey());
+        $array   = $this->get($validator->getKey());
         if (is_array($array)) {
-            if (count($array)>0) {
+            if (count($array) > 0) {
                 foreach ($array as $key => $v) {
-                    if (!$validator->validate($v)) {
+                    if (! $validator->validate($v)) {
                         $isValid = false;
                     }
                 }
@@ -177,9 +195,10 @@ class Codendi_Request {
      *
      * @param string Index in the user submitted values where the array stands.
      * @param Valid  Validator to apply
-     * @return boolean
+     * @return bool
      */
-    public function validInArray($index, &$validator) {
+    public function validInArray($index, $validator)
+    {
         return $validator->validate($this->getInArray($index, $validator->getKey()));
     }
 
@@ -188,9 +207,10 @@ class Codendi_Request {
      *
      * @param string Variable name
      * @param Rule  Validator to apply
-     * @return boolean
+     * @return bool
      */
-    public function validKey($key, &$rule) {
+    public function validKey($key, $rule)
+    {
         return $rule->isValid($this->get($key));
     }
 
@@ -200,13 +220,16 @@ class Codendi_Request {
      * @param string $variable Name of the parameter to get.
      * @param mixed $validator Name of the validator (string, uint, email) or an instance of a validator
      * @param mixed $default_value Value return if the validator is not valid. Optional, default is null.
+     *
+     * @psalm-taint-source input
      */
-    public function getValidated($variable, $validator = 'string', $default_value = null) {
+    public function getValidated($variable, $validator = 'string', $default_value = null)
+    {
         $is_valid = false;
         if ($v = ValidFactory::getInstance($validator, $variable)) {
             $is_valid = $this->valid($v);
         } else {
-            trigger_error('Validator '. $validator .' is not found', E_USER_ERROR);
+            trigger_error('Validator ' . $validator . ' is not found', E_USER_ERROR);
         }
         return $is_valid ? $this->get($variable) : $default_value;
     }
@@ -224,8 +247,9 @@ class Codendi_Request {
      *
      * @return PFUser
      */
-    public function getCurrentUser() {
-        if (!$this->current_user) {
+    public function getCurrentUser()
+    {
+        if (! $this->current_user) {
             $this->current_user = UserManager::instance()->getCurrentUser();
         }
         return $this->current_user;
@@ -244,9 +268,9 @@ class Codendi_Request {
     /**
      * Set a current user (should be used only for tests)
      *
-     * @param PFUser $user
      */
-    public function setCurrentUser(PFUser $user) {
+    public function setCurrentUser(PFUser $user)
+    {
         $this->current_user = $user;
     }
 
@@ -255,15 +279,9 @@ class Codendi_Request {
      *
      * @return Project
      */
-    public function getProject() {
-        return $this->project_manager->getProject((int)$this->get('group_id'));
-    }
-
-    /**
-     * For debug only
-     */
-    public function dump() {
-        var_dump($this->params);
+    public function getProject()
+    {
+        return $this->project_manager->getProject((int) $this->get('group_id'));
     }
 
     /**
@@ -271,14 +289,16 @@ class Codendi_Request {
      *
      * @see http://stackoverflow.com/questions/3063787/handle-json-request-in-php
      */
-    public function getJsonDecodedBody() {
+    public function getJsonDecodedBody()
+    {
         return json_decode(file_get_contents('php://input'));
     }
 
     /**
-     * @return integer
+     * @return int
      */
-    public function getTime() {
+    public function getTime()
+    {
         return $_SERVER['REQUEST_TIME'];
     }
 }

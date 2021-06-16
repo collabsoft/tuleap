@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,7 +23,8 @@
  * The aim of this presenter is to be used in conjunction with a view that enables quick access
  * to each milestone.
  */
-class Planning_Presenter_MilestoneAccessPresenter {
+class Planning_Presenter_MilestoneAccessPresenter
+{
 
     /**
      * @var Planning_Milestone[]
@@ -35,25 +36,29 @@ class Planning_Presenter_MilestoneAccessPresenter {
      */
     public $milestone_type;
 
-    public function __construct($milestones, $milestone_type) {
+    public function __construct($milestones, $milestone_type)
+    {
         $this->milestones     = $milestones;
         $this->milestone_type = $milestone_type;
     }
 
-    public function content() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard','details_pane_title');
+    public function content()
+    {
+        return dgettext('tuleap-agiledashboard', 'Overview');
     }
 
-    public function planning() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard','planning');
+    public function planning()
+    {
+        return dgettext('tuleap-agiledashboard', 'Planning');
     }
 
-    public function no_milestone() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'no_milestone');
+    public function no_milestone()
+    {
+        return dgettext('tuleap-agiledashboard', 'There are no milestones for this period');
     }
 
-    public function edit_base_link() {
+    public function edit_base_link()
+    {
         return '/plugins/tracker/?aid=';
     }
 }
-?>

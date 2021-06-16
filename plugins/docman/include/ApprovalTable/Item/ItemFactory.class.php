@@ -20,21 +20,25 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Docman_ApprovalTableItemFactory extends Docman_ApprovalTableFactory {
+class Docman_ApprovalTableItemFactory extends Docman_ApprovalTableFactory
+{
 
 
-    function newTable() {
+    public function newTable()
+    {
         return new Docman_ApprovalTableItem();
     }
 
-    protected function _updateTableWithLastId($dstTable) {
+    protected function _updateTableWithLastId($dstTable)
+    {
         $dstTable->setItemId($this->item->getId());
     }
 
     /**
      * Create a new approval table
      */
-    function createTable($userId, $import) {
+    public function createTable($userId, $import)
+    {
         return $this->newTableEmpty($userId);
     }
 
@@ -44,7 +48,8 @@ class Docman_ApprovalTableItemFactory extends Docman_ApprovalTableFactory {
      * @param $table ApprovalTable
      * @return int new table id
      */
-    function _createTable($table) {
+    public function _createTable($table)
+    {
         return $this->_getDao()->createTable(
             'item_id',
             $table->getItemId(),
@@ -56,26 +61,26 @@ class Docman_ApprovalTableItemFactory extends Docman_ApprovalTableFactory {
         );
     }
 
-    function _getTable() {
+    public function _getTable()
+    {
         $table = null;
-        $dao = $this->_getDao();
-        $dar = $dao->getTableByItemId($this->item->getId());
-        if($dar && !$dar->isError() && $dar->rowCount() == 1) {
-            $row = $dar->current();
+        $dao   = $this->_getDao();
+        $dar   = $dao->getTableByItemId($this->item->getId());
+        if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
+            $row   = $dar->current();
             $table = $this->createTableFromRow($row);
         }
         return $table;
     }
 
-    function userAccessedSinceLastUpdate($user) {
+    public function userAccessedSinceLastUpdate($user)
+    {
         return true;
     }
 
-    //
     // Class accessor
-    //
-
-    function _getDao() {
+    public function _getDao()
+    {
         return new Docman_ApprovalTableItemDao(CodendiDataAccess::instance());
     }
 }

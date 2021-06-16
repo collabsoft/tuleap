@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
  *
  * This file is a part of Tuleap.
@@ -24,19 +24,17 @@ namespace Tuleap\Git\GitPHP;
 /**
  * Git Executable class
  *
- * @package GitPHP
- * @subpackage Git
  */
 class GitExe
 {
-    const DIFF_TREE    = 'diff-tree';
-    const REV_LIST     = 'rev-list';
-    const SHOW_REF     = 'show-ref';
-    const ARCHIVE      = 'archive';
-    const GREP         = 'grep';
-    const BLAME        = 'blame';
-    const NAME_REV     = 'name-rev';
-    const DIFF         = 'diff';
+    public const DIFF_TREE = 'diff-tree';
+    public const REV_LIST  = 'rev-list';
+    public const SHOW_REF  = 'show-ref';
+    public const ARCHIVE   = 'archive';
+    public const GREP      = 'grep';
+    public const BLAME     = 'blame';
+    public const NAME_REV  = 'name-rev';
+    public const DIFF      = 'diff';
 
     /**
      * project

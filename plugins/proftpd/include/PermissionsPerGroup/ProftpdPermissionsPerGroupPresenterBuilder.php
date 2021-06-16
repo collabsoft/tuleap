@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -87,7 +87,8 @@ class ProftpdPermissionsPerGroupPresenterBuilder
             $this->permission_manager->getSelectUGroupFor($project, PermissionsManager::PERM_WRITE)
         ]);
 
-        if ($selected_ugroup_id
+        if (
+            $selected_ugroup_id
             && ! in_array($selected_ugroup_id, $readers_ugroups_ids)
         ) {
             return [];
@@ -109,7 +110,8 @@ class ProftpdPermissionsPerGroupPresenterBuilder
             $this->permission_manager->getSelectUGroupFor($project, PermissionsManager::PERM_WRITE)
         ]);
 
-        if ($selected_ugroup_id
+        if (
+            $selected_ugroup_id
             && ! in_array($selected_ugroup_id, $writers_ugroup_id)
         ) {
             return [];

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
@@ -19,94 +19,114 @@
  */
 
 /**
- *  Data Access Object for Plugin 
+ *  Data Access Object for Plugin
  */
-class PluginDao extends DataAccessObject {
+class PluginDao extends DataAccessObject
+{
     /**
     * Gets all tables of the db
     * @return DataAccessResult
     */
-    function searchAll() {
+    public function searchAll()
+    {
         $sql = "SELECT * FROM plugin";
         return $this->retrieve($sql);
     }
-    
+
     /**
-    * Searches Plugin by Id 
+    * Searches Plugin by Id
     * @return DataAccessResult
     */
-    function searchById($id) {
-        $sql = sprintf("SELECT * FROM plugin WHERE id = %s",
-                $this->da->quoteSmart($id));
+    public function searchById($id)
+    {
+        $sql = sprintf(
+            "SELECT * FROM plugin WHERE id = %s",
+            $this->da->quoteSmart($id)
+        );
         return $this->retrieve($sql);
     }
 
     /**
-    * Searches Plugin by Name 
+    * Searches Plugin by Name
     * @return DataAccessResult
     */
-    function searchByName($name) {
-        $sql = sprintf("SELECT * FROM plugin WHERE name = %s",
-                $this->da->quoteSmart($name));
+    public function searchByName($name)
+    {
+        $sql = sprintf(
+            "SELECT * FROM plugin WHERE name = %s",
+            $this->da->quoteSmart($name)
+        );
         return $this->retrieve($sql);
     }
 
     /**
-    * Searches Plugin by Available 
+    * Searches Plugin by Available
     * @return DataAccessResult
     */
-    function searchByAvailable($available) {
-        $sql = sprintf("SELECT * FROM plugin WHERE available = %s ORDER BY id",
-                $this->da->quoteSmart($available));
+    public function searchByAvailable($available)
+    {
+        $sql = sprintf(
+            "SELECT * FROM plugin WHERE available = %s ORDER BY id",
+            $this->da->quoteSmart($available)
+        );
         return $this->retrieve($sql);
     }
 
 
     /**
-    * create a row in the table plugin 
+    * create a row in the table plugin
     * @return true or id(auto_increment) if there is no error
     */
-    function create($name, $available) {
-        $sql = sprintf("INSERT INTO plugin (name, available) VALUES (%s, %s);",
-                $this->da->quoteSmart($name),
-                $this->da->quoteSmart($available));
+    public function create($name, $available)
+    {
+        $sql = sprintf(
+            "INSERT INTO plugin (name, available) VALUES (%s, %s);",
+            $this->da->quoteSmart($name),
+            $this->da->quoteSmart($available)
+        );
         return $this->updateAndGetLastId($sql);
     }
-    
-    function updateAvailableByPluginId($available, $id) {
-        $sql = sprintf("UPDATE plugin SET available = %s WHERE id = %s",
-                $this->da->quoteSmart($available),
-                $this->da->quoteSmart($id));
-        return $this->update($sql);
-    }
-    
-    function removeById($id) {
-        $sql = sprintf("DELETE FROM plugin WHERE id = %s",
-                $this->da->quoteSmart($id));
+
+    public function updateAvailableByPluginId($available, $id)
+    {
+        $sql = sprintf(
+            "UPDATE plugin SET available = %s WHERE id = %s",
+            $this->da->quoteSmart($available),
+            $this->da->quoteSmart($id)
+        );
         return $this->update($sql);
     }
 
-    function restrictProjectPluginUse($pluginId, $restrict) {
+    public function removeById($id)
+    {
+        $sql = sprintf(
+            "DELETE FROM plugin WHERE id = %s",
+            $this->da->quoteSmart($id)
+        );
+        return $this->update($sql);
+    }
+
+    public function restrictProjectPluginUse($pluginId, $restrict)
+    {
         $_usage = ($restrict === true ? 1 : 0);
-        $sql = sprintf('UPDATE plugin'.
-                       ' SET prj_restricted = %d'.
+        $sql    = sprintf(
+            'UPDATE plugin' .
+                       ' SET prj_restricted = %d' .
                        ' WHERE id = %d',
-                       $_usage, $pluginId);
+            $_usage,
+            $pluginId
+        );
         return $this->update($sql);
     }
 
-    function searchProjectPluginRestrictionStatus($pluginId) {
-        $sql = sprintf('SELECT prj_restricted'.
-                       ' FROM plugin'.
+    public function searchProjectPluginRestrictionStatus($pluginId)
+    {
+        $sql = sprintf(
+            'SELECT prj_restricted' .
+                       ' FROM plugin' .
                        ' WHERE id = %d',
-                       $pluginId);
-        return $this->retrieve($sql);
-    }
-    
-    function searchAvailableAndPriorities() {
-        $sql = "SELECT p.*, h.hook AS hook, h.priority AS priority
-                FROM priority_plugin_hook h RIGHT JOIN plugin p ON (h.plugin_id = p.id) 
-                WHERE p.available = 1";
+            $pluginId
+        );
         return $this->retrieve($sql);
     }
 

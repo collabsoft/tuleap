@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS plugin_git_remote_servers (
     gerrit_version VARCHAR(255) NOT NULL DEFAULT '2.5',
     http_password VARCHAR(255),
     replication_password TEXT,
-    auth_type VARCHAR(16) NOT NULL DEFAULT 'Digest',
     PRIMARY KEY (id)
 );
 
@@ -38,7 +37,8 @@ CREATE TABLE IF NOT EXISTS `plugin_git` (
   `remote_server_migration_status` ENUM("QUEUE", "DONE", "ERROR") NULL,
   `ci_token` TEXT NULL,
   PRIMARY KEY  (`repository_id`),
-  KEY `project_id` (`project_id`)
+  INDEX idx_project_repository(project_id, repository_id),
+  INDEX idx_repository_creation_date(repository_creation_date)
 );
 
 CREATE TABLE IF NOT EXISTS `plugin_git_post_receive_mail` (
@@ -69,7 +69,9 @@ CREATE TABLE IF NOT EXISTS `plugin_git_log` (
   `operation_type` varchar(64) NULL,
   `refname_type` varchar(64) NULL,
    INDEX `idx_repository_user`(`repository_id`, `user_id`),
-   INDEX `idx_push_date`(`push_date`));
+   INDEX `idx_push_date`(`push_date`),
+   INDEX idx_repository_date(repository_id, push_date)
+);
 
 CREATE TABLE IF NOT EXISTS `plugin_git_ci` (
 `job_id` INT(11) UNSIGNED NOT NULL,
@@ -105,6 +107,12 @@ VALUES (30, 'git', 'plugin_git:reference_commit_desc_key', '/plugins/git/index.p
 
 INSERT INTO reference_group (reference_id, group_id, is_active)
 SELECT 30, group_id, 1 FROM groups WHERE group_id;
+
+INSERT INTO reference (id, keyword, description, link, scope, service_short_name, nature)
+VALUES (33, 'git_tag', 'plugin_git:reference_tag_desc_key', '/plugins/git/index.php/$group_id/view/$1/?a=tag&h=$2', 'S', 'plugin_git', 'git_tag');
+
+INSERT INTO reference_group (reference_id, group_id, is_active)
+SELECT 33, group_id, 1 FROM groups WHERE group_id;
 
 INSERT INTO permissions_values (permission_type, ugroup_id, is_default)
 VALUES ('PLUGIN_GIT_READ', 2, 1),
@@ -307,3 +315,27 @@ CREATE TABLE IF NOT EXISTS plugin_git_commit_status (
   date INT(11) NOT NULL,
   INDEX idx_repository_commit(repository_id, commit_reference)
 );
+
+CREATE TABLE IF NOT EXISTS plugin_git_big_object_authorized_project (
+  project_id INT(11) UNSIGNED NOT NULL PRIMARY KEY
+);
+
+CREATE TABLE IF NOT EXISTS plugin_git_commit_details_cache (
+    repository_id INT(10) UNSIGNED NOT NULL,
+    commit_sha1 BINARY(20) NOT NULL,
+    title TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    author_email TEXT NOT NULL,
+    author_epoch INT(11) NOT NULL,
+    committer_name TEXT NOT NULL,
+    committer_email TEXT NOT NULL,
+    committer_epoch INT(11) NOT NULL,
+    first_branch TEXT NOT NULL,
+    first_tag TEXT NOT NULL,
+    INDEX idx(repository_id, commit_sha1)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS plugin_git_change_build_status_permissions (
+    repository_id INT(10) UNSIGNED PRIMARY KEY,
+    granted_user_groups_ids TEXT NOT NULL
+) ENGINE=InnoDB;

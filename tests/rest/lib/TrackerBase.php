@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,6 @@
 
 namespace Tuleap\REST;
 
-use REST_TestDataBuilder;
 use RestBase;
 
 class TrackerBase extends RestBase
@@ -28,7 +27,7 @@ class TrackerBase extends RestBase
     protected $report_id;
     protected $report_uri;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 

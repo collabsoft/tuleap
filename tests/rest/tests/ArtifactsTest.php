@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2018. All rights reserved
+ * Copyright (c) Enalean, 2013-Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,45 +18,44 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-require_once dirname(__FILE__).'/../lib/autoload.php';
-
-use Tuleap\REST\ArtifactBase;
+use Guzzle\Http\Message\Response;
+use Test\Rest\Tracker\ArtifactsTestExecutionHelper;
 
 /**
  * @group ArtifactsTest
  */
-class ArtifactsTest extends ArtifactBase  // @codingStandardsIgnoreLine
+class ArtifactsTest extends ArtifactsTestExecutionHelper  // @codingStandardsIgnoreLine
 {
     public function testOptionsArtifactId()
     {
         $response = $this->getResponse($this->client->options('artifacts/9'));
-        $this->assertEquals(array('OPTIONS', 'GET', 'PUT', 'DELETE', 'PATCH'), $response->getHeader('Allow')->normalize()->toArray());
+
+        $this->assertEquals(
+            ['OPTIONS', 'GET', 'PUT', 'DELETE', 'PATCH'],
+            $response->getHeader('Allow')->normalize()->toArray()
+        );
     }
 
     public function testOptionsArtifacts()
     {
         $response = $this->getResponse($this->client->options('artifacts'));
-        $this->assertEquals(array('OPTIONS', 'GET', 'POST'), $response->getHeader('Allow')->normalize()->toArray());
+
+        $this->assertEquals(
+            ['OPTIONS', 'GET', 'POST'],
+            $response->getHeader('Allow')->normalize()->toArray()
+        );
     }
 
     public function testPostArtifact()
     {
         $summary_field_label = 'Summary';
         $summary_field_value = "This is a new epic";
-        $post_resource = json_encode(array(
-            'tracker' => array(
-                'id'  => $this->epic_tracker_id,
-                'uri' => 'whatever'
-            ),
-            'values' => array(
-               $this->getSubmitTextValue($this->epic_tracker_id, $summary_field_label, $summary_field_value),
-               $this->getSubmitListValue($this->epic_tracker_id, 'Status', 103)
-            ),
-        ));
 
-        $response = $this->getResponse($this->client->post('artifacts', null, $post_resource));
+        $post_body = $this->buildPOSTBodyContent($summary_field_label, $summary_field_value);
+
+        $response = $this->getResponse($this->client->post('artifacts', null, $post_body));
         $this->assertEquals(201, $response->getStatusCode());
-        $this->assertRegExp('/.+ GMT$/', $response->getHeader('Last-Modified')->normalize()->__toString(), 'Last-Modified must be RFC1123 complient');
+        $this->assertMatchesRegularExpression('/.+ GMT$/', $response->getHeader('Last-Modified')->normalize()->__toString(), 'Last-Modified must be RFC1123 complient');
         $this->assertNotNull($response->getHeader('Etag'));
         $this->assertNotNull($response->getHeader('Location'));
 
@@ -65,61 +64,63 @@ class ArtifactsTest extends ArtifactBase  // @codingStandardsIgnoreLine
 
         $fetched_value = $this->getFieldValueForFieldLabel($artifact_reference['id'], $summary_field_label);
         $this->assertEquals($summary_field_value, $fetched_value);
+
         return $artifact_reference['id'];
     }
 
+
     public function testComputedFieldsCalculation()
     {
-        $this->testComputedFieldValueForArtifactId(
+        $this->checkComputedFieldValueForArtifactId(
             $this->level_one_artifact_ids[1],
             10,
             25,
             20,
             33
         );
-        $this->testComputedFieldValueForArtifactId(
+        $this->checkComputedFieldValueForArtifactId(
             $this->level_two_artifact_ids[1],
             null,
             25,
             15,
             33
         );
-        $this->testComputedFieldValueForArtifactId(
+        $this->checkComputedFieldValueForArtifactId(
             $this->level_two_artifact_ids[2],
             null,
             null,
             5,
             null
         );
-        $this->testComputedFieldValueForArtifactId(
+        $this->checkComputedFieldValueForArtifactId(
             $this->level_three_artifact_ids[1],
             null,
             null,
             5,
             11
         );
-        $this->testComputedFieldValueForArtifactId(
+        $this->checkComputedFieldValueForArtifactId(
             $this->level_three_artifact_ids[2],
             10,
             10,
             5,
             22
         );
-        $this->testComputedFieldValueForArtifactId(
+        $this->checkComputedFieldValueForArtifactId(
             $this->level_three_artifact_ids[3],
             null,
             null,
             5,
             null
         );
-        $this->testComputedFieldValueForArtifactId(
+        $this->checkComputedFieldValueForArtifactId(
             $this->level_four_artifact_ids[1],
             null,
             15,
             5,
             null
         );
-        $this->testComputedFieldValueForArtifactId(
+        $this->checkComputedFieldValueForArtifactId(
             $this->level_four_artifact_ids[2],
             null,
             10,
@@ -128,12 +129,12 @@ class ArtifactsTest extends ArtifactBase  // @codingStandardsIgnoreLine
         );
     }
 
-    public function testComputedFieldValueForArtifactId(
-        $artifact_id = null,
-        $capacity_slow_compute_value = null,
-        $capacity_fast_compute_value = null,
-        $remaining_effort_value = null,
-        $total_effort_value = null
+    private function checkComputedFieldValueForArtifactId(
+        $artifact_id,
+        $capacity_slow_compute_value,
+        $capacity_fast_compute_value,
+        $remaining_effort_value,
+        $total_effort_value
     ) {
         if ($artifact_id !== null) {
             $response = $this->getResponse($this->client->get("artifacts/$artifact_id"));
@@ -149,9 +150,9 @@ class ArtifactsTest extends ArtifactBase  // @codingStandardsIgnoreLine
                 $value = null;
                 if (isset($field['manual_value'])) {
                     $value = $field['manual_value'];
-                } else if (isset($field[$field['type'].'_value'])) {
-                    $value = $field[$field['type'].'_value'];
-                } else if (isset($field['value'])) {
+                } elseif (isset($field[$field['type'] . '_value'])) {
+                    $value = $field[$field['type'] . '_value'];
+                } elseif (isset($field['value'])) {
                     $value = $field['value'];
                 }
 
@@ -181,46 +182,46 @@ class ArtifactsTest extends ArtifactBase  // @codingStandardsIgnoreLine
         $this->assertNull($response->getHeader('Location'), "There is no redirect with a simple GET");
         $this->assertEquals(200, $response->getStatusCode());
 
-        $expected_burndown_chart = array(
+        $start_date = new DateTime();
+        $start_date->setTimezone(new DateTimeZone('GMT+1'));
+        $start_date->setDate(2016, 11, 17);
+        $start_date->setTime(23, 59, 59);
+
+        $expected_burndown_chart_with_date = [
+            [
+                "date"             => $start_date->format(DATE_ATOM),
+                "remaining_effort" => 55
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 43
+            ],
+            [
+                "date"             => $start_date->modify('+3 day')->format(DATE_ATOM),
+                "remaining_effort" => 48
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 37
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 37
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 37
+            ]
+        ];
+
+        $expected_burndown_chart = [
             55,
             43,
             48,
             37,
             37,
             37
-        );
-
-        $start_date = new DateTime();
-        $start_date->setTimezone(new DateTimeZone('GMT+1'));
-        $start_date->setDate(2016, 11, 17);
-        $start_date->setTime(0, 0, 0);
-
-        $expected_burndown_chart_with_date = array(
-            array(
-                "date"             => $start_date->format(DATE_ATOM),
-                "remaining_effort" => 55
-            ),
-            array(
-                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
-                "remaining_effort" => 43
-            ),
-            array(
-                "date"             => $start_date->modify('+3 day')->format(DATE_ATOM),
-                "remaining_effort" => 48
-            ),
-            array(
-                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
-                "remaining_effort" => 37
-            ),
-            array(
-                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
-                "remaining_effort" => 37
-            ),
-            array(
-                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
-                "remaining_effort" => 37
-            )
-        );
+        ];
 
         $this->assertEquals($burndown['values'][6]['value']['points'], $expected_burndown_chart);
         $this->assertEquals($burndown['values'][6]['value']['points_with_date'], $expected_burndown_chart_with_date);
@@ -228,63 +229,517 @@ class ArtifactsTest extends ArtifactBase  // @codingStandardsIgnoreLine
 
     public function testGETBurndownForAChildrenArtifact()
     {
-        $response     = $this->getResponse(
+        $response = $this->getResponse(
             $this->client->get("artifacts/" . $this->niveau_1_artifact_ids[1])
         );
 
-        $burndown     = $response->json();
+        $burndown = $response->json();
 
         $this->assertNotNull($response->getHeader('Last-Modified'));
         $this->assertNotNull($response->getHeader('Etag'));
         $this->assertNull($response->getHeader('Location'), "There is no redirect with a simple GET");
         $this->assertEquals(200, $response->getStatusCode());
 
-        $expected_burndown_chart = array(
-            32,
-            20,
-            25,
-            20,
-            20,
-            20,
-        );
+        $start_date = new DateTime();
+        $start_date->setTimezone(new DateTimeZone('GMT+1'));
+        $start_date->setDate(2016, 11, 17);
+        $start_date->setTime(23, 59, 59);
 
-        $this->assertEquals($burndown['values'][6]['value']['points'], $expected_burndown_chart);
+        $expected_burndown_chart = [
+            [
+                "date"             => $start_date->format(DATE_ATOM),
+                "remaining_effort" => 32
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 20
+            ],
+            [
+                "date"             => $start_date->modify('+3 day')->format(DATE_ATOM),
+                "remaining_effort" => 25
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 20
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 20
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 20
+            ]
+        ];
+
+        $this->assertEquals($burndown['values'][6]['value']['points_with_date'], $expected_burndown_chart);
     }
 
     public function testGETBurndownForAnotherChildrenArtifact()
     {
-        $response     = $this->getResponse(
+        $response = $this->getResponse(
             $this->client->get("artifacts/" . $this->niveau_2_artifact_ids[2])
         );
 
-        $burndown     = $response->json();
+        $burndown = $response->json();
 
         $this->assertNotNull($response->getHeader('Last-Modified'));
         $this->assertNotNull($response->getHeader('Etag'));
         $this->assertNull($response->getHeader('Location'), "There is no redirect with a simple GET");
         $this->assertEquals(200, $response->getStatusCode());
 
-        $expected_burndown_chart = array(
-            25,
-            20,
-            40,
-            20,
-            20,
-            20,
-        );
+        $start_date = new DateTime();
+        $start_date->setTimezone(new DateTimeZone('GMT+1'));
+        $start_date->setDate(2016, 11, 17);
+        $start_date->setTime(23, 59, 59);
 
-        $this->assertEquals($burndown['values'][6]['value']['points'], $expected_burndown_chart);
+        $expected_burndown_chart = [
+            [
+                "date"             => $start_date->format(DATE_ATOM),
+                "remaining_effort" => 25
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 20
+            ],
+            [
+                "date"             => $start_date->modify('+3 day')->format(DATE_ATOM),
+                "remaining_effort" => 40
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 20
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 20
+            ],
+            [
+                "date"             => $start_date->modify('+1 day')->format(DATE_ATOM),
+                "remaining_effort" => 20
+            ]
+        ];
+
+        $this->assertEquals($burndown['values'][6]['value']['points_with_date'], $expected_burndown_chart);
     }
 
     /**
      * @depends testPostArtifact
      */
-    public function testGetArtifact()
+    public function testGetArtifact($artifact_id)
     {
-        $test_put_return = func_get_args();
-        $artifact_id = $test_put_return[0];
+        $response = $this->getResponse($this->client->get("artifacts/$artifact_id"));
 
-        $response   = $this->getResponse($this->client->get("artifacts/$artifact_id"));
+        $this->assertArtifact($response);
+    }
+
+    /**
+     * @depends testPostArtifact
+     */
+    public function testGetArtifacts(): void
+    {
+        $do_not_exist_artifact_id = 999999999999999999;
+        $existing_artifact_ids    = array_merge($this->level_one_artifact_ids, $this->level_two_artifact_ids);
+        $wanted_artifacts_ids     = $existing_artifact_ids;
+        $wanted_artifacts_ids[]   = $do_not_exist_artifact_id;
+
+        $query = json_encode(['id' => $wanted_artifacts_ids]);
+
+        $response  = $this->getResponse($this->client->get('artifacts?query=' . urlencode($query)));
+        $artifacts = $response->json();
+
+        $this->assertCount(count($existing_artifact_ids), $artifacts['collection']);
+
+        $response_with_read_only_user = $this->getResponse(
+            $this->client->get('artifacts?query=' . urlencode($query)),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+        $artifacts                    = $response_with_read_only_user->json();
+
+        $this->assertCount(count($existing_artifact_ids), $artifacts['collection']);
+        $tracker_ids = [];
+        foreach ($artifacts['collection'] as $artifact) {
+            $artifact_tracker_id = $artifact['tracker']['id'];
+            if (! in_array($artifact_tracker_id, $tracker_ids, true)) {
+                $tracker_ids[] = $artifact_tracker_id;
+            }
+        }
+        $this->assertCount(2, $tracker_ids);
+    }
+
+    public function testGetTooManyArtifacts()
+    {
+        $too_many_artifacts_id = array_keys(array_fill(0, 200, 1));
+        $query                 = json_encode(['id' => $too_many_artifacts_id]);
+
+        $response = $this->getResponse($this->client->get('artifacts?query=' . urlencode($query)));
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    /**
+     * @depends testPostArtifact
+     */
+    public function testPutArtifactIdWithUserRESTReadOnlyAdminNonMember($artifact_id)
+    {
+        $field_label =  'Summary';
+        $put_body    = $this->buildPUTBodyContent($artifact_id, $field_label);
+
+        $response = $this->getResponseForReadOnlyUserAdmin(
+            $this->client->put('artifacts/' . $artifact_id, null, $put_body)
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    /**
+     * @depends testPostArtifact
+     */
+    public function testPutArtifactId($artifact_id)
+    {
+        $field_label =  'Summary';
+        $put_body    = $this->buildPUTBodyContent($artifact_id, $field_label);
+        $response    = $this->getResponse($this->client->put('artifacts/' . $artifact_id, null, $put_body));
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertNotNull($response->getHeader('Last-Modified'));
+        $this->assertNotNull($response->getHeader('Etag'));
+
+        $this->assertEquals("wunderbar", $this->getFieldValueForFieldLabel($artifact_id, $field_label));
+        return $artifact_id;
+    }
+    /**
+     * @depends testPostArtifact
+     */
+    public function testPutArtifactIdTextField($artifact_id)
+    {
+        $field_label =  'Required Text';
+        $put_body    = $this->buildPUTTextBodyContent($artifact_id, $field_label);
+        $response    = $this->getResponse($this->client->put('artifacts/' . $artifact_id, null, $put_body));
+
+        $this->assertEquals(500, $response->getStatusCode());
+        return $artifact_id;
+    }
+
+    private function buildPUTTextBodyContent($artifact_id, $field_label)
+    {
+        $field_id = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
+
+        return json_encode([
+            'values' => [
+                [
+                    'field_id' => $field_id,
+                    'value'    => ["format" => "html", "content" => ""],
+                ],
+            ],
+        ]);
+    }
+
+    private function buildPUTBodyContent($artifact_id, $field_label)
+    {
+        $field_id = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
+
+        return json_encode([
+            'values' => [
+                [
+                    'field_id' => $field_id,
+                    'value'    => "wunderbar",
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * @depends testPutArtifactId
+     */
+    public function testPutIsIdempotent($artifact_id)
+    {
+        $artifact      = $this->getResponse($this->client->get('artifacts/' . $artifact_id));
+        $last_modified = $artifact->getHeader('Last-Modified')->normalize()->__toString();
+        $etag          = $artifact->getHeader('Etag')->normalize()->__toString();
+
+        $field_label  =  'Summary';
+        $field_id     = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
+        $put_resource = json_encode([
+            'values' => [
+                [
+                    'field_id' => $field_id,
+                    'value'    => "wunderbar",
+                ],
+            ],
+        ]);
+
+        $response = $this->getResponse($this->client->put('artifacts/' . $artifact_id, null, $put_resource));
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertNotNull($response->getHeader('Last-Modified'));
+        $this->assertNotNull($response->getHeader('Etag'));
+
+        $this->assertEquals($response->getHeader('Last-Modified')->normalize()->__toString(), $last_modified);
+        $this->assertEquals($response->getHeader('Etag')->normalize()->__toString(), $etag);
+        $this->assertEquals("wunderbar", $this->getFieldValueForFieldLabel($artifact_id, $field_label));
+        return $artifact_id;
+    }
+
+    /**
+     * @depends testPutIsIdempotent
+     */
+    public function testPutArtifactIdWithValidIfUnmodifiedSinceHeader($artifact_id)
+    {
+        $field_label  =  'Summary';
+        $field_id     = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
+        $put_resource = json_encode([
+            'values' => [
+                [
+                    'field_id' => $field_id,
+                    'value'    => "This should return 200",
+                ],
+            ],
+        ]);
+
+        $request = $this->client->put('artifacts/' . $artifact_id, null, $put_resource);
+
+        $artifact      = $this->getResponse($this->client->get('artifacts/' . $artifact_id));
+        $last_modified = $artifact->getHeader('Last-Modified')->normalize()->__toString();
+        $request->setHeader('If-Unmodified-Since', $last_modified);
+
+        $response = $this->getResponse($request);
+        $this->assertEquals($response->getStatusCode(), 200);
+        $this->assertNotNull($response->getHeader('Last-Modified'));
+        $this->assertNotNull($response->getHeader('Etag'));
+
+        $this->assertEquals("This should return 200", $this->getFieldValueForFieldLabel($artifact_id, $field_label));
+        return $artifact_id;
+    }
+
+    /**
+     * @depends testPutArtifactIdWithValidIfUnmodifiedSinceHeader
+     */
+    public function testPutArtifactIdWithValidIfMatchHeader($artifact_id)
+    {
+        $field_label  =  'Summary';
+        $field_id     = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
+        $put_resource = json_encode([
+            'values' => [
+                [
+                    'field_id' => $field_id,
+                    'value'    => "varm choklade",
+                ],
+            ],
+        ]);
+
+        $request = $this->client->put('artifacts/' . $artifact_id, null, $put_resource);
+
+        $artifact = $this->getResponse($this->client->get('artifacts/' . $artifact_id));
+        $Etag     = $artifact->getHeader('Etag')->normalize()->__toString();
+        $request->setHeader('If-Match', $Etag);
+
+        $response = $this->getResponse($request);
+        $this->assertEquals($response->getStatusCode(), 200);
+        $this->assertNotNull($response->getHeader('Last-Modified'));
+        $this->assertNotNull($response->getHeader('Etag'));
+
+        $this->assertEquals("varm choklade", $this->getFieldValueForFieldLabel($artifact_id, $field_label));
+        return $artifact_id;
+    }
+
+    /**
+     * @depends testPutArtifactIdWithValidIfMatchHeader
+     */
+    public function testPutArtifactIdWithInvalidIfUnmodifiedSinceHeader($artifact_id)
+    {
+        $field_label  =  'Summary';
+        $field_id     = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
+        $put_resource = json_encode([
+            'values' => [
+                [
+                    'field_id' => $field_id,
+                    'value'    => "This should return 412",
+                ],
+            ],
+        ]);
+
+        $last_modified = "2001-03-05T15:14:55+01:00";
+        $request       = $this->client->put('artifacts/' . $artifact_id, null, $put_resource);
+        $request->setHeader('If-Unmodified-Since', $last_modified);
+
+        try {
+            $this->getResponse($request);
+        } catch (Exception $e) {
+            $this->assertEquals($e->getResponse()->getStatusCode(), 412);
+        }
+    }
+
+    /**
+     * @depends testPutArtifactIdWithValidIfMatchHeader
+     */
+    public function testPutArtifactIdWithInvalidIfMatchHeader($artifact_id)
+    {
+        $field_label  =  'Summary';
+        $field_id     = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
+        $put_resource = json_encode([
+            'values' => [
+                [
+                    'field_id' => $field_id,
+                    'value'    => "This should return 4122415",
+                ],
+            ],
+        ]);
+
+        $Etag    = "one empty bottle";
+        $request = $this->client->put('artifacts/' . $artifact_id, null, $put_resource);
+        $request->setHeader('If-Match', $Etag);
+
+        try {
+            $this->getResponse($request);
+        } catch (Exception $e) {
+            $this->assertEquals($e->getResponse()->getStatusCode(), 412);
+        }
+    }
+
+    /**
+     * @depends testPutArtifactId
+     */
+    public function testPutArtifactComment($artifact_id)
+    {
+        $put_resource = json_encode([
+            'values' => [],
+            'comment' => [
+                'format' => 'text',
+                'body'   => 'Please see my comment',
+            ],
+        ]);
+
+        $response = $this->getResponse($this->client->put('artifacts/' . $artifact_id, null, $put_resource));
+        $this->assertEquals($response->getStatusCode(), 200);
+        $this->assertNotNull($response->getHeader('Last-Modified'));
+        $this->assertNotNull($response->getHeader('Etag'));
+
+        $response   = $this->getResponse($this->client->get("artifacts/$artifact_id/changesets"));
+        $changesets = $response->json();
+        $this->assertEquals(5, count($changesets));
+        $this->assertEquals('Please see my comment', $changesets[4]['last_comment']['body']);
+
+        return $artifact_id;
+    }
+
+    public function testPutArtifactWithNatures()
+    {
+        $nature_is_child = '_is_child';
+        $nature_empty    = '';
+        $artifact_id     = $this->level_one_artifact_ids[1];
+        $field_label     = 'artlink';
+        $field_id        = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
+        $put_resource    = json_encode(
+            [
+                'values' => [
+                    [
+                        'field_id' => $field_id,
+                        "links"    => [
+                            ["id" => $this->level_three_artifact_ids[1], "type" => $nature_is_child],
+                            ["id" => $this->level_three_artifact_ids[3], "type" => $nature_empty],
+                        ]
+                    ],
+                ],
+            ]
+        );
+
+        $response = $this->getResponse($this->client->put('artifacts/' . $artifact_id, null, $put_resource));
+        $this->assertEquals($response->getStatusCode(), 200);
+        $this->assertNotNull($response->getHeader('Last-Modified'));
+        $this->assertNotNull($response->getHeader('Etag'));
+
+        $response = $this->getResponse($this->client->get("artifacts/$artifact_id/links"));
+        $this->assertLinks($response, $nature_is_child, $artifact_id, $nature_empty);
+
+        return $artifact_id;
+    }
+
+    public function testAnonymousGETArtifact()
+    {
+        $response = $this->client->get('artifacts/' . $this->story_artifact_ids[1])->send();
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testGetSuspendedProjectArtifactForSiteAdmin()
+    {
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->get('artifacts/' . $this->suspended_tracker_artifacts_ids[1])
+        );
+
+        $this->assertEquals($response->getStatusCode(), 200);
+    }
+
+    public function testGetSuspendedProjectArtifactForRegularUser()
+    {
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->get('artifacts/' . $this->suspended_tracker_artifacts_ids[1])
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testPUTSuspendedProjectArtifactForSiteAdmin()
+    {
+        $target_artifact_id = $this->suspended_tracker_artifacts_ids[1];
+
+        $this->expectExceptionCode(403);
+
+        $put_resource = json_encode(
+            [
+                'values' => [
+                    [
+                        'field_id' => $this->getFieldByFieldLabel($target_artifact_id, 'name'),
+                        'value'    => "Yolo"
+                    ],
+                ],
+            ]
+        );
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->put(
+                'artifacts/' . $target_artifact_id,
+                null,
+                $put_resource
+            )
+        );
+        $this->assertEquals(400, $response->getStatusCode());
+    }
+
+    public function testPUTSuspendedProjectArtifactForRegularUser()
+    {
+        $target_artifact_id = $this->suspended_tracker_artifacts_ids[1];
+
+        $this->expectExceptionCode(403);
+
+        $put_resource = json_encode(
+            [
+                'values' => [
+                    [
+                        'field_id' => $this->getFieldByFieldLabel($target_artifact_id, 'name'),
+                        'value'    => "Yolo"
+                    ],
+                ],
+            ]
+        );
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->put(
+                'artifacts/' . $target_artifact_id,
+                null,
+                $put_resource
+            )
+        );
+        $this->assertEquals(400, $response->getStatusCode());
+    }
+    /**
+     * @param $response
+     * @throws Exception
+     */
+    private function assertArtifact(Response $response): void
+    {
         $artifact = $response->json();
 
         $this->assertNotNull($response->getHeader('Last-Modified'));
@@ -329,7 +784,7 @@ class ArtifactsTest extends ArtifactBase  // @codingStandardsIgnoreLine
                     $this->assertTrue(is_string($field['label']));
                     $this->assertTrue(is_string($field['value']));
                     $this->assertTrue(is_string($field['format']));
-                    $this->assertTrue($field['format'] == 'text'|| $field['format'] == 'html');
+                    $this->assertTrue($field['format'] == 'text' || $field['format'] == 'html');
                     break;
                 case 'sb':
                     $this->assertTrue(is_string($field['label']));
@@ -360,381 +815,8 @@ class ArtifactsTest extends ArtifactBase  // @codingStandardsIgnoreLine
                     $this->assertTrue(DateTime::createFromFormat('Y-m-d\TH:i:sT', $field['value']) !== false);
                     break;
                 default:
-                    throw new Exception('You need to update this test for the field: '.print_r($field, true));
+                    throw new Exception('You need to update this test for the field: ' . print_r($field, true));
             }
         }
-    }
-
-    /**
-     * @depends testPostArtifact
-     */
-    public function testGetArtifacts()
-    {
-        $do_not_exist_artifact_id = 999999999999999999;
-        $existing_artifact_ids    = array_merge($this->level_one_artifact_ids, $this->level_two_artifact_ids);
-        $wanted_artifacts_ids     = $existing_artifact_ids;
-        $wanted_artifacts_ids[]   = $do_not_exist_artifact_id;
-
-        $query     = json_encode(array('id' => $wanted_artifacts_ids));
-        $response  = $this->getResponse($this->client->get('artifacts?query=' . urlencode($query)));
-        $artifacts = $response->json();
-
-        $this->assertCount(count($existing_artifact_ids), $artifacts['collection']);
-    }
-
-    public function testGetTooManyArtifacts()
-    {
-        $too_many_artifacts_id = array_fill(0, 10000, 1);
-        $query                 = json_encode(array('id' => $too_many_artifacts_id));
-
-        $this->setExpectedException('Guzzle\Http\Exception\ClientErrorResponseException');
-        $response = $this->getResponse($this->client->get('artifacts?query=' . urlencode($query)));
-        $this->assertEquals($response->getStatusCode(), 403);
-    }
-
-
-    /**
-     * @depends testPostArtifact
-     */
-    public function testPutArtifactId()
-    {
-        $test_post_return = func_get_args();
-        $artifact_id = $test_post_return[0];
-        $field_label =  'Summary';
-        $field_id = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
-        $put_resource = json_encode(array(
-            'values' => array(
-                array(
-                    'field_id' => $field_id,
-                    'value'    => "wunderbar",
-                ),
-            ),
-        ));
-
-        $response    = $this->getResponse($this->client->put('artifacts/'.$artifact_id, null, $put_resource));
-        $this->assertEquals($response->getStatusCode(), 200);
-        $this->assertNotNull($response->getHeader('Last-Modified'));
-        $this->assertNotNull($response->getHeader('Etag'));
-
-        $this->assertEquals("wunderbar", $this->getFieldValueForFieldLabel($artifact_id, $field_label));
-        return $artifact_id;
-    }
-
-    /**
-     * @depends testPutArtifactId
-     */
-    public function testPutIsIdempotent()
-    {
-        $test_post_return = func_get_args();
-        $artifact_id = $test_post_return[0];
-
-        $artifact      = $this->getResponse($this->client->get('artifacts/'.$artifact_id));
-        $last_modified = $artifact->getHeader('Last-Modified')->normalize()->__toString();
-        $etag          = $artifact->getHeader('Etag')->normalize()->__toString();
-
-        $field_label =  'Summary';
-        $field_id = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
-        $put_resource = json_encode(array(
-            'values' => array(
-                array(
-                    'field_id' => $field_id,
-                    'value'    => "wunderbar",
-                ),
-            ),
-        ));
-
-        $response    = $this->getResponse($this->client->put('artifacts/'.$artifact_id, null, $put_resource));
-        $this->assertEquals($response->getStatusCode(), 200);
-        $this->assertNotNull($response->getHeader('Last-Modified'));
-        $this->assertNotNull($response->getHeader('Etag'));
-
-        $this->assertEquals($response->getHeader('Last-Modified')->normalize()->__toString(), $last_modified);
-        $this->assertEquals($response->getHeader('Etag')->normalize()->__toString(), $etag);
-        $this->assertEquals("wunderbar", $this->getFieldValueForFieldLabel($artifact_id, $field_label));
-        return $artifact_id;
-    }
-
-    /**
-     * @depends testPutIsIdempotent
-     */
-    public function testPutArtifactIdWithValidIfUnmodifiedSinceHeader()
-    {
-        $test_post_return = func_get_args();
-        $artifact_id = $test_post_return[0];
-
-        $field_label =  'Summary';
-        $field_id = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
-        $put_resource = json_encode(array(
-            'values' => array(
-                array(
-                    'field_id' => $field_id,
-                    'value'    => "This should return 200",
-                ),
-            ),
-        ));
-
-        $request = $this->client->put('artifacts/'.$artifact_id, null, $put_resource);
-
-        $artifact      = $this->getResponse($this->client->get('artifacts/'.$artifact_id));
-        $last_modified = $artifact->getHeader('Last-Modified')->normalize()->__toString();
-        $request->setHeader('If-Unmodified-Since', $last_modified);
-
-        $response = $this->getResponse($request);
-        $this->assertEquals($response->getStatusCode(), 200);
-        $this->assertNotNull($response->getHeader('Last-Modified'));
-        $this->assertNotNull($response->getHeader('Etag'));
-
-        $this->assertEquals("This should return 200", $this->getFieldValueForFieldLabel($artifact_id, $field_label));
-        return $artifact_id;
-    }
-
-    /**
-     * @depends testPutArtifactIdWithValidIfUnmodifiedSinceHeader
-     */
-    public function testPutArtifactIdWithValidIfMatchHeader()
-    {
-        $test_post_return = func_get_args();
-        $artifact_id = $test_post_return[0];
-
-        $field_label =  'Summary';
-        $field_id = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
-        $put_resource = json_encode(array(
-            'values' => array(
-                array(
-                    'field_id' => $field_id,
-                    'value'    => "varm choklade",
-                ),
-            ),
-        ));
-
-        $request = $this->client->put('artifacts/'.$artifact_id, null, $put_resource);
-
-        $artifact      = $this->getResponse($this->client->get('artifacts/'.$artifact_id));
-        $Etag = $artifact->getHeader('Etag')->normalize()->__toString();
-        $request->setHeader('If-Match', $Etag);
-
-        $response = $this->getResponse($request);
-        $this->assertEquals($response->getStatusCode(), 200);
-        $this->assertNotNull($response->getHeader('Last-Modified'));
-        $this->assertNotNull($response->getHeader('Etag'));
-
-        $this->assertEquals("varm choklade", $this->getFieldValueForFieldLabel($artifact_id, $field_label));
-        return $artifact_id;
-    }
-
-    /**
-     * @depends testPutArtifactIdWithValidIfMatchHeader
-     */
-    public function testPutArtifactIdWithInvalidIfUnmodifiedSinceHeader()
-    {
-        $test_post_return = func_get_args();
-        $artifact_id = $test_post_return[0];
-
-        $field_label =  'Summary';
-        $field_id = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
-        $put_resource = json_encode(array(
-            'values' => array(
-                array(
-                    'field_id' => $field_id,
-                    'value'    => "This should return 412",
-                ),
-            ),
-        ));
-
-        $last_modified = "2001-03-05T15:14:55+01:00";
-        $request       = $this->client->put('artifacts/'.$artifact_id, null, $put_resource);
-        $request->setHeader('If-Unmodified-Since', $last_modified);
-
-        try {
-            $this->getResponse($request);
-        } catch (Exception $e) {
-            $this->assertEquals($e->getResponse()->getStatusCode(), 412);
-        }
-    }
-
-    /**
-     * @depends testPutArtifactIdWithValidIfMatchHeader
-     */
-    public function testPutArtifactIdWithInvalidIfMatchHeader()
-    {
-        $test_post_return = func_get_args();
-        $artifact_id = $test_post_return[0];
-
-        $field_label =  'Summary';
-        $field_id = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
-        $put_resource = json_encode(array(
-            'values' => array(
-                array(
-                    'field_id' => $field_id,
-                    'value'    => "This should return 4122415",
-                ),
-            ),
-        ));
-
-        $Etag    = "one empty bottle";
-        $request = $this->client->put('artifacts/'.$artifact_id, null, $put_resource);
-        $request->setHeader('If-Match', $Etag);
-
-        try {
-            $this->getResponse($request);
-        } catch (Exception $e) {
-            $this->assertEquals($e->getResponse()->getStatusCode(), 412);
-        }
-    }
-
-    /**
-     * @depends testPutArtifactId
-     */
-    public function testPutArtifactComment()
-    {
-        $test_post_return = func_get_args();
-        $artifact_id = $test_post_return[0];
-
-        $put_resource = json_encode(array(
-            'values' => array(),
-            'comment' => array(
-                'format' => 'text',
-                'body'   => 'Please see my comment',
-            ),
-        ));
-
-        $response    = $this->getResponse($this->client->put('artifacts/'.$artifact_id, null, $put_resource));
-        $this->assertEquals($response->getStatusCode(), 200);
-        $this->assertNotNull($response->getHeader('Last-Modified'));
-        $this->assertNotNull($response->getHeader('Etag'));
-
-        $response   = $this->getResponse($this->client->get("artifacts/$artifact_id/changesets"));
-        $changesets = $response->json();
-        $this->assertEquals(5, count($changesets));
-        $this->assertEquals('Please see my comment', $changesets[4]['last_comment']['body']);
-
-        return $artifact_id;
-    }
-
-    public function testPutArtifactWithNatures()
-    {
-        $nature_is_child = '_is_child';
-        $nature_empty    = '';
-        $artifact_id     = $this->level_one_artifact_ids[1];
-        $field_label     = 'artlink';
-        $field_id        = $this->getFieldIdForFieldLabel($artifact_id, $field_label);
-        $put_resource    = json_encode(
-            array(
-                'values' => array(
-                    array(
-                        'field_id' => $field_id,
-                        "links"    => array(
-                            array("id" => $this->level_three_artifact_ids[1], "type" => $nature_is_child),
-                            array("id" => $this->level_three_artifact_ids[3], "type" => $nature_empty),
-                        )
-                    ),
-                ),
-            )
-        );
-
-        $response = $this->getResponse($this->client->put('artifacts/' . $artifact_id, null, $put_resource));
-        $this->assertEquals($response->getStatusCode(), 200);
-        $this->assertNotNull($response->getHeader('Last-Modified'));
-        $this->assertNotNull($response->getHeader('Etag'));
-
-        $response = $this->getResponse($this->client->get("artifacts/$artifact_id/links"));
-        $links    = $response->json();
-
-        $expected_link = array(
-            "natures" => array(
-                array(
-                    "shortname" => $nature_is_child,
-                    "direction" => 'forward',
-                    "label"     => "Child",
-                    "uri"       => "artifacts/$artifact_id/linked_artifacts?nature=$nature_is_child&direction=forward"
-                ),
-                array(
-                    "shortname" => $nature_empty,
-                    "direction" => 'forward',
-                    "label"     => '',
-                    "uri"       => "artifacts/$artifact_id/linked_artifacts?nature=$nature_empty&direction=forward"
-                )
-            )
-        );
-
-        $this->assertEquals($expected_link, $links);
-
-        return $artifact_id;
-    }
-
-    public function testAnonymousGETArtifact()
-    {
-        try {
-            $this->client->get('artifacts/'.$this->story_artifact_ids[1])->send();
-        } catch (Exception $e) {
-            $this->assertEquals($e->getResponse()->getStatusCode(), 403);
-        }
-    }
-
-    private function getFieldIdForFieldLabel($artifact_id, $field_label)
-    {
-        $value = $this->getFieldByFieldLabel($artifact_id, $field_label);
-        return $value['field_id'];
-    }
-
-    private function getFieldValueForFieldLabel($artifact_id, $field_label)
-    {
-        $value = $this->getFieldByFieldLabel($artifact_id, $field_label);
-        return $value['value'];
-    }
-
-    private function getFieldByFieldLabel($artifact_id, $field_label)
-    {
-        $artifact = $this->getArtifact($artifact_id);
-        foreach ($artifact['values'] as $value) {
-            if ($value['label'] == $field_label) {
-                return $value;
-            }
-        }
-    }
-
-    private function getArtifact($artifact_id)
-    {
-        $response = $this->getResponse($this->client->get('artifacts/'.$artifact_id));
-        $this->assertNotNull($response->getHeader('Last-Modified'));
-        $this->assertNotNull($response->getHeader('Etag'));
-
-        return $response->json();
-    }
-
-    private function getSubmitTextValue($tracker_id, $field_label, $field_value)
-    {
-        $field_def = $this->getFieldDefByFieldLabel($tracker_id, $field_label);
-        return array(
-            'field_id' => $field_def['field_id'],
-            'value'    => $field_value,
-        );
-    }
-
-    private function getSubmitListValue($tracker_id, $field_label, $field_value)
-    {
-        $field_def = $this->getFieldDefByFieldLabel($tracker_id, $field_label);
-        return array(
-            'field_id'       => $field_def['field_id'],
-            'bind_value_ids' => array(
-                $field_value
-            ),
-        );
-    }
-
-    private function getFieldDefByFieldLabel($tracker_id, $field_label)
-    {
-        $tracker = $this->getTracker($tracker_id);
-        foreach ($tracker['fields'] as $field) {
-            if ($field['label'] == $field_label) {
-                return $field;
-            }
-        }
-    }
-
-    private function getTracker($tracker_id)
-    {
-        $response = $this->getResponse($this->client->get('trackers/'.$tracker_id));
-        return $response->json();
     }
 }

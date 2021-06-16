@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,9 +19,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class TrackerFromXmlImportCannotBeCreatedException extends TrackerFromXmlException {
-    public function __construct($tracker_name) {
-        $message = $GLOBALS['Language']->getText('plugin_tracker_import', 'cannot_create', array($tracker_name));
+class TrackerFromXmlImportCannotBeCreatedException extends TrackerFromXmlException
+{
+    public function __construct($tracker_name)
+    {
+        $message = sprintf(dgettext('tuleap-tracker', 'The tracker \'%1$s\' cannot be created. Use \'--update\' to update an existing tracker.'), $tracker_name);
         parent::__construct($message);
     }
 }

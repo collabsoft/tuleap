@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,8 +22,7 @@ namespace Tuleap\Velocity\Semantic;
 
 use CSRFSynchronizerToken;
 use Tracker;
-use Tracker_FormElementFactory;
-use Tuleap\AgileDashboard\Semantic\SemanticDone;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDone;
 
 class SemanticVelocityAdminPresenterBuilder
 {
@@ -57,7 +56,7 @@ class SemanticVelocityAdminPresenterBuilder
         array $possible_fields,
         $semantic_velocity_field_id
     ) {
-        $backlog_trackers = $this->backlog_retriever->getBacklogTrackers($tracker);
+        $backlog_trackers                     = $this->backlog_retriever->getBacklogTrackers($tracker);
         $backlog_required_trackers_collection = $this->missing_requirement_retriever->buildCollectionFromBacklogTrackers(
             $backlog_trackers
         );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ use Tuleap\Tracker\Report\Query\Advanced\Grammar\VisitorParameters;
 class SizeValidatorParameters implements VisitorParameters
 {
     /**
-     * @var integer
+     * @var int
      */
     private $size;
 
@@ -34,7 +34,7 @@ class SizeValidatorParameters implements VisitorParameters
     }
 
     /**
-     * @return integer
+     * @return int
      */
     public function getSize()
     {

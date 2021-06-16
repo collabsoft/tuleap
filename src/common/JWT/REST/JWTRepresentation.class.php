@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,15 +19,17 @@
 
 namespace Tuleap\JWT\REST;
 
-class JWTRepresentation {
-    const ROUTE = 'jwt';
+class JWTRepresentation
+{
+    public const ROUTE = 'jwt';
 
     /**
      * @var string
      */
     public $token;
 
-    public function build($token) {
-        $this->token   = $token;
+    public function build($token)
+    {
+        $this->token = $token;
     }
 }

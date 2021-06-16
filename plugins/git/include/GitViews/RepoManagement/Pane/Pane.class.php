@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -39,6 +39,10 @@ abstract class Pane
      * @var Codendi_Request
      */
     protected $request;
+    /**
+     * @var Codendi_HTMLPurifier
+     */
+    protected $hp;
 
     public function __construct(GitRepository $repository, Codendi_Request $request)
     {
@@ -74,4 +78,18 @@ abstract class Pane
      * @return string eg: '<form>...</form>'
      */
     abstract public function getContent();
+
+    public function csrf_token(): \CSRFSynchronizerToken
+    {
+        return new \CSRFSynchronizerToken(
+            '/plugins/git/?' . http_build_query(
+                [
+                    'action'   => 'repo_management',
+                    'group_id' => $this->repository->getProjectId(),
+                    'repo_id'  => $this->repository->getId(),
+                    'pane'     => $this->getIdentifier(),
+                ]
+            )
+        );
+    }
 }

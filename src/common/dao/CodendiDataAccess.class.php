@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  * Copyright (c) Xerox, 2009. All Rights Reserved.
  *
  * Originally written by Nicolas Terray, 2005. Xerox Codendi Team.
@@ -25,25 +25,12 @@ use Tuleap\DB\Compat\Legacy2018\CompatPDODataAccess;
 use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessInterface;
 use Tuleap\DB\DBFactory;
 
-class CodendiDataAccess extends DataAccess {
-    
-    public function __construct() {
-      $conn_opt = 0;
-      if(isset($GLOBALS['sys_enablessl']) && $GLOBALS['sys_enablessl']) {
-          $conn_opt = MYSQL_CLIENT_SSL;
-      }
-
-      $credentials = new DataAccessCredentials(
-        $GLOBALS['sys_dbhost'],
-        $GLOBALS['sys_dbuser'],
-        $GLOBALS['sys_dbpasswd'],
-        $GLOBALS['sys_dbname']
-      );
-
-      parent::__construct($credentials, $conn_opt);
-    }
-    
-    protected static $_instance;
+/**
+ * @deprecated
+ */
+class CodendiDataAccess
+{
+    private static $_instance;
 
     /**
      * @return LegacyDataAccessInterface
@@ -51,11 +38,7 @@ class CodendiDataAccess extends DataAccess {
     public static function instance()
     {
         if (self::$_instance === null) {
-            if (! ForgeConfig::get('fallback_to_deprecated_mysql_api')) {
-                self::$_instance = new CompatPDODataAccess(DBFactory::getMainTuleapDB());
-            } else {
-                self::$_instance = self::getDataAccessUsingOriginalMySQLDriverInstance();
-            }
+            self::$_instance = new CompatPDODataAccess(DBFactory::getMainTuleapDBConnection());
         }
         return self::$_instance;
     }
@@ -67,19 +50,18 @@ class CodendiDataAccess extends DataAccess {
     {
         static $data_access_mysql_instance = null;
         if ($data_access_mysql_instance === null) {
-            $data_access_mysql_instance = new CodendiDataAccess();
+            $data_access_mysql_instance = new self();
         }
         return $data_access_mysql_instance;
     }
 
-    /**
-     * @param LegacyDataAccessInterface $instance
-     */
-    public static function setInstance(LegacyDataAccessInterface $instance) {
+    public static function setInstance(LegacyDataAccessInterface $instance)
+    {
         self::$_instance = $instance;
     }
 
-    public static function clearInstance() {
+    public static function clearInstance()
+    {
         self::$_instance = null;
     }
 }

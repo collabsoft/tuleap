@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,6 +20,7 @@
 
 namespace Tuleap\Timetracking\Time;
 
+use ParagonIE\EasyDB\EasyStatement;
 use Tuleap\DB\DataAccessObject;
 
 class TimeDao extends DataAccessObject
@@ -87,11 +88,16 @@ class TimeDao extends DataAccessObject
                 FROM plugin_timetracking_times AS times
                     INNER JOIN tracker_artifact AS artifacts
                         ON times.artifact_id = artifacts.id
-                    INNER JOIN plugin_timetracking_enabled_trackers AS trackers
-                        ON trackers.tracker_id = artifacts.tracker_id
+                    INNER JOIN plugin_timetracking_enabled_trackers AS timetracking_trackers
+                        ON timetracking_trackers.tracker_id = artifacts.tracker_id
+                    INNER JOIN tracker AS tracker
+                        ON tracker.id = timetracking_trackers.tracker_id
+                    INNER JOIN groups AS projects
+                        ON tracker.group_id = projects.group_id
                 WHERE user_id = ?
                 AND   day BETWEEN CAST(? AS DATE)
                             AND   CAST(? AS DATE)
+                AND projects.status = "A"
                 GROUP BY times.artifact_id
                 ORDER BY times.id
                 LIMIT ?, ?
@@ -110,5 +116,27 @@ class TimeDao extends DataAccessObject
                 LIMIT 1';
 
         return $this->getDB()->row($sql, $user_id, $artifact_id);
+    }
+
+    public function getTotalTimeByTracker(array $tracker_ids, string $start_date, string $end_date, string $display_name_sql, int $limit, int $offset)
+    {
+        $trackers_list = EasyStatement::open();
+        $trackers_list->in('artifact.tracker_id IN(?*)', $tracker_ids);
+
+        $sql = "SELECT tracker.id as tracker_id, times.user_id, $display_name_sql, SUM(times.minutes) as minutes
+                FROM plugin_timetracking_times as times
+                INNER JOIN tracker_artifact as artifact
+                          ON artifact.id = times.artifact_id
+                INNER JOIN tracker as tracker
+                          ON tracker.id = artifact.tracker_id
+                INNER JOIN user as user
+                          ON user.user_id = times.user_id
+                WHERE $trackers_list
+                 AND  times.day BETWEEN CAST(? AS DATE)
+                             AND   CAST(? AS DATE)
+                             GROUP BY tracker.id, times.user_id
+                             LIMIT ?, ?";
+        return $this->getDB()
+                    ->safeQuery($sql, array_merge($trackers_list->values(), [$start_date, $end_date, $offset, $limit]));
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,18 +18,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\TextualReport;
 
-use ForgeConfig;
-use PDOStatement;
 use PFUser;
 use ThemeVariant;
 use ThemeVariantColor;
+use Tuleap\Layout\CssAssetWithDensityVariants;
+use Tuleap\Layout\CssAssetWithoutVariantDeclinaisons;
 use Tuleap\Layout\IncludeAssets;
+use Tuleap\Layout\ThemeVariation;
 
 class SinglePagePresenterBuilder
 {
-    const HARD_LIMIT = 1000;
+    public const HARD_LIMIT = 1000;
 
     /**
      * @var ArtifactsPresentersBuilder
@@ -43,7 +46,6 @@ class SinglePagePresenterBuilder
 
     /**
      * @param array  $ordered_artifact_rows
-     * @param PFUser $current_user
      * @param string $server_url
      *
      * @return array
@@ -73,29 +75,27 @@ class SinglePagePresenterBuilder
         ];
     }
 
-    /**
-     * @param PFUser $current_user
-     *
-     * @return bool|string
-     */
-    private function getStylesheetsToEmbed(PFUser $current_user)
+    private function getStylesheetsToEmbed(PFUser $current_user): string
     {
-        $theme_variant = new ThemeVariant();
-        $color         = ThemeVariantColor::buildFromVariant($theme_variant->getVariantForUser($current_user));
+        $theme_variant   = new ThemeVariant();
+        $color           = ThemeVariantColor::buildFromVariant($theme_variant->getVariantForUser($current_user));
+        $theme_variation = new ThemeVariation($color, $current_user);
 
-        $core_burning_parrot_include_assets = new IncludeAssets(
-            ForgeConfig::get('tuleap_dir') . '/src/www/themes/BurningParrot/assets',
-            '/themes/BurningParrot/assets'
+        $assets = new IncludeAssets(
+            __DIR__ . '/../../../../src/www/assets/core',
+            __DIR__ . '/../../../../src/www/assets/core'
         );
 
-        $stylesheets = file_get_contents(
-            ForgeConfig::get('sys_urlroot') . '/themes/common/tlp/dist/tlp-' . $color->getName() . '.min.css'
-        );
-        $stylesheets .= file_get_contents(
-            ForgeConfig::get('sys_urlroot') . $core_burning_parrot_include_assets->getFileURL(
-                'burning-parrot-' . $color->getName() . '.css'
-            )
-        );
+        $css_assets = [
+            new CssAssetWithDensityVariants($assets, 'tlp-vars'),
+            new CssAssetWithoutVariantDeclinaisons($assets, 'tlp'),
+            new CssAssetWithoutVariantDeclinaisons($assets, 'BurningParrot/burning-parrot'),
+        ];
+
+        $stylesheets = '';
+        foreach ($css_assets as $css_asset) {
+            $stylesheets .= file_get_contents($css_asset->getFileURL($theme_variation));
+        }
 
         return $stylesheets;
     }

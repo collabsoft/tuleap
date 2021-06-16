@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,10 @@
 
 namespace Tuleap\ReferenceAliasSVN;
 
-use Logger;
+use Psr\Log\LoggerInterface;
 use Project;
 use SimpleXMLElement;
-use Tuleap\Svn\Repository\Repository;
+use Tuleap\SVN\Repository\Repository;
 use Tuleap\Project\XML\Import\ImportConfig;
 
 class ReferencesImporter
@@ -31,12 +31,12 @@ class ReferencesImporter
     /** @var Dao */
     private $dao;
 
-    /** @var Logger */
+    /** @var LoggerInterface */
     private $logger;
 
-    const XREF_CMMT  = 'cmmt';
+    public const XREF_CMMT = 'cmmt';
 
-    public function __construct(Dao $dao, Logger $logger)
+    public function __construct(Dao $dao, LoggerInterface $logger)
     {
         $this->dao    = $dao;
         $this->logger = $logger;
@@ -55,19 +55,19 @@ class ReferencesImporter
             $reference_keyword = $this->getReferenceKeyword($source);
 
             if ($reference_keyword !== self::XREF_CMMT) {
-                $this->logger->warn("Cross reference kind '$reference_keyword' for $source not supported");
+                $this->logger->warning("Cross reference kind '$reference_keyword' for $source not supported");
                 continue;
             }
 
             if (! $configuration->isForce('references')) {
-                $row = $this->dao->getRef($source)->getRow();
+                $row = $this->dao->getRef($source);
                 if (! empty($row)) {
-                    $this->logger->warn("The source $source already exists in the database. It will not be imported.");
+                    $this->logger->warning("The source $source already exists in the database. It will not be imported.");
                     continue;
                 }
             }
 
-            $repository_id = $repository->getId();
+            $repository_id = (int) $repository->getId();
 
             if (! $this->dao->insertRef($source, $repository_id, $revision_id)) {
                 $this->logger->error("Could not insert object for $source");
@@ -79,7 +79,7 @@ class ReferencesImporter
 
     private function getReferenceKeyword($reference)
     {
-        $matches = array();
+        $matches = [];
         if (preg_match('/^([a-zA-Z]*)/', $reference, $matches)) {
             return $matches[1];
         } else {

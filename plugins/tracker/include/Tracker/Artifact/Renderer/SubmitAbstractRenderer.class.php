@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,34 +22,40 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-abstract class Tracker_Artifact_SubmitAbstractRenderer extends Tracker_Artifact_ArtifactRenderer {
+abstract class Tracker_Artifact_SubmitAbstractRenderer extends Tracker_Artifact_ArtifactRenderer
+{
 
-    public function __construct(Tracker $tracker, EventManager $event_manager) {
+    public function __construct(Tracker $tracker, EventManager $event_manager)
+    {
         parent::__construct($tracker, $event_manager);
 
-        $this->redirect->query_parameters = array(
-            'tracker'  => $this->tracker->getId(),
+        $this->redirect->query_parameters = [
+            'tracker'  => (string) $this->tracker->getId(),
             'func'     => 'submit-artifact',
-        );
+        ];
     }
 
-    protected function fetchSubmitInstructions() {
+    protected function fetchSubmitInstructions()
+    {
         if ($this->tracker->submit_instructions) {
             $hp = Codendi_HTMLPurifier::instance();
             return '<p class="submit_instructions">' . $hp->purify($this->tracker->submit_instructions, CODENDI_PURIFIER_FULL) . '</p>';
         }
     }
 
-    protected function fetchFormElements(Codendi_Request $request) {
-        $html = '';
+    protected function fetchFormElements(Codendi_Request $request)
+    {
+        $html  = '';
         $html .= '<div class="tracker_artifact">';
-        foreach($this->tracker->getFormElements() as $form_element) {
-            $html .= $form_element->fetchSubmit($request->get('artifact'));
+        foreach ($this->tracker->getFormElements() as $form_element) {
+            $submitted_values = $request->get('artifact');
+            if (! $submitted_values || ! is_array($submitted_values)) {
+                $submitted_values = [];
+            }
+            $html .= $form_element->fetchSubmit($submitted_values);
         }
         $html .= '</div>';
 
         return $html;
     }
 }
-
-?>

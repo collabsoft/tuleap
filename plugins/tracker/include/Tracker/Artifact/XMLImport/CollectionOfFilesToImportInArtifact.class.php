@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_XMLImport_CollectionOfFilesToImportInArtifact {
+class Tracker_Artifact_XMLImport_CollectionOfFilesToImportInArtifact
+{
 
     /** @var array */
     private $history;
@@ -27,13 +28,15 @@ class Tracker_Artifact_XMLImport_CollectionOfFilesToImportInArtifact {
     private $files;
 
 
-    public function __construct(SimpleXMLElement $artifact_xml) {
-        $this->history = array();
+    public function __construct(SimpleXMLElement $artifact_xml)
+    {
+        $this->history = [];
         $this->files   = $this->extractFilesFromXML($artifact_xml);
     }
 
-    public function extractFilesFromXML(SimpleXMLElement $artifact_xml) {
-        $files     = array();
+    public function extractFilesFromXML(SimpleXMLElement $artifact_xml)
+    {
+        $files     = [];
         $files_xml = $artifact_xml->file;
 
         foreach ($files_xml as $file) {
@@ -45,11 +48,13 @@ class Tracker_Artifact_XMLImport_CollectionOfFilesToImportInArtifact {
         return $files;
     }
 
-    public function getFileXML($file_id) {
+    public function getFileXML($file_id)
+    {
         return $this->files[$file_id];
     }
 
-    public function markAsImported($file_id) {
+    public function markAsImported($file_id)
+    {
         if ($this->fileIsAlreadyImported($file_id)) {
             return;
         }
@@ -57,7 +62,8 @@ class Tracker_Artifact_XMLImport_CollectionOfFilesToImportInArtifact {
         $this->history[] = $file_id;
     }
 
-    public function fileIsAlreadyImported($file_id) {
+    public function fileIsAlreadyImported($file_id)
+    {
         return in_array($file_id, $this->history);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -20,11 +20,26 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+use Tuleap\Tracker\Semantic\IBuildSemanticFromXML;
+use Tuleap\Tracker\Semantic\Progress\SemanticProgressDao;
+use Tuleap\Tracker\Semantic\Progress\SemanticProgressDuplicator;
+use Tuleap\Tracker\Semantic\Progress\SemanticProgress;
+use Tuleap\Tracker\Semantic\Progress\SemanticProgressFromXMLBuilder;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDone;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDoneDao;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDoneDuplicator;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDoneFactory;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDoneValueChecker;
+use Tuleap\Tracker\Semantic\Timeframe\SemanticTimeframeDao;
+use Tuleap\Tracker\Semantic\Timeframe\SemanticTimeframeDuplicator;
+use Tuleap\Tracker\Semantic\Timeframe\SemanticTimeframeFromXMLBuilder;
 
-class Tracker_SemanticFactory {
+class Tracker_SemanticFactory
+{
 
     /**
      * Hold an instance of the class
+     * @var self|null
      */
     protected static $instance;
 
@@ -33,70 +48,90 @@ class Tracker_SemanticFactory {
      *
      * @return Tracker_SemanticFactory an instance of the factory
      */
-    public static function instance() {
-        if (!isset(self::$instance)) {
-            $c = __CLASS__;
-            self::$instance = new $c;
+    public static function instance()
+    {
+        if (! isset(self::$instance)) {
+            $c              = self::class;
+            self::$instance = new $c();
         }
         return self::$instance;
     }
 
-    /**
-     * Creates a Tracker_Semantic Object
-     *
-     * @return Tracker_Semantic The semantic object, or null if error
-     */
     public function getInstanceFromXML(
         SimpleXMLElement $xml,
         SimpleXMLElement $full_semantic_xml,
-        array &$xmlMapping,
+        array $xml_mapping,
         Tracker $tracker
-    ) {
-        $semantic = null;
+    ): ?Tracker_Semantic {
         $attributes = $xml->attributes();
-        $type = $attributes['type'];
-        switch($type) {
-            case 'title':
-                $semantic = $this->getSemanticTitleFactory()->getInstanceFromXML($xml, $xmlMapping, $tracker);
-                break;
-            case 'description':
-                $semantic = $this->getSemanticDescriptionFactory()->getInstanceFromXML($xml, $xmlMapping, $tracker);
-                break;
-            case 'status';
-                $semantic = $this->getSemanticStatusFactory()->getInstanceFromXML($xml, $xmlMapping, $tracker);
-                break;
-            case 'contributor';
-                $semantic = $this->getSemanticContributorFactory()->getInstanceFromXML($xml, $xmlMapping, $tracker);
-                break;
-            case 'tooltip';
-                $semantic = $this->getSemanticTooltipFactory()->getInstanceFromXML($xml, $xmlMapping, $tracker);
-                break;
-            default:
-                $semantic = $this->getSemanticFromAnotherPlugin($xml, $full_semantic_xml, $xmlMapping, $tracker, $type);
-                break;
+        $type       = $attributes['type'];
+
+        $builder = $this->getSemanticFromXMLBuilder((string) $type);
+        if ($builder === null) {
+            return $this->getSemanticFromAnotherPlugin($xml, $full_semantic_xml, $xml_mapping, $tracker, $type);
         }
 
-        return $semantic;
+        return $builder->getInstanceFromXML($xml, $full_semantic_xml, $xml_mapping, $tracker);
+    }
+
+    private function getSemanticFromXMLBuilder(string $type): ?IBuildSemanticFromXML
+    {
+        if ($type === 'title') {
+            return $this->getSemanticTitleFactory();
+        }
+
+        if ($type === 'description') {
+            return $this->getSemanticDescriptionFactory();
+        }
+
+        if ($type === 'status') {
+            return $this->getSemanticStatusFactory();
+        }
+
+        if ($type === SemanticDone::NAME) {
+            return $this->getSemanticDoneFactory();
+        }
+
+        if ($type === 'contributor') {
+            return $this->getSemanticContributorFactory();
+        }
+
+        if ($type === 'tooltip') {
+            return $this->getSemanticTooltipFactory();
+        }
+
+        if ($type === 'timeframe') {
+            return (new SemanticTimeframeFromXMLBuilder());
+        }
+
+        if ($type === SemanticProgress::NAME) {
+            return new SemanticProgressFromXMLBuilder(
+                new SemanticProgressDao()
+            );
+        }
+
+        return null;
     }
 
     private function getSemanticFromAnotherPlugin(
         SimpleXMLElement $xml,
         SimpleXMLElement $full_semantic_xml,
         array $xml_mapping,
-        Tracker $tracker, $type
+        Tracker $tracker,
+        $type
     ) {
         $semantic = null;
 
         EventManager::instance()->processEvent(
             TRACKER_EVENT_SEMANTIC_FROM_XML,
-            array(
+            [
                 'xml'               => $xml,
                 'full_semantic_xml' => $full_semantic_xml,
                 'xml_mapping'       => $xml_mapping,
                 'tracker'           => $tracker,
                 'semantic'          => &$semantic,
                 'type'              => $type,
-            )
+            ]
         );
 
         return $semantic;
@@ -108,16 +143,18 @@ class Tracker_SemanticFactory {
      *
      * @return Tracker_Semantic_TitleFactory an instance of the factory
      */
-    function getSemanticTitleFactory() {
+    public function getSemanticTitleFactory()
+    {
         return Tracker_Semantic_TitleFactory::instance();
     }
 
     /**
      * Returns an instance of Tracker_Semantic_TitleFactory
      *
-     * @return Tracker_Semantic_TitleFactory an instance of the factory
+     * @return Tracker_Semantic_DescriptionFactory an instance of the factory
      */
-    function getSemanticDescriptionFactory() {
+    public function getSemanticDescriptionFactory()
+    {
         return Tracker_Semantic_DescriptionFactory::instance();
     }
 
@@ -126,7 +163,8 @@ class Tracker_SemanticFactory {
      *
      * @return Tracker_Semantic_StatusFactory an instance of the factory
      */
-    function getSemanticStatusFactory() {
+    public function getSemanticStatusFactory()
+    {
         return Tracker_Semantic_StatusFactory::instance();
     }
     /**
@@ -134,7 +172,8 @@ class Tracker_SemanticFactory {
      *
      * @return Tracker_TooltipFactory an instance of the factory
      */
-    function getSemanticTooltipFactory() {
+    public function getSemanticTooltipFactory()
+    {
         return Tracker_TooltipFactory::instance();
     }
 
@@ -143,8 +182,17 @@ class Tracker_SemanticFactory {
      *
      * @return Tracker_Semantic_ContributorFactory an instance of the factory
      */
-    function getSemanticContributorFactory() {
+    public function getSemanticContributorFactory()
+    {
         return Tracker_Semantic_ContributorFactory::instance();
+    }
+
+    private function getSemanticDoneFactory(): SemanticDoneFactory
+    {
+        return new SemanticDoneFactory(
+            new SemanticDoneDao(),
+            new SemanticDoneValueChecker()
+        );
     }
 
     /**
@@ -155,7 +203,8 @@ class Tracker_SemanticFactory {
      *
      * @return bool true if the semantic is saved, false otherwise
      */
-    public function saveObject($semantic, $tracker) {
+    public function saveObject($semantic, $tracker)
+    {
         $semantic->setTracker($tracker);
         return $semantic->save();
     }
@@ -163,34 +212,41 @@ class Tracker_SemanticFactory {
     /**
      * Duplicate the semantics from tracker source to tracker target
      *
-     * @param int   $from_tracker_id The Id of the tracker source
-     * @param int   $to_tracker_id   The Id of the tracker target
-     * @param array $field_mapping   The mapping of the fields of the tracker
-     *
      * @return void
      */
-    public function duplicate($from_tracker_id, $to_tracker_id, $field_mapping) {
-        foreach ($this->getSubFactories() as $factory) {
-            $factory->duplicate($from_tracker_id, $to_tracker_id, $field_mapping);
+    public function duplicate(int $from_tracker_id, int $to_tracker_id, array $field_mapping)
+    {
+        foreach ($this->getDuplicators() as $duplicator) {
+            $duplicator->duplicate($from_tracker_id, $to_tracker_id, $field_mapping);
         }
     }
 
-    /** @return Tracker_Semantic_IRetrieveSemantic[] */
-    private function getSubFactories() {
-        $factories = array(
+    /** @return \Tuleap\Tracker\Semantic\IDuplicateSemantic[] */
+    private function getDuplicators()
+    {
+        $timeframe_duplicator = new SemanticTimeframeDuplicator(
+            new SemanticTimeframeDao()
+        );
+
+        $duplicators = [
             $this->getSemanticTitleFactory(),
             $this->getSemanticDescriptionFactory(),
             $this->getSemanticStatusFactory(),
             $this->getSemanticContributorFactory(),
-            $this->getSemanticTooltipFactory()
-        );
+            $this->getSemanticTooltipFactory(),
+            $timeframe_duplicator,
+            new SemanticProgressDuplicator(new SemanticProgressDao()),
+            new SemanticDoneDuplicator(
+                new SemanticDoneDao(),
+                new Tracker_Semantic_StatusDao()
+            )
+        ];
 
         EventManager::instance()->processEvent(
-            TRACKER_EVENT_GET_SEMANTIC_FACTORIES,
-            array('factories' => &$factories)
+            TRACKER_EVENT_GET_SEMANTIC_DUPLICATORS,
+            ['duplicators' => &$duplicators]
         );
 
-        return $factories;
+        return $duplicators;
     }
 }
-?>

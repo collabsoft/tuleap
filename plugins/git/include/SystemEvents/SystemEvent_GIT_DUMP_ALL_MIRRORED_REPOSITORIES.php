@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SystemEvent_GIT_DUMP_ALL_MIRRORED_REPOSITORIES extends SystemEvent {
-    const NAME = 'GIT_DUMP_ALL_MIRRORED_REPOSITORIES';
+class SystemEvent_GIT_DUMP_ALL_MIRRORED_REPOSITORIES extends SystemEvent
+{
+    public const NAME = 'GIT_DUMP_ALL_MIRRORED_REPOSITORIES';
 
     /** @var Git_GitoliteDriver */
     private $gitolite_driver;
@@ -27,11 +28,11 @@ class SystemEvent_GIT_DUMP_ALL_MIRRORED_REPOSITORIES extends SystemEvent {
     public function injectDependencies(
         Git_GitoliteDriver $gitolite_driver
     ) {
-        $this->gitolite_driver  = $gitolite_driver;
+        $this->gitolite_driver = $gitolite_driver;
     }
 
-    public function process() {
-
+    public function process()
+    {
         $dump_is_done = $this->gitolite_driver->dumpAllMirroredRepositories();
 
         if ($dump_is_done) {
@@ -42,7 +43,8 @@ class SystemEvent_GIT_DUMP_ALL_MIRRORED_REPOSITORIES extends SystemEvent {
         $this->error('Something went wrong while dumping gitolite configuration.');
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         return '';
     }
 }

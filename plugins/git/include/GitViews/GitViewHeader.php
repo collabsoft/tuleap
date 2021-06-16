@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,9 +23,7 @@ namespace Tuleap\Git\GitViews;
 
 use EventManager;
 use HTTPRequest;
-use PFUser;
 use Project;
-use Tuleap\Git\BreadCrumbDropdown\GitCrumbBuilder;
 use Tuleap\Layout\BaseLayout;
 use Tuleap\Layout\BreadCrumbDropdown\BreadCrumbCollection;
 
@@ -35,21 +33,11 @@ class GitViewHeader
      * @var EventManager
      */
     private $event_manager;
-    /**
-     * @var GitCrumbBuilder
-     */
-    private $service_crumb_builder;
 
-    /**
-     * @param EventManager          $event_manager
-     * @param GitCrumbBuilder       $service_crumb_builder
-     */
     public function __construct(
-        EventManager $event_manager,
-        GitCrumbBuilder $service_crumb_builder
+        EventManager $event_manager
     ) {
-        $this->event_manager         = $event_manager;
-        $this->service_crumb_builder = $service_crumb_builder;
+        $this->event_manager = $event_manager;
     }
 
     public function header(
@@ -61,22 +49,22 @@ class GitViewHeader
         $layout->addBreadcrumbs($breadcrumbs);
 
         $layout->header(
-            array(
-                'title'      => $GLOBALS['Language']->getText('plugin_git', 'title'),
+            [
+                'title'      => dgettext('tuleap-git', 'Git'),
                 'group'      => $project->getID(),
-                'toptab'     => $GLOBALS['Language']->getText('plugin_git', 'title'),
-                'body_class' => $this->getAdditionalBodyClasses($request)
-            )
+                'toptab'     => dgettext('tuleap-git', 'Git'),
+                'body_class' => array_merge(['git-administration'], $this->getAdditionalBodyClasses($request))
+            ]
         );
     }
 
     private function getAdditionalBodyClasses(HTTPRequest $request)
     {
-        $classes = array();
-        $params  = array(
+        $classes = [];
+        $params  = [
             'request' => $request,
             'classes' => &$classes
-        );
+        ];
 
         $this->event_manager->processEvent(GIT_ADDITIONAL_BODY_CLASSES, $params);
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,29 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+use Tuleap\Chart\Chart;
 use Tuleap\TimezoneRetriever;
 
-
 /**
- * I'm responsible of 
+ * I'm responsible of
  * - displaying a Burndown chart
  * - prepare data for display
  */
-class Tracker_Chart_BurndownView extends Tracker_Chart_Burndown {
+class Tracker_Chart_BurndownView extends Tracker_Chart_Burndown
+{
 
     /**
      * @var Tracker_Chart_Data_Burndown
      */
     private $burndown_data;
-    
-    public function __construct(Tracker_Chart_Data_Burndown $burndown_data) {
+
+    public function __construct(Tracker_Chart_Data_Burndown $burndown_data)
+    {
         $this->burndown_data = $burndown_data;
     }
 
     /**
      * @return Chart
      */
-    public function buildGraph() {
+    public function buildGraph()
+    {
         $user_timezone = date_default_timezone_get();
         date_default_timezone_set(TimezoneRetriever::getServerTimezone());
 
@@ -54,6 +58,7 @@ class Tracker_Chart_BurndownView extends Tracker_Chart_Burndown {
         $graph->xaxis->SetTickLabels($this->burndown_data->getHumanReadableDates());
 
         $remaining_effort = new LinePlot($this->burndown_data->getRemainingEffort());
+        $graph->Add($remaining_effort);
         $remaining_effort->SetColor($colors[1] . ':0.7');
         $remaining_effort->SetWeight(2);
         $remaining_effort->SetLegend('Remaining effort');
@@ -61,18 +66,17 @@ class Tracker_Chart_BurndownView extends Tracker_Chart_Burndown {
         $remaining_effort->mark->SetColor($colors[1] . ':0.7');
         $remaining_effort->mark->SetFillColor($colors[1]);
         $remaining_effort->mark->SetSize(3);
-        $graph->Add($remaining_effort);
 
         $ideal_burndown = new LinePlot($this->burndown_data->getIdealEffort());
+        $graph->Add($ideal_burndown);
         $ideal_burndown->SetColor($colors[0] . ':1.25');
         $ideal_burndown->SetLegend('Ideal Burndown');
-        $graph->Add($ideal_burndown);
+
+        $graph->legend->SetPos(0.05, 0.5, 'right', 'center');
+        $graph->legend->SetColumns(1);
 
         date_default_timezone_set($user_timezone);
 
         return $graph;
     }
-
 }
-
-?>

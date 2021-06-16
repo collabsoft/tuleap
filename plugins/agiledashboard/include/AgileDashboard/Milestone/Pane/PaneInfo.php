@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,7 +31,7 @@ use Planning_Milestone;
  */
 abstract class PaneInfo
 {
-    const ACTION = 'show';
+    public const ACTION = 'show';
 
     /**
      * @var bool
@@ -41,7 +41,7 @@ abstract class PaneInfo
     /**
      * @var Planning_Milestone
      */
-    private $milestone;
+    protected $milestone;
 
     protected $action = self::ACTION;
 
@@ -85,7 +85,7 @@ abstract class PaneInfo
      */
     public function getUri()
     {
-        return '?' .
+        return AGILEDASHBOARD_BASE_URL . '/?' .
             http_build_query(
                 [
                     'group_id'    => $this->milestone->getGroupId(),

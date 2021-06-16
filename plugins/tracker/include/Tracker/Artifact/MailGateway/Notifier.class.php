@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_MailGateway_Notifier {
-    private function sendErrorMail($to, $subject, $message) {
+use Tuleap\Tracker\Artifact\MailGateway\IncomingMail;
+
+class Tracker_Artifact_MailGateway_Notifier
+{
+    private function sendErrorMail($to, $subject, $message)
+    {
         $mail = new Codendi_Mail();
         $mail->setFrom(ForgeConfig::get('sys_noreply'));
         $mail->setTo($to);
@@ -28,65 +32,55 @@ class Tracker_Artifact_MailGateway_Notifier {
         $mail->send();
     }
 
-    public function sendErrorMailMultipleUsers(array $raw_mail_parsed) {
-        $to      = $raw_mail_parsed['headers']['from'];
-        $subject = $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'creation_error');
-        $message = $GLOBALS['Language']->getText(
-            'plugin_tracker_emailgateway',
-            'artifact_error_name',
-            $this->getSubjectFromRawMail($raw_mail_parsed)
-        );
-        $message .= ' ' . $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'multiple_users');
+    public function sendErrorMailMultipleUsers(IncomingMail $incoming_mail)
+    {
+        $to       = $this->getTo($incoming_mail);
+        $subject  = dgettext('tuleap-tracker', 'The artifact was not created');
+        $message  = sprintf(dgettext('tuleap-tracker', 'Artifact with the title "%1$s" was not created.'), $incoming_mail->getSubject());
+        $message .= ' ' . dgettext('tuleap-tracker', 'Multiples users match your email, it must be unique on the platform to edit artifact by email.');
         $this->sendErrorMail($to, $subject, $message);
     }
 
-    public function sendErrorMailNoUserMatch(array $raw_mail_parsed) {
-        $to      = $raw_mail_parsed['headers']['from'];
-        $subject = $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'creation_error');
-        $message = $GLOBALS['Language']->getText(
-            'plugin_tracker_emailgateway',
-            'artifact_error_name',
-            $this->getSubjectFromRawMail($raw_mail_parsed)
-        );
-        $message .= ' ' . $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'unknown_user');
+    public function sendErrorMailNoUserMatch(IncomingMail $incoming_mail)
+    {
+        $to       = $this->getTo($incoming_mail);
+        $subject  = dgettext('tuleap-tracker', 'The artifact was not created');
+        $message  = sprintf(dgettext('tuleap-tracker', 'Artifact with the title "%1$s" was not created.'), $incoming_mail->getSubject());
+        $message .= ' ' . dgettext('tuleap-tracker', 'Could not match an user with your email.');
         $this->sendErrorMail($to, $subject, $message);
     }
 
-    public function sendErrorMailInsufficientPermissionCreation($to, $artifact_title) {
-        $subject = $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'creation_error');
-        $message = $GLOBALS['Language']->getText(
-            'plugin_tracker_emailgateway',
-            'artifact_error_name',
-            array($artifact_title)
-        );
-        $message .= ' ' . $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'insufficient_permission');
+    public function sendErrorMailInsufficientPermissionCreation($to, $artifact_title)
+    {
+        $subject  = dgettext('tuleap-tracker', 'The artifact was not created');
+        $message  = sprintf(dgettext('tuleap-tracker', 'Artifact with the title "%1$s" was not created.'), $artifact_title);
+        $message .= ' ' . dgettext('tuleap-tracker', 'You do not have the necessary right to edit this artifact.');
         $this->sendErrorMail($to, $subject, $message);
     }
 
-    public function sendErrorMailInsufficientPermissionUpdate($to, $artifact_id) {
-        $subject = $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'update_error');
-        $message = $GLOBALS['Language']->getText(
-            'plugin_tracker_emailgateway',
-            'artifact_error_update_id',
-            array($artifact_id)
-        );
-        $message .= ' ' . $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'insufficient_permission');
+    public function sendErrorMailInsufficientPermissionUpdate($to, $artifact_id)
+    {
+        $subject  = dgettext('tuleap-tracker', 'The artifact was not updated');
+        $message  = sprintf(dgettext('tuleap-tracker', 'Artifact #%1$s was not updated.'), $artifact_id);
+        $message .= ' ' . dgettext('tuleap-tracker', 'You do not have the necessary right to edit this artifact.');
         $this->sendErrorMail($to, $subject, $message);
     }
 
-    public function sendErrorMailTrackerGeneric(array $raw_mail_parsed) {
-        $to      = $raw_mail_parsed['headers']['from'];
-        $subject = $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'creation_error');
-        $message = $GLOBALS['Language']->getText(
-            'plugin_tracker_emailgateway',
-            'artifact_error_name',
-            $this->getSubjectFromRawMail($raw_mail_parsed)
-        );
-        $message .= ' ' . $GLOBALS['Language']->getText('plugin_tracker_emailgateway', 'tracker_misconfiguration');
+    public function sendErrorMailTrackerGeneric(IncomingMail $incoming_mail)
+    {
+        $to       = $this->getTo($incoming_mail);
+        $subject  = dgettext('tuleap-tracker', 'The artifact was not created');
+        $message  = sprintf(dgettext('tuleap-tracker', 'Artifact with the title "%1$s" was not created.'), $incoming_mail->getSubject());
+        $message .= ' ' . dgettext('tuleap-tracker', 'The tracker does not seem to have the create/reply by mail feature enabled.');
         $this->sendErrorMail($to, $subject, $message);
     }
 
-    private function getSubjectFromRawMail($raw_mail_parsed) {
-        return isset($raw_mail_parsed['headers']['subject']) ? $raw_mail_parsed['headers']['subject'] : '';
+    private function getTo(IncomingMail $incoming_mail)
+    {
+        $from_addresses = $incoming_mail->getFrom();
+        if (count($from_addresses) < 1) {
+            return '';
+        }
+        return $from_addresses[0];
     }
 }

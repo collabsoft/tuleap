@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  * Copyright (c) STMicroelectronics 2012. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
@@ -22,22 +22,24 @@ use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessInterface;
 /**
  * DAO class for CVS statistics
  */
-class Statistics_ScmCvsDao extends DataAccessObject {
+class Statistics_ScmCvsDao extends DataAccessObject
+{
 
-    var $groupFilter = '';
+    public $groupFilter = '';
 
     /**
      * Constructor of the class
      *
      * @param LegacyDataAccessInterface $da Data access details
-     * @param Integer $groupId Project Id
+     * @param int $groupId Project Id
      *
      * @return void
      */
-    function __construct(LegacyDataAccessInterface $da, $groupId = null) {
+    public function __construct(LegacyDataAccessInterface $da, $groupId = null)
+    {
         parent::__construct($da);
         if ($groupId) {
-            $this->groupFilter = ' AND group_id='.$this->da->escapeInt($groupId);
+            $this->groupFilter = ' AND group_id=' . $this->da->escapeInt($groupId);
         }
     }
 
@@ -49,15 +51,16 @@ class Statistics_ScmCvsDao extends DataAccessObject {
      *
      * @return DataAccessResult
      */
-    function totalRead($startDate, $endDate) {
+    public function totalRead($startDate, $endDate)
+    {
         $sql = "SELECT MONTHNAME(STR_TO_DATE(MONTH(day), '%m')) AS month,
                 YEAR(day) AS year,
                 SUM(cvs_checkouts) + SUM(cvs_browse) AS count,
                 COUNT(DISTINCT(group_id)) AS projects,
                 COUNT(DISTINCT(user_id)) AS users
                 FROM group_cvs_full_history
-                WHERE day BETWEEN DATE_FORMAT(".$this->da->quoteSmart($startDate).", '%Y%m%d') AND DATE_FORMAT(".$this->da->quoteSmart($endDate).", '%Y%m%d')
-                  ".$this->groupFilter."
+                WHERE day BETWEEN DATE_FORMAT(" . $this->da->quoteSmart($startDate) . ", '%Y%m%d') AND DATE_FORMAT(" . $this->da->quoteSmart($endDate) . ", '%Y%m%d')
+                  " . $this->groupFilter . "
                 GROUP BY YEAR(day), MONTH(day)
                 ORDER BY YEAR(day), MONTH(day)";
 
@@ -72,15 +75,16 @@ class Statistics_ScmCvsDao extends DataAccessObject {
      *
      * @return DataAccessResult
      */
-    function totalCommits($startDate, $endDate) {
+    public function totalCommits($startDate, $endDate)
+    {
         $sql = "SELECT MONTHNAME(STR_TO_DATE(MONTH(day), '%m')) AS month,
                 YEAR(day) AS year,
                 SUM(cvs_commits) + SUM(cvs_adds) AS count,
                 COUNT(DISTINCT(group_id)) AS projects,
                 COUNT(DISTINCT(user_id)) AS users
                 FROM group_cvs_full_history
-                WHERE day BETWEEN DATE_FORMAT(".$this->da->quoteSmart($startDate).", '%Y%m%d') AND DATE_FORMAT(".$this->da->quoteSmart($endDate).", '%Y%m%d')
-                  ".$this->groupFilter."
+                WHERE day BETWEEN DATE_FORMAT(" . $this->da->quoteSmart($startDate) . ", '%Y%m%d') AND DATE_FORMAT(" . $this->da->quoteSmart($endDate) . ", '%Y%m%d')
+                  " . $this->groupFilter . "
                 GROUP BY YEAR(day), MONTH(day)
                 ORDER BY YEAR(day), MONTH(day)";
 
@@ -95,11 +99,12 @@ class Statistics_ScmCvsDao extends DataAccessObject {
      *
      * @return DataAccessResult
      */
-    function readByProject($startDate, $endDate) {
+    public function readByProject($startDate, $endDate)
+    {
         $sql = "SELECT unix_group_name AS project, SUM(cvs_checkouts) + SUM(cvs_browse) AS count
                 FROM group_cvs_full_history
                 JOIN groups g USING (group_id)
-                WHERE day BETWEEN DATE_FORMAT(".$this->da->quoteSmart($startDate).", '%Y%m%d') AND DATE_FORMAT(".$this->da->quoteSmart($endDate).", '%Y%m%d')
+                WHERE day BETWEEN DATE_FORMAT(" . $this->da->quoteSmart($startDate) . ", '%Y%m%d') AND DATE_FORMAT(" . $this->da->quoteSmart($endDate) . ", '%Y%m%d')
                 GROUP BY project
                 ORDER BY count DESC
                 LIMIT 10";
@@ -115,11 +120,12 @@ class Statistics_ScmCvsDao extends DataAccessObject {
      *
      * @return DataAccessResult
      */
-    function commitsByProject($startDate, $endDate) {
+    public function commitsByProject($startDate, $endDate)
+    {
         $sql = "SELECT unix_group_name AS project, SUM(cvs_commits) + SUM(cvs_adds) AS count
                 FROM group_cvs_full_history
                 JOIN groups g USING (group_id)
-                WHERE day BETWEEN DATE_FORMAT(".$this->da->quoteSmart($startDate).", '%Y%m%d') AND DATE_FORMAT(".$this->da->quoteSmart($endDate).", '%Y%m%d')
+                WHERE day BETWEEN DATE_FORMAT(" . $this->da->quoteSmart($startDate) . ", '%Y%m%d') AND DATE_FORMAT(" . $this->da->quoteSmart($endDate) . ", '%Y%m%d')
                 GROUP BY project
                 ORDER BY count DESC
                 LIMIT 10";
@@ -135,12 +141,13 @@ class Statistics_ScmCvsDao extends DataAccessObject {
      *
      * @return DataAccessResult
      */
-    function readByUser($startDate, $endDate) {
+    public function readByUser($startDate, $endDate)
+    {
         $sql = "SELECT user_name AS user, SUM(cvs_checkouts) + SUM(cvs_browse) AS count
                 FROM group_cvs_full_history
                 JOIN user u USING (user_id)
-                WHERE day BETWEEN DATE_FORMAT(".$this->da->quoteSmart($startDate).", '%Y%m%d') AND DATE_FORMAT(".$this->da->quoteSmart($endDate).", '%Y%m%d')
-                  ".$this->groupFilter."
+                WHERE day BETWEEN DATE_FORMAT(" . $this->da->quoteSmart($startDate) . ", '%Y%m%d') AND DATE_FORMAT(" . $this->da->quoteSmart($endDate) . ", '%Y%m%d')
+                  " . $this->groupFilter . "
                 GROUP BY user
                 ORDER BY count DESC
                 LIMIT 10";
@@ -156,12 +163,13 @@ class Statistics_ScmCvsDao extends DataAccessObject {
      *
      * @return DataAccessResult
      */
-    function commitsByUser($startDate, $endDate) {
+    public function commitsByUser($startDate, $endDate)
+    {
         $sql = "SELECT user_name AS user, SUM(cvs_commits) + SUM(cvs_adds) AS count
                 FROM group_cvs_full_history
                 JOIN user u USING (user_id)
-                WHERE day BETWEEN DATE_FORMAT(".$this->da->quoteSmart($startDate).", '%Y%m%d') AND DATE_FORMAT(".$this->da->quoteSmart($endDate).", '%Y%m%d')
-                  ".$this->groupFilter."
+                WHERE day BETWEEN DATE_FORMAT(" . $this->da->quoteSmart($startDate) . ", '%Y%m%d') AND DATE_FORMAT(" . $this->da->quoteSmart($endDate) . ", '%Y%m%d')
+                  " . $this->groupFilter . "
                 GROUP BY user
                 ORDER BY count DESC
                 LIMIT 10";
@@ -177,15 +185,13 @@ class Statistics_ScmCvsDao extends DataAccessObject {
      *
      * @return DataAccessResult
      */
-    function repositoriesWithCommit($startDate, $endDate) {
+    public function repositoriesWithCommit($startDate, $endDate)
+    {
         $sql = "SELECT COUNT(DISTINCT(repositoryid)) AS count
                 From cvs_commits cc
                 JOIN cvs_checkins c ON cc.id = c.commitid
-                WHERE cc.comm_when BETWEEN ".$this->da->quoteSmart($startDate)." AND ".$this->da->quoteSmart($endDate);
+                WHERE cc.comm_when BETWEEN " . $this->da->quoteSmart($startDate) . " AND " . $this->da->quoteSmart($endDate);
 
         return $this->retrieve($sql);
     }
-
 }
-
-?>

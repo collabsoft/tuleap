@@ -1,5 +1,6 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2021 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics 2011. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
@@ -21,17 +22,16 @@
  *
  * This exception is thrown when a problem occurs on the server
  */
-class WebDAVExceptionServerError extends Sabre_DAV_Exception {
+class WebDAVExceptionServerError extends \Sabre\DAV\Exception
+{
 
     /**
-     * getHTTPCode 
-     * 
-     * @return int 
+     * getHTTPCode
+     *
+     * @return int
      */
-    public function getHTTPCode() {
+    public function getHTTPCode()
+    {
         return 500;
     }
-
 }
-
-?>

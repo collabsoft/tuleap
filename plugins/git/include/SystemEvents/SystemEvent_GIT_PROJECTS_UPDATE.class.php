@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,10 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SystemEvent_GIT_PROJECTS_UPDATE extends SystemEvent {
-    const NAME = 'GIT_PROJECTS_UPDATE';
+class SystemEvent_GIT_PROJECTS_UPDATE extends SystemEvent
+{
+    public const NAME = 'GIT_PROJECTS_UPDATE';
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
     /** @var Git_SystemEventManager */
@@ -34,7 +35,7 @@ class SystemEvent_GIT_PROJECTS_UPDATE extends SystemEvent {
     private $gitolite_driver;
 
     public function injectDependencies(
-        Logger $logger,
+        \Psr\Log\LoggerInterface $logger,
         Git_SystemEventManager $system_event_manager,
         ProjectManager $project_manager,
         Git_GitoliteDriver $gitolite_driver
@@ -45,15 +46,17 @@ class SystemEvent_GIT_PROJECTS_UPDATE extends SystemEvent {
         $this->gitolite_driver      = $gitolite_driver;
     }
 
-    private function getProjectIdsFromParameters() {
+    private function getProjectIdsFromParameters()
+    {
         return array_map('intval', $this->getParametersAsArray());
     }
 
-    public function process() {
+    public function process()
+    {
         foreach ($this->getProjectIdsFromParameters() as $project_id) {
             $project = $this->project_manager->getProject($project_id);
             if ($project && ! $project->isError()) {
-                $this->logger->debug('Update configuration for project '.$project->getID());
+                $this->logger->debug('Update configuration for project ' . $project->getID());
                 $this->gitolite_driver->dumpProjectRepoConf($project);
             }
         }
@@ -62,7 +65,8 @@ class SystemEvent_GIT_PROJECTS_UPDATE extends SystemEvent {
         $this->done();
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         return implode(', ', $this->getParametersAsArray());
     }
 }

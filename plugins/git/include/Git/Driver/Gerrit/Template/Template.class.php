@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -25,7 +25,8 @@
 /**
  * I'm a refs/meta/config template for Gerrit
  */
-class Git_Driver_Gerrit_Template_Template {
+class Git_Driver_Gerrit_Template_Template
+{
 
     /** @var int */
     private $id;
@@ -39,22 +40,26 @@ class Git_Driver_Gerrit_Template_Template {
     /** @var String */
     private $content;
 
-    public function __construct($id ,$group_id, $name, $content=null) {
+    public function __construct($id, $group_id, $name, $content = null)
+    {
         $this->id       = $id;
         $this->group_id = $group_id;
         $this->name     = $name;
         $this->content  = $content;
     }
 
-    public function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
-    public function getName() {
+    public function getName()
+    {
         return $this->name;
     }
 
-    public function getContent() {
+    public function getContent()
+    {
         return $this->content;
     }
 
@@ -62,22 +67,22 @@ class Git_Driver_Gerrit_Template_Template {
      * @param string $content
      * @return \Git_Driver_Gerrit_Template_Template
      */
-    public function setContent($content) {
+    public function setContent($content)
+    {
         $this->content = (string) $content;
         return $this;
     }
 
-    public function getProjectId() {
+    public function getProjectId()
+    {
         return $this->group_id;
     }
 
     /**
      * @param int $group_id
-     *
-     * @return True if this template belongs to the given project
      */
-    public function belongsToProject($group_id) {
+    public function belongsToProject($group_id): bool
+    {
         return $this->group_id == $group_id;
     }
 }
-?>

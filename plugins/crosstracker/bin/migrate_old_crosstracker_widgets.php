@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 $logger = new Log_ConsoleLogger();
 $dao    = new DataAccessObject();
@@ -26,7 +26,7 @@ $dao->enableExceptionsOnError();
 $dao->startTransaction();
 try {
     $logger->info('Searching for old crosstracker widgets');
-    $sql = "SHOW TABLES LIKE 'plugin_tracker_cross_tracker_report%'";
+    $sql    = "SHOW TABLES LIKE 'plugin_tracker_cross_tracker_report%'";
     $tables = $dao->retrieve($sql);
     if (count($tables) !== 2) {
         $logger->info('Tables for old widgets not found. Nothing to migrate.');
@@ -34,7 +34,7 @@ try {
         exit(0);
     }
 
-    $sql = "SHOW TABLES LIKE 'plugin_crosstracker_report%'";
+    $sql    = "SHOW TABLES LIKE 'plugin_crosstracker_report%'";
     $tables = $dao->retrieve($sql);
     if (count($tables) !== 2) {
         $logger->error('Tables for new widgets not found. Please install the plugin crosstracker.');
@@ -50,7 +50,7 @@ try {
         exit(0);
     }
 
-    $logger->info("Nb of widgets to migrate: ". $row['nb']);
+    $logger->info("Nb of widgets to migrate: " . $row['nb']);
     $sql = "INSERT INTO plugin_crosstracker_report (id)
             SELECT id FROM plugin_tracker_cross_tracker_report";
     $dao->update($sql);

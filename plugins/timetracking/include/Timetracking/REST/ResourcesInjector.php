@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018-Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -24,7 +24,11 @@
 
 namespace Tuleap\Timetracking\REST;
 
+use Tuleap\Timetracking\REST\v1\TimetrackingReportRepresentation;
 use Tuleap\Timetracking\REST\v1\TimetrackingRepresentation;
+use Tuleap\Timetracking\REST\v1\TimetrackingResource;
+use Tuleap\Timetracking\REST\v1\User\TimetrackingUserResource;
+use Tuleap\User\REST\UserRepresentation;
 
 /**
   * Inject resource into restler
@@ -32,11 +36,18 @@ use Tuleap\Timetracking\REST\v1\TimetrackingRepresentation;
 class ResourcesInjector
 {
 
-    public function populate(\Luracast\Restler\Restler $restler)
+    public function populate(\Luracast\Restler\Restler $restler): void
     {
         $restler->addAPIClass(
-            '\\Tuleap\\Timetracking\\REST\\v1\\TimetrackingResource',
+            TimetrackingResource::class,
             TimetrackingRepresentation::NAME
         );
+
+        $restler->addAPIClass(
+            v1\TimetrackingReportResource::class,
+            TimetrackingReportRepresentation::NAME
+        );
+
+        $restler->addAPIClass(TimetrackingUserResource::class, UserRepresentation::ROUTE);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All rights reserved
+ * Copyright (c) Enalean, 2013 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,11 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-require_once 'common/user/IHaveAnSSHKey.php';
-
-class Git_RemoteServer_Gerrit_ReplicationSSHKey implements IHaveAnSSHKey {
-    const KEYNAME_PREFIX  = 'gerrit_';
-    const KEYNAME_SUFFIX = '@0.pub';
+class Git_RemoteServer_Gerrit_ReplicationSSHKey implements IHaveAnSSHKey
+{
+    public const KEYNAME_PREFIX = 'gerrit_';
+    public const KEYNAME_SUFFIX = '@0.pub';
 
     /** @var string */
     private $value = null;
@@ -34,7 +33,8 @@ class Git_RemoteServer_Gerrit_ReplicationSSHKey implements IHaveAnSSHKey {
      * @param string $value
      * @return \Git_RemoteServer_Gerrit_ReplicationSSHKey
      */
-    public function setValue($value) {
+    public function setValue($value)
+    {
         $this->value = $value;
         return $this;
     }
@@ -43,7 +43,8 @@ class Git_RemoteServer_Gerrit_ReplicationSSHKey implements IHaveAnSSHKey {
      * @param int $id
      * @return \Git_RemoteServer_GerritReplicationSSHKey
      */
-    public function setGerritHostId($id) {
+    public function setGerritHostId($id)
+    {
         $this->host_id = $id;
         return $this;
     }
@@ -51,14 +52,16 @@ class Git_RemoteServer_Gerrit_ReplicationSSHKey implements IHaveAnSSHKey {
     /**
      * @return string
      */
-    public function getValue() {
+    public function getValue()
+    {
         return $this->value;
     }
 
     /**
      * @return int
      */
-    public function getGerritHostId() {
+    public function getGerritHostId()
+    {
         return $this->host_id;
     }
 
@@ -66,11 +69,12 @@ class Git_RemoteServer_Gerrit_ReplicationSSHKey implements IHaveAnSSHKey {
      * SSH key of replication
      * @return array
      */
-    public function getAuthorizedKeysArray() {
+    public function getAuthorizedKeysArray()
+    {
         if ($this->value) {
-            return array($this->value);
+            return [$this->value];
         }
-        return array();
+        return [];
     }
 
     /**
@@ -78,8 +82,9 @@ class Git_RemoteServer_Gerrit_ReplicationSSHKey implements IHaveAnSSHKey {
      *
      * @return String
      */
-    public function getUserName() {
-        return Rule_UserName::RESERVED_PREFIX.self::KEYNAME_PREFIX.$this->getGerritHostId();
+    public function getUserName()
+    {
+        return Rule_UserName::RESERVED_PREFIX . self::KEYNAME_PREFIX . $this->getGerritHostId();
     }
 
     /**
@@ -87,8 +92,8 @@ class Git_RemoteServer_Gerrit_ReplicationSSHKey implements IHaveAnSSHKey {
      *
      * @return String
      */
-    public function getGitoliteKeyFile() {
-        return $this->getUserName().self::KEYNAME_SUFFIX;
+    public function getGitoliteKeyFile()
+    {
+        return $this->getUserName() . self::KEYNAME_SUFFIX;
     }
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,6 +25,7 @@ use Codendi_Request;
 use GitPresenters_MirroringPresenter;
 use TemplateRendererFactory;
 use GitPresenters_MirrorPresenter;
+use Tuleap\CSRFSynchronizerTokenPresenter;
 
 class Mirroring extends Pane
 {
@@ -63,7 +64,7 @@ class Mirroring extends Pane
      */
     public function getTitle()
     {
-        return ucfirst($GLOBALS['Language']->getText('plugin_git', 'admin_mirroring'));
+        return ucfirst(dgettext('tuleap-git', 'Mirroring'));
     }
 
     /**
@@ -71,15 +72,15 @@ class Mirroring extends Pane
      */
     public function getContent()
     {
-        $presenter = new GitPresenters_MirroringPresenter($this->repository, $this->getMirrorPresenters());
-        $renderer  = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR).'/templates');
+        $presenter = new GitPresenters_MirroringPresenter(CSRFSynchronizerTokenPresenter::fromToken($this->csrf_token()), $this->repository, $this->getMirrorPresenters());
+        $renderer  = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR) . '/templates');
 
         return $renderer->renderToString('mirroring', $presenter);
     }
 
     private function getMirrorPresenters()
     {
-        $mirror_presenters = array();
+        $mirror_presenters = [];
 
         foreach ($this->mirrors as $mirror) {
             $is_used = false;

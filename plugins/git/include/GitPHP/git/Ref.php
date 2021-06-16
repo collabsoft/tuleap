@@ -1,4 +1,23 @@
 <?php
+/**
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
+ * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
@@ -7,17 +26,13 @@ namespace Tuleap\Git\GitPHP;
  *
  * Base class for ref objects
  *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Git
  */
+
+use Tuleap\Git\Exceptions\GitRepoRefNotFoundException;
 
 /**
  * Git Ref class
  *
- * @package GitPHP
- * @subpackage Git
  */
 abstract class Ref extends GitObject
 {
@@ -50,15 +65,15 @@ abstract class Ref extends GitObject
      * @param string $refDir the ref directory
      * @param string $refName the ref name
      * @param string $refHash the ref hash
-     * @throws Exception if not a valid ref
+     * @throws \Exception if not a valid ref
      * @return mixed git ref
      */
     public function __construct($project, $refDir, $refName, $refHash = '')
     {
         $this->project = $project;
-        $this->refDir = $refDir;
+        $this->refDir  = $refDir;
         $this->refName = $refName;
-        if (!empty($refHash)) {
+        if (! empty($refHash)) {
             $this->SetHash($refHash);
         }
     }
@@ -70,6 +85,7 @@ abstract class Ref extends GitObject
      *
      * @access public
      * @return string object hash
+     * @throws GitRepoRefNotFoundException
      */
     public function GetHash() // @codingStandardsIgnoreLine
     {
@@ -86,19 +102,19 @@ abstract class Ref extends GitObject
      * Looks up the hash for the ref
      *
      * @access protected
-     * @throws Exception if hash is not found
+     * @throws GitRepoRefNotFoundException if hash is not found
      */
     protected function FindHash() // @codingStandardsIgnoreLine
     {
-        $exe = new GitExe($this->GetProject());
-        $args = array();
+        $exe    = new GitExe($this->GetProject());
+        $args   = [];
         $args[] = '--hash';
         $args[] = '--verify';
         $args[] = escapeshellarg($this->GetRefPath());
-        $hash = trim($exe->Execute(GitExe::SHOW_REF, $args));
+        $hash   = trim($exe->Execute(GitExe::SHOW_REF, $args));
 
         if (empty($hash)) {
-            throw new \Exception('Invalid ref ' . $this->GetRefPath());
+            throw new GitRepoRefNotFoundException(sprintf('Invalid ref : %s', $this->GetRefPath()));
         }
 
         $this->SetHash($hash);

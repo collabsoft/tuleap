@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,9 +21,8 @@
 use Tuleap\AgileDashboard\BaseController;
 use Tuleap\AgileDashboard\BreadCrumbDropdown\AgileDashboardCrumbBuilder;
 use Tuleap\AgileDashboard\BreadCrumbDropdown\VirtualTopMilestoneCrumbBuilder;
+use Tuleap\AgileDashboard\Milestone\HeaderOptionsProvider;
 use Tuleap\Layout\BreadCrumbDropdown\BreadCrumbCollection;
-
-require_once 'common/mvc2/PluginController.class.php';
 
 /**
  * Handles the HTTP actions related to a planning milestone.
@@ -47,6 +46,10 @@ class Planning_VirtualTopMilestoneController extends BaseController
 
     /** @var VirtualTopMilestoneCrumbBuilder */
     private $top_milestone_crumb_builder;
+    /**
+     * @var HeaderOptionsProvider
+     */
+    private $header_options_provider;
 
     /**
      * Instanciates a new controller.
@@ -54,12 +57,6 @@ class Planning_VirtualTopMilestoneController extends BaseController
      * TODO:
      *   - pass $request to actions (e.g. show).
      *
-     * @param Codendi_Request $request
-     * @param Planning_MilestoneFactory $milestone_factory
-     * @param ProjectManager $project_manager
-     * @param Planning_VirtualTopMilestonePaneFactory $top_milestone_pane_factory
-     * @param AgileDashboardCrumbBuilder $agile_dashboard_crumb_builder
-     * @param VirtualTopMilestoneCrumbBuilder $top_milestone_crumb_builder
      */
     public function __construct(
         Codendi_Request $request,
@@ -67,7 +64,8 @@ class Planning_VirtualTopMilestoneController extends BaseController
         ProjectManager $project_manager,
         Planning_VirtualTopMilestonePaneFactory $top_milestone_pane_factory,
         AgileDashboardCrumbBuilder $agile_dashboard_crumb_builder,
-        VirtualTopMilestoneCrumbBuilder $top_milestone_crumb_builder
+        VirtualTopMilestoneCrumbBuilder $top_milestone_crumb_builder,
+        HeaderOptionsProvider $header_options_provider
     ) {
         parent::__construct('agiledashboard', $request);
         $this->milestone_factory             = $milestone_factory;
@@ -75,13 +73,15 @@ class Planning_VirtualTopMilestoneController extends BaseController
         $this->project                       = $project_manager->getProject($request->get('group_id'));
         $this->agile_dashboard_crumb_builder = $agile_dashboard_crumb_builder;
         $this->top_milestone_crumb_builder   = $top_milestone_crumb_builder;
+        $this->header_options_provider       = $header_options_provider;
     }
 
-    public function showTop() {
+    public function showTop()
+    {
         try {
             $this->generateVirtualTopMilestone();
         } catch (Planning_NoPlanningsException $e) {
-            $query_parts = array('group_id' => $this->request->get('group_id'));
+            $query_parts = ['group_id' => $this->request->get('group_id')];
             $this->redirect($query_parts);
         }
 
@@ -93,7 +93,8 @@ class Planning_VirtualTopMilestoneController extends BaseController
         );
     }
 
-    private function redirectToCorrectPane() {
+    private function redirectToCorrectPane()
+    {
         $current_pane_identifier = $this->getActivePaneIdentifier();
         if ($current_pane_identifier !== $this->request->get('pane')) {
             $this->request->set('pane', $current_pane_identifier);
@@ -101,41 +102,33 @@ class Planning_VirtualTopMilestoneController extends BaseController
         }
     }
 
-    private function getActivePaneIdentifier() {
+    private function getActivePaneIdentifier()
+    {
         return $this->top_milestone_pane_factory->getActivePane($this->milestone)->getIdentifier();
     }
 
-    public function getHeaderOptions() {
+    public function getHeaderOptions(PFUser $user): array
+    {
         try {
             $this->generateVirtualTopMilestone();
-            $pane_info_identifier = new AgileDashboard_PaneInfoIdentifier();
+            $identifier = $this->getActivePaneIdentifier();
 
-            return array(
-                Layout::INCLUDE_FAT_COMBINED => ! $pane_info_identifier->isPaneAPlanningV2(
-                    $this->getActivePaneIdentifier()
-                )
-            );
+            return $this->header_options_provider->getHeaderOptions($user, $this->milestone, $identifier);
         } catch (Planning_NoPlanningsException $e) {
-            return array();
+            return [];
         }
     }
 
-    private function getTopMilestonePresenter() {
-        $redirect_parameter = new Planning_MilestoneRedirectParameter();
-
+    private function getTopMilestonePresenter()
+    {
         return new AgileDashboard_MilestonePresenter(
             $this->milestone,
-            $this->getCurrentUser(),
-            $this->request,
-            $this->top_milestone_pane_factory->getPanePresenterData($this->milestone),
-            $redirect_parameter->getPlanningRedirectToNew(
-                $this->milestone,
-                $this->top_milestone_pane_factory->getDefaultPaneIdentifier()
-            )
+            $this->top_milestone_pane_factory->getPanePresenterData($this->milestone)
         );
     }
 
-    private function generateVirtualTopMilestone() {
+    private function generateVirtualTopMilestone()
+    {
         $this->milestone = $this->milestone_factory->getVirtualTopMilestone(
             $this->getCurrentUser(),
             $this->project

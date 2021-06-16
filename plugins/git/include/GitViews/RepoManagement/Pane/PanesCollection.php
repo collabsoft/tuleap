@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,7 +26,7 @@ use Tuleap\Event\Dispatchable;
 
 class PanesCollection implements Dispatchable
 {
-    const NAME = 'collectPanes';
+    public const NAME = 'collectPanes';
 
     /**
      * @var Pane[]

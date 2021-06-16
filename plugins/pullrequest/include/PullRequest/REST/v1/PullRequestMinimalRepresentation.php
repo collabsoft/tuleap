@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,7 +28,7 @@ use Tuleap\REST\JsonCast;
 
 class PullRequestMinimalRepresentation
 {
-    const ROUTE = 'pull_requests';
+    public const ROUTE = 'pull_requests';
 
     /**
      * @var GitoliteAccessURLGenerator
@@ -83,8 +83,12 @@ class PullRequestMinimalRepresentation
      * @var string {@type string}
      */
     public $status;
+    /**
+     * @var PullRequestHEADRepresentation {@type PullRequestHEADRepresentation}
+     */
+    public $head;
 
-    public function __construct(GitoliteAccessURLGenerator$gitolite_access_URL_generator)
+    public function __construct(GitoliteAccessURLGenerator $gitolite_access_URL_generator)
     {
         $this->gitolite_access_URL_generator = $gitolite_access_URL_generator;
     }
@@ -94,7 +98,7 @@ class PullRequestMinimalRepresentation
         GitRepository $repository,
         GitRepository $repository_dest
     ) {
-        $this->id  = JsonCast::toInt($pull_request->getId());
+        $this->id = JsonCast::toInt($pull_request->getId());
 
         $project_id  = $repository->getProjectId();
         $purifier    = Codendi_HTMLPurifier::instance();
@@ -113,15 +117,16 @@ class PullRequestMinimalRepresentation
         $this->branch_src    = $pull_request->getBranchSrc();
         $this->branch_dest   = $pull_request->getBranchDest();
         $this->status        = $this->expandStatusName($pull_request->getStatus());
+        $this->head          = new PullRequestHEADRepresentation($pull_request);
     }
 
     private function expandStatusName($status_acronym)
     {
-        $status_name = array(
+        $status_name = [
             PullRequest::STATUS_ABANDONED => PullRequestRepresentation::STATUS_ABANDON,
             PullRequest::STATUS_MERGED    => PullRequestRepresentation::STATUS_MERGE,
             PullRequest::STATUS_REVIEW    => PullRequestRepresentation::STATUS_REVIEW
-        );
+        ];
 
         return $status_name[$status_acronym];
     }

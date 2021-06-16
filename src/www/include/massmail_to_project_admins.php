@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,47 +18,45 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
-require_once 'common/mail/Codendi_Mail.class.php';
-require_once 'common/mail/MassmailSender.class.php';
+require_once __DIR__ . '/pre.php';
 
 $csrf = new CSRFSynchronizerToken('');
 $csrf->check('/my/');
 
-$request           = HTTPRequest::instance();
-$pm                = ProjectManager::instance();
-$massmail_sender   = new MassmailSender();
+$request         = HTTPRequest::instance();
+$pm              = ProjectManager::instance();
+$massmail_sender = new MassmailSender();
 
-$user              = $request->getCurrentUser();
-$group_id          = $request->get('group_id');
-$subject           = $request->get('subject');
-$body              = $request->get('body');
+$user     = $request->getCurrentUser();
+$group_id = $request->get('group_id');
+$subject  = $request->get('subject');
+$body     = $request->get('body');
 
 $project           = $pm->getProject($group_id);
 $admins            = $project->getAdmins();
 $project_name      = $project->getPublicName();
 $project_unix_name = $project->getUnixName();
 
-$body_info         = $GLOBALS['Language']->getText('contact_admins','body_info');
+$body_info = $GLOBALS['Language']->getText('contact_admins', 'body_info');
 
 $body = $body_info . $body;
 
 if ($massmail_sender->sendMassmail($project, $user, $subject, $body, $admins)) {
     $GLOBALS['Response']->addFeedback(
         'info',
-        $GLOBALS['Language']->getText('contact_admins','mail_sent_admin', array($project_name))
+        $GLOBALS['Language']->getText('contact_admins', 'mail_sent_admin', [$project_name])
     );
 } else {
     $GLOBALS['Response']->addFeedback(
         'error',
-        $GLOBALS['Language']->getText('contact_admins','mail_not_sent_admin', array($project_name))
+        $GLOBALS['Language']->getText('contact_admins', 'mail_not_sent_admin', [$project_name])
     );
 }
 
 $event_manager = EventManager::instance();
 $event_manager->processEvent(
     Event::AFTER_MASSMAIL_TO_PROJECT_ADMINS,
-    array()
+    []
 );
 
 $GLOBALS['Response']->redirect("/projects/" . $project->getUnixName());

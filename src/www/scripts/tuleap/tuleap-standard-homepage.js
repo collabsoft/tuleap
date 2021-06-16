@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Enalean SAS - 2015. All rights reserved
+ * Copyright (c) Enalean SAS - 2015 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,22 +15,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* global jQuery:readonly $clamp:readonly */
 (function ($) {
-
     $(document).ready(function () {
-        $('.news blockquote > div').each(function() {
+        $(".news blockquote > div").each(function () {
             $clamp($(this)[0], { clamp: 2 });
         });
 
-        $('.screenshot-right').viewportChecker({
-            classToAdd: 'visible animated slideInRight',
-            offset: 200
+        $(".screenshot-right").viewportChecker({
+            classToAdd: "visible animated slideInRight",
+            offset: 200,
         });
 
-        $('.screenshot-left').viewportChecker({
-            classToAdd: 'visible animated slideInLeft',
-            offset: 200
+        $(".screenshot-left").viewportChecker({
+            classToAdd: "visible animated slideInLeft",
+            offset: 200,
         });
     });
-
 })(jQuery);

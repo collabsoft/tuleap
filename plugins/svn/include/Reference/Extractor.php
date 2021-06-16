@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,35 +19,47 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-namespace Tuleap\Svn\Reference;
+namespace Tuleap\SVN\Reference;
 
 use Project;
 use SvnPlugin;
-use Tuleap\Svn\Repository\Exception\CannotFindRepositoryException;
-use Tuleap\Svn\Repository\RepositoryManager;
-use Tuleap\Svn\Repository\RuleName;
+use Tuleap\SVN\Repository\Exception\CannotFindRepositoryException;
+use Tuleap\SVN\Repository\RepositoryManager;
+use Tuleap\SVN\Repository\RuleName;
 
 class Extractor
 {
-
     /**
      * @var RepositoryManager
      */
     private $repository_manager;
 
-    public function __construct(RepositoryManager $repository_manager) {
+    public function __construct(RepositoryManager $repository_manager)
+    {
         $this->repository_manager = $repository_manager;
     }
 
-    public function getReference(Project $project, $keyword, $value)
+    /**
+     * @return null|Reference
+     */
+    public function getReference(Project $project, string $keyword, string $value): ?\Reference
     {
         if (! $project->usesService(SvnPlugin::SERVICE_SHORTNAME)) {
-            return false;
+            return null;
         }
 
-        $matches = array();
+        if (ctype_digit($value)) {
+            try {
+                $repository = $this->repository_manager->getCoreRepository($project);
+                return new Reference($project, $repository, $keyword, (int) $value);
+            } catch (CannotFindRepositoryException $exception) {
+                return null;
+            }
+        }
+
+        $matches = [];
         if (! preg_match($this->getRegExp(), $value, $matches)) {
-            return false;
+            return null;
         }
 
         $repository_name = $matches[1];
@@ -56,13 +68,14 @@ class Extractor
         try {
             $repository = $this->repository_manager->getRepositoryByName($project, $repository_name);
         } catch (CannotFindRepositoryException $exception) {
-            return false;
+            return null;
         }
 
         return new Reference($project, $repository, $keyword, $revision_id);
     }
 
-    private function getRegExp() {
+    private function getRegExp()
+    {
         return '#^(' . RuleName::PATTERN_REPOSITORY_NAME . ')/([0-9]+)$#';
     }
 }

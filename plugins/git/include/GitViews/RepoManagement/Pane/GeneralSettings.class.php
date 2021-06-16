@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,51 @@
 
 namespace Tuleap\Git\GitViews\RepoManagement\Pane;
 
+use Codendi_Request;
+use GitRepository;
 use TemplateRendererFactory;
+use Tuleap\Git\DefaultBranch\RepositoryBranchSelectorOptionPresenter;
 
 class GeneralSettings extends Pane
 {
+    /**
+     * @var RepositoryBranchSelectorOptionPresenter[]
+     * @psalm-readonly
+     */
+    public array $available_branches;
+    /**
+     * @psalm-readonly
+     */
+    public bool $have_branches;
+
+    public function __construct(GitRepository $repository, Codendi_Request $request)
+    {
+        parent::__construct($repository, $request);
+
+        $this->available_branches = self::getAvailableBranchPresenters($repository);
+        $this->have_branches      = count($this->available_branches) > 0;
+    }
+
+    /**
+     * @return RepositoryBranchSelectorOptionPresenter[]
+     */
+    private static function getAvailableBranchPresenters(GitRepository $repository): array
+    {
+        if (! $repository->isInitialized()) {
+            return [];
+        }
+        $git_exec       = \Git_Exec::buildFromRepository($repository);
+        $all_branches   = $git_exec->getAllBranchesSortedByCreationDate();
+        $default_branch = $git_exec->getDefaultBranch();
+
+        $presenters = [];
+
+        foreach ($all_branches as $branch) {
+            $presenters[] = new RepositoryBranchSelectorOptionPresenter($branch, $default_branch);
+        }
+
+        return $presenters;
+    }
 
     /**
      * @see GitViews_RepoManagement_Pane::getIdentifier()
@@ -38,7 +79,7 @@ class GeneralSettings extends Pane
      */
     public function getTitle()
     {
-        return $GLOBALS['Language']->getText('plugin_git', 'admin_settings');
+        return dgettext('tuleap-git', 'General settings');
     }
 
     /**
@@ -46,7 +87,7 @@ class GeneralSettings extends Pane
      */
     public function getContent()
     {
-        $renderer = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR).'/templates/settings');
+        $renderer = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR) . '/templates/settings');
 
         return $renderer->renderToString('general-settings', $this);
     }
@@ -73,7 +114,7 @@ class GeneralSettings extends Pane
 
     public function repository_description_label()
     {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_repo_description');
+        return dgettext('tuleap-git', 'Description');
     }
 
     public function description()
@@ -83,6 +124,6 @@ class GeneralSettings extends Pane
 
     public function save_label()
     {
-        return $GLOBALS['Language']->getText('plugin_git', 'admin_save_submit');
+        return dgettext('tuleap-git', 'Save');
     }
 }

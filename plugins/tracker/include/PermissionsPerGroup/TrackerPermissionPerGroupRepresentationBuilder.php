@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018-Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -23,6 +23,8 @@
  */
 
 namespace Tuleap\Tracker\PermissionsPerGroup;
+
+require_once __DIR__ . '/../tracker_permissions.php';
 
 use Project;
 use Tracker;
@@ -51,7 +53,7 @@ class TrackerPermissionPerGroupRepresentationBuilder
     public function build(Project $project, $ugroup_id = null)
     {
         $trackers_list = $this->tracker_factory->getTrackersByGroupId($project->group_id);
-        $permissions   = array();
+        $permissions   = [];
 
         foreach ($trackers_list as $tracker) {
             $ugroups_permissions = plugin_tracker_permission_get_tracker_ugroups_permissions(

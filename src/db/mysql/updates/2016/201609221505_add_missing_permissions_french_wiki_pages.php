@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -34,7 +34,7 @@ class b201609221505_add_missing_permissions_french_wiki_pages extends ForgeUpgra
     {
         $ugroup_project_admin = 4;
         $ugroup_wiki_admin    = 14;
-        $sql = "INSERT INTO permissions
+        $sql                  = "INSERT INTO permissions
                 SELECT 'WIKIPAGE_READ', id, $ugroup_project_admin
                 FROM wiki_page
                 LEFT JOIN permissions ON CAST(id AS CHAR) = object_id AND permission_type = 'WIKIPAGE_READ'

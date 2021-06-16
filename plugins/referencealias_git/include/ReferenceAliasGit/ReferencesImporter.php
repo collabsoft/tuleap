@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS, 2016. All Rights Reserved.
+ * Copyright (c) Enalean SAS, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,7 @@
 
 namespace Tuleap\ReferenceAliasGit;
 
-use Logger;
+use Psr\Log\LoggerInterface;
 use Project;
 use SimpleXMLElement;
 use GitRepository;
@@ -31,12 +31,12 @@ class ReferencesImporter
     /** @var Dao */
     private $dao;
 
-    /** @var Logger */
+    /** @var LoggerInterface */
     private $logger;
 
-    const XREF_CMMT  = 'cmmt';
+    public const XREF_CMMT = 'cmmt';
 
-    public function __construct(Dao $dao, Logger $logger)
+    public function __construct(Dao $dao, LoggerInterface $logger)
     {
         $this->dao    = $dao;
         $this->logger = $logger;
@@ -55,21 +55,21 @@ class ReferencesImporter
             $reference_keyword = $this->getReferenceKeyword($source);
 
             if ($reference_keyword !== self::XREF_CMMT) {
-                $this->logger->warn("Cross reference kind '$reference_keyword' for $source not supported");
+                $this->logger->warning("Cross reference kind '$reference_keyword' for $source not supported");
                 continue;
             }
 
             if (! $configuration->isForce('references')) {
-                $row = $this->dao->getRef($source)->getRow();
+                $row = $this->dao->getRef($source);
                 if (! empty($row)) {
-                    $this->logger->warn("The source $source already exists in the database. It will not be imported.");
+                    $this->logger->warning("The source $source already exists in the database. It will not be imported.");
                     continue;
                 }
             }
 
             $repository_id = $repository->getId();
 
-            if (! $this->dao->insertRef($source, $repository_id, $sha1)) {
+            if (! $this->dao->insertRef($source, (int) $repository_id, $sha1)) {
                 $this->logger->error("Could not insert object for $source");
             } else {
                 $this->logger->info("Imported original ref '$source' -> git repo $repository_id, sha1 $sha1.");
@@ -79,7 +79,7 @@ class ReferencesImporter
 
     private function getReferenceKeyword($reference)
     {
-        $matches = array();
+        $matches = [];
         if (preg_match('/^([a-zA-Z]*)/', $reference, $matches)) {
             return $matches[1];
         } else {

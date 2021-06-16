@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,10 +22,9 @@
 namespace Tuleap\CreateTestEnv\REST;
 
 use Tuleap\CreateTestEnv\Exception\InvalidPasswordException;
-use Tuleap\CreateTestEnv\Notifier;
+use Tuleap\Cryptography\ConcealedString;
 use Tuleap\Password\PasswordSanityChecker;
 use Tuleap\REST\Header;
-use Tuleap\CreateTestEnv\NotificationBotDao;
 use Tuleap\CreateTestEnv\CreateTestEnvironment;
 use Tuleap\CreateTestEnv\Exception\CreateTestEnvException;
 use Tuleap\CreateTestEnv\Exception\InvalidInputException;
@@ -33,13 +32,6 @@ use Luracast\Restler\RestException;
 
 class CreateTestEnvResource
 {
-    private $notifier;
-
-    public function __construct()
-    {
-        $this->notifier = new Notifier(new NotificationBotDao());
-    }
-
     /**
      * @url OPTIONS
      */
@@ -65,11 +57,11 @@ class CreateTestEnvResource
      * @status 201
      * @return TestEnvironmentRepresentation
      *
-     * @throws 403 RestException You are not authorized to use this route
-     * @throws 400 RestException Invalid request
-     * @throws 500 RestException Server error
+     * @throws RestException 403 You are not authorized to use this route
+     * @throws RestException 400 Invalid request
+     * @throws RestException 500 Server error
      */
-    public function post($secret, $firstname, $lastname, $email, $login, $password, $archive)
+    public function post($secret, $firstname, $lastname, $email, $login, string $password, $archive)
     {
         $tmp_name = null;
         try {
@@ -77,26 +69,24 @@ class CreateTestEnvResource
 
             $tmp_name = $this->createTempDir();
             $test_env = new CreateTestEnvironment(
-                $this->notifier,
                 PasswordSanityChecker::build(),
                 $tmp_name
             );
-            $test_env->main($firstname, $lastname, $email, $login, $password, $archive);
+            $test_env->main($firstname, $lastname, $email, $login, new ConcealedString($password), $archive);
+            sodium_memzero($password);
 
             return (new TestEnvironmentRepresentation())->build(
                 $test_env->getProject(),
                 \HTTPRequest::instance()->getServerUrl()
             );
         } catch (InvalidPasswordException $exception) {
-            $this->notifier->notify('Client error at environment creation: '.$exception->getMessage());
             throw new RestException(400, $exception->getMessage(), ['exception' => get_class($exception), 'password_exceptions' => $exception->getPasswordErrors()]);
         } catch (InvalidInputException $exception) {
-            $this->notifier->notify('Client error at environment creation: '.$exception->getMessage());
             throw new RestException(400, $exception->getMessage(), ['exception' => get_class($exception)]);
         } catch (CreateTestEnvException $exception) {
-            $this->notifier->notify('Server error at environment creation: '.$exception->getMessage());
             throw new RestException(500, $exception->getMessage(), ['exception' => get_class($exception)]);
         } finally {
+            $this->cleanUpTempDir($tmp_name . '/data');
             $this->cleanUpTempDir($tmp_name);
         }
     }
@@ -113,13 +103,16 @@ class CreateTestEnvResource
         if ($tmp_name === null) {
             return;
         }
-        if (file_exists($tmp_name.'/project.xml')) {
-            unlink($tmp_name.'/project.xml');
-        }
-        if (file_exists($tmp_name.'/users.xml')) {
-            unlink($tmp_name.'/users.xml');
-        }
         if (is_dir($tmp_name)) {
+            $iterator = new \DirectoryIterator($tmp_name);
+            foreach ($iterator as $file) {
+                if ($file->isDot()) {
+                    continue;
+                }
+                if ($file->isFile()) {
+                    unlink($file->getPathname());
+                }
+            }
             rmdir($tmp_name);
         }
     }
@@ -141,7 +134,7 @@ class CreateTestEnvResource
      */
     private function getSecret()
     {
-        $path = $this->getPlugin()->getPluginEtcRoot().'/creation_secret';
+        $path = $this->getPlugin()->getPluginEtcRoot() . '/creation_secret';
         if (! file_exists($path)) {
             $random = (new \RandomNumberGenerator(32))->getNumber();
             touch($path);

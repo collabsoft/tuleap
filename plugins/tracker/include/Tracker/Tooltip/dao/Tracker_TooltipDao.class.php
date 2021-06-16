@@ -21,38 +21,40 @@
 /**
  *  Data Access Object for Tracker_Tooltip
  */
-class Tracker_TooltipDao extends DataAccessObject implements Tracker_Semantic_IRetrieveSemanticDARByTracker {
-    public function __construct() {
+class Tracker_TooltipDao extends DataAccessObject implements Tracker_Semantic_IRetrieveSemanticDARByTracker
+{
+    public function __construct()
+    {
         parent::__construct();
         $this->table_name = 'tracker_tooltip';
     }
-    
-    public function searchByTrackerId($tracker_id) {
-        $tracker_id  = $this->da->escapeInt($tracker_id);
-        $sql = "SELECT *
+
+    public function searchByTrackerId($tracker_id)
+    {
+        $tracker_id = $this->da->escapeInt($tracker_id);
+        $sql        = "SELECT *
                 FROM $this->table_name
-                WHERE tracker_id = $tracker_id 
+                WHERE tracker_id = $tracker_id
                 ORDER BY rank";
         return $this->retrieve($sql);
     }
-    
-    public function add($tracker_id, $field_id, $rank) {
-        $tracker_id  = $this->da->escapeInt($tracker_id);
-        $field_id    = $this->da->escapeInt($field_id);
-        $rank        = $this->da->escapeInt($this->prepareRanking(0, $tracker_id, $rank, 'field_id', 'tracker_id'));
-        $sql = "REPLACE INTO $this->table_name(tracker_id, field_id, rank)
+
+    public function add($tracker_id, $field_id, $rank)
+    {
+        $tracker_id = $this->da->escapeInt($tracker_id);
+        $field_id   = $this->da->escapeInt($field_id);
+        $rank       = $this->da->escapeInt($this->prepareRanking('tracker_tooltip', 0, (int) $tracker_id, $rank, 'field_id', 'tracker_id'));
+        $sql        = "REPLACE INTO $this->table_name(tracker_id, field_id, rank)
                 VALUES ($tracker_id, $field_id, $rank)";
         return $this->update($sql);
     }
-    
-    public function remove($tracker_id, $field_id) {
-        $tracker_id  = $this->da->escapeInt($tracker_id);
-        $field_id    = $this->da->escapeInt($field_id);
-        $sql = "DELETE FROM $this->table_name
+
+    public function remove($tracker_id, $field_id)
+    {
+        $tracker_id = $this->da->escapeInt($tracker_id);
+        $field_id   = $this->da->escapeInt($field_id);
+        $sql        = "DELETE FROM $this->table_name
                 WHERE tracker_id = $tracker_id AND field_id = $field_id";
         return $this->update($sql);
     }
 }
-
-
-?>

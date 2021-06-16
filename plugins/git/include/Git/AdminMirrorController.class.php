@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,9 +20,10 @@
 
 use Tuleap\Admin\AdminPageRenderer;
 use Tuleap\Git\Mirror\MirrorPresenter;
+use Tuleap\Layout\IncludeAssets;
 
-class Git_AdminMirrorController {
-
+class Git_AdminMirrorController //phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace, Squiz.Classes.ValidClassName.NotCamelCaps
+{
     /** @var Git_Mirror_MirrorDataMapper */
     private $git_mirror_mapper;
 
@@ -35,34 +36,36 @@ class Git_AdminMirrorController {
     /** @var ProjectManager */
     private $project_manager;
 
-    /** @var Git_Mirror_ManifestManager */
-    private $git_mirror_manifest_manager;
-
     /** @var Git_SystemEventManager */
     private $git_system_event_manager;
 
     /** @var AdminPageRenderer */
     private $admin_page_renderer;
+    /**
+     * @var IncludeAssets
+     */
+    private $include_assets;
 
     public function __construct(
         CSRFSynchronizerToken $csrf,
         Git_Mirror_MirrorDataMapper $git_mirror_mapper,
         Git_MirrorResourceRestrictor $git_mirror_resource_restrictor,
         ProjectManager $project_manager,
-        Git_Mirror_ManifestManager $git_mirror_manifest_manager,
         Git_SystemEventManager $git_system_event_manager,
-        AdminPageRenderer $admin_page_renderer
+        AdminPageRenderer $admin_page_renderer,
+        IncludeAssets $include_assets
     ) {
         $this->csrf                           = $csrf;
         $this->git_mirror_mapper              = $git_mirror_mapper;
         $this->git_mirror_resource_restrictor = $git_mirror_resource_restrictor;
         $this->project_manager                = $project_manager;
-        $this->git_mirror_manifest_manager    = $git_mirror_manifest_manager;
         $this->git_system_event_manager       = $git_system_event_manager;
         $this->admin_page_renderer            = $admin_page_renderer;
+        $this->include_assets                 = $include_assets;
     }
 
-    public function process(Codendi_Request $request) {
+    public function process(Codendi_Request $request)
+    {
         if ($request->get('action') == 'add-mirror') {
             $this->createMirror($request);
         } elseif ($request->get('action') == 'modify-mirror') {
@@ -78,23 +81,27 @@ class Git_AdminMirrorController {
         }
     }
 
-    public function display(Codendi_Request $request) {
-        $title         = $GLOBALS['Language']->getText('plugin_git', 'descriptor_name');
-        $template_path = dirname(GIT_BASE_DIR).'/templates';
+    public function display(Codendi_Request $request)
+    {
+        $title         = dgettext('tuleap-git', 'Git');
+        $template_path = dirname(GIT_BASE_DIR) . '/templates';
         $presenter     = null;
-
 
         switch ($request->get('action')) {
             case 'manage-allowed-projects':
-                $GLOBALS['HTML']->includeFooterJavascriptFile('/scripts/tuleap/manage-allowed-projects-on-resource.js');
+                $GLOBALS['HTML']->addJavascriptAsset(
+                    new \Tuleap\Layout\JavascriptAsset(
+                        new \Tuleap\Layout\IncludeCoreAssets(),
+                        'manage-allowed-projects-on-resource.js'
+                    )
+                );
 
                 $presenter     = $this->getManageAllowedProjectsPresenter($request);
                 $template_path = ForgeConfig::get('codendi_dir') . '/src/templates/resource_restrictor';
                 $this->renderAPresenter($title, $template_path, $presenter);
                 break;
             default:
-                $GLOBALS['HTML']->includeFooterJavascriptFile(GIT_BASE_URL . '/scripts/modal-add-mirror.js');
-                $GLOBALS['HTML']->includeFooterJavascriptFile(GIT_BASE_URL . '/scripts/modal-mirror-configuration.js');
+                $GLOBALS['HTML']->includeFooterJavascriptFile($this->include_assets->getFileURL('siteadmin-mirror.js'));
 
                 $presenter = $this->getAllMirrorsPresenter($title);
                 $this->renderANoFramedPresenter($title, $template_path, $presenter);
@@ -122,7 +129,8 @@ class Git_AdminMirrorController {
         );
     }
 
-    private function getAllMirrorsPresenter($title) {
+    private function getAllMirrorsPresenter($title)
+    {
         return new Git_AdminMirrorListPresenter(
             $title,
             $this->csrf,
@@ -134,9 +142,10 @@ class Git_AdminMirrorController {
      * @param Git_Mirror_Mirror[] $mirrors
      * @return array
      */
-    private function getMirrorPresenters(array $mirrors) {
-        $mirror_presenters = array();
-        foreach($mirrors as $mirror) {
+    private function getMirrorPresenters(array $mirrors)
+    {
+        $mirror_presenters = [];
+        foreach ($mirrors as $mirror) {
             $mirror_presenters[] = new MirrorPresenter(
                 $mirror,
                 $this->git_mirror_mapper->fetchRepositoriesPerMirrorPresenters($mirror)
@@ -151,12 +160,13 @@ class Git_AdminMirrorController {
             $mirror_id = $request->get('mirror_id');
             return $this->git_mirror_mapper->fetch($mirror_id);
         } catch (Git_Mirror_MirrorNotFoundException $e) {
-            $GLOBALS['Response']->addFeedback(Feedback::ERROR, $GLOBALS['Language']->getText('plugin_git', 'mirror_not_found'));
+            $GLOBALS['Response']->addFeedback(Feedback::ERROR, dgettext('tuleap-git', 'Mirror not found, please try again'));
             $GLOBALS['Response']->redirect('?pane=mirrors_admin');
         }
     }
 
-    private function getManageAllowedProjectsPresenter(Codendi_Request $request) {
+    private function getManageAllowedProjectsPresenter(Codendi_Request $request)
+    {
         $mirror = $this->getMirrorFromRequest($request);
 
         return new Git_AdminMAllowedProjectsPresenter(
@@ -166,7 +176,8 @@ class Git_AdminMirrorController {
         );
     }
 
-    private function setMirrorRestriction($request) {
+    private function setMirrorRestriction($request)
+    {
         $mirror      =  $mirror = $this->getMirrorFromRequest($request);
         $all_allowed = $request->get('all-allowed');
 
@@ -174,37 +185,39 @@ class Git_AdminMirrorController {
 
         if ($all_allowed) {
             if ($this->git_mirror_resource_restrictor->unsetMirrorRestricted($mirror)) {
-                $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_unset_restricted'));
+                $GLOBALS['Response']->addFeedback(Feedback::INFO, dgettext('tuleap-git', 'All projects can now use this mirror.'));
                 $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
             }
-
         } else {
             if (
                 $this->git_mirror_resource_restrictor->setMirrorRestricted($mirror) &&
                 $this->git_mirror_mapper->deleteFromDefaultMirrors($mirror->id)
             ) {
-                $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_set_restricted'));
+                $GLOBALS['Response']->addFeedback(Feedback::INFO, dgettext('tuleap-git', 'Now, only the allowed projects are able to use this mirror. Projects with at least one repository using this mirror have been automatically added to the list of allowed projects.'));
                 $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
             }
         }
 
-        $GLOBALS['Response']->addFeedback(Feedback::ERROR, $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_restricted_error'));
+        $GLOBALS['Response']->addFeedback(Feedback::ERROR, dgettext('tuleap-git', 'Something went wrong during the update of the mirror restriction status.'));
         $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
     }
 
-    private function askForAGitoliteDumpConf() {
+    private function askForAGitoliteDumpConf()
+    {
         $this->csrf->check();
 
         $this->git_system_event_manager->queueDumpOfAllMirroredRepositories();
-        $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_git','dump_gitolite_conf_queued', array($this->getGitSystemEventsQueueURL())), CODENDI_PURIFIER_DISABLED);
+        $GLOBALS['Response']->addFeedback(Feedback::INFO, sprintf(dgettext('tuleap-git', 'A system event has been queued. The gitolite configuration will be dumped at the time of its execution. <a href="%1$s">Git queue can be found here</a>.'), $this->getGitSystemEventsQueueURL()), CODENDI_PURIFIER_DISABLED);
         $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?pane=mirrors_admin');
     }
 
-    private function getGitSystemEventsQueueURL() {
+    private function getGitSystemEventsQueueURL()
+    {
         return "/admin/system_events/?queue=git";
     }
 
-    private function updateAllowedProjectList($request) {
+    private function updateAllowedProjectList($request)
+    {
         $mirror                = $this->getMirrorFromRequest($request);
         $project_to_add        = $request->get('project-to-allow');
         $project_ids_to_remove = $request->get('project-ids-to-revoke');
@@ -213,47 +226,51 @@ class Git_AdminMirrorController {
 
         if ($request->get('allow-project') && ! empty($project_to_add)) {
             $this->allowProjectOnMirror($mirror, $project_to_add);
-
         } elseif ($request->get('revoke-project') && ! empty($project_ids_to_remove)) {
             $this->revokeProjectsFromMirror($mirror, $project_ids_to_remove);
         }
     }
 
-    private function allowProjectOnMirror(Git_Mirror_Mirror $mirror, $project_to_add) {
+    private function allowProjectOnMirror(Git_Mirror_Mirror $mirror, $project_to_add)
+    {
         $project = $this->project_manager->getProjectFromAutocompleter($project_to_add);
 
         if ($project && $this->git_mirror_resource_restrictor->allowProjectOnMirror($mirror, $project)) {
-            $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_allow_project'));
+            $GLOBALS['Response']->addFeedback('info', dgettext('tuleap-git', 'Submitted project can now use this mirror.'));
             $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
         }
 
-        $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_update_project_list_error'));
+        $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-git', 'Something went wrong during the update of the allowed project list.'));
         $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
     }
 
-    private function revokeProjectsFromMirror(Git_Mirror_Mirror $mirror, $project_ids) {
-        if (count($project_ids) > 0 &&
+    private function revokeProjectsFromMirror(Git_Mirror_Mirror $mirror, $project_ids)
+    {
+        if (
+            count($project_ids) > 0 &&
             $this->git_mirror_resource_restrictor->revokeProjectsFromMirror($mirror, $project_ids) &&
             $this->git_mirror_mapper->deleteFromDefaultMirrorsInProjects($mirror, $project_ids)
         ) {
-            $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_revoke_projects'));
+            $GLOBALS['Response']->addFeedback('info', dgettext('tuleap-git', 'Submitted projects will not be able to use this mirror.'));
             $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
         }
 
-        $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git', 'mirror_allowed_project_update_project_list_error'));
+        $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-git', 'Something went wrong during the update of the allowed project list.'));
         $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?view=mirrors_restriction&action=manage-allowed-projects&mirror_id=' . $mirror->id);
     }
 
-    private function checkSynchronizerToken($url) {
+    private function checkSynchronizerToken($url)
+    {
         $token = new CSRFSynchronizerToken($url);
         $token->check();
     }
 
-    private function createMirror(Codendi_Request $request) {
+    private function createMirror(Codendi_Request $request)
+    {
         $url      = $request->get('new_mirror_url');
         $hostname = $request->get('new_mirror_hostname');
         $ssh_key  = $request->get('new_mirror_key');
-        $password = $request->get('new_mirror_pwd');
+        $password = new \Tuleap\Cryptography\ConcealedString($request->get('new_mirror_pwd'));
         $name     = $request->get('new_mirror_name');
 
         $this->csrf->check();
@@ -261,27 +278,28 @@ class Git_AdminMirrorController {
         try {
             $this->git_mirror_mapper->save($url, $hostname, $ssh_key, $password, $name);
         } catch (Git_Mirror_MissingDataException $e) {
-            $this->redirectToCreateWithError($GLOBALS['Language']->getText('plugin_git','admin_mirror_fields_required'));
+            $this->redirectToCreateWithError(dgettext('tuleap-git', 'All fields are required'));
         } catch (Git_Mirror_CreateException $e) {
-            $this->redirectToCreateWithError($GLOBALS['Language']->getText('plugin_git','admin_mirror_save_failed'));
+            $this->redirectToCreateWithError(dgettext('tuleap-git', 'Failed to add new mirror'));
         } catch (Git_Mirror_HostnameAlreadyUsedException $e) {
-            $this->redirectToCreateWithError($GLOBALS['Language']->getText('plugin_git','admin_mirror_hostname_duplicate'));
+            $this->redirectToCreateWithError(dgettext('tuleap-git', 'Hostname must be unique!'));
         } catch (Git_Mirror_HostnameIsReservedException $e) {
-            $this->redirectToCreateWithError($GLOBALS['Language']->getText('plugin_git','admin_mirror_hostname_reserved', array($hostname)));
+            $this->redirectToCreateWithError(sprintf(dgettext('tuleap-git', 'Hostname (%1$s) is reserved!'), $hostname));
         }
     }
 
-    private function redirectToCreateWithError($message) {
+    private function redirectToCreateWithError($message)
+    {
         $GLOBALS['Response']->addFeedback('error', $message);
         $GLOBALS['Response']->redirect("?pane=mirrors_admin&action=show-add-mirror");
     }
 
-    private function modifyMirror(Codendi_Request $request) {
+    private function modifyMirror(Codendi_Request $request)
+    {
+        $this->csrf->check();
+        $mirror_id = $request->get('mirror_id');
         try {
-            $this->csrf->check();
-
-            $mirror_id = $request->get('mirror_id');
-            $update    = $this->git_mirror_mapper->update(
+            $update = $this->git_mirror_mapper->update(
                 $mirror_id,
                 $request->get('mirror_url'),
                 $request->get('mirror_hostname'),
@@ -290,29 +308,31 @@ class Git_AdminMirrorController {
             );
 
             if (! $update) {
-                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git','admin_mirror_cannot_update'));
-            } else  {
-                $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_git','admin_mirror_updated'));
+                $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-git', 'Failed to update mirror'));
+            } else {
+                $GLOBALS['Response']->addFeedback('info', dgettext('tuleap-git', 'Mirror updated!'));
             }
         } catch (Git_Mirror_MirrorNotFoundException $e) {
-            $this->redirectToEditFormWithError($mirror_id, $GLOBALS['Language']->getText('plugin_git','admin_mirror_cannot_update'));
+            $this->redirectToEditFormWithError($mirror_id, dgettext('tuleap-git', 'Failed to update mirror'));
         } catch (Git_Mirror_MirrorNoChangesException $e) {
-            $this->redirectToEditFormWithError($mirror_id, $GLOBALS['Language']->getText('plugin_git','admin_mirror_no_changes'));
+            $this->redirectToEditFormWithError($mirror_id, dgettext('tuleap-git', 'No changes for mirror'));
         } catch (Git_Mirror_MissingDataException $e) {
-            $this->redirectToEditFormWithError($mirror_id, $GLOBALS['Language']->getText('plugin_git','admin_mirror_fields_required'));
+            $this->redirectToEditFormWithError($mirror_id, dgettext('tuleap-git', 'All fields are required'));
         } catch (Git_Mirror_HostnameAlreadyUsedException $e) {
-            $this->redirectToEditFormWithError($mirror_id, $GLOBALS['Language']->getText('plugin_git','admin_mirror_hostname_duplicate'));
+            $this->redirectToEditFormWithError($mirror_id, dgettext('tuleap-git', 'Hostname must be unique!'));
         } catch (Git_Mirror_HostnameIsReservedException $e) {
-            $this->redirectToEditFormWithError($mirror_id, $GLOBALS['Language']->getText('plugin_git','admin_mirror_hostname_reserved', array($request->get('mirror_hostname'))));
+            $this->redirectToEditFormWithError($mirror_id, sprintf(dgettext('tuleap-git', 'Hostname (%1$s) is reserved!'), $request->get('mirror_hostname')));
         }
     }
 
-    private function redirectToEditFormWithError($mirror_id, $message) {
+    private function redirectToEditFormWithError($mirror_id, $message)
+    {
         $GLOBALS['Response']->addFeedback('error', $message);
-        $GLOBALS['Response']->redirect("?pane=mirrors_admin&action=show-edit-mirror&mirror_id=".$mirror_id);
+        $GLOBALS['Response']->redirect("?pane=mirrors_admin&action=show-edit-mirror&mirror_id=" . $mirror_id);
     }
 
-    private function deleteMirror(Codendi_Request $request) {
+    private function deleteMirror(Codendi_Request $request)
+    {
         try {
             $this->csrf->check();
 
@@ -322,7 +342,7 @@ class Git_AdminMirrorController {
             if (! $delete) {
                 $GLOBALS['Response']->addFeedback(
                     Feedback::ERROR,
-                    $GLOBALS['Language']->getText('plugin_git','admin_mirror_cannot_delete')
+                    dgettext('tuleap-git', 'Failed to delete mirror')
                 );
 
                 return;
@@ -331,12 +351,11 @@ class Git_AdminMirrorController {
             if (! $this->git_mirror_mapper->deleteFromDefaultMirrors($id)) {
                 $GLOBALS['Response']->addFeedback(
                     Feedback::ERROR,
-                    $GLOBALS['Language']->getText('plugin_git','admin_mirror_defalut_cannot_delete')
+                    dgettext('tuleap-git', 'An error occured whiled deleting the mirror in the default mirrors for projects.')
                 );
             }
-
         } catch (Git_Mirror_MirrorNotFoundException $e) {
-            $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_git','admin_mirror_cannot_delete'));
+            $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-git', 'Failed to delete mirror'));
         }
 
         $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?pane=mirrors_admin');

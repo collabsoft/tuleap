@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) Enalean SAS, 2016. All Rights Reserved.
+ * Copyright (c) Enalean SAS, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,6 @@ use Tracker_FormElementFactory;
 use PFUser;
 use Tracker_ArtifactLinkInfo;
 use Tracker_Artifact_Changeset;
-use Codendi_HTMLPurifier;
 
 /**
  * I am responsible of rendering ArtifactLink value in a Custom Column in table renderer
@@ -49,7 +48,7 @@ class ValueFormatter
 
     public function fetchFormattedValue(PFUser $user, array $values, $nature, $format)
     {
-        $arr = array();
+        $arr = [];
         preg_match_all('/%(?P<names>[a-z_]+)/i', $format, $matches);
         foreach ($values as $artifact_link_info) {
             if ($artifact_link_info->getNature() != $nature) {
@@ -86,8 +85,8 @@ class ValueFormatter
             return '';
         }
 
-        $search  = array();
-        $replace = array();
+        $search  = [];
+        $replace = [];
         try {
             $this->fillSearchAndReplace(
                 $search,
@@ -104,8 +103,6 @@ class ValueFormatter
         } catch (UnsupportedFieldException $exception) {
             return $this->output->fetchWhenUnsupportedField($artifact_link_info);
         }
-
-        return '';
     }
 
     private function fillSearchAndReplace(
@@ -117,8 +114,8 @@ class ValueFormatter
         PFUser $user
     ) {
         foreach ($matching_field_names as $field_name) {
-            $search[] = '%'. $field_name;
-            $field = $this->factory->getUsedFieldByNameForUser($artifact_link_info->getTrackerId(), $field_name, $user);
+            $search[] = '%' . $field_name;
+            $field    = $this->factory->getUsedFieldByNameForUser($artifact_link_info->getTrackerId(), $field_name, $user);
             if (! $field) {
                 throw new NoFieldToFormatException();
             } else {

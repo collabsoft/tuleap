@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,7 @@ use Tuleap\AgileDashboard\Kanban\TrackerReport\TrackerReportUpdater;
 
 class AgileDashboard_FirstKanbanCreator
 {
-    const ASSIGNED_TO_ME_REPORT = "Assigned to me";
+    public const ASSIGNED_TO_ME_REPORT = "Assigned to me";
 
     /** @var Project */
     private $project;
@@ -39,7 +39,7 @@ class AgileDashboard_FirstKanbanCreator
     /** @var string */
     private $template_path;
 
-    /** var string */
+    /** @var string */
     private $tracker_itemname;
 
     /**
@@ -66,15 +66,15 @@ class AgileDashboard_FirstKanbanCreator
         TrackerReportUpdater $tracker_report_updater,
         Tracker_ReportFactory $report_factory
     ) {
-        $this->project          = $project;
-        $this->kanban_manager   = $kanban_manager;
-        $this->tracker_factory  = $tracker_factory;
-        $this->xml_import       = $xml_import;
-        $this->template_path    = AGILEDASHBOARD_RESOURCE_DIR .'/Tracker_kanbantask.xml';
-        $this->tracker_itemname = $this->xml_import->getTrackerItemNameFromXMLFile($this->template_path);
+        $this->project                = $project;
+        $this->kanban_manager         = $kanban_manager;
+        $this->tracker_factory        = $tracker_factory;
+        $this->xml_import             = $xml_import;
+        $this->template_path          = __DIR__ . '/../../resources/templates/Tracker_activity.xml';
+        $this->tracker_itemname       = $this->xml_import->getTrackerItemNameFromXMLFile($this->template_path);
         $this->tracker_report_updater = $tracker_report_updater;
-        $this->kanban_factory = $kanban_factory;
-        $this->report_factory = $report_factory;
+        $this->kanban_factory         = $kanban_factory;
+        $this->report_factory         = $report_factory;
     }
 
     public function createFirstKanban(PFUser $user)
@@ -85,24 +85,20 @@ class AgileDashboard_FirstKanbanCreator
 
         if ($this->isTrackerAlreadyCreated()) {
             $this->warn(
-                $GLOBALS['Language']->getText(
-                    'plugin_agiledashboard_first_kanban',
-                    'error_existing_tracker',
-                    $this->tracker_itemname
-                )
+                sprintf(dgettext('tuleap-agiledashboard', 'We tried to create a first kanban for you but an existing tracker (%1$s) prevented it.'), $this->tracker_itemname)
             );
             return;
         }
 
         $tracker = $this->importTrackerStructure();
         if (! $tracker) {
-            $this->warn($GLOBALS['Language']->getText('plugin_agiledashboard_first_kanban', 'internal_error'));
+            $this->warn(dgettext('tuleap-agiledashboard', 'We tried to create a first kanban for you but an internal error prevented it.'));
             return;
         }
 
         $kanban_id = $this->kanban_manager->createKanban($tracker->getName(), $tracker->getId());
         if (! $kanban_id) {
-            $this->warn($GLOBALS['Language']->getText('plugin_agiledashboard_first_kanban', 'internal_error'));
+            $this->warn(dgettext('tuleap-agiledashboard', 'We tried to create a first kanban for you but an internal error prevented it.'));
             return;
         }
 
@@ -111,43 +107,43 @@ class AgileDashboard_FirstKanbanCreator
 
         $GLOBALS['Response']->addFeedback(
             Feedback::INFO,
-            $GLOBALS['Language']->getText(
-                'plugin_agiledashboard_first_kanban',
-                'created',
-                '?'. http_build_query(
-                    array(
-                        'group_id' => $this->project->getId(),
-                        'action'   => 'showKanban',
-                        'id'       => $kanban_id
-                    )
-                )
-            ),
+            sprintf(dgettext('tuleap-agiledashboard', 'We created <a href="%1$s">a first kanban</a> for you. Enjoy!'), '?' . http_build_query(
+                [
+                    'group_id' => $this->project->getId(),
+                    'action'   => 'showKanban',
+                    'id'       => $kanban_id
+                ]
+            )),
             CODENDI_PURIFIER_DISABLED
         );
     }
 
-    private function warn($message) {
+    private function warn($message)
+    {
         $GLOBALS['Response']->addFeedback(Feedback::WARN, $message);
     }
 
-    /** @return Tracker */
-    private function importTrackerStructure() {
+    /** @return Tracker|null */
+    private function importTrackerStructure()
+    {
         try {
             return $this->xml_import->createFromXMLFile($this->project, $this->template_path);
         } catch (Exception $exception) {
-            $logger = new BackendLogger();
-            $logger->error('Unable to create first kanban for '. $this->project->getId() .': '. $exception->getMessage());
+            $logger = BackendLogger::getDefaultLogger();
+            $logger->error('Unable to create first kanban for ' . $this->project->getId() . ': ' . $exception->getMessage());
             return;
         }
     }
 
-    private function isFirstKanbanNeeded() {
+    private function isFirstKanbanNeeded()
+    {
         $used_trackers = $this->kanban_manager->getTrackersUsedAsKanban($this->project);
 
         return count($used_trackers) === 0;
     }
 
-    private function isTrackerAlreadyCreated() {
+    private function isTrackerAlreadyCreated()
+    {
         $is_tracker_already_created = $this->tracker_factory->isShortNameExists(
             $this->tracker_itemname,
             $this->project->getId()
@@ -165,7 +161,7 @@ class AgileDashboard_FirstKanbanCreator
 
         foreach ($reports as $tracker_report) {
             if ($tracker_report->isPublic() && $tracker_report->getName() === self::ASSIGNED_TO_ME_REPORT) {
-                $this->tracker_report_updater->save($kanban, array((int) $tracker_report->getId()));
+                $this->tracker_report_updater->save($kanban, [(int) $tracker_report->getId()]);
 
                 return;
             }

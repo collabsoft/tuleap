@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -38,7 +38,7 @@ class b201612091720_use_only_rank_for_artifact_priority extends ForgeUpgrade_Buc
 
     public function postUp()
     {
-        if (!$this->db->tableNameExists('tracker_artifact_priority_rank')) {
+        if (! $this->db->tableNameExists('tracker_artifact_priority_rank')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('Table tracker_artifact_priority_rank not created');
         }
     }
@@ -51,8 +51,10 @@ class b201612091720_use_only_rank_for_artifact_priority extends ForgeUpgrade_Buc
                 ) ENGINE=InnoDB";
         $res = $this->db->dbh->exec($sql);
         if ($res === false) {
-            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while creating tracker_artifact_priority_rank: ' . implode(', ',
-                    $this->db->dbh->errorInfo()));
+            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while creating tracker_artifact_priority_rank: ' . implode(
+                ', ',
+                $this->db->dbh->errorInfo()
+            ));
         }
     }
 
@@ -65,8 +67,10 @@ class b201612091720_use_only_rank_for_artifact_priority extends ForgeUpgrade_Buc
 
         $res = $this->db->dbh->exec($sql);
         if ($res === false) {
-            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while populating tracker_artifact_priority_rank: ' . implode(', ',
-                    $this->db->dbh->errorInfo()));
+            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while populating tracker_artifact_priority_rank: ' . implode(
+                ', ',
+                $this->db->dbh->errorInfo()
+            ));
         }
     }
 }

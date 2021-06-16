@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -30,9 +30,6 @@ class DefaultSettingsRouter extends RouterLink
      */
     private $index_controller;
 
-    /**
-     * @param IndexController $index_controller
-     */
     public function __construct(IndexController $index_controller)
     {
         $this->index_controller = $index_controller;

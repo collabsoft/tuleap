@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,9 +20,7 @@
 
 namespace Tuleap\AgileDashboard\REST;
 
-use AgileDashboard_HierarchyChecker;
 use AgileDashboard_KanbanDao;
-use AgileDashboard_KanbanFactory;
 use AgileDashboard_KanbanManager;
 use BackendLogger;
 use BrokerLogger;
@@ -30,7 +28,6 @@ use EventManager;
 use Exception;
 use ForgeConfig;
 use Log_ConsoleLogger;
-use PlanningFactory;
 use REST_TestDataBuilder;
 use SystemEvent;
 use SystemEventManager;
@@ -41,11 +38,14 @@ use Tuleap\Project\SystemEventRunner;
 
 class DataBuilder extends REST_TestDataBuilder
 {
-    const PROJECT_KANBAN_CUMULATIVE_FLOW_SHORTNAME = 'kanban-cumulative-flow';
-    const KANBAN_CUMULATIVE_FLOW_NAME              = 'kanban_cumulative_flow_test';
-    const RELEASE_TRACKER_SHORTNAME                = 'rel';
-    const PROJECT_BURNUP_SHORTNAME                 = 'burnup';
-    const KANBAN_CUMULATIVE_FLOW_ID                = 2;
+    public const PROJECT_KANBAN_CUMULATIVE_FLOW_SHORTNAME = 'kanban-cumulative-flow';
+    public const KANBAN_CUMULATIVE_FLOW_NAME              = 'kanban_cumulative_flow_test';
+    public const RELEASE_TRACKER_SHORTNAME                = 'rel';
+    public const PROJECT_BURNUP_SHORTNAME                 = 'burnup';
+    public const KANBAN_CUMULATIVE_FLOW_ID                = 2;
+
+    public const EXPLICIT_BACKLOG_PROJECT_SHORTNAME = 'explicitadbacklog';
+
     /**
      * @var SystemEventManager
      */
@@ -69,26 +69,18 @@ class DataBuilder extends REST_TestDataBuilder
         parent::__construct();
         $this->instanciateFactories();
 
-        $kanban_dao            = new AgileDashboard_KanbanDao();
-        $kanban_factory        = new AgileDashboard_KanbanFactory($this->tracker_factory, $kanban_dao);
-        $planning_factory      = PlanningFactory::build();
-        $hierarchy_checker     = new AgileDashboard_HierarchyChecker(
-            $planning_factory,
-            $kanban_factory,
-            $this->tracker_factory
-        );
-        $this->kanban_manager  = new AgileDashboard_KanbanManager(
+        $kanban_dao           = new AgileDashboard_KanbanDao();
+        $this->kanban_manager = new AgileDashboard_KanbanManager(
             $kanban_dao,
-            $this->tracker_factory,
-            $hierarchy_checker
+            $this->tracker_factory
         );
 
         $this->tracker_artifact_factory = \Tracker_ArtifactFactory::instance();
         $this->system_event_manager     = SystemEventManager::instance();
 
         $console    = new TruncateLevelLogger(new Log_ConsoleLogger(), ForgeConfig::get('sys_logger_level'));
-        $logger     = new BackendLogger();
-        $broker_log = new BrokerLogger(array($logger, $console));
+        $logger     = BackendLogger::getDefaultLogger();
+        $broker_log = new BrokerLogger([$logger, $console]);
 
         $factory                   = new SystemEventProcessor_Factory(
             $broker_log,

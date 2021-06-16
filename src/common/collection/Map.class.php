@@ -24,18 +24,21 @@ require_once('Collection.class.php');
  * An object that maps key to value.
  * A map cannot contain duplicate keys; each key can map to at most one value.
  */
-class Map {
+class Map
+{
 
-    var $elements;
+    public $elements;
 
-    function __construct() {
-        $this->elements = array();
+    public function __construct()
+    {
+        $this->elements = [];
     }
 
     /**
-     * @return the value to which this map maps the specified key.
+     * @return mixed the value to which this map maps the specified key.
      */
-    function get($key) {
+    public function get($key)
+    {
         $value = false;
         if ($this->containsKey($key) && isset($this->elements[$key])) {
             $value = $this->elements[$key];
@@ -46,58 +49,66 @@ class Map {
     /**
      * Associates the specified value with the specified key in this map
      */
-    function put($key, $value) {
+    public function put($key, $value)
+    {
         $this->elements[$key] = $value;
     }
 
     /**
      * @return true if this map contains no key-value mappings.
      */
-    function isEmpty() {
+    public function isEmpty()
+    {
         return empty($this->elements);
     }
 
     /**
      * @return the number of elements in this map
      */
-    function size() {
+    public function size()
+    {
         return count($this->elements);
     }
 
     /**
      * @return the keys of this map
      */
-    function getKeys() {
+    public function getKeys()
+    {
         return new Collection(array_keys($this->elements));
     }
 
     /**
-     * @return a collection view of the values contained in this map.
+     * @return Collection
      */
-    function getValues() {
+    public function getValues()
+    {
         return new Collection($this->elements);
     }
 
     /**
      * @return true if this map contains a mapping for the specified key.
      */
-    function containsKey($key) {
+    public function containsKey($key)
+    {
         return isset($this->elements[$key]);
     }
 
     /**
      * @return true if this map maps one or more keys to the specified value.
      */
-    function containsValue($value) {
-        return in_array($value,$this->elements);
+    public function containsValue($value)
+    {
+        return in_array($value, $this->elements);
     }
 
     /**
      * Compares the specified object with this map for equality.
      * @param obj the reference object with which to compare.
-     * @return true if this object is the same as the obj argument; false otherwise.
+     * @return bool true if this object is the same as the obj argument; false otherwise.
      */
-    function equals($obj) {
+    public function equals($obj)
+    {
         if (is_a($obj, "Map") && $this->size() === $obj->size()) {
             if ($this->getKeys()->equals($obj->getKeys())) {
                 $is_identical = true;
@@ -117,14 +128,17 @@ class Map {
     /**
      * remove a mapping
      */
-    function remove($key, $wanted) {
+    public function remove($key, $wanted)
+    {
         $compare_with_equals = method_exists($wanted, 'equals');
-        $removed = false;
+        $removed             = false;
         if ($this->containsKey($key) && isset($this->elements[$key])) {
-            if (($compare_with_equals && $wanted->equals($this->elements[$key]))
-             || (!$compare_with_equals && (
+            if (
+                ($compare_with_equals && $wanted->equals($this->elements[$key]))
+                || (! $compare_with_equals && (
                  (method_exists($this->elements[$key], 'equals') && $this->elements[$key]->equals($wanted))
-                 || ($wanted === $this->elements[$key])))) {
+                 || ($wanted === $this->elements[$key])))
+            ) {
                 unset($this->elements[$key]);
                 $removed = true;
             }

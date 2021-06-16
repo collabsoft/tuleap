@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ use Tuleap\Event\Dispatchable;
 
 class MessageFetcherAdditionalWarnings implements Dispatchable
 {
-    const NAME = 'getMessageFetcherAdditionalWarnings';
+    public const NAME = 'getMessageFetcherAdditionalWarnings';
 
     /**
      * @var Tracker_FormElement_Field
@@ -35,7 +35,7 @@ class MessageFetcherAdditionalWarnings implements Dispatchable
     /**
      * @var array
      */
-    private $warnings = array();
+    private $warnings = [];
 
     public function __construct(Tracker_FormElement_Field $field)
     {

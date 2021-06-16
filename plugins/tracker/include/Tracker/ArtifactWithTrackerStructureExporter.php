@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  *  This file is a part of Tuleap.
  *
@@ -38,11 +38,11 @@ class ArtifactWithTrackerStructureExporter
 
     public function __construct(TrackerXmlExport $exporter, XMLConvertor $convertor)
     {
-        $this->exporter      = $exporter;
-        $this->convertor     = $convertor;
+        $this->exporter  = $exporter;
+        $this->convertor = $convertor;
     }
 
-    public function exportArtifactAndTrackerStructureToXML(PFUser $user, \Tracker_Artifact $artifact, ZipArchive $archive)
+    public function exportArtifactAndTrackerStructureToXML(PFUser $user, \Tuleap\Tracker\Artifact\Artifact $artifact, ZipArchive $archive)
     {
         $xml_element = $this->exporter->exportSingleTrackerBunchOfArtifactsToXml(
             $artifact->getTracker()->getId(),

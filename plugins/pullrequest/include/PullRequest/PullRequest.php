@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,21 +22,20 @@ namespace Tuleap\PullRequest;
 
 use Tuleap\Label\Labelable;
 
+/**
+ * @psalm-immutable
+ */
 class PullRequest implements Labelable
 {
 
-    const STATUS_ABANDONED = 'A';
-    const STATUS_MERGED    = 'M';
-    const STATUS_REVIEW    = 'R';
+    public const STATUS_ABANDONED = 'A';
+    public const STATUS_MERGED    = 'M';
+    public const STATUS_REVIEW    = 'R';
 
-    const UNKNOWN_MERGE        = 0;
-    const NO_FASTFORWARD_MERGE = 1;
-    const FASTFORWARD_MERGE    = 2;
-    const CONFLICT_MERGE       = 3;
-
-    const BUILD_STATUS_UNKNOWN = 'U';
-    const BUILD_STATUS_SUCCESS = 'S';
-    const BUILD_STATUS_FAIL    = 'F';
+    public const UNKNOWN_MERGE        = 0;
+    public const NO_FASTFORWARD_MERGE = 1;
+    public const FASTFORWARD_MERGE    = 2;
+    public const CONFLICT_MERGE       = 3;
 
     private $id;
     private $title;
@@ -45,14 +44,15 @@ class PullRequest implements Labelable
     private $user_id;
     private $creation_date;
     private $branch_src;
+    /**
+     * @var string
+     */
     private $sha1_src;
     private $repo_dest_id;
     private $branch_dest;
     private $sha1_dest;
     private $status;
     private $merge_status;
-    private $last_build_status;
-    private $last_build_date;
 
     public function __construct(
         $id,
@@ -62,30 +62,42 @@ class PullRequest implements Labelable
         $user_id,
         $creation_date,
         $branch_src,
-        $sha1_src,
+        string $sha1_src,
         $repo_dest_id,
         $branch_dest,
         $sha1_dest,
-        $last_build_date = null,
-        $last_build_status = self::BUILD_STATUS_UNKNOWN,
         $status = 'R',
         $merge_status = self::UNKNOWN_MERGE
     ) {
-        $this->id                = $id;
-        $this->title             = $title;
-        $this->description       = $description;
-        $this->repository_id     = $repository_id;
-        $this->user_id           = $user_id;
-        $this->creation_date     = $creation_date;
-        $this->branch_src        = $branch_src;
-        $this->sha1_src          = $sha1_src;
-        $this->repo_dest_id      = $repo_dest_id;
-        $this->branch_dest       = $branch_dest;
-        $this->sha1_dest         = $sha1_dest;
-        $this->last_build_date   = $last_build_date;
-        $this->last_build_status = $last_build_status;
-        $this->status            = $status;
-        $this->merge_status      = $merge_status;
+        $this->id            = $id;
+        $this->title         = $title;
+        $this->description   = $description;
+        $this->repository_id = $repository_id;
+        $this->user_id       = $user_id;
+        $this->creation_date = $creation_date;
+        $this->branch_src    = $branch_src;
+        $this->sha1_src      = $sha1_src;
+        $this->repo_dest_id  = $repo_dest_id;
+        $this->branch_dest   = $branch_dest;
+        $this->sha1_dest     = $sha1_dest;
+        $this->status        = $status;
+        $this->merge_status  = $merge_status;
+    }
+
+    public function createWithNewID(int $new_pull_request_id): self
+    {
+        $new_pull_request     = clone $this;
+        $new_pull_request->id = $new_pull_request_id;
+
+        return $new_pull_request;
+    }
+
+    public function updateMergeStatus(int $new_merge_status): self
+    {
+        $updated_pull_request               = clone $this;
+        $updated_pull_request->merge_status = $new_merge_status;
+
+        return $updated_pull_request;
     }
 
     public function getId()
@@ -113,7 +125,7 @@ class PullRequest implements Labelable
         return $this->branch_src;
     }
 
-    public function getSha1Src()
+    public function getSha1Src(): string
     {
         return $this->sha1_src;
     }
@@ -143,27 +155,6 @@ class PullRequest implements Labelable
         return $this->merge_status;
     }
 
-    public function setMergeStatus($merge_status)
-    {
-        return $this->merge_status = $merge_status;
-    }
-
-    /**
-     * @deprecated
-     */
-    public function getLastBuildDate()
-    {
-        return $this->last_build_date;
-    }
-
-    /**
-     * @deprecated
-     */
-    public function getLastBuildStatus()
-    {
-        return $this->last_build_status;
-    }
-
     public function getUserId()
     {
         return $this->user_id;
@@ -172,26 +163,5 @@ class PullRequest implements Labelable
     public function getCreationDate()
     {
         return $this->creation_date;
-    }
-
-    public function setId($id)
-    {
-        $this->id = $id;
-    }
-
-    /**
-     * @deprecated
-     */
-    public function setLastBuildStatus($status)
-    {
-        $this->last_build_status = $status;
-    }
-
-    /**
-     * @deprecated
-     */
-    public function setLastBuildDate($date)
-    {
-        $this->last_build_date = $date;
     }
 }

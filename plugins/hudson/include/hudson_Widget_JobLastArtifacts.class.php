@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -20,6 +20,8 @@
  */
 
 use Tuleap\Dashboard\User\UserDashboardController;
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\HTTPFactoryBuilder;
 use Tuleap\Hudson\HudsonJobBuilder;
 
 class hudson_Widget_JobLastArtifacts extends HudsonJobWidget
@@ -28,8 +30,8 @@ class hudson_Widget_JobLastArtifacts extends HudsonJobWidget
      * @var HudsonJob
      */
     private $job;
-    var $build;
-    var $last_build_url;
+    public $build;
+    public $last_build_url;
     /**
      * @var HudsonJobBuilder
      */
@@ -60,20 +62,22 @@ class hudson_Widget_JobLastArtifacts extends HudsonJobWidget
         $this->job_builder = $job_builder;
     }
 
-    public function getTitle() {
+    public function getTitle()
+    {
         $title = '';
         if ($this->job) {
-            $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_lastartifacts', array($this->job->getName()));
+            $title .= sprintf(dgettext('tuleap-hudson', '%1$s Last Artifacts'), $this->job->getName());
         } else {
-             $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_lastartifacts');
+             $title .= sprintf(dgettext('tuleap-hudson', '%1$s Last Artifacts'), '');
         }
         $purifier = Codendi_HTMLPurifier::instance();
 
         return $purifier->purify($title);
     }
 
-    public function getDescription() {
-        return $GLOBALS['Language']->getText('plugin_hudson', 'widget_description_lastartifacts');
+    public function getDescription()
+    {
+        return dgettext('tuleap-hudson', 'Show the last successfully published artifacts of one job. To display something, your job needs to publish artifacts.');
     }
 
     public function loadContent($id)
@@ -94,9 +98,12 @@ class hudson_Widget_JobLastArtifacts extends HudsonJobWidget
                     $used_job  = $jobs[$this->job_id];
                     $this->job = $this->job_builder->getHudsonJob($used_job);
 
-                    $http_client          = new Http_Client();
                     $this->last_build_url = $this->job->getUrl() . '/lastBuild/';
-                    $this->build          = new HudsonBuild($this->last_build_url, $http_client);
+                    $this->build          = new HudsonBuild(
+                        $this->last_build_url,
+                        HttpClientFactory::createClient(),
+                        HTTPFactoryBuilder::requestFactory()
+                    );
                 } catch (Exception $e) {
                     $this->job   = null;
                     $this->build = null;
@@ -120,19 +127,19 @@ class hudson_Widget_JobLastArtifacts extends HudsonJobWidget
 
             $dom = $build->getDom();
             if (count($dom->artifact) === 0) {
-                return $purifier->purify($GLOBALS['Language']->getText('plugin_hudson', 'no_artifact_found'));
+                return $purifier->purify(dgettext('tuleap-hudson', 'No artifact found.'));
             }
 
             $html .= '<ul>';
             foreach ($dom->artifact as $artifact) {
-                $html .= ' <li><a href="'.$purifier->purify($build->getUrl().'/artifact/'.$artifact->relativePath).'">'.$purifier->purify($artifact->fileName).'</a></li>';
+                $html .= ' <li><a href="' . $purifier->purify($build->getUrl() . '/artifact/' . $artifact->relativePath) . '">' . $purifier->purify($artifact->fileName) . '</a></li>';
             }
             $html .= '</ul>';
         } else {
             if ($this->job != null) {
-                $html .= $purifier->purify($GLOBALS['Language']->getText('plugin_hudson', 'widget_build_not_found'));
+                $html .= $purifier->purify(dgettext('tuleap-hudson', 'No build found for this job.'));
             } else {
-                $html .= $purifier->purify($GLOBALS['Language']->getText('plugin_hudson', 'widget_job_not_found'));
+                $html .= $purifier->purify(dgettext('tuleap-hudson', 'Job not found.'));
             }
         }
         return $html;

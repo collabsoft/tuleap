@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2015. All rights reserved
+ * Copyright (c) Enalean SAS 2015 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201511231728_add_trovecat_mandatory_column extends ForgeUpgrade_Bucket {
+class b201511231728_add_trovecat_mandatory_column extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return "Add mandatory attribute for trovecat";
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "ALTER TABLE trove_cat
                 ADD COLUMN mandatory TINYINT(1) NOT NULL DEFAULT 0";
 

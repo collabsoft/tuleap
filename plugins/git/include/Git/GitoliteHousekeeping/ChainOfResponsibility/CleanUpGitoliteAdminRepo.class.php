@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,12 +18,13 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/backend/BackendService.class.php';
+use Symfony\Component\Process\Process;
 
 /**
  * I do the real stuff: backuping admin repo and cloning a fresh one
  */
-class Git_GitoliteHousekeeping_ChainOfResponsibility_CleanUpGitoliteAdminRepo extends Git_GitoliteHousekeeping_ChainOfResponsibility_Command {
+class Git_GitoliteHousekeeping_ChainOfResponsibility_CleanUpGitoliteAdminRepo extends Git_GitoliteHousekeeping_ChainOfResponsibility_Command
+{
 
     /** @var Git_GitoliteHousekeeping_GitoliteHousekeepingResponse */
     private $response;
@@ -48,9 +49,10 @@ class Git_GitoliteHousekeeping_ChainOfResponsibility_CleanUpGitoliteAdminRepo ex
         $this->remote_admin_repository = $remote_admin_repository;
     }
 
-    public function execute() {
+    public function execute(): void
+    {
         $admin_dir  = 'admin';
-        $backup_dir = $this->gitolite_var_path .'/admin.old';
+        $backup_dir = $this->gitolite_var_path . '/admin.old';
         if (is_dir($backup_dir)) {
             $this->response->error("The gitolite backup dir $backup_dir already exists. Please remove it.");
             $this->response->abort();
@@ -58,7 +60,8 @@ class Git_GitoliteHousekeeping_ChainOfResponsibility_CleanUpGitoliteAdminRepo ex
         }
 
         $this->response->info("Moving $admin_dir to $backup_dir and cloning $this->remote_admin_repository");
-        $cmd = "(cd $this->gitolite_var_path && mv $admin_dir $backup_dir && git clone $this->remote_admin_repository $admin_dir)";
+        $cmd = '(cd ' . escapeshellarg($this->gitolite_var_path) . ' && mv ' . escapeshellarg($admin_dir) . ' ' .  escapeshellarg($backup_dir) .
+            ' && git clone ' . escapeshellarg($this->remote_admin_repository) . ' '  . escapeshellarg($admin_dir) . ')';
         $this->executeCmd($cmd);
 
         $this->executeNextCommand();
@@ -67,15 +70,18 @@ class Git_GitoliteHousekeeping_ChainOfResponsibility_CleanUpGitoliteAdminRepo ex
     /**
      * Used by unit tests to bypass the fact that clone must be done by codendiadm
      */
-    public function clearExecuteAs() {
+    public function clearExecuteAs()
+    {
         $this->execute_as = null;
     }
 
-    private function executeCmd($cmd) {
+    private function executeCmd(string $cmd): void
+    {
         if ($this->execute_as) {
-            $cmd = "su -c '$cmd' - $this->execute_as";
+            $cmd = "su -c '\$COMMAND' - \$EXECUTE_AS";
         }
 
-        exec($cmd);
+        $process = Process::fromShellCommandline($cmd);
+        $process->mustRun(null, ['COMMAND' => $cmd, 'EXECUTE_AS' => $this->execute_as ?? '']);
     }
 }

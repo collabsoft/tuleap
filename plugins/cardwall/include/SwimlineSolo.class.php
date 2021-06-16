@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,19 +21,16 @@
 /**
  * A swimline for solo item in the dashboard
  */
-class Cardwall_SwimlineSolo extends Cardwall_Swimline{
-
-    /**
-     * @param string $title
-     * @param array  $cells
-     */
-    public function __construct($swimline_id, array $cells) {
+class Cardwall_SwimlineSolo extends Cardwall_Swimline
+{
+    public function __construct($swimline_id, array $cells)
+    {
         $this->swimline_id = $swimline_id;
         $this->cells       = $cells;
     }
 
-    public function getCardPresenter() {
-        return false;
+    public function getCardPresenter()
+    {
+        return null;
     }
 }
-?>

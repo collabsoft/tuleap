@@ -1,5 +1,23 @@
 <?php
-
+/**
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
+ * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
@@ -8,14 +26,9 @@ namespace Tuleap\Git\GitPHP;
  *
  * Configfile reader class
  *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
  */
 /**
  * Config class
- *
- * @package GitPHP
  */
 class Config
 {
@@ -27,6 +40,7 @@ class Config
      *
      * @access protected
      * @static
+     * @var self|null
      */
     protected static $instance;
 
@@ -37,7 +51,7 @@ class Config
      *
      * @access protected
      */
-    protected $values = array();
+    protected $values = [];
 
     /**
      * configs
@@ -46,7 +60,7 @@ class Config
      *
      * @access protected
      */
-    protected $configs = array();
+    protected $configs = [];
 
     /**
      * GetInstance
@@ -59,7 +73,7 @@ class Config
      */
     public static function GetInstance() // @codingStandardsIgnoreLine
     {
-        if (!self::$instance) {
+        if (! self::$instance) {
             self::$instance = new Config();
         }
         return self::$instance;
@@ -72,15 +86,15 @@ class Config
      *
      * @access public
      * @param string $configFile config file to load
-     * @throws Exception on failure
+     * @throws \Exception on failure
      */
     public function LoadConfig($configFile) // @codingStandardsIgnoreLine
     {
-        if (!is_file($configFile)) {
+        if (! is_file($configFile)) {
             throw new MessageException('Could not load config file ' . $configFile, true, 500);
         }
 
-        if (!include($configFile)) {
+        if (! include($configFile)) {
             throw new MessageException('Could not read config file ' . $configFile, true, 500);
         }
 
@@ -100,8 +114,8 @@ class Config
      */
     public function ClearConfig() // @codingStandardsIgnoreLine
     {
-        $this->values = array();
-        $this->configs = array();
+        $this->values  = [];
+        $this->configs = [];
     }
 
     /**
@@ -148,7 +162,7 @@ class Config
      *
      * @access public
      * @param string $key config key to find
-     * @return boolean true if key exists
+     * @return bool true if key exists
      */
     public function HasKey($key) // @codingStandardsIgnoreLine
     {

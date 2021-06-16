@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,17 +18,20 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Planning_ArtifactParentsSelector_SameTrackerCommand extends Planning_ArtifactParentsSelector_Command {
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Planning_ArtifactParentsSelector_SameTrackerCommand extends Planning_ArtifactParentsSelector_Command
+{
 
     /**
      * @see Planning_ArtifactParentsSelector_Command
      *
      * @return array of Tracker_Artifact
      */
-    public function getPossibleParents(Tracker $parent_tracker, Tracker_Artifact $source_artifact, PFUser $user) {
-        if ($source_artifact->getTracker() == $parent_tracker) {
-            return array($source_artifact);
+    public function getPossibleParents(Tracker $parent_tracker, Artifact $source_artifact, PFUser $user)
+    {
+        if ((int) $source_artifact->getTracker()->getId() === (int) $parent_tracker->getId()) {
+            return [$source_artifact];
         }
     }
 }
-?>

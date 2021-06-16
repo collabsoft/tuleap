@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,12 +22,11 @@
 namespace Tuleap\Tracker\Events;
 
 use Project;
-use SimpleXMLElement;
 use Tuleap\Event\Dispatchable;
 
 class XMLImportArtifactLinkTypeCanBeDisabled implements Dispatchable
 {
-    const NAME = 'tracker_xml_import_artifact_link_can_be_disabled';
+    public const NAME = 'tracker_xml_import_artifact_link_can_be_disabled';
 
     /**
      * @var Project

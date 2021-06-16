@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,9 +22,9 @@ namespace Tuleap\Admin\Homepage;
 
 class StatisticsBadgePresenter
 {
-    const LEVEL_DANGER    = 'danger';
-    const LEVEL_WARNING   = 'warning';
-    const LEVEL_SECONDARY = 'secondary';
+    public const LEVEL_DANGER    = 'danger';
+    public const LEVEL_WARNING   = 'warning';
+    public const LEVEL_SECONDARY = 'secondary';
 
     public $label;
     public $level;

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,38 +20,28 @@
 
 namespace Tuleap\DB;
 
-use ParagonIE\EasyDB\Factory;
-
-class DBFactory
+final class DBFactory
 {
+    /**
+     * @var array<string, DBConnection>
+     */
     private static $connections = [];
 
-    /**
-     * @return \ParagonIE\EasyDB\EasyDB
-     */
-    public static function getMainTuleapDB()
+    private function __construct()
     {
-        return self::getDB(\ForgeConfig::get('sys_dbname'));
     }
 
-    /**
-     * @return \ParagonIE\EasyDB\EasyDB
-     */
-    public static function getDB($database_name)
+    public static function getMainTuleapDBConnection(): DBConnection
+    {
+        return self::getDBConnection(\ForgeConfig::get('sys_dbname'));
+    }
+
+    public static function getDBConnection(string $database_name): DBConnection
     {
         if (! isset(self::$connections[$database_name])) {
-            self::$connections[$database_name] = Factory::create(
-                self::getDSN($database_name),
-                \ForgeConfig::get('sys_dbuser'),
-                \ForgeConfig::get('sys_dbpasswd')
-            );
+            self::$connections[$database_name] = new DBConnection(new DBCreator($database_name));
         }
 
         return self::$connections[$database_name];
-    }
-
-    private static function getDSN($database_name)
-    {
-        return 'mysql:host=' . \ForgeConfig::get('sys_dbhost') . ';dbname=' . $database_name;
     }
 }

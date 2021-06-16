@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright 1999-2000 (c) The SourceForge Crew
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,16 +26,16 @@ use Tuleap\News\Admin\AdminNewsDao;
 use Tuleap\Admin\AdminPageRenderer;
 use Tuleap\News\Admin\NewsRetriever;
 
-require_once('pre.php');
+require_once __DIR__ . '/../../include/pre.php';
 
 //common forum tools which are used during the creation/editing of news items
-require_once('www/forum/forum_utils.php');
-require_once('www/project/admin/ugroup_utils.php');
+require_once __DIR__ . '/../../forum/forum_utils.php';
+require_once __DIR__ . '/../../project/admin/ugroup_utils.php';
 
 
-$request =& HTTPRequest::instance();
+$request = HTTPRequest::instance();
 
-if (user_ismember($GLOBALS['sys_news_group'], 'A')) {
+if (user_ismember(ForgeConfig::get('sys_news_group'), 'A')) {
     $admin_news_renderer = new AdminPageRenderer();
     $csrf_token          = new CSRFSynchronizerToken('/admin/news');
     $admin_news_dao      = new AdminNewsDao();
@@ -45,7 +45,7 @@ if (user_ismember($GLOBALS['sys_news_group'], 'A')) {
         ProjectManager::instance(),
         UserManager::instance()
     );
-    $admin_news_router  = new AdminNewsRouter(
+    $admin_news_router   = new AdminNewsRouter(
         new AdminNewsController(
             $admin_news_dao,
             $admin_news_renderer,
@@ -54,6 +54,8 @@ if (user_ismember($GLOBALS['sys_news_group'], 'A')) {
     );
     $admin_news_router->route($request);
 } else {
-    exit_error($Language->getText('news_admin_index', 'permission_denied'),
-        $Language->getText('news_admin_index', 'need_to_be_admin'));
+    exit_error(
+        $Language->getText('news_admin_index', 'permission_denied'),
+        $Language->getText('news_admin_index', 'need_to_be_admin')
+    );
 }

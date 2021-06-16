@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,7 +41,7 @@ class WebhookDeleteController extends WebhookController
 
     public function removeWebhook(HTTPRequest $request)
     {
-        $repository = $this->getRepositoryUserCanAdministrate($request);
+        $repository   = $this->getRepositoryUserCanAdministrate($request);
         $redirect_url = $this->getWebhookSettingsURL($repository);
 
         $this->checkCSRF($redirect_url);
@@ -51,12 +51,12 @@ class WebhookDeleteController extends WebhookController
         if ($this->dao->deleteByRepositoryIdAndWebhookId($repository->getId(), $webhook_id)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_delete_success')
+                dgettext('tuleap-git', 'Webhook removed')
             );
         } else {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_delete_error')
+                dgettext('tuleap-git', 'Error while removing the webhook :(')
             );
         }
 
@@ -70,7 +70,7 @@ class WebhookDeleteController extends WebhookController
         if (! $request->valid($valid_id)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_git', 'actions_params_error')
+                dgettext('tuleap-git', 'Empty required parameter(s)')
             );
             $GLOBALS['Response']->redirect($redirect_url);
         }

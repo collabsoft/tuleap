@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,11 +17,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once 'common/dao/include/DataAccessObject.class.php';
+class SOAP_RequestLimitatorDao extends DataAccessObject
+{
 
-class SOAP_RequestLimitatorDao extends DataAccessObject {
-    
-    public function searchFirstCallToMethod($name, $delay) {
+    public function searchFirstCallToMethod($name, $delay)
+    {
         $name  = $this->da->quoteSmart($name);
         $delay = $this->da->escapeInt($delay);
         $sql   = "SELECT SQL_CALC_FOUND_ROWS *
@@ -31,8 +31,9 @@ class SOAP_RequestLimitatorDao extends DataAccessObject {
                   ORDER BY date ASC LIMIT 1";
         return $this->retrieve($sql);
     }
-    
-    public function saveCallToMethod($name, $time) {
+
+    public function saveCallToMethod($name, $time)
+    {
         $name = $this->da->quoteSmart($name);
         $time = $this->da->escapeInt($time);
         $sql  = "INSERT INTO soap_call_counter (method_name, date)
@@ -40,5 +41,3 @@ class SOAP_RequestLimitatorDao extends DataAccessObject {
         return $this->update($sql);
     }
 }
-
-?>

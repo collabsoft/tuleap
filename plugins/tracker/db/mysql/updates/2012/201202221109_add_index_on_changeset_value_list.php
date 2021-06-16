@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,27 +19,27 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/**
- *
- */
-class b201202221109_add_index_on_changeset_value_list extends ForgeUpgrade_Bucket {
+class b201202221109_add_index_on_changeset_value_list extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Add index on tracker_changeset_value_list table
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "ALTER TABLE tracker_changeset_value_list ADD INDEX idx_bind (bindvalue_id, changeset_value_id)";
         $res = $this->db->dbh->exec($sql);
         if ($res === false) {
-            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while adding index `idx_bind` on `tracker_changeset_value_list`: '.implode(', ', $this->db->dbh->errorInfo()));
+            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while adding index `idx_bind` on `tracker_changeset_value_list`: ' . implode(', ', $this->db->dbh->errorInfo()));
         }
     }
 }
-?>

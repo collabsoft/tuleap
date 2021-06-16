@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,7 +31,5 @@ class TimetrackingPluginDescriptor extends PluginDescriptor
             false,
             dgettext('tuleap-timetracking', 'Time tracking for Tuleap artifacts')
         );
-
-        $this->setVersionFromFile(dirname(__FILE__).'/../VERSION');
     }
 }

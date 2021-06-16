@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2006. All Rights Reserved.
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017-Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -21,37 +21,43 @@
 
 use Tuleap\Mail\MailFilter;
 use Tuleap\Mail\MailLogger;
+use Tuleap\Project\ProjectAccessChecker;
+use Tuleap\Project\RestrictedUserCanAccessProjectVerifier;
 
-require_once('Docman_Controller.class.php');
-require_once('Docman_Actions.class.php');
-class Docman_HTTPController extends Docman_Controller {
+class Docman_HTTPController extends Docman_Controller
+{
 
-    function __construct(&$plugin, $pluginPath, $themePath, $request = null) {
-        if (!$request) {
+    public function __construct(&$plugin, $pluginPath, $themePath, $request = null)
+    {
+        if (! $request) {
             $request = HTTPRequest::instance();
         }
         parent::__construct($plugin, $pluginPath, $themePath, $request);
     }
 
 
-    /* protected */ function _includeView() {
-        $className = 'Docman_View_'. $this->view;
-        if(file_exists(dirname(__FILE__).'/view/'. $className .'.class.php')) {
-            require_once('view/'. $className .'.class.php');
+    /* protected */ public function _includeView()
+    {
+        $className = 'Docman_View_' . $this->view;
+        if (file_exists(dirname(__FILE__) . '/view/' . $className . '.class.php')) {
+            require_once('view/' . $className . '.class.php');
             return $className;
         }
         return false;
     }
-    /* protected */ function _set_deleteView_errorPerms() {
+    /* protected */ public function _set_deleteView_errorPerms()
+    {
         $this->view = 'Details';
     }
-    /* protected */ function _set_redirectView() {
+    /* protected */ public function _set_redirectView()
+    {
         if ($redirect_to = Docman_Token::retrieveUrl($this->request->get('token'))) {
             $this->_viewParams['redirect_to'] = $redirect_to;
         }
         $this->view = 'RedirectAfterCrud';
     }
-    /* protected */ function _setView($view) {
+    /* protected */ public function _setView($view)
+    {
         if ($view == 'getRootFolder') {
             $this->feedback->log('error', 'Unable to process request');
             $this->_set_redirectView();
@@ -59,31 +65,37 @@ class Docman_HTTPController extends Docman_Controller {
             $this->view = $view;
         }
     }
-    /* protected */ function _set_moveView_errorPerms() {
+    /* protected */ public function _set_moveView_errorPerms()
+    {
         $this->view = 'Details';
     }
-    /* protected */ function _set_createItemView_errorParentDoesNotExist(&$item, $get_show_view) {
-    	   $this->view = $item->accept($get_show_view, $this->request->get('report'));
+    /* protected */ public function _set_createItemView_errorParentDoesNotExist(&$item, $get_show_view)
+    {
+           $this->view = $item->accept($get_show_view, $this->request->get('report'));
     }
-    /* protected */ function _set_createItemView_afterCreate($view) {
+    /* protected */ public function _set_createItemView_afterCreate($view)
+    {
         if ($view == 'createFolder') {
             $this->view = 'NewFolder';
         } else {
             $this->view = 'NewDocument';
         }
     }
-    /* protected */ function _set_doesnot_belong_to_project_error($item, $group) {
-        $this->feedback->log('warning', $GLOBALS['Language']->getText('plugin_docman', 'item_does_not_belong', array($item->getId(), util_unconvert_htmlspecialchars($group->getPublicName()))));
-        $this->_viewParams['redirect_to'] = str_replace('group_id='. $this->request->get('group_id'), 'group_id='. $item->getGroupId(), $_SERVER['REQUEST_URI']);
-        $this->view = 'Redirect';
+    /* protected */ public function _set_doesnot_belong_to_project_error($item, $group)
+    {
+        $this->feedback->log('warning', sprintf(dgettext('tuleap-docman', 'The item %1$s doesn\'t exist or doesn\'t belong to project %2$s.'), $item->getId(), $group->getPublicName()));
+        $this->_viewParams['redirect_to'] = str_replace('group_id=' . $this->request->get('group_id'), 'group_id=' . $item->getGroupId(), $_SERVER['REQUEST_URI']);
+        $this->view                       = 'Redirect';
     }
 
     /**
      * Get the list of all futur obsolete documents and warn document owner
      * about this obsolescence.
      */
-    function notifyFuturObsoleteDocuments() {
-        $pm = ProjectManager::instance();
+    public function notifyFuturObsoleteDocuments()
+    {
+        $hp          = Codendi_HTMLPurifier::instance();
+        $pm          = ProjectManager::instance();
         $itemFactory = new Docman_ItemFactory(0);
 
         //require_once('common/mail/TestMail.class.php');
@@ -92,38 +104,51 @@ class Docman_HTTPController extends Docman_Controller {
 
         $itemIter = $itemFactory->findFuturObsoleteItems();
         $itemIter->rewind();
-        while($itemIter->valid()) {
-            $item =& $itemIter->current();
+        while ($itemIter->valid()) {
+            $item = $itemIter->current();
 
             // Users
-            $um    =& UserManager::instance();
-            $owner =& $um->getUserById($item->getOwnerId());
+            $um    = UserManager::instance();
+            $owner = $um->getUserById($item->getOwnerId());
 
             // Project
             $group = $pm->getProject($item->getGroupId());
-            
+
             // Date
-            $obsoDate = util_timestamp_to_userdateformat($item->getObsolescenceDate(), true);
-            
+            $obsoDate = DateHelper::formatForLanguage($GLOBALS['Language'], $item->getObsolescenceDate(), true);
+
             // Urls
-            $baseUrl = get_server_url().$this->pluginPath.'/index.php?group_id='.$item->getGroupId().'&id='.$item->getId();
-            $directUrl = $baseUrl .'&action=show';
-            $detailUrl = $baseUrl .'&action=details';
-            
-            $subj = $this->txt('obso_warn_email_subject', array($GLOBALS['sys_name'],
-                                                                $item->getTitle()));
-            $body = $this->txt('obso_warn_email_body', array($item->getTitle(),
-                                                             $group->getPublicName(),
-                                                             $obsoDate,
-                                                             $directUrl,
-                                                             $detailUrl));
+            $baseUrl   = HTTPRequest::instance()->getServerUrl() . $this->pluginPath . '/index.php?group_id=' . $item->getGroupId() . '&id=' . $item->getId();
+            $directUrl = $baseUrl . '&action=show';
+            $detailUrl = $baseUrl . '&action=details';
+
+            $subj = sprintf(dgettext('tuleap-docman', '[%1$s] Document \'%2$s\' will be obsolete in one month'), ForgeConfig::get('sys_name'), $item->getTitle());
+            $body = sprintf(dgettext('tuleap-docman', 'As document owner, you are notified of the obsolescence in one month of the
+document:
+Title: %1$s
+Project: %2$s
+Obsolescence date: %3$s
+Direct Link: <%4$s>
+
+This document will disappear from your document manager in one month if you
+do nothing. The document will remain accessible through the administration
+interface though.
+You can change the obsolescence date of your document or make it permanent with
+the following link:
+<%5$s>
+
+--
+This is an automatic message sent by a robot. Please do not reply to this email.'), $item->getTitle(), $hp->purify($group->getPublicName()), $obsoDate, $directUrl, $detailUrl);
 
             $mail_notification_builder = new MailNotificationBuilder(
                 new MailBuilder(
                     TemplateRendererFactory::build(),
                     new MailFilter(
                         UserManager::instance(),
-                        new URLVerification(),
+                        new ProjectAccessChecker(
+                            new RestrictedUserCanAccessProjectVerifier(),
+                            EventManager::instance()
+                        ),
                         new MailLogger()
                     )
                 )
@@ -131,7 +156,7 @@ class Docman_HTTPController extends Docman_Controller {
 
             $mail_notification_builder->buildAndSendEmail(
                 $group,
-                array($owner->getEmail()),
+                [$owner->getEmail()],
                 $subj,
                 '',
                 $body,
@@ -144,5 +169,3 @@ class Docman_HTTPController extends Docman_Controller {
         }
     }
 }
-
-?>

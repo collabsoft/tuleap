@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,7 +29,7 @@ class CreateWebhookButtonPresenter
 
     public function __construct()
     {
-        $this->label                 = $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_create');
+        $this->label                 = dgettext('tuleap-git', 'Add generic webhook');
         $this->has_reached_the_limit = false;
         $this->only_one              = '';
         $this->target_modal          = 'modal-create-webhook';

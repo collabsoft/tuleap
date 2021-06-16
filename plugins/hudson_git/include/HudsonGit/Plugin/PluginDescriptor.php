@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,15 +20,15 @@
 
 namespace Tuleap\HudsonGit\Plugin;
 
-class PluginDescriptor extends \PluginDescriptor {
+class PluginDescriptor extends \PluginDescriptor
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct(
-            $GLOBALS['Language']->getText('plugin_hudson_git', 'descriptor_name'),
+            dgettext('tuleap-hudson_git', 'Continuous Integration for Git plugin'),
             false,
-            $GLOBALS['Language']->getText('plugin_hudson_git', 'descriptor_description')
+            dgettext('tuleap-hudson_git', 'Continuous Integration with Hudson/Jenkins for Git plugin')
         );
-
-        $this->setVersionFromFile(HUDSON_GIT_BASE_DIR.'/VERSION');
     }
 }

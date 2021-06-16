@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2006. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -18,83 +18,100 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * 
  */
-require_once('Docman_View_ItemDetailsSection.class.php');
-require_once('Docman_View_GetFieldsVisitor.class.php');
-require_once dirname(__FILE__).'/../Docman_LockFactory.class.php';
 
-class Docman_View_ItemDetailsSectionProperties extends Docman_View_ItemDetailsSection {
-    var $user_can_write;
-    var $force;
-    var $theme_path;
-    var $formName;
-    var $inheritableMetadataArray;
+use Tuleap\Docman\View\DocmanViewURLBuilder;
 
-    function __construct(&$item, $url, $theme_path, $user_can_write = false, $force = null) {
-        $this->user_can_write = $user_can_write;
-        $this->force = $force;
-        $this->theme_path = $theme_path;
-        $this->formName = '';
+class Docman_View_ItemDetailsSectionProperties extends Docman_View_ItemDetailsSection
+{
+    public $user_can_write;
+    public $force;
+    public $theme_path;
+    public $formName;
+    public $inheritableMetadataArray;
+
+    public function __construct($item, $url, $theme_path, $user_can_write = false, $force = null)
+    {
+        $this->user_can_write           = $user_can_write;
+        $this->force                    = $force;
+        $this->theme_path               = $theme_path;
+        $this->formName                 = '';
         $this->inheritableMetadataArray = null;
-        $id = 'properties';
-        $title = $GLOBALS['Language']->getText('plugin_docman','details_properties');
+        $id                             = 'properties';
+        $title                          = dgettext('tuleap-docman', 'Properties');
         parent::__construct($item, $url, $id, $title);
     }
 
-    function _getPropertyRow($label, $value) {
-        $html = '';
+    public function _getPropertyRow($label, $value)
+    {
+        $html  = '';
         $html .= '<tr style="vertical-align:top;">';
-        $html .= '<td class="label">'.$label.'</td>';
-        $html .= '<td class="value">'.$value.'</td>';
+        $html .= '<td class="label">' . $label . '</td>';
+        $html .= '<td class="value">' . $value . '</td>';
         $html .= '</tr>';
         return $html;
     }
 
-    function _getPropertyField($field) {
-        return $this->_getPropertyRow($this->_getFieldLabel($field),
-                                      $this->_showField($field));
+    public function _getPropertyField($field)
+    {
+        return $this->_getPropertyRow(
+            $this->_getFieldLabel($field),
+            $this->_showField($field)
+        );
     }
 
-    function _getDefaultValuePropertyField($field) {
-        return $this->_getPropertyRow($this->_getFieldLabel($field),
-                                      $this->_showField($field));
+    public function _getDefaultValuePropertyField($field)
+    {
+        return $this->_getPropertyRow(
+            $this->_getFieldLabel($field),
+            $this->_showField($field)
+        );
     }
 
-    function _getItemIdField() {
-        return "<input type='hidden' value='".$this->item->getId()."' data-test='docman_root_id'>" .
-            $this->_getPropertyRow('Id:',
-                                      $this->item->getId());
+    public function _getItemIdField()
+    {
+        return "<input type='hidden' value='" . $this->item->getId() . "' data-test='docman_root_id'>" .
+            $this->_getPropertyRow(
+                'Id:',
+                $this->item->getId()
+            );
     }
 
-    function _getDirectLinkField() {
-        $html = '';
+    public function _getDirectLinkField()
+    {
+        $html        = '';
         $itemFactory = new Docman_ItemFactory();
-        if($itemFactory->getItemTypeForItem($this->item) != PLUGIN_DOCMAN_ITEM_TYPE_FOLDER) {
-            $dpm = Docman_PermissionsManager::instance($this->item->getGroupId());
-            $um = UserManager::instance();
+        if ($itemFactory->getItemTypeForItem($this->item) != PLUGIN_DOCMAN_ITEM_TYPE_FOLDER) {
+            $dpm  = Docman_PermissionsManager::instance($this->item->getGroupId());
+            $um   = UserManager::instance();
             $user = $um->getCurrentUser();
-            if(!$this->item->isObsolete() || ($this->item->isObsolete() && $dpm->userCanAdmin($user))) {
-                $label = $GLOBALS['Language']->getText('plugin_docman','details_properties_view_doc_lbl');
-                $url = $this->url.'&action=show&id='.$this->item->getId();
-                $href = '<a href="'.$url.'">'.$GLOBALS['Language']->getText('plugin_docman','details_properties_view_doc_val').'</a>';
+            $href = '';
+            if (! $this->item->isObsolete() || ($this->item->isObsolete() && $dpm->userCanAdmin($user))) {
+                $url  = DocmanViewURLBuilder::buildActionUrl(
+                    $this->item,
+                    ['default_url' => $this->url],
+                    ['action' => 'show', 'id' => $this->item->getId()]
+                );
+                $href = '<a href="' . $url . '">' . dgettext('tuleap-docman', 'Click to open the document') . '</a>';
             }
-            $html = $this->_getPropertyRow($GLOBALS['Language']->getText('plugin_docman','details_properties_view_doc_lbl'),
-                                              $href);
+            $html = $this->_getPropertyRow(
+                dgettext('tuleap-docman', 'Direct link:'),
+                $href
+            );
         }
         return $html;
     }
 
-    function _getPropertiesFields($params) {
+    public function _getPropertiesFields($params)
+    {
         $html = '';
 
         // Lock details
         $html .= $this->_getlockInfo();
 
         $params['theme_path'] = $this->theme_path;
-        $get_fields = new Docman_View_GetFieldsVisitor();
-        $fields = $this->item->accept($get_fields, $params);
+        $get_fields           = new Docman_View_GetFieldsVisitor();
+        $fields               = $this->item->accept($get_fields, $params);
 
         $html .= '<table class="docman_item_details_properties">';
 
@@ -102,7 +119,7 @@ class Docman_View_ItemDetailsSectionProperties extends Docman_View_ItemDetailsSe
         $html .= $this->_getItemIdField();
 
         // Item properties
-        foreach($fields as $field) {
+        foreach ($fields as $field) {
             $html .= $this->_getPropertyField($field);
         }
 
@@ -113,19 +130,20 @@ class Docman_View_ItemDetailsSectionProperties extends Docman_View_ItemDetailsSe
         return $html;
     }
 
-    function getContent($params = array()) {
-        $html  = '';
+    public function getContent($params = [])
+    {
+        $html = '';
 
         $defaultValuesToManage = false;
-        if(is_a($this->item, 'Docman_Folder') && count($this->_getInheritableMetadata()) > 0) {
+        if (is_a($this->item, 'Docman_Folder') && count($this->_getInheritableMetadata()) > 0) {
             $defaultValuesToManage = true;
         }
 
-        if($defaultValuesToManage) {
-            $html .= '<h3>'.$GLOBALS['Language']->getText('plugin_docman', 'details_properties_folder').'</h3>';
+        if ($defaultValuesToManage) {
+            $html .= '<h3>' . dgettext('tuleap-docman', 'Folder Properties') . '</h3>';
         }
         $html .= $this->_getPropertiesFields($params);
-        if($defaultValuesToManage) {
+        if ($defaultValuesToManage) {
             $html .= $this->_getDefaultValuesFields();
         }
 
@@ -133,76 +151,82 @@ class Docman_View_ItemDetailsSectionProperties extends Docman_View_ItemDetailsSe
         return $html;
     }
 
-    function _getFieldLabel($field) {
+    public function _getFieldLabel($field)
+    {
         return $field->getLabel(false);
     }
 
-    function _showField($field) {
+    public function _showField($field)
+    {
         return $field->getValue();
     }
 
-    function _getAdditionalRows() {
+    public function _getAdditionalRows()
+    {
         $html = '';
 
         if ($this->user_can_write) {
-            $html .= '<p><a href="'. $this->url .'&amp;action=edit&amp;id='. $this->item->getid() .'">'. $GLOBALS['Language']->getText('plugin_docman','details_properties_edit') .'</a></p>';
+            $html .= '<p><a href="' . $this->url . '&amp;action=edit&amp;id=' . $this->item->getid() . '">' . dgettext('tuleap-docman', 'Edit properties') . '</a></p>';
         }
         return $html;
     }
 
-    function _getInheritableMetadata() {
-        if($this->inheritableMetadataArray === null) {
-            $mdFactory = new Docman_MetadataFactory($this->item->getGroupId());
+    public function _getInheritableMetadata()
+    {
+        if ($this->inheritableMetadataArray === null) {
+            $mdFactory      = new Docman_MetadataFactory($this->item->getGroupId());
             $inheritableMda = $mdFactory->getInheritableMdLabelArray(true);
 
             $mdIter = $this->item->getMetadataIterator();
 
-            $mdHtmlFactory = new Docman_MetadataHtmlFactory();
+            $mdHtmlFactory                  = new Docman_MetadataHtmlFactory();
             $this->inheritableMetadataArray = $mdHtmlFactory->buildFieldArray($mdIter, $inheritableMda, true, $this->formName, $this->theme_path);
         }
         return $this->inheritableMetadataArray;
     }
 
-    function _getDefaultValuesTableHeader() {
+    public function _getDefaultValuesTableHeader()
+    {
         return '';
     }
 
-    function _getDefaultValues() {
-        $html = '';
+    public function _getDefaultValues()
+    {
+        $html   = '';
         $fields = $this->_getInheritableMetadata();
-        $html .= '<table class="docman_item_details_properties">';
-        $html .= $this->_getDefaultValuesTableHeader();
-        foreach($fields as $field) {
+        $html  .= '<table class="docman_item_details_properties">';
+        $html  .= $this->_getDefaultValuesTableHeader();
+        foreach ($fields as $field) {
             $html .= $this->_getDefaultValuePropertyField($field);
         }
         $html .= '</table>';
         return $html;
     }
 
-    function _getDefaultValuesFields() {
-        $html = '';
-        $html .= '<h3>'.$GLOBALS['Language']->getText('plugin_docman', 'details_properties_dfltv').'</h3>';
-        $html .= '<p>'.$GLOBALS['Language']->getText('plugin_docman', 'details_properties_dfltv_desc').'</p>';
+    public function _getDefaultValuesFields()
+    {
+        $html  = '';
+        $html .= '<h3>' . dgettext('tuleap-docman', 'Default Values') . '</h3>';
+        $html .= '<p>' . dgettext('tuleap-docman', 'Define the default properties values for the item that will be created within this folder.') . '</p>';
         $html .= $this->_getDefaultValues();
         return $html;
     }
 
-    function _getlockInfo() {
+    public function _getlockInfo()
+    {
         $html = '';
-        $dpm = Docman_PermissionsManager::instance($this->item->getGroupId());
-        if($dpm->getLockFactory()->itemIsLocked($this->item)) {
+        $dpm  = Docman_PermissionsManager::instance($this->item->getGroupId());
+        if ($dpm->getLockFactory()->itemIsLocked($this->item)) {
             $lockInfos = $dpm->getLockFactory()->getLockInfoForItem($this->item);
-            $locker = UserHelper::instance()->getLinkOnUserFromUserId($lockInfos['user_id']);
-            $lockDate = format_date($GLOBALS['Language']->getText('system', 'datefmt'), $lockInfos['lock_date']);
-            $html .= '<p>';
-            $html .= $GLOBALS['Language']->getText('plugin_docman', 'details_properties_lock_who', array($locker, $lockDate));
-            if (!$this->user_can_write) {
-                $html .= $GLOBALS['Language']->getText('plugin_docman', 'details_properties_lock_info');
+            $locker    = UserHelper::instance()->getLinkOnUserFromUserId($lockInfos['user_id']);
+            $lockDate  = format_date($GLOBALS['Language']->getText('system', 'datefmt'), $lockInfos['lock_date']);
+            $html     .= '<p>';
+            $html     .= sprintf(dgettext('tuleap-docman', '%1$s <strong>locked</strong> this document on %2$s.'), $locker, $lockDate);
+            if (! $this->user_can_write) {
+                $html .= dgettext('tuleap-docman', 'You cannot modify it until the lock owner or a document manager release the lock.');
             }
             $html .= '</p>';
         }
         return $html;
     }
 }
-
-?>

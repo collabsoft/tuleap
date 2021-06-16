@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,143 +17,135 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const BabelPresetEnv = require("babel-preset-env");
-const BabelPluginObjectRestSpread = require("babel-plugin-transform-object-rest-spread");
-const BabelPluginSyntaxDynamicImport = require("babel-plugin-syntax-dynamic-import");
-const BabelPluginRewireExports = require("babel-plugin-rewire-exports").default;
-const BabelPluginIstanbul = require("babel-plugin-istanbul").default;
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const path = require("path");
+const { browserlist_config, esbuild_target } = require("./browserslist_config");
 
-const babel_preset_env_ie_config = [
-    BabelPresetEnv,
-    {
-        targets: {
-            ie: 11
+function configureTypescriptRules() {
+    return [
+        {
+            test: /\.ts(x?)$/,
+            exclude: /node_modules/,
+            use: [
+                {
+                    loader: "esbuild-loader",
+                    options: {
+                        loader: "tsx",
+                        target: esbuild_target,
+                    },
+                },
+            ],
         },
-        modules: false
-    }
-];
-
-const babel_preset_env_chrome_config = [
-    BabelPresetEnv,
-    {
-        targets: {
-            browsers: ["last 2 Chrome versions"]
-        },
-        modules: false,
-        useBuiltIns: true,
-        shippedProposals: true
-    }
-];
-
-const babel_options_ie11 = {
-    presets: [babel_preset_env_ie_config],
-    plugins: [BabelPluginObjectRestSpread, BabelPluginSyntaxDynamicImport]
-};
-
-const babel_options_karma = {
-    env: {
-        watch: babel_options_ie11,
-        production: babel_options_ie11,
-        test: {
-            presets: [babel_preset_env_chrome_config],
-            plugins: [BabelPluginObjectRestSpread, BabelPluginSyntaxDynamicImport, BabelPluginRewireExports]
-        },
-        coverage: {
-            presets: [babel_preset_env_chrome_config],
-            plugins: [
-                BabelPluginObjectRestSpread,
-                BabelPluginSyntaxDynamicImport,
-                BabelPluginRewireExports,
-                [
-                    BabelPluginIstanbul,
-                    {
-                        exclude: ["**/*.spec.js"]
-                    }
-                ]
-            ]
-        }
-    }
-};
-
-function configureBabelRule(babel_options) {
-    return {
-        test: /\.js$/,
-        exclude: [/node_modules/, /vendor/, /bower_components/],
-        use: [
-            {
-                loader: "babel-loader",
-                options: babel_options
-            }
-        ]
-    };
+    ];
 }
 
 const rule_vue_loader = {
     test: /\.vue$/,
     exclude: /node_modules/,
-    use: [{ loader: "vue-loader" }]
+    use: [{ loader: "vue-loader" }],
 };
 
 const rule_po_files = {
     test: /\.po$/,
     exclude: /node_modules/,
-    use: [{ loader: "json-loader" }, { loader: "po-gettext-loader" }]
+    use: [{ loader: "json-loader" }, { loader: "po-gettext-loader" }],
 };
 
 const rule_mustache_files = {
     test: /\.mustache$/,
     exclude: /node_modules/,
-    use: { loader: "raw-loader" }
+    type: "asset/source",
 };
 
 const rule_ng_cache_loader = {
     test: /\.html$/,
-    exclude: [/node_modules/, /vendor/, /bower_components/],
+    exclude: [/node_modules/, /vendor/],
     use: [
         {
-            loader: "ng-cache-loader",
-            query: "-url"
-        }
-    ]
+            loader: "ng-cache-loader?-url",
+        },
+    ],
 };
+
+const artifact_modal_vue_initializer_path = path.resolve(
+    __dirname,
+    "../../../plugins/tracker/scripts/angular-artifact-modal/src/vue-initializer.js"
+);
 
 const rule_angular_gettext_loader = {
     test: /\.po$/,
-    exclude: [/node_modules/, /vendor/, /bower_components/],
+    exclude: [/node_modules/, /vendor/],
+    issuer: {
+        not: [artifact_modal_vue_initializer_path],
+    },
     use: [
+        { loader: "json-loader" },
         {
-            loader: "angular-gettext-loader",
-            query: "browserify=true"
-        }
-    ]
-};
-
-const rule_angular_gettext_extract_loader = {
-    test: /src.*\.(js|html)$/,
-    exclude: [/node_modules/, /vendor/, /bower_components/],
-    use: [
-        {
-            loader: "angular-gettext-extract-loader",
-            query: "pofile=po/template.pot"
-        }
-    ]
+            loader: "angular-gettext-loader?browserify=true&format=json",
+        },
+    ],
 };
 
 const rule_easygettext_loader = {
     test: /\.po$/,
     exclude: /node_modules/,
-    use: [{ loader: "json-loader" }, { loader: "easygettext-loader" }]
+    use: [{ loader: "json-loader" }, { loader: "easygettext-loader" }],
+};
+
+const rule_scss_loader = {
+    test: /\.scss$/,
+    use: [
+        MiniCssExtractPlugin.loader,
+        {
+            loader: "css-loader",
+            options: {
+                url: (url) => {
+                    // Organization logos might be customized by administrators, let's exclude them for now
+                    return (
+                        !url.endsWith("organization_logo.png") &&
+                        !url.endsWith("organization_logo_small.png")
+                    );
+                },
+            },
+        },
+        {
+            loader: "postcss-loader",
+            options: {
+                postcssOptions: {
+                    plugins: [["autoprefixer", { overrideBrowserslist: browserlist_config }]],
+                },
+            },
+        },
+        "sass-loader",
+    ],
+};
+
+const rule_css_assets = {
+    test: /(\.(webp|png|gif|eot|ttf|woff|woff2|svg))$/,
+    type: "asset/resource",
+    generator: {
+        filename: "css-assets/[name]-[hash][ext][query]",
+    },
+};
+
+//Workaround to fix the image display in vue, see: https://github.com/vuejs/vue-loader/issues/1612
+const rule_vue_images = {
+    test: /(\.(webp|png|gif|svg))$/,
+    type: "asset/resource",
+    generator: {
+        filename: "static/[name]-[hash][ext][query]",
+    },
 };
 
 module.exports = {
-    configureBabelRule,
-    babel_options_ie11,
-    babel_options_karma,
+    configureTypescriptRules,
     rule_po_files,
     rule_mustache_files,
     rule_vue_loader,
     rule_ng_cache_loader,
     rule_angular_gettext_loader,
-    rule_angular_gettext_extract_loader,
-    rule_easygettext_loader
+    rule_easygettext_loader,
+    rule_scss_loader,
+    rule_css_assets,
+    rule_vue_images,
 };

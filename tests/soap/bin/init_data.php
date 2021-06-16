@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,8 +19,8 @@
  *
  */
 
-require_once 'pre.php';
-require_once __DIR__.'/../lib/TestDataBuilder.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../lib/TestDataBuilder.php';
 
 $data_builder = new SOAP_TestDataBuilder();
 $data_builder->generateUsers();

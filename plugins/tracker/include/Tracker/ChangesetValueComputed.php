@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -72,41 +72,42 @@ class ChangesetValueComputed extends Tracker_Artifact_ChangesetValue_Float
     /**
      * @param \Tracker_Artifact_ChangesetValue $changeset_value
      * @param string                           $format
-     * @param PFUser|null                      $user
      * @param bool                             $ignore_perms
      *
-     * @return bool|string
+     * @return string|false
      */
-    public function diff($changeset_value, $format = 'html', PFUser $user = null, $ignore_perms = false)
+    public function diff($changeset_value, $format = 'html', ?PFUser $user = null, $ignore_perms = false)
     {
         $previous_numeric = $changeset_value->getValue();
         $next_numeric     = $this->getValue();
 
         $purifier = Codendi_HTMLPurifier::instance();
-        if ($changeset_value->isManualValue() === $this->isManualValue()
+        if (
+            $changeset_value->isManualValue() === $this->isManualValue()
             && $previous_numeric === $next_numeric
         ) {
             return false;
         }
 
         if ($this->isManualValue() && $changeset_value->isManualValue()) {
-            return $GLOBALS['Language']->getText('plugin_tracker_artifact', 'changed_from') .
-                ' ' . $purifier->purify($previous_numeric) . ' ' .
-                $GLOBALS['Language']->getText('plugin_tracker_artifact', 'to') . ' ' .
-                $purifier->purify($next_numeric);
+            return sprintf(
+                dgettext('tuleap-tracker', 'changed from %s to %s'),
+                $purifier->purify($previous_numeric),
+                $purifier->purify($next_numeric)
+            );
         }
 
         if ($this->isManualValue()) {
-            return $GLOBALS['Language']->getText('plugin_tracker_artifact', 'changed_from') . " " .
-                $GLOBALS['Language']->getText('plugin_tracker', 'autocomputed_field') . " " .
-                $GLOBALS['Language']->getText('plugin_tracker_artifact', 'to') . " " .
-                $purifier->purify($next_numeric);
+            return sprintf(
+                dgettext('tuleap-tracker', 'changed from autocomputed to %s'),
+                $purifier->purify($next_numeric)
+            );
         }
 
-        return $GLOBALS['Language']->getText('plugin_tracker_artifact', 'changed_from') . " " .
-            $purifier->purify($previous_numeric) . " " .
-            $GLOBALS['Language']->getText('plugin_tracker_artifact', 'to') . " " .
-            $GLOBALS['Language']->getText('plugin_tracker', 'autocomputed_field');
+        return sprintf(
+            dgettext('tuleap-tracker', 'changed from %s to autocomputed'),
+            $purifier->purify($previous_numeric)
+        );
     }
 
     /**

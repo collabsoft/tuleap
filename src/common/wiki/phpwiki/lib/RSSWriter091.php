@@ -24,75 +24,82 @@
 rcs_id('$Id: RSSWriter091.php,v 1.10 2005/08/06 13:06:22 rurban Exp $');
 
 include_once("lib/RssWriter.php");
-class RSSWriter091 extends RSSWriter
+class RSSWriter091 extends RssWriter
 {
-    function __construct()
+    public function __construct()
     {
-        $this->XmlElement('rss', array('version' => "0.91"));
-        $this->_items = array();
+        $this->XmlElement('rss', ['version' => "0.91"]);
+        $this->_items = [];
     }
   /**
    * Finish construction of RSS.
-   */	
-    function finish() 
+   */
+    public function finish()
     {
-        if (isset($this->_finished))
+        if (isset($this->_finished)) {
             return;
-        
+        }
+
         $channel = &$this->_channel;
-        $items = &$this->_items;
-    	
-        if ($items)
-            {
-		foreach ($items as $i)
+        $items   = &$this->_items;
+
+        if ($items) {
+            foreach ($items as $i) {
                     $channel->pushContent($i);
             }
+        }
         $this->pushContent($channel);
-        $this->__spew();
+        $this->spew();
         $this->_finished = true;
     }
 
     /**
      * Create a new RDF <em>typedNode</em>.
      */
-    function __node($type, $properties, $uri = false) {
-	return new XmlElement($type, '',
-                              $this->__elementize($properties));
+    public function node($type, $properties, $uri = false)
+    {
+        return new XmlElement(
+            $type,
+            '',
+            $this->elementize($properties)
+        );
     }
 
     /**
      * Write output to HTTP client.
      */
-    function __spew() {
+    public function spew()
+    {
         header("Content-Type: application/xml; charset=" . RSS_ENCODING);
         printf("<?xml version=\"1.0\" encoding=\"%s\"?>\n", RSS_ENCODING);
-		print("<!DOCTYPE rss PUBLIC \"-//Netscape Communications//DTD RSS 0.91//EN\"\n");
-		print("\"http://my.netscape.com/publish/formats/rss-0.91.dtd\">\n\n");
+        print("<!DOCTYPE rss PUBLIC \"-//Netscape Communications//DTD RSS 0.91//EN\"\n");
+        print("\"http://my.netscape.com/publish/formats/rss-0.91.dtd\">\n\n");
         $this->printXML();
     }
-	
-	
 }
 
-class _RecentChanges_RssFormatter091
-extends _RecentChanges_RSSFormatter
+class _RecentChanges_RssFormatter091 extends _RecentChanges_RssFormatter
 // This class should probably go at then of RecentChanges.php
 {
-    function format ($changes) 
+    public function format($changes)
     {
         //    include_once('lib/RssWriter.php');
-        $rss = new RssWriter091;
+        $rss = new RSSWriter091();
 
         $rss->channel($this->channel_properties());
 
-        if (($props = $this->image_properties()))
+        if (($props = $this->image_properties())) {
             $rss->image($props);
-        if (($props = $this->textinput_properties()))
+        }
+        if (($props = $this->textinput_properties())) {
             $rss->textinput($props);
+        }
 
         while ($rev = $changes->next()) {
-            $rss->addItem($this->item_properties($rev),
-                          $this->pageURI($rev));
+            $rss->addItem(
+                $this->item_properties($rev),
+                $this->pageURI($rev)
+            );
         }
 
         global $request;
@@ -103,37 +110,37 @@ extends _RecentChanges_RSSFormatter
     }
 
 
-    function channel_properties () 
+    public function channel_properties()
     {
         global $request;
 
         $rc_url = WikiURL($request->getArg('pagename'), false, 'absurl');
 
-        return array('title' => WIKI_NAME,
+        return ['title' => WIKI_NAME,
                      'description' => _("RecentChanges"),
                      'link' => $rc_url,
-                     'language' => 'en-US');
+                     'language' => 'en-US'];
 
         /* FIXME: language should come from $LANG (or other config variable). */
-        
-        /* FIXME: other things one might like in <channel>:                   
+
+        /* FIXME: other things one might like in <channel>:
          * managingEditor
          * webmaster
          * lastBuildDate
          * copyright
          */
     }
-    
-        
-    function item_properties ($rev)
+
+
+    public function item_properties($rev)
     {
-        $page = $rev->getPage();
+        $page     = $rev->getPage();
         $pagename = $page->getName();
-        
-        return array( 'title'		=> SplitPagename($pagename),
-                      'description'	=> $this->summary($rev),
-                      'link'		=> $this->pageURL($rev)                  
-                      );
+
+        return [ 'title'        => SplitPagename($pagename),
+                      'description'    => $this->summary($rev),
+                      'link'        => $this->pageURL($rev)
+                      ];
     }
 }
 
@@ -144,5 +151,4 @@ extends _RecentChanges_RSSFormatter
 // c-basic-offset: 4
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
-// End:   
-?>
+// End:

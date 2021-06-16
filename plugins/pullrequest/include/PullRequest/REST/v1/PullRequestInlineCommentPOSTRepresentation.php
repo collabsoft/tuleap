@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,6 +20,9 @@
 
 namespace Tuleap\PullRequest\REST\v1;
 
+/**
+ * @psalm-immutable
+ */
 class PullRequestInlineCommentPOSTRepresentation
 {
 
@@ -37,4 +40,9 @@ class PullRequestInlineCommentPOSTRepresentation
      * @var int {@type int}
      */
     public $unidiff_offset;
+
+    /**
+     * @var string {@type string}
+     */
+    public $position;
 }

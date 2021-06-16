@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -45,10 +45,10 @@ class Delete extends Pane
     public function getContent()
     {
         $html  = '';
-        $html .= '<h2>'. $GLOBALS['Language']->getText('plugin_git', 'admin_deletion_submit') .'</h2>';
+        $html .= '<h2>' . dgettext('tuleap-git', 'Delete this repository') . '</h2>';
 
-        $html .= '<form id="repoAction" name="repoAction" method="POST" action="/plugins/git/?group_id='. $this->repository->getProjectId() .'">';
-        $html .= '<input type="hidden" id="repo_id" name="repo_id" value="'. $this->repository->getId() .'" />';
+        $html .= '<form id="repoAction" name="repoAction" method="POST" action="/plugins/git/?group_id=' . $this->repository->getProjectId() . '">';
+        $html .= '<input type="hidden" id="repo_id" name="repo_id" value="' . $this->repository->getId() . '" />';
 
         if (! $this->repository->isMigratedToGerrit()) {
             if ($this->request->get('confirm_deletion')) {
@@ -65,42 +65,43 @@ class Delete extends Pane
 
     private function fetchDeleteButton()
     {
-        $html  = '';
-        $html .= '<input type="hidden" id="action" name="action" value="repo_management" />';
-        $html .= '<input type="hidden" name="pane" value="'. $this->getIdentifier() .'" />';
+        $html     = '';
+        $html    .= '<input type="hidden" id="action" name="action" value="repo_management" />';
+        $html    .= '<input type="hidden" name="pane" value="' . $this->getIdentifier() . '" />';
         $disabled = '';
-        if (!$this->repository->canBeDeleted()) {
-            $html .= '<p>'. 'You cannot delete' .'</p>';
+        if (! $this->repository->canBeDeleted()) {
+            $html    .= '<p>' . 'You cannot delete' . '</p>';
             $disabled = 'readonly="readonly" disabled="disabled"';
         }
-        $html .= '<input type="submit" class="btn btn-danger" name="confirm_deletion" value="'. $GLOBALS['Language']->getText('plugin_git', 'admin_deletion_submit') .'" '. $disabled .'/>';
+        $html .= '<input type="submit" class="btn btn-danger" name="confirm_deletion" value="' . dgettext('tuleap-git', 'Delete this repository') . '" ' . $disabled . 'data-test="confirm-repository-deletion-button"/>';
         return $html;
     }
 
     private function fetchConfirmDeletionButton()
     {
-        $html  = '';
-        $html .= '<div class="alert alert-block">';
-        $html .= '<h4>'. $GLOBALS['Language']->getText('global', 'warning') .'</h4>';
-        $html .= '<p>'. $GLOBALS['Language']->getText('plugin_git', 'confirm_deletion_msg', array($this->repository->getFullName())) .'</p>';
-        $html .= '<p>';
-        $html .= '<input type="hidden" id="action" name="action" value="del" />';
-        $html .= '<input type="submit" class="btn btn-danger" id="submit" name="submit" value="'. $GLOBALS['Language']->getText('plugin_git', 'yes') .'"/> ';
-        $onclick = 'onclick="window.location=\'/plugins/git/?'. http_build_query(array(
+        $html    = '';
+        $html   .= '<div class="alert alert-block">';
+        $html   .= '<h4>' . $GLOBALS['Language']->getText('global', 'warning') . '</h4>';
+        $html   .= '<p>' . sprintf(dgettext('tuleap-git', 'You are about to permanently delete the repository <strong>%1$s</strong>. This operation <strong>cannot</strong> be undone. Do you confirm the deletion?'), $this->repository->getFullName()) . '</p>';
+        $html   .= '<p>';
+        $html   .= '<input type="hidden" id="action" name="action" value="del" />';
+        $html   .= $this->csrf_token()->fetchHTMLInput();
+        $html   .= '<input type="submit" class="btn btn-danger" id="submit" name="submit" value="' . dgettext('tuleap-git', 'Yes') . '"data-test="deletion-confirmation-button"/> ';
+        $onclick = 'onclick="window.location=\'/plugins/git/?' . http_build_query([
             'action'   => 'repo_management',
             'pane'     => $this->getIdentifier(),
             'group_id' => $this->repository->getProjectId(),
             'repo_id'  => $this->repository->getId(),
-        )) .'\'"';
-        $html .= '<input type="button" class="btn" value="'. $GLOBALS['Language']->getText('plugin_git', 'no') .'" '. $onclick .'/>';
-        $html .= '</p>';
-        $html .= '</div>';
+        ]) . '\'"';
+        $html   .= '<input type="button" class="btn" value="' . dgettext('tuleap-git', 'No') . '" ' . $onclick . '/>';
+        $html   .= '</p>';
+        $html   .= '</div>';
         return $html;
     }
 
     private function fetchGerritMigtatedInfo()
     {
-        $html = '<div class="alert alert-info">'. $GLOBALS['Language']->getText('plugin_git', 'deletion_gerrit_no') .'</div>';
+        $html = '<div class="alert alert-info">' . dgettext('tuleap-git', 'The repository cannot be deleted until it is disconnected from Gerrit') . '</div>';
 
         return $html;
     }

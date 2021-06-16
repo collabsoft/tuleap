@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,16 +21,16 @@
 namespace Tuleap\Tracker\Artifact\ActionButtons;
 
 use PFUser;
-use Tracker_Artifact;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class ArtifactCopyButtonPresenterBuilder
 {
-    public function getCopyArtifactButton(PFUser $user, Tracker_Artifact $artifact)
+    public function getCopyArtifactButton(PFUser $user, Artifact $artifact)
     {
         if ($user->isLoggedIn() && ! $this->isAlreadyCopyingArtifact()) {
             return new ArtifactCopyButtonPresenter(
-                $GLOBALS['Language']->getText('plugin_tracker', 'copy_this_artifact'),
-                $GLOBALS['Language']->getText('plugin_tracker', 'copy_this_artifact'),
+                dgettext('tuleap-tracker', 'Duplicate this artifact'),
+                dgettext('tuleap-tracker', 'Duplicate this artifact'),
                 TRACKER_BASE_URL . '/?func=copy-artifact&aid=' . $artifact->getId()
             );
         }

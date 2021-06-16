@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_Changeset_IncomingMailDao extends DataAccessObject {
+class Tracker_Artifact_Changeset_IncomingMailDao extends DataAccessObject
+{
 
-    public function save($changeset_id, $raw_mail) {
+    public function save($changeset_id, $raw_mail)
+    {
         $changeset_id = $this->da->escapeInt($changeset_id);
         $raw_mail     = $this->da->quoteSmart($raw_mail);
 
@@ -30,7 +32,8 @@ class Tracker_Artifact_Changeset_IncomingMailDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function searchByArtifactId($artifact_id) {
+    public function searchByArtifactId($artifact_id)
+    {
         $artifact_id = $this->da->escapeInt($artifact_id);
 
         $sql = "SELECT M.*

@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) Enalean, 2011 - 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  * Copyright (c) Xerox, 2009. All Rights Reserved.
  *
  * Originally written by Nicolas Terray, 2009. Xerox Codendi Team.
@@ -24,32 +24,51 @@
 /**
  * Base class to read forge configuration
  */
-class ForgeConfig {
-
-    const AUTH_TYPE_LDAP = 'ldap';
+class ForgeConfig
+{
+    public const AUTH_TYPE_LDAP      = 'ldap';
+    public const FEATURE_FLAG_PREFIX = 'feature_flag_';
 
     /**
      * Hold the configuration variables
      */
-    protected static $conf_stack = array(0 => array());
+    protected static array $conf_stack = [0 => []];
 
     /**
      * Load the configuration variables into the current stack
      *
      * @access protected for testing purpose
      *
-     * @param ConfigValueProvider $value_provider
      */
-    protected static function load(ConfigValueProvider $value_provider) {
+    protected static function load(ConfigValueProvider $value_provider)
+    {
         // Store in the stack the local scope...
         self::$conf_stack[0] = array_merge(self::$conf_stack[0], $value_provider->getVariables());
     }
 
-    public static function loadFromFile($file) {
+    public static function loadLocalInc(): void
+    {
+        self::loadFromFile(__DIR__ . '/../../etc/local.inc.dist');
+        $local_inc_file_path = (new Config_LocalIncFinder())->getLocalIncPath();
+        self::loadFromFile($local_inc_file_path);
+    }
+
+    public static function loadDatabaseInc(): void
+    {
+        $database_config_file = self::get('db_config_file');
+        if (! is_file($database_config_file)) {
+            throw new RuntimeException('Database configuration file cannot be read, did you loadLocalInc first ?');
+        }
+        self::loadFromFile($database_config_file);
+    }
+
+    public static function loadFromFile($file)
+    {
         self::load(new ConfigValueFileProvider($file));
     }
 
-    public static function loadFromDatabase() {
+    public static function loadFromDatabase()
+    {
         self::load(new ConfigValueDatabaseProvider(new ConfigDao()));
     }
 
@@ -57,13 +76,22 @@ class ForgeConfig {
      * Get the $name configuration variable
      *
      * @param $name    string the variable name
-     * @param $default mixed  the value to return if the variable is not set in the configuration. TODO: read in the local.inc.dist
+     * @param $default mixed  the value to return if the variable is not set in the configuration
      *
      * @return mixed
      */
-    public static function get($name, $default = false) {
+    public static function get($name, $default = false)
+    {
         if (self::exists($name)) {
             return self::$conf_stack[0][$name];
+        }
+        return $default;
+    }
+
+    public static function getInt(string $name, int $default = 0): int
+    {
+        if (self::exists($name)) {
+            return (int) self::$conf_stack[0][$name];
         }
         return $default;
     }
@@ -73,13 +101,14 @@ class ForgeConfig {
         return isset(self::$conf_stack[0][$name]);
     }
 
-    public static function getSuperPublicProjectsFromRestrictedFile() {
+    public static function getSuperPublicProjectsFromRestrictedFile()
+    {
         $filename = $GLOBALS['Language']->getContent('include/restricted_user_permissions', 'en_US');
         if (! $filename) {
-            return array();
+            return [];
         }
 
-        $public_projects = array();
+        $public_projects = [];
         include($filename);
 
         return $public_projects;
@@ -90,7 +119,8 @@ class ForgeConfig {
      *
      * @return void
      */
-    public static function dump() {
+    public static function dump()
+    {
         var_export(self::$conf_stack[0]);
     }
 
@@ -100,9 +130,10 @@ class ForgeConfig {
      *
      * @return void
      */
-    public static function store() {
-        array_unshift(self::$conf_stack, array());
-        if (!count(self::$conf_stack)) {
+    public static function store()
+    {
+        array_unshift(self::$conf_stack, []);
+        if (! count(self::$conf_stack)) {
             trigger_error('Config registry lost');
         }
     }
@@ -113,7 +144,8 @@ class ForgeConfig {
      *
      * @return void
      */
-    public static function restore() {
+    public static function restore()
+    {
         if (count(self::$conf_stack) > 1) {
             array_shift(self::$conf_stack);
         }
@@ -125,16 +157,18 @@ class ForgeConfig {
      * @param $name String Variable name
      * @param $value Mixed Variable value
      */
-    public static function set($name, $value) {
+    public static function set($name, $value)
+    {
         self::$conf_stack[0][$name] = $value;
     }
 
-    public static function areAnonymousAllowed() {
-        return self::get(ForgeAccess::CONFIG) === ForgeAccess::ANONYMOUS ||
-                PermissionsOverrider_PermissionsOverriderManager::instance()->doesOverriderForceUsageOfAnonymous();
+    public static function areAnonymousAllowed()
+    {
+        return self::get(ForgeAccess::CONFIG) === ForgeAccess::ANONYMOUS;
     }
 
-    public static function areRestrictedUsersAllowed() {
+    public static function areRestrictedUsersAllowed()
+    {
         return self::get(ForgeAccess::CONFIG) === ForgeAccess::RESTRICTED;
     }
 
@@ -151,5 +185,18 @@ class ForgeConfig {
     public static function areUnixUsersAvailableOnSystem()
     {
         return trim(self::get('homedir_prefix')) !== '';
+    }
+
+    public static function getCacheDir()
+    {
+        return self::get('codendi_cache_dir');
+    }
+
+    /**
+     * @return mixed
+     */
+    public static function getFeatureFlag(string $key)
+    {
+        return self::get(self::FEATURE_FLAG_PREFIX . $key);
     }
 }

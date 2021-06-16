@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,6 @@
 namespace Tuleap\Label\Widget;
 
 use DataAccessException;
-use Tuleap\Dashboard\Project\ProjectDashboardController;
 
 class Dao extends \DataAccessObject
 {
@@ -35,7 +34,7 @@ class Dao extends \DataAccessObject
     {
         $content_id = $this->da->escapeInt($content_id);
 
-        $sql_values = array();
+        $sql_values = [];
         foreach ($labels_id as $label_id) {
             $sql_values[] = "($content_id, " . $this->da->escapeInt($label_id) . ")";
         }

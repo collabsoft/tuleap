@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,7 +37,7 @@ class ParserCacheProxy
     public function __construct(Parser $parser)
     {
         $this->parser = $parser;
-        $this->cache  = array();
+        $this->cache  = [];
     }
 
     /**

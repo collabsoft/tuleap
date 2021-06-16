@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -22,17 +22,11 @@
 use Tuleap\Dashboard\Project\ProjectDashboardController;
 use Tuleap\Hudson\HudsonJobBuilder;
 
-require_once('HudsonOverviewWidget.class.php');
-require_once('common/user/UserManager.class.php');
-require_once('common/include/HTTPRequest.class.php');
-require_once('PluginHudsonJobDao.class.php');
-require_once('HudsonJob.class.php');
-
 class hudson_Widget_ProjectJobsOverview extends HudsonOverviewWidget
 {
 
-    var $plugin;
-    var $group_id;
+    public $plugin;
+    public $group_id;
     /**
      * @var HudsonJobBuilder
      */
@@ -58,11 +52,12 @@ class hudson_Widget_ProjectJobsOverview extends HudsonOverviewWidget
 
     public function getTitle()
     {
-        return $GLOBALS['Language']->getText('plugin_hudson', 'project_jobs');
+        return dgettext('tuleap-hudson', 'Jenkins Jobs');
     }
 
-    public function getDescription() {
-        return $GLOBALS['Language']->getText('plugin_hudson', 'widget_description_jobsoverview');
+    public function getDescription()
+    {
+        return dgettext('tuleap-hudson', 'Shows an overview of all the jobs associated with this project. You can always choose the ones you want to display in the widget (preferences link).');
     }
 
     public function hasPreferences($widget_id)
@@ -70,14 +65,15 @@ class hudson_Widget_ProjectJobsOverview extends HudsonOverviewWidget
         return false;
     }
 
-    public function getContent() {
+    public function getContent()
+    {
         $purifier         = Codendi_HTMLPurifier::instance();
         $minimal_jobs     = $this->getJobsByGroup($this->group_id);
         $nb_jobs_in_error = 0;
         $html             = '';
         if (sizeof($minimal_jobs) > 0) {
             $html .= '<table style="width:100%">';
-            $cpt = 1;
+            $cpt   = 1;
 
             $hudson_jobs_with_exception = $this->job_builder->getHudsonJobsWithException($minimal_jobs);
 
@@ -85,27 +81,26 @@ class hudson_Widget_ProjectJobsOverview extends HudsonOverviewWidget
                 try {
                     $job = $job_with_exception->getHudsonJob();
 
-                    $html .= '<tr class="'. util_get_alt_row_color($cpt) .'">';
+                    $html .= '<tr class="' . util_get_alt_row_color($cpt) . '">';
                     $html .= ' <td>';
-                    $html .= ' <img class="widget-jenkins-job-icon" src="'.$purifier->purify($job->getStatusIcon()).'" title="'.$purifier->purify($job->getStatus()).'" >';
+                    $html .= ' <img class="widget-jenkins-job-icon" src="' . $purifier->purify($job->getStatusIcon()) . '" title="' . $purifier->purify($job->getStatus()) . '" >';
                     $html .= ' </td>';
                     $html .= ' <td style="width:99%">';
-                    $html .= '  <a class="widget-jenkins-job" href="/plugins/hudson/?action=view_job&group_id='.urlencode($this->group_id).'&job_id='.urlencode($job_id).'">'.$purifier->purify($job->getName()).'</a><br />';
+                    $html .= '  <a class="widget-jenkins-job" href="/plugins/hudson/?action=view_job&group_id=' . urlencode($this->group_id) . '&job_id=' . urlencode($job_id) . '">' . $purifier->purify($job->getName()) . '</a><br />';
                     $html .= ' </td>';
                     $html .= '</tr>';
 
                     $cpt++;
-
                 } catch (Exception $e) {
                     $nb_jobs_in_error++;
                 }
             }
             $html .= '</table>';
         } else {
-            $html .= $GLOBALS['Language']->getText('plugin_hudson', 'widget_no_job_project', $purifier->purify($this->group_id));
+            $html .= sprintf(dgettext('tuleap-hudson', 'No job found. Please <a href="/plugins/hudson/?group_id=%1$s">add a job</a> before adding any Jenkins widget.'), $purifier->purify($this->group_id));
         }
         if ($nb_jobs_in_error > 0) {
-            $html_error_string  = '<div class="tlp-alert-warning"><i class="fa fa-warning tlp-alert-icon"></i>';
+            $html_error_string  = '<div class="tlp-alert-warning">';
             $html_error_string .= dngettext(
                 'tuleap-hudson',
                 'An issue have been encountered while retrieving information, a job can not be displayed',

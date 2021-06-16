@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,38 +21,65 @@
 
 namespace Tuleap\SystemEvent\REST;
 
+use Guzzle\Http\Message\Response;
 use RestBase;
 use REST_TestDataBuilder;
-
-require_once dirname(__FILE__).'/../lib/autoload.php';
 
 /**
  * @group SystemEventTests
  */
-class SystemEventTest extends RestBase
+final class SystemEventTest extends RestBase
 {
 
-    protected function getResponse($request, $user_name = REST_TestDataBuilder::TEST_USER_1_NAME)
+    public function testGET(): void
     {
-        return parent::getResponse($request, $user_name);
+        $response = $this->getResponse(
+            $this->client->get('system_event'),
+            REST_TestDataBuilder::ADMIN_USER_NAME
+        );
+
+        $this->assertGETSystemEvents($response);
     }
 
-    public function testGET()
+    public function testGETWithRESTReadOnlyUser(): void
     {
-        $response      = $this->getResponse($this->client->get('system_event'), REST_TestDataBuilder::ADMIN_USER_NAME);
+        $response = $this->getResponse(
+            $this->client->get('system_event'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertGETSystemEvents($response);
+    }
+
+    private function assertGETSystemEvents(Response $response): void
+    {
         $response_json = $response->json();
 
         $system_event_01 = $response_json[0];
         $this->assertEquals($system_event_01['id'], 1);
-        $this->assertEquals($system_event_01['type'], "SystemEvent_USER_CREATE");
+        $this->assertEquals($system_event_01['type'], 'Tuleap\\SystemEvent\\SystemEventUserActiveStatusChange');
         $this->assertEquals($system_event_01['owner'], "root");
     }
 
-    public function testOptions()
+    public function testOptions(): void
     {
-        $response = $this->getResponse($this->client->options('system_event'), REST_TestDataBuilder::ADMIN_USER_NAME);
+        $response = $this->getResponse(
+            $this->client->options('system_event'),
+            REST_TestDataBuilder::ADMIN_USER_NAME
+        );
 
-        $this->assertEquals(array('OPTIONS', 'GET'), $response->getHeader('Allow')->normalize()->toArray());
-        $this->assertEquals($response->getStatusCode(), 200);
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals(['OPTIONS', 'GET'], $response->getHeader('Allow')->normalize()->toArray());
+    }
+
+    public function testOptionsWithRESTReadOnlyUser(): void
+    {
+        $response = $this->getResponse(
+            $this->client->options('system_event'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals(['OPTIONS', 'GET'], $response->getHeader('Allow')->normalize()->toArray());
     }
 }

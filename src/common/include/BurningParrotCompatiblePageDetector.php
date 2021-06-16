@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,9 +20,7 @@
 
 namespace Tuleap;
 
-use Admin_Homepage_Dao;
 use EventManager;
-use HTTPRequest;
 use PFUser;
 use Tuleap\Request\CurrentPage;
 use User_ForgeUserGroupPermission_ProjectApproval;
@@ -31,15 +29,9 @@ use User_ForgeUserGroupPermissionsManager;
 class BurningParrotCompatiblePageDetector
 {
     /**
-     * @var Admin_Homepage_Dao
-     */
-    private $homepage_dao;
-
-    /**
      * @var CurrentPage
      */
     private $current_page;
-
     /**
      * @var User_ForgeUserGroupPermissionsManager
      */
@@ -47,10 +39,8 @@ class BurningParrotCompatiblePageDetector
 
     public function __construct(
         CurrentPage $current_page,
-        Admin_Homepage_Dao $homepage_dao,
         User_ForgeUserGroupPermissionsManager $forge_user_group_permissions_manager
     ) {
-        $this->homepage_dao                         = $homepage_dao;
         $this->current_page                         = $current_page;
         $this->forge_user_group_permissions_manager = $forge_user_group_permissions_manager;
     }
@@ -63,13 +53,13 @@ class BurningParrotCompatiblePageDetector
 
         return $this->isInCoreServicesSiteAdmin($current_user)
             || $this->current_page->isDashboard()
-            || $this->isInHomepage()
             || $this->isManagingLabels()
             || $this->isInProjectAdmin()
             || $this->isInContact()
             || $this->isInHelp()
             || $this->isInBurningParrotCompatiblePage()
-            || $this->isSoftwareMap();
+            || $this->isSoftwareMap()
+            || $this->isTos();
     }
 
     private function isManagingLabels()
@@ -83,8 +73,6 @@ class BurningParrotCompatiblePageDetector
 
         return strpos($_SERVER['REQUEST_URI'], '/project/admin/editgroupinfo.php') === 0
             || strpos($_SERVER['REQUEST_URI'], '/project/admin/ugroup.php') === 0
-            || strpos($_SERVER['REQUEST_URI'], '/project/admin/members.php') === 0
-            || strpos($_SERVER['REQUEST_URI'], '/project/admin/servicebar.php') === 0
             || strpos($_SERVER['REQUEST_URI'], '/project/admin/editugroup.php') === 0
             || strpos($_SERVER['REQUEST_URI'], '/project/admin/permission_per_group.php') === 0;
     }
@@ -118,14 +106,6 @@ class BurningParrotCompatiblePageDetector
             );
     }
 
-    public function isInHomepage()
-    {
-        return ($_SERVER['SERVER_NAME'] === \ForgeConfig::get('sys_default_domain') ||
-                    $_SERVER['SERVER_NAME'] === \ForgeConfig::get('sys_https_host'))
-            && ($_SERVER['REQUEST_URI'] === '/' || strpos($_SERVER['REQUEST_URI'], '/index.php') === 0)
-            && $this->homepage_dao->isStandardHomepageUsed();
-    }
-
     private function isInContact()
     {
         return strpos($_SERVER['REQUEST_URI'], '/contact.php') === 0;
@@ -139,6 +119,11 @@ class BurningParrotCompatiblePageDetector
     private function isSoftwareMap()
     {
         return strpos($_SERVER['REQUEST_URI'], '/softwaremap/') === 0;
+    }
+
+    private function isTos(): bool
+    {
+        return strpos($_SERVER['REQUEST_URI'], '/tos/') === 0;
     }
 
     private function isInBurningParrotCompatiblePage()

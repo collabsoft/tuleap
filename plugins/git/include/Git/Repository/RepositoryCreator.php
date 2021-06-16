@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,7 +29,8 @@ use GitRepositoryManager;
 use PFUser;
 use Project;
 use ProjectHistoryDao;
-use Tuleap\Git\CIToken\Manager;
+use Tuleap\Git\Branch\BranchName;
+use Tuleap\Git\CIBuilds\CITokenManager;
 use Tuleap\Git\Events\AfterRepositoryCreated;
 use Tuleap\Git\Permissions\FineGrainedPermissionReplicator;
 use Tuleap\Git\Permissions\HistoryValueFormatter;
@@ -69,7 +70,7 @@ class RepositoryCreator
      */
     private $history_value_formatter;
     /**
-     * @var Manager
+     * @var CITokenManager
      */
     private $ci_token_manager;
     /**
@@ -86,7 +87,7 @@ class RepositoryCreator
         FineGrainedPermissionReplicator $fine_grained_replicator,
         ProjectHistoryDao $history_dao,
         HistoryValueFormatter $history_value_formatter,
-        Manager $ci_token_manager,
+        CITokenManager $ci_token_manager,
         EventManager $event_manager
     ) {
         $this->factory                 = $factory;
@@ -102,16 +103,13 @@ class RepositoryCreator
     }
 
     /**
-     * @param Project $project
-     * @param PFUser  $creator
      * @param         $repository_name
      *
-     * @return \GitRepository
      * @throws GitRepositoryNameIsInvalidException
      * @throws \GitDaoException
      * @throws \GitRepositoryAlreadyExistsException
      */
-    public function create(Project $project, PFUser $creator, $repository_name)
+    public function create(Project $project, PFUser $creator, string $repository_name): \GitRepository
     {
         $repository = $this->factory->buildRepository(
             $project,
@@ -125,7 +123,7 @@ class RepositoryCreator
             $default_mirrors = [];
         }
 
-        $this->manager->create($repository, $this->backend_gitolite, $default_mirrors);
+        $this->manager->create($repository, $this->backend_gitolite, $default_mirrors, BranchName::defaultBranchName());
 
         $this->backend_gitolite->savePermissions(
             $repository,

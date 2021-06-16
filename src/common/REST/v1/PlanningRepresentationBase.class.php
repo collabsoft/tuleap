@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,18 @@
  * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
 namespace Tuleap\REST\v1;
+
+use Tuleap\Project\REST\ProjectReference;
 
 /**
  * Basic representation of a planning
  */
-class PlanningRepresentationBase {
+class PlanningRepresentationBase
+{
 
-    const ROUTE = 'plannings';
+    public const ROUTE = 'plannings';
 
     /**
      * @var int
@@ -41,12 +45,14 @@ class PlanningRepresentationBase {
     public $label;
 
     /**
-     * @var \Tuleap\REST\ResourceReference
+     * @var ProjectReference
      */
     public $project;
 
     /**
      * @var \Tuleap\REST\ResourceReference
+     *
+     * @psalm-var \Tuleap\Tracker\REST\TrackerReference
      */
     public $milestone_tracker;
 

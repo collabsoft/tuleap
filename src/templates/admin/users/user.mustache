@@ -1,7 +1,7 @@
 <h1 id="siteadmin-user-title">
     <div class="tlp-avatar-large" id="siteadmin-user-avatar">
         {{# has_avatar }}
-            <img src="/users/{{ login }}/avatar.png">
+            <img src="{{ avatar_url }}">
         {{/ has_avatar }}
     </div>
     <span>
@@ -11,9 +11,15 @@
 
 {{> user-change-password }}
 
+{{# user_has_rest_read_only_administration_delegation }}
+    <div class="tlp-alert-warning">
+        {{# gettext }} This user has the global REST read only administration permission and should not browse the application. {{/ gettext }}
+    </div>
+{{/ user_has_rest_read_only_administration_delegation }}
+
 <div id="siteadmin-user">
     <div id="siteadmin-user-details">
-        <form action="" method="POST" class="tlp-pane" >
+        <form action="" method="POST" class="tlp-pane" id="siteadmin-user-details-form">
             {{# csrf_token }}
                 {{> csrf_token_input }}
             {{/ csrf_token }}
@@ -22,7 +28,7 @@
 
             <div class="tlp-pane-container">
                 <div class="tlp-pane-header">
-                    <h1 class="tlp-pane-title"><i class="tlp-pane-title-icon fa fa-address-card-o"></i> {{ account_details }}</h1>
+                    <h1 class="tlp-pane-title"><i class="tlp-pane-title-icon far fa-address-card"></i> {{ account_details }}</h1>
                 </div>
                 <section class="tlp-pane-section">
                     <div class="siteadmin-user-details-row">
@@ -35,7 +41,7 @@
                     <div class="siteadmin-user-details-row">
                         <div class="tlp-form-element siteadmin-user-details-row-field">
                             <label class="tlp-label" for="login">{{ login_label }} <i class="fa fa-asterisk"></i></label>
-                            <input type="text" class="tlp-input" id="login" name="form_user_login_name" placeholder="{{ login }}" value="{{ login }}">
+                            <input type="text" data-test="user-login" class="tlp-input" id="login" name="form_user_login_name" placeholder="{{ login }}" value="{{ login }}">
                         </div>
                         {{# is_in_limbo }}
                             <div class="tlp-property siteadmin-user-details-row-field">
@@ -49,13 +55,44 @@
                                 <label class="tlp-label" for="status">{{ status_label }}
                                     {{^ is_in_limbo }}<i class="fa fa-asterisk"></i>{{/ is_in_limbo }}
                                 </label>
-                                <select class="tlp-select" id="status" name="form_status">
+                                <select class="tlp-select" id="status" name="form_status" data-test="user-status">
                                     {{# status }}
                                         <option value="{{ key }}" {{# is_current }}selected{{/ is_current }}>
                                             {{ status }}
                                         </option>
                                     {{/ status }}
                                 </select>
+                            </div>
+                            <div class="tlp-modal tlp-modal-danger" role="dialog"
+                                 aria-labelledby="modal-warning-removal-project-not-including-restricted-label"
+                                 id="modal-warning-removal-project-not-including-restricted"
+                                 data-nb-project-not-accepting-restricted="{{ nb_project_user_is_member_of_that_dont_accept_restricted }}"
+                            >
+                                <div class="tlp-modal-header">
+                                    <h1 class="tlp-modal-title" id="modal-warning-removal-project-not-including-restricted-label">
+                                        <i class="far fa-trash-alt tlp-modal-title-icon"></i> {{# gettext }}Removal from projects{{/ gettext }}
+                                    </h1>
+                                    <button class="tlp-modal-close" type="button" data-dismiss="modal" aria-label="{{# gettext }}Close{{/ gettext }}">
+                                        &times;
+                                    </button>
+                                </div>
+                                <div class="tlp-modal-body">
+                                    <p>
+                                        {{# ngettext }}You are about to mark this user as restricted, he will be removed from %s project not allowing restricted users. Please confirm your action. |
+                                            You are about to mark this user as restricted, he will be removed from %s projects not allowing restricted users. Please confirm your action.
+                                            | {{ nb_project_user_is_member_of_that_dont_accept_restricted }}
+                                        {{/ ngettext }}
+                                    </p>
+                                </div>
+                                <div class="tlp-modal-footer">
+                                    <button type="button" class="tlp-button-primary tlp-button-outline tlp-modal-action tlp-button-danger" data-dismiss="modal">
+                                        {{# gettext }}Cancel{{/ gettext }}
+                                    </button>
+                                    <button type="submit" class="tlp-button-primary tlp-modal-action tlp-button-danger" id="modal-warning-removal-project-not-including-restricted-confirm">
+                                        <i class="far fa-trash-alt tlp-button-icon"></i>
+                                        {{# gettext }}Confirm{{/ gettext }}
+                                    </button>
+                                </div>
                             </div>
                         {{/ is_in_limbo }}
                     </div>
@@ -68,8 +105,9 @@
                         <div class="tlp-form-element siteadmin-user-details-row-field">
                             <label for="expiry" class="tlp-label">{{ expiry_date_label }}</label>
                             <div class="tlp-form-element tlp-form-element-prepend">
-                                <span class="tlp-prepend"><i class="fa fa-calendar"></i></span>
-                                <input type="text" id="expiry" class="tlp-input tlp-input-date" size="11" name="expiry_date" value="{{ expiry }}">
+                                <span class="tlp-prepend"><i class="fas fa-calendar-alt"></i></span>
+                                <input type="text" id="expiry" class="tlp-input tlp-input-date" size="11" name="expiry_date"
+                                       value="{{ expiry }}" placeholder="yyyy-mm-dd">
                             </div>
                         </div>
                     </div>
@@ -83,7 +121,7 @@
 
                     <div class="tlp-property">
                         <label class="tlp-label">{{ password_label }}</label>
-                        <button type="button" class="tlp-button-primary tlp-button-outline" id="siteadmin-user-details-change-password" data-target="user-change-password-modal">
+                        <button type="button" class="tlp-button-primary tlp-button-outline" id="siteadmin-user-details-change-password" data-target-modal-id="user-change-password-modal">
                             <i class="fa fa-lock tlp-button-icon"></i> {{ change_passwd }}
                         </button>
                     </div>
@@ -145,7 +183,7 @@
                 </section>
 
                 <section class="tlp-pane-section tlp-pane-section-submit">
-                    <button type="submit" class="tlp-button-primary">
+                    <button type="submit" class="tlp-button-primary" data-test="save-user">
                         <i class="fa fa-save tlp-button-icon"></i> {{ update_information }}
                     </button>
                 </section>
@@ -180,7 +218,7 @@
                             <label class="tlp-label">{{ last_access_date_label }}</label>
                             <p>
                                 <span class="tlp-tooltip tlp-tooltip-right" data-tlp-tooltip="{{ last_access_date }}">
-                                    {{ last_access_date_ago }}
+                                    {{{ purified_last_access_date_ago }}}
                                 </span>
                             </p>
                         </div>
@@ -188,7 +226,7 @@
                             <label class="tlp-label">{{ last_pwd_update_label }}</label>
                             <p>
                                 <span class="tlp-tooltip tlp-tooltip-right" data-tlp-tooltip="{{ last_pwd_update }}">
-                                    {{ last_pwd_update_ago }}
+                                    {{{ purified_last_pwd_update_ago }}}
                                 </span>
                             </p>
                         </div>
@@ -196,7 +234,7 @@
                             <label class="tlp-label">{{ auth_attempt_last_success_label }}</label>
                             <p>
                                 <span class="tlp-tooltip tlp-tooltip-right" data-tlp-tooltip="{{ auth_attempt_last_success }}">
-                                    {{ auth_attempt_last_success_ago }}
+                                    {{{ purified_auth_attempt_last_success_ago }}}
                                 </span>
                             </p>
                         </div>
@@ -209,7 +247,7 @@
                                 <label class="tlp-label">{{ auth_attempt_last_failure_label }}</label>
                                 <p>
                                     <span class="tlp-tooltip tlp-tooltip-right" data-tlp-tooltip="{{ auth_attempt_last_failure }}">
-                                        {{ auth_attempt_last_failure_ago }}
+                                        {{{ purified_auth_attempt_last_failure_ago }}}
                                     </span>
                                 </p>
                             </div>
@@ -218,7 +256,7 @@
                             <label class="tlp-label">{{ auth_attempt_prev_success_label }}</label>
                             <p>
                                 <span class="tlp-tooltip tlp-tooltip-right" data-tlp-tooltip="{{ auth_attempt_prev_success }}">
-                                    {{ auth_attempt_prev_success_ago }}
+                                    {{{ purified_auth_attempt_prev_success_ago }}}
                                 </span>
                             </p>
                         </div>
@@ -226,10 +264,30 @@
                             <label class="tlp-label">{{ member_since_label }}</label>
                             <p>
                                 <span class="tlp-tooltip tlp-tooltip-right" data-tlp-tooltip="{{ member_since }}">
-                                    {{ member_since_ago }}
+                                    {{{ purified_member_since_ago }}}
                                 </span>
                             </p>
                         </div>
+                        {{# invited_by }}
+                            <div class="tlp-property">
+                                <label class="tlp-label">{{# gettext }}Invited by{{/gettext}}</label>
+                                {{# has_been_invited }}
+                                    {{# invited_by_users }}
+                                        <div>
+                                            <div class="tlp-avatar-mini">
+                                                {{# has_avatar }}
+                                                    <img src="{{ avatar_url }}">
+                                                {{/ has_avatar }}
+                                            </div>
+                                            {{ display_name }}
+                                        </div>
+                                    {{/ invited_by_users }}
+                                {{/ has_been_invited }}
+                                {{^ has_been_invited }}
+                                    <span class="tlp-property-empty">{{# gettext }}Nobody{{/ gettext }}</span>
+                                {{/ has_been_invited }}
+                            </div>
+                        {{/ invited_by }}
                     {{/ access }}
                 </section>
             </div>

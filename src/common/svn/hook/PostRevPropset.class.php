@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,13 +22,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/dao/SvnCommitsDao.class.php';
-require_once 'common/svn/SVN_Hooks.class.php';
-
 /**
  * I'm responsible of handling what happens in post-revprop-change subversion hook
  */
-class SVN_Hook_PostRevPropset {
+class SVN_Hook_PostRevPropset
+{
 
     /** @var SVN_Hooks */
     private $svn_hooks;
@@ -39,7 +37,8 @@ class SVN_Hook_PostRevPropset {
     /** @var SvnCommitsDao */
     private $dao;
 
-    public function __construct(SVN_Hooks $svn_hooks, ReferenceManager $reference_manager, SvnCommitsDao $dao) {
+    public function __construct(SVN_Hooks $svn_hooks, ReferenceManager $reference_manager, SvnCommitsDao $dao)
+    {
         $this->svn_hooks         = $svn_hooks;
         $this->reference_manager = $reference_manager;
         $this->dao               = $dao;
@@ -56,7 +55,8 @@ class SVN_Hook_PostRevPropset {
      * @param String $user_name
      * @param String $old_commit_message
      */
-    public function update($repository_path, $revision, $user_name, $old_commit_message) {
+    public function update($repository_path, $revision, $user_name, $old_commit_message)
+    {
         $project = $this->svn_hooks->getProjectFromRepositoryPath($repository_path);
         $user    = $this->svn_hooks->getUserByName($user_name);
         $message = $this->svn_hooks->getMessageFromRevision($repository_path, $revision);
@@ -72,12 +72,13 @@ class SVN_Hook_PostRevPropset {
         );
     }
 
-    private function removePreviousCrossReferences(Project $project, $revision, $old_commit_message) {
+    private function removePreviousCrossReferences(Project $project, $revision, $old_commit_message)
+    {
         $GLOBALS['group_id'] = $project->getID();
-        $references = $this->reference_manager->extractReferences($old_commit_message, $project->getID());
+        $references          = $this->reference_manager->extractReferences($old_commit_message, $project->getID());
         foreach ($references as $reference_instance) {
-            /* @var $reference Reference */
             $reference = $reference_instance->getReference();
+            \assert($reference instanceof Reference);
             if ($reference) {
                 $cross_reference = new CrossReference(
                     $revision,
@@ -95,5 +96,3 @@ class SVN_Hook_PostRevPropset {
         }
     }
 }
-
-?>

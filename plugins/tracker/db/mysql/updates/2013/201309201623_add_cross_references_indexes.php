@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,18 +18,22 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201309201623_add_cross_references_indexes extends ForgeUpgrade_Bucket {
+class b201309201623_add_cross_references_indexes extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'add cross references indexes.';
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
-        $sql = "ALTER TABLE `cross_references`
+    public function up()
+    {
+        $sql    = "ALTER TABLE `cross_references`
                     ADD INDEX `target_index` (`target_id`(10) ASC, `target_type`(32) ASC),
                     ADD INDEX `source_index` (`source_id`(10) ASC, `source_type`(32) ASC)";
         $result = $this->db->dbh->exec($sql);
@@ -40,4 +44,3 @@ class b201309201623_add_cross_references_indexes extends ForgeUpgrade_Bucket {
         }
     }
 }
-?>

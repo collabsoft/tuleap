@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ use Tuleap\Language\Gettext\POTEntryCollection;
 
 class GettextCollector
 {
-    const DEFAULT_DOMAIN = 'tuleap-core';
+    public const DEFAULT_DOMAIN = 'tuleap-core';
 
     /**
      * @var GettextSectionContentTransformer
@@ -51,7 +51,7 @@ class GettextCollector
                 $domain = $this->transformer->shift($section_content, $parts);
                 break;
             default:
-                throw new \RuntimeException('Cannot collect gettext entries in following section: '. $section_name);
+                throw new \RuntimeException('Cannot collect gettext entries in following section: ' . $section_name);
         }
 
         switch ($section_name) {
@@ -66,7 +66,7 @@ class GettextCollector
                 $msgid_plural = $this->transformer->shift($section_content, $parts);
                 break;
             default:
-                throw new \RuntimeException('Cannot collect gettext entries in following section: '. $section_name);
+                throw new \RuntimeException('Cannot collect gettext entries in following section: ' . $section_name);
         }
 
         $collection->add($domain, new POTEntry($msgid, $msgid_plural));

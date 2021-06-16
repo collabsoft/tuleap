@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 use Tuleap\Dashboard\User\UserDashboardController;
 use Tuleap\Hudson\HudsonJobBuilder;
@@ -59,26 +58,29 @@ class hudson_Widget_JobBuildHistory extends HudsonJobWidget
         $this->job_builder = $job_builder;
     }
 
-    function getTitle() {
+    public function getTitle()
+    {
         $title = '';
         if ($this->job) {
-            $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_buildhistory', array($this->job->getName()));
+            $title .= sprintf(dgettext('tuleap-hudson', '%1$s Builds History'), $this->job->getName());
         } else {
-            $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_buildhistory');
+            $title .= sprintf(dgettext('tuleap-hudson', '%1$s Builds History'), '');
         }
         return $title;
     }
 
-    function getDescription() {
-        return $GLOBALS['Language']->getText('plugin_hudson', 'widget_description_buildshistory');
+    public function getDescription()
+    {
+        return dgettext('tuleap-hudson', 'Show the build history of the selected job, under the form of RSS feed. For each build of the list, you can see the build number, the status and the date the build has been scheduled.');
     }
 
-    function loadContent($id)
+    public function loadContent($id)
     {
         $this->content_id = $id;
     }
 
-    protected function initContent() {
+    protected function initContent()
+    {
         $job_id = $this->getJobIdFromWidgetConfiguration();
         if ($job_id) {
             $this->job_id = $job_id;
@@ -95,34 +97,35 @@ class hudson_Widget_JobBuildHistory extends HudsonJobWidget
             } else {
                 $this->job = null;
             }
-
         }
     }
 
-    function getContent() {
+    public function getContent()
+    {
         $this->initContent();
 
         $html = '';
         if ($this->job != null) {
             $job = $this->job;
 
-            $buildHistoryRSSWidget = new Widget_ProjectRss();
-            $buildHistoryRSSWidget->rss_url = $job->getUrl().'/rssAll';
-            $html .= $buildHistoryRSSWidget->getContent();
+            $buildHistoryRSSWidget          = new Widget_ProjectRss();
+            $buildHistoryRSSWidget->rss_url = $job->getUrl() . '/rssAll';
+            $html                          .= $buildHistoryRSSWidget->getContent();
         } else {
-            $html .= $GLOBALS['Language']->getText('plugin_hudson', 'widget_job_not_found');
+            $html .= dgettext('tuleap-hudson', 'Job not found.');
         }
         return $html;
     }
 
-    function hasRss() {
+    public function hasRss()
+    {
         return true;
     }
 
     public function getRssUrl($owner_id, $owner_type)
     {
         if ($this->job) {
-            return $this->job->getUrl().'/rssAll';
+            return $this->job->getUrl() . '/rssAll';
         } else {
             return '';
         }

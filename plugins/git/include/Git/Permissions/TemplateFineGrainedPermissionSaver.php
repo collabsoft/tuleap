@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,8 +25,8 @@ use Feedback;
 
 class TemplateFineGrainedPermissionSaver
 {
-    const BRANCH_PATTERN_PREFIX = 'refs/heads/';
-    const TAG_PATTERN_PREFIX    = 'refs/tags/';
+    public const BRANCH_PATTERN_PREFIX = 'refs/heads/';
+    public const TAG_PATTERN_PREFIX    = 'refs/tags/';
 
     /**
      * @var FineGrainedDao
@@ -57,7 +57,7 @@ class TemplateFineGrainedPermissionSaver
         if ($this->dao->getPermissionIdByPatternForProject($permission->getProjectId(), $pattern)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::WARN,
-                $GLOBALS['Language']->getText('plugin_git', 'add_permission_duplicate_pattern', $pattern)
+                sprintf(dgettext('tuleap-git', 'Pattern %1$s is already existing.'), $pattern)
             );
 
             return;
@@ -76,7 +76,7 @@ class TemplateFineGrainedPermissionSaver
      */
     private function getWriterIds(DefaultFineGrainedPermission $permission)
     {
-        $ids = array();
+        $ids = [];
         foreach ($permission->getWritersUgroup() as $ugroup) {
             $ids[] = $ugroup->getId();
         }
@@ -89,7 +89,7 @@ class TemplateFineGrainedPermissionSaver
      */
     private function getRewinderIds(DefaultFineGrainedPermission $permission)
     {
-        $ids = array();
+        $ids = [];
         foreach ($permission->getRewindersUgroup() as $ugroup) {
             $ids[] = $ugroup->getId();
         }

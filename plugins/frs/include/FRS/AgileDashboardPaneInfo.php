@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -47,16 +47,17 @@ class AgileDashboardPaneInfo extends PaneInfo
     /** @see PaneInfo::getTitle */
     public function getTitle()
     {
-        return $GLOBALS['Language']->getText('plugin_frs', 'File_release');
+        return dgettext('tuleap-frs', 'File release');
     }
 
     public function getUri()
     {
-        return '/file/shownotes.php?release_id=' . (int)$this->release_id;
+        $release_id = urlencode((string) $this->release_id);
+        return "/frs/release/$release_id/release-notes";
     }
 
     public function getIconName()
     {
-        return 'fa-files-o icon-copy';
+        return 'fa-files-o';
     }
 }

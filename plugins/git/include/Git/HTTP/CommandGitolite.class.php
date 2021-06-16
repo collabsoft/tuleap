@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Git_HTTP_CommandGitolite extends Git_HTTP_Command {
+class Git_HTTP_CommandGitolite extends Git_HTTP_Command
+{
 
     protected $gitolite_home = '/usr/com/gitolite';
 
-    public function __construct(PFO_User $user, Git_HTTP_Command $command) {
+    public function __construct(PFO_User $user, Git_HTTP_Command $command)
+    {
         parent::__construct();
 
-        $gitolite_user_info = posix_getpwnam('gitolite');
+        $gitolite_user_info  = posix_getpwnam('gitolite');
         $this->gitolite_home = $gitolite_user_info['dir'];
 
         $this->env['SHELL']            = '/bin/sh';
@@ -35,16 +37,18 @@ class Git_HTTP_CommandGitolite extends Git_HTTP_Command {
         $this->env['REMOTE_ADDR']      = HTTPRequest::instance()->getIPAddress();
         $this->env['TERM']             = 'linux';
         $this->appendToEnv('REQUEST_URI');
-        $this->appendToEnv('REMOTE_PORT');
+        $this->env['REMOTE_PORT'] = empty($_SERVER['REMOTE_PORT']) ? 'UNKNOWN' : $_SERVER['REMOTE_PORT'];
         $this->appendToEnv('SERVER_ADDR');
         $this->appendToEnv('SERVER_PORT');
     }
 
-    protected function sudo($command) {
-        return 'sudo -E -u gitolite '.$command;
+    protected function sudo($command)
+    {
+        return 'sudo -E -u gitolite ' . $command;
     }
 
-    public function getCommand() {
+    public function getCommand()
+    {
         return $this->sudo('/usr/bin/gl-auth-command');
     }
 }

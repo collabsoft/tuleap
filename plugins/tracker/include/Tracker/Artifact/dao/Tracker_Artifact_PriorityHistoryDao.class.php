@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2015. All rights reserved
+ * Copyright (c) Enalean SAS 2015 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,11 @@
 /**
  * Manage artifacts priority history in database
  */
-class Tracker_Artifact_PriorityHistoryDao extends DataAccessObject {
+class Tracker_Artifact_PriorityHistoryDao extends DataAccessObject
+{
 
-    public function logPriorityChange($moved_artifact_id, $artifact_higher_id, $artifact_lower_id, $context_id, $project_id, $priority_updated_by, $priority_updated_on, $old_global_rank) {
+    public function logPriorityChange($moved_artifact_id, $artifact_higher_id, $artifact_lower_id, $context_id, $project_id, $priority_updated_by, $priority_updated_on, $old_global_rank)
+    {
         $moved_artifact_id   = $this->da->escapeInt($moved_artifact_id);
         $artifact_higher_id  = $this->da->escapeInt($artifact_higher_id);
         $artifact_lower_id   = $this->da->escapeInt($artifact_lower_id);
@@ -39,8 +41,9 @@ class Tracker_Artifact_PriorityHistoryDao extends DataAccessObject {
         $this->update($sql);
     }
 
-    public function getArtifactPriorityHistory($artifact_id) {
-        $artifact_id  = $this->da->escapeInt($artifact_id);
+    public function getArtifactPriorityHistory($artifact_id)
+    {
+        $artifact_id = $this->da->escapeInt($artifact_id);
 
         $sql = "SELECT *
                 FROM tracker_artifact_priority_history
@@ -49,8 +52,9 @@ class Tracker_Artifact_PriorityHistoryDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function deletePriorityChangesHistory($artifact_id) {
-        $artifact_id  = $this->da->escapeInt($artifact_id);
+    public function deletePriorityChangesHistory($artifact_id)
+    {
+        $artifact_id = $this->da->escapeInt($artifact_id);
 
         $sql = "DELETE
                 FROM tracker_artifact_priority_history
@@ -60,5 +64,4 @@ class Tracker_Artifact_PriorityHistoryDao extends DataAccessObject {
 
         return $this->update($sql);
     }
-
 }

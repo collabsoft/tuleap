@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,12 +18,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Docman_LinkVersionDao extends DataAccessObject {
+class Docman_LinkVersionDao extends DataAccessObject
+{
 
     /**
      * @return DataAccessResult
      */
-    function searchByItemId($item_id) {
+    public function searchByItemId($item_id)
+    {
         $item_id = $this->da->escapeInt($item_id);
 
         $sql = "SELECT * FROM plugin_docman_link_version
@@ -36,7 +38,8 @@ class Docman_LinkVersionDao extends DataAccessObject {
     /**
      * @return DataAccessResult
      */
-    function searchByNumber($item_id, $number) {
+    public function searchByNumber($item_id, $number)
+    {
         $item_id = $this->da->escapeInt($item_id);
         $number  = $this->da->escapeInt($number);
 
@@ -47,14 +50,14 @@ class Docman_LinkVersionDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function createNewLinkVersion(Docman_Link $link, $label, $changelog, $date) {
+    public function createNewLinkVersion(Docman_Link $link, $label, $changelog, $date)
+    {
         $label     = $this->da->quoteSmart($label);
         $changelog = $this->da->quoteSmart($changelog);
         $date      = $this->da->escapeInt($date);
         $link_url  = $this->da->quoteSmart($link->getUrl());
         $item_id   = $this->da->escapeInt($link->getId());
         $user_id   = $this->da->escapeInt($link->getOwnerId());
-
 
         $sql = "INSERT INTO plugin_docman_link_version (item_id, number, user_id, label, changelog, date, link_url)
                 SELECT $item_id, IFNULL(MAX(number), 0) + 1 as number, $user_id, $label, $changelog, $date, $link_url
@@ -64,13 +67,19 @@ class Docman_LinkVersionDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    private function getNextVersionNumber($item_id) {
-        $item_id = $this->da->quoteSmart($item_id);
+    public function createLinkWithSpecificVersion(Docman_Link $link, $label, $changelog, $date, $version)
+    {
+        $label     = $this->da->quoteSmart($label);
+        $changelog = $this->da->quoteSmart($changelog);
+        $date      = $this->da->escapeInt($date);
+        $version   = $this->da->escapeInt($version);
+        $link_url  = $this->da->quoteSmart($link->getUrl());
+        $item_id   = $this->da->escapeInt($link->getId());
+        $user_id   = $this->da->escapeInt($link->getOwnerId());
 
-        $sql    = "SELECT MAX(number) as num FROM plugin_docman_link_version WHERE item_id = $item_id";
-        $row    = $this->retrieveFirstRow($sql);
-        $number = ($row) ? $row['num'] : 0;
+        $sql = "INSERT INTO plugin_docman_link_version (id, item_id, number, user_id, label, changelog, date, link_url) VALUES
+               ($version, $item_id, $version, $user_id, $label, $changelog, $date, $link_url)";
 
-        return ($number + 1);
+        return $this->update($sql);
     }
 }

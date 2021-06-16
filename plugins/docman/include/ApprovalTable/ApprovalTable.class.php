@@ -1,141 +1,187 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2007
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-abstract class Docman_ApprovalTable {
-    var $id;
-    var $date;
-    var $owner;
-    var $description;
-    var $status;
-    var $notification;
-    var $notificationOccurence;
+abstract class Docman_ApprovalTable
+{
+    public $id;
+    public $date;
+    public $owner;
+    public $description;
+    public $status;
+    public $notification;
+    public $notificationOccurence;
 
-    var $approvalState;
-    var $customizable;
-    var $reviewers;
+    public $approvalState;
+    public $customizable;
+    public $reviewers;
 
-    function __construct() {
-        $this->id                 = null;
-        $this->date               = null;
-        $this->owner              = null;
-        $this->description        = null;
-        $this->status             = null;
-        $this->notification       = null;
+    public function __construct()
+    {
+        $this->id                    = null;
+        $this->date                  = null;
+        $this->owner                 = null;
+        $this->description           = null;
+        $this->status                = null;
+        $this->notification          = null;
         $this->notificationOccurence = null;
 
-        $this->approvalState      = null;
-        $this->customizable       = true;
-        $this->reviewers          = array();
+        $this->approvalState = null;
+        $this->customizable  = true;
+        $this->reviewers     = [];
     }
 
-    function setId($v) {
+    public function setId($v)
+    {
         $this->id = $v;
     }
 
-    function getId() {
+    /**
+     * @psalm-mutation-free
+     */
+    public function getId()
+    {
         return $this->id;
     }
 
-    function setDate($v) {
+    public function setDate($v)
+    {
         $this->date = $v;
     }
 
-    function getDate() {
+    /**
+     * @psalm-mutation-free
+     */
+    public function getDate()
+    {
         return $this->date;
     }
 
-    function setOwner($v) {
+    public function setOwner($v)
+    {
         $this->owner = $v;
     }
 
-    function getOwner() {
+    public function getOwner()
+    {
         return $this->owner;
     }
 
-    function setDescription($v) {
+    public function setDescription($v)
+    {
         $this->description = $v;
     }
 
-    function getDescription() {
+    public function getDescription()
+    {
         return $this->description;
     }
 
-    function setStatus($v) {
+    public function setStatus($v)
+    {
         $this->status = $v;
     }
 
-    function getStatus() {
+    public function getStatus()
+    {
         return $this->status;
     }
 
-    function setNotification($v) {
+    public function setNotification($v)
+    {
         $this->notification = $v;
     }
 
-    function getNotification() {
+    public function getNotification()
+    {
         return $this->notification;
     }
 
-    function setNotificationOccurence($v) {
+    public function setNotificationOccurence($v)
+    {
         $this->notificationOccurence = $v;
     }
 
-    function getNotificationOccurence() {
+    public function getNotificationOccurence()
+    {
         return $this->notificationOccurence;
     }
 
-    function setCustomizable($v) {
+    public function setCustomizable($v)
+    {
         $this->customizable = $v;
     }
 
-    function getCustomizable() {
+    public function getCustomizable()
+    {
         return $this->customizable;
     }
 
-    function getApprovalState() {
+    /**
+     * @psalm-mutation-free
+     */
+    public function getApprovalState()
+    {
         return $this->approvalState;
     }
 
-    function initFromRow($row) {
-        if(isset($row['table_id']))    $this->id    = $row['table_id'];
-        if(isset($row['table_owner'])) $this->owner = $row['table_owner'];
-        if(isset($row['date']))        $this->date  = $row['date'];
-        if(isset($row['description'])) $this->description = $row['description'];
-        if(isset($row['status']))      $this->status = $row['status'];
-        if(isset($row['notification'])) $this->notification = $row['notification'];
-        if(isset($row['notification_occurence'])) $this->notificationOccurence = $row['notification_occurence'];
+    public function initFromRow($row)
+    {
+        if (isset($row['table_id'])) {
+            $this->id = $row['table_id'];
+        }
+        if (isset($row['table_owner'])) {
+            $this->owner = $row['table_owner'];
+        }
+        if (isset($row['date'])) {
+            $this->date = $row['date'];
+        }
+        if (isset($row['description'])) {
+            $this->description = $row['description'];
+        }
+        if (isset($row['status'])) {
+            $this->status = $row['status'];
+        }
+        if (isset($row['notification'])) {
+            $this->notification = $row['notification'];
+        }
+        if (isset($row['notification_occurence'])) {
+            $this->notificationOccurence = $row['notification_occurence'];
+        }
         $this->approvalState = $this->computeApprovalState($row);
     }
 
-    /*static*/ function computeApprovalState($row) {
+    /*static*/ public function computeApprovalState($row)
+    {
         $approvalState = null;
-        if(isset($row['nb_reviewers']) && isset($row['rejected']) && isset($row['nb_approved']) && isset($row['nb_declined'])) {
-            if($row['rejected'] > 0) {
+        if (isset($row['nb_reviewers']) && isset($row['rejected']) && isset($row['nb_approved']) && isset($row['nb_declined'])) {
+            if ($row['rejected'] > 0) {
                 $approvalState = PLUGIN_DOCMAN_APPROVAL_STATE_REJECTED;
-            } elseif($row['nb_reviewers'] > 0 // There are reviewers
+            } elseif (
+                $row['nb_reviewers'] > 0 // There are reviewers
                      && $row['nb_approved'] > 0 // Avoid case when everybody "Will not review"
                      && (($row['nb_reviewers'] == $row['nb_approved']) // Everybody approved
                          || $row['nb_reviewers'] == ($row['nb_approved'] + $row['nb_declined']))
-                     ) {
+            ) {
                     $approvalState = PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED;
             } else {
                 $approvalState = PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET;
@@ -145,50 +191,59 @@ abstract class Docman_ApprovalTable {
     }
 
     // Convenient accessors
-    function isDisabled() {
-        if($this->status == PLUGIN_DOCMAN_APPROVAL_TABLE_DISABLED) {
+    public function isDisabled()
+    {
+        if ($this->status == PLUGIN_DOCMAN_APPROVAL_TABLE_DISABLED) {
             return true;
         }
         return false;
     }
 
-    function isEnabled() {
-        if($this->status == PLUGIN_DOCMAN_APPROVAL_TABLE_ENABLED) {
+    public function isEnabled()
+    {
+        if ($this->status == PLUGIN_DOCMAN_APPROVAL_TABLE_ENABLED) {
             return true;
         }
         return false;
     }
 
-    function isClosed() {
-        if($this->status == PLUGIN_DOCMAN_APPROVAL_TABLE_CLOSED) {
+    public function isClosed()
+    {
+        if ($this->status == PLUGIN_DOCMAN_APPROVAL_TABLE_CLOSED) {
             return true;
         }
         return false;
     }
 
-    function isCustomizable() {
+    public function isCustomizable()
+    {
         return $this->getCustomizable();
     }
 
     // Reviewers management
     // Should be managed with SplObjectStorage in Php 5
-    function addReviewer($reviewer) {
+    public function addReviewer($reviewer)
+    {
         $this->reviewers[$reviewer->getId()] = $reviewer;
     }
 
-    function getReviewer($id) {
+    public function getReviewer($id)
+    {
         return $this->reviewers[$id];
     }
 
-    function isReviewer($id) {
+    public function isReviewer($id)
+    {
         return isset($this->reviewers[$id]);
     }
 
-    function &getReviewerArray() {
+    public function &getReviewerArray()
+    {
         return $this->reviewers;
     }
 
-    function getReviewerIterator() {
+    public function getReviewerIterator()
+    {
         return new ArrayIterator($this->reviewers);
     }
 }

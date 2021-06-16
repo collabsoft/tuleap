@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ class ForListBindStatic implements FieldFromWhereBuilder, ListBindStaticFromWher
     private function getFromWhereForEmptyCondition(QueryListFieldPresenter $query_presenter)
     {
         $condition = "($query_presenter->changeset_value_alias.changeset_id IS NULL OR $query_presenter->changeset_value_list_alias.bindvalue_id =" .
-            $this->escapeInt(Tracker_FormElement_Field_List::NONE_VALUE).")";
+            $this->escapeInt(Tracker_FormElement_Field_List::NONE_VALUE) . ")";
 
         $query_presenter->setCondition($condition);
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,11 +19,13 @@
  */
 
 
-class Cardwall_OnTop_ColumnMappingFieldDao extends DataAccessObject {
+class Cardwall_OnTop_ColumnMappingFieldDao extends DataAccessObject
+{
 
-    public function searchMappingFields($cardwall_tracker_id) {
+    public function searchMappingFields($cardwall_tracker_id)
+    {
         $cardwall_tracker_id = $this->da->escapeInt($cardwall_tracker_id);
-        $sql = "SELECT t1.id AS tracker_id, m.field_id AS field_id
+        $sql                 = "SELECT t1.id AS tracker_id, m.field_id AS field_id
                 FROM
                     tracker AS t1
                     INNER JOIN tracker AS t2 ON (
@@ -36,7 +38,8 @@ class Cardwall_OnTop_ColumnMappingFieldDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function create($cardwall_tracker_id, $tracker_id, $field_id) {
+    public function create($cardwall_tracker_id, $tracker_id, $field_id)
+    {
         $cardwall_tracker_id = $this->da->escapeInt($cardwall_tracker_id);
         $tracker_id          = $this->da->escapeInt($tracker_id);
         if ($field_id === null) {
@@ -49,7 +52,8 @@ class Cardwall_OnTop_ColumnMappingFieldDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function save($cardwall_tracker_id, $tracker_id, $field_id) {
+    public function save($cardwall_tracker_id, $tracker_id, $field_id)
+    {
         $cardwall_tracker_id = $this->da->escapeInt($cardwall_tracker_id);
         $tracker_id          = $this->da->escapeInt($tracker_id);
         if ($field_id === null) {
@@ -64,26 +68,29 @@ class Cardwall_OnTop_ColumnMappingFieldDao extends DataAccessObject {
         }
     }
 
-    public function delete($cardwall_tracker_id, $tracker_id) {
+    public function delete($cardwall_tracker_id, $tracker_id)
+    {
         $cardwall_tracker_id = $this->da->escapeInt($cardwall_tracker_id);
         $tracker_id          = $this->da->escapeInt($tracker_id);
-        $sql = "DELETE FROM plugin_cardwall_on_top_column_mapping_field
+        $sql                 = "DELETE FROM plugin_cardwall_on_top_column_mapping_field
                 WHERE tracker_id          = $tracker_id
                   AND cardwall_tracker_id = $cardwall_tracker_id";
         return $this->update($sql);
     }
 
-    public function deleteCardwall($cardwall_tracker_id) {
+    public function deleteCardwall($cardwall_tracker_id)
+    {
         $cardwall_tracker_id = $this->da->escapeInt($cardwall_tracker_id);
-        $sql = "DELETE FROM plugin_cardwall_on_top_column_mapping_field
+        $sql                 = "DELETE FROM plugin_cardwall_on_top_column_mapping_field
                 WHERE cardwall_tracker_id = $cardwall_tracker_id";
         return $this->update($sql);
     }
 
-    public function duplicate($from_cardwall_tracker_id, $to_cardwall_tracker_id, $tracker_mapping, $field_mapping) {
+    public function duplicate($from_cardwall_tracker_id, $to_cardwall_tracker_id, $tracker_mapping, $field_mapping)
+    {
         $from_cardwall_tracker_id = $this->da->escapeInt($from_cardwall_tracker_id);
         $to_cardwall_tracker_id   = $this->da->escapeInt($to_cardwall_tracker_id);
-        $to_field_stmt     = " CASE field_id ";
+        $to_field_stmt            = " CASE field_id ";
         foreach ($field_mapping as $mapping) {
             $from           = $this->da->escapeInt($mapping['from']);
             $to             = $this->da->escapeInt($mapping['to']);
@@ -108,4 +115,3 @@ class Cardwall_OnTop_ColumnMappingFieldDao extends DataAccessObject {
         return $this->update($sql);
     }
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -85,7 +85,7 @@ class QueryParameterParser
      */
     private function getParameterContent($query, $parameter_name)
     {
-        $query = trim($query);
+        $query      = trim($query);
         $json_query = $this->json_decoder->decodeAsAnArray('query', $query);
 
         if (! isset($json_query[$parameter_name])) {
@@ -110,6 +110,43 @@ class QueryParameterParser
 
         if (! is_string($parameter_content)) {
             throw new InvalidParameterTypeException("$parameter_name must be a string");
+        }
+
+        return $parameter_content;
+    }
+
+    /**
+     *
+     * @throws Exceptions\InvalidJsonException
+     * @throws InvalidParameterTypeException
+     * @throws MissingMandatoryParameterException
+     */
+    public function getBoolean(string $query, string $parameter_name): bool
+    {
+        $parameter_content = $this->getParameterContent($query, $parameter_name);
+
+        if (! is_bool($parameter_content)) {
+            throw new InvalidParameterTypeException("$parameter_name must be a boolean");
+        }
+
+        return $parameter_content;
+    }
+
+    /**
+     * @param string $query
+     * @param string $parameter_name
+     *
+     * @return array
+     * @throws Exceptions\InvalidJsonException
+     * @throws InvalidParameterTypeException
+     * @throws MissingMandatoryParameterException
+     */
+    public function getObject($query, $parameter_name)
+    {
+        $parameter_content = $this->getParameterContent($query, $parameter_name);
+
+        if (! is_array($parameter_content)) {
+            throw new InvalidParameterTypeException("$parameter_name must be an object");
         }
 
         return $parameter_content;

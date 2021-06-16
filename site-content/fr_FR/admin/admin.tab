@@ -3,177 +3,6 @@
 # This file is licensed under the GNU General Public License version 2. See the file COPYING.
 #
 
-admin_sidebar	users_section_title	Utilisateurs
-admin_sidebar	users_search_placeholder	Email, nom d'utilisateur…
-admin_sidebar	users_nav_all_users	Tous les utilisateurs
-admin_sidebar	users_nav_new_user	 Nouvel utilisateur
-admin_sidebar	users_nav_pending_users	Utilisateurs en attente
-admin_sidebar	users_nav_validated_users	Utilisateurs validés en attente
-admin_sidebar	users_nav_permission_delegation	Délégation de permission
-admin_sidebar	projects_section_title	Projets
-admin_sidebar	projects_search_placeholder	Id, nom unix…
-admin_sidebar	projects_nav_all_projects	Tous les projets
-admin_sidebar	projects_nav_pending_projects	Projets en attente
-admin_sidebar	projects_nav_configuration	Configuration des projets
-admin_sidebar	configuration_section_title	Configuration globale
-admin_sidebar	configuration_nav_global_access_rights	Droits d'accès globaux
-admin_sidebar	configuration_nav_homepage	Page d'accueil
-admin_sidebar	configuration_nav_categories	Catégories de projets
-admin_sidebar	configuration_nav_project_fields	Champs de projets personnalisés
-admin_sidebar	configuration_nav_predefined_references	Références de projets prédéfinis
-admin_sidebar	configuration_nav_tracker_restore	Outils de suivi en attente
-admin_sidebar	configuration_nav_svn	Gérer SVN
-admin_sidebar	utils_section_title	Utilitaires globaux
-admin_sidebar	utils_nav_system_events	Événements système
-admin_sidebar	utils_nav_news	Approbation des annonces
-admin_sidebar	utils_nav_mass_mail	Envoi d'emails en masse
-admin_sidebar	links_nav_plugins	Plugins
-admin_sidebar	links_nav_doc	Doc
-admin_sidebar	collapse_sidebar_label	Réduire la barre latérale
-
-#-----------------------------------------------
-# Script: SF/www/admin/index.php
-#
-admin_main	title		Administration du site
-admin_main	header		Fonctions d'administration
-admin_main	forgeupgrade	<h4><i class="icon-warning-sign fa fa-warning tlp-alert-icon"></i> ForgeUpgrade n'a pas été exécuté!</h4><p>Il semble que les paquets RPMs de Tuleap ont été mis à jour mais que forgeupgrade n'as pas été exécuté. Merci de vous référer à <a href="http://tuleap-documentation.readthedocs.org/en/latest/installation-guide/update.html">la documentation sur la procédure de mise à jour</a>.</p>
-admin_main	header_user	Utilisateurs en attente
-admin_main	display_user	Afficher les utilisateurs commençant par :
-admin_main	search_user	Utilisateur
-admin_main	search	Chercher
-admin_main	export_csv	Export CSV
-admin_main	review_pending_users	Valider les utilisateurs
-admin_main	review_pending_users_empty	Aucun utilisateur à valider
-admin_main	pending_user	Utilisateurs en statut <a href="$1"><B>P</B> (en attente)</a>
-admin_main	validated_user	Utilisateurs validés en <a href="$1"> attente d'activation par e-mail</a>
-admin_main	need_approval	approbation requise
-admin_main	need_validation	validation requise
-admin_main	header_group	Projets en attente
-admin_main	display_group	Afficher les projets commençant par :
-admin_main	search_group	Chercher (Id projet, nom unix, nom complet) :
-admin_main	all_users	Tous les <a href="$1">utilisateurs</a>
-admin_main	all_groups	Tous les <a href="$1">projets</a>
-admin_main	review_pending_projects	Valider les projets
-admin_main	review_pending_projects_empty	Aucun projet à valider
-admin_main	incomplete_group	Projets en statut <a href="$1"><B>I</B> (incomplet)</A>
-admin_main	pending_group	Projets en statut <a href="$1"><B>P</B> (en attente)</A>
-admin_main	deleted_group	Projets en statut <a href="$1"><B>D</B> (détruit)</A>
-admin_main	header_svc	Administration des services
-admin_main	configure_svc	Configuration des services prédéfinis
-admin_main	header_ref	Administration des références
-admin_main	configure_ref	Configuration des références systèmes
-admin_main	header_tracker	Administration des outils de suivi
-admin_main	header_svn	Administration de Subversion
-admin_main	svn_token_config	Configuration des projets concernant les jetons de connexion
-admin_main	tracker_remove	Nettoyage des outils de suivi en attente
-admin_main	tracker_template	Configuration des modèles d'outils de suivi v3
-admin_main	header_stat	Statistiques
-admin_main	stat_login	Afficher les connections récentes
-admin_main	stat_spu	Voir les statistiques globales
-admin_main	header_utils	Utilitaires site
-admin_main	mail_engine	Envoi d'e-mails en masse
-admin_main	header_sstat	Statistiques
-admin_main	header_plugins	Plugins
-admin_main	manage_all_plugins	Gérer tous les plugins
-admin_main	servers	Serveurs
-admin_main	servers_admin	Administration des serveurs
-admin_main	sstat_reg_u	Utilisateurs actifs ou restreints
-admin_main	sstat_reg_g	enregistrés
-admin_main	sstat_reg_act_g	actifs
-admin_main	sstat_deleted	supprimés
-admin_main	sstat_pend_g	en attente
-admin_main	sstat_pend_u	Utilisateurs en attente
-admin_main	site_news	Annonces site
-admin_main	site_news_approval	Approbation annonces site
-admin_main	trove_cat	Catégories
-admin_main	trove_cat_list	Gérer la liste des catégories
-admin_main	trove_cat_add	Ajout des catégories
-admin_main	new_user	Nouvel utilisateur
-admin_main	detail_button_label	Détails
-admin_main	permission_delegation	Délégation de permission
-admin_main	active_users	Utilisateurs actifs
-admin_main	lastday_users	actifs les dernières 24 heures
-admin_main	lastweek_users	actifs la semaine dernière
-admin_main	lastmonth_users	actifs le mois dernier
-admin_main	last3months_users	actifs les 3 derniers mois
-admin_main	mode_lab_users	Utilisateurs actifs ou restreints utilisant le mode lab
-admin_main	mode_lab_users_nb_users	utilisateurs
-admin_main	stat_projects	Statistiques projets
-admin_main	status_project	Par statut
-admin_main	stat_users	Statistiques utilisateurs
-admin_main	status_user	Par statut
-admin_main	statusactif_user	actif
-admin_main	statusrestricted_user	restreint
-admin_main	statushold_user	suspendu
-admin_main	statusdeleted_user	détruit
-admin_main	statusvalidated_user	validé
-admin_main	statuspending_user	en attente
-admin_main	statustotal_user	total
-admin_main	desc_fields	Description des projets
-admin_main	desc_fields_edit	Modification des champs de description des projets
-admin_main	system_event	Evénements système
-admin_main	sysevent_monitor	Affichage des événements système
-admin_main	documentation	Documentation
-admin_main	install_guide	Guide d'installation
-admin_main	admin_guide	Guide d'administration
-admin_main	conf_project	Configuration projet
-admin_main	tool_internal	Interne
-admin_main	tool_external	Outil tierces
-admin_main	configure_generic_user	Utilisateur générique
-admin_main	configure_homepage	Configurer la page d'accueil
-admin_main	placeholder_headline	Entrez une accroche percutante...
-admin_main	headline	Accroche
-admin_main	headline_help	Écrire une accroche percutante est nécessaire pour inciter les visiteurs à s'inscrire. Choisissez une accroche attirante qui décrit ce qu'est Tuleap dans votre environnement. Ne soyez pas trop verbeux cependant ;)
-admin_main	use_standard_homepage_label	Utiliser la page d'accueil standard de Tuleap
-admin_main	use_standard_homepage_help	Vous utilisez l'ancienne page d'accueil qui est personnalisable via les fichiers /etc/tuleap/site-content/…/homepage/*. Si vous passez à la page d'accueil standard (qui n'est pas personnalisable), il ne sera plus possible de revenir sur la page d'accueil personnalisée.
-admin_main	successfully_updated	Mise à jour effectuée.
-admin_main	homepage_logo	Logo de la page d'accueil
-admin_main	homepage_logo_help	Vous pouvez afficher votre propre logo sur la page d'accueil. Afin de ne pas trop perturber le design de la page d'accueil, nous vous demandons d'uploader une image au format png avec un fond transparent et une hauteur de 100px.
-admin_main	homepage_logo_help_end	 Merci de ne pas uploader un trop gros fichier (<500Ko).
-admin_main	homepage_upload_logo	Uploadez votre propre logo
-admin_main	homepage_replace_logo	Remplacer le logo actuellement utilisé
-admin_main	remove_custom_logo	Supprimer le logo
-admin_main	homepage_or_label	ou
-admin_main	save_conf	Sauvegarder la configuration
-admin_main	logo_too_big	Le fichier est trop gros
-admin_main	upload_error	Erreur lors de l'upload du fichier (erreur $1)
-admin_main	no_png	Merci d'uploader une image au format png
-admin_main	100px	L'image excède les 100px de hauteur
-admin_main	standard_title	Page d'accueil Tuleap standard
-admin_main	customize_title	Page d'accueil personnalisée
-admin_main	label_language	Votre accroche
-admin_main	homepage_all_users	Voir tous les utilisateurs
-admin_main	homepage_all_projects	Voir tous les projets
-
-admin_main	system_events_pane_title	Evénements système (dernières 48 heures)
-admin_main	system_events_view_all_label	Voir tous les événements système
-admin_main	new_label_tooltip	Nouveaux événements
-admin_main	running_label_tooltip	Evénements en cours d'exécution
-admin_main	done_label_tooltip	Evénements terminés
-admin_main	warning_label_tooltip	Evénements en alerte
-admin_main	error_label_tooltip	Evénements en erreur
-admin_main	warning_label	Alertes
-admin_main	error_label	Erreurs
-
-admin_main	configure_access_controls	Droits d'accès
-admin_main	platform_access_control	Droits d'accès de la plateforme
-admin_main	projects_visibility	Visibilité des projets
-admin_main	projects_visibility_label	Les administrateurs de projet peuvent choisir la visibilité du projet
-admin_main	projects_visibility_help	Si, dans votre organisation, la confidentialité des projets doit être impérativement préservée, alors vous pouvez décocher cette option afin que les administrateurs projets ne puissent pas divulguer par mégarde des ressources confidentielles aux autres utilisateurs de la plateforme.
-admin_main	localinc_obsolete_message	<h4><i class="icon-warning-sign"></i> Votre fichier local.inc n'est pas à jour !</h4><p>Il semble que votre fichier local.inc contient des définitions de variables qui ne sont plus utilisées et pourrait entraîner des confusions.</p><p>Merci d'éditer <code>$1</code> et de supprimer les variables suivantes : <code>$sys_allow_anon</code> et <code>$sys_allow_restricted_users</code>.</p>
-admin_main	access_anonymous_label	Accès anonyme autorisé
-admin_main	access_anonymous_desc	Les utilisateurs anonymes peuvent accéder aux parties publiques de la plateforme.
-admin_main	access_regular_label	Authentification requise
-admin_main	access_regular_desc	Tous les utilisateurs doivent s'authentifier avant de pouvoir accéder au contenu.
-admin_main	access_restrited_label	Authentification requise et utilisateurs restreints
-admin_main	access_restrited_desc	Tous les utilisateurs doivent s'authentifier avant de pouvoir accéder au contenu. Certains utilisateurs peuvent être restreints (les utilisateurs restreints ont accès uniquement aux projets et aux services auxquels les autorisations leur sont spécifiquement accordées).
-admin_main	current_restricted_users_message	<h4>Attention !</h4><p>Il y a actuellement <a href="/admin/userlist.php?status_values[]=R">$1 utilisateur(s)</a> qui ont le status restreint. Changer le mode d'accès ne modifiera pas leur status, ils devront être gérés manuellement.</p>
-admin_main	ugroup_authenticated_users_placeholder	E.g employés $1 & présta
-admin_main	ugroup_registered_users_placeholder	E.g employés $1
-admin_main	ugroup_authenticated_users_label	Label pour les utilisateurs authentifiés (enregistrés + retreints)
-admin_main	ugroup_registered_users_label	Label pour les utilisateurs enregistrés
-admin_main	customize_ugroups_label_info	Vous pouvez redéfinir les noms des deux groups spéciaux suivants. Pour le moment, cela s'applique uniquement au service Git.
-admin_main	btn_update_information	Mettre à jour les informations
 #
 #-----------------------------------------------
 # Script: SF/www/admin/admin_utils.php
@@ -254,64 +83,7 @@ admin_approve_pending_users	users_validated_success	Les utilisateurs ont été v
 admin_approve_pending_users	user_validated_success	L'utilisateur a été validé avec succès
 admin_approve_pending_users	users_deleted_success	Les utilisateurs ont été supprimés avec succès
 admin_approve_pending_users	user_deleted_success	L'utilisateur a été supprimé avec succès
-#
-#-----------------------------------------------
-# Script: SF/www/admin/groupedit-add.php
-#
-admin_groupedit_add	title	Ajouter un groupe
-admin_groupedit_add	desc_name	Description du nouveau groupe
-admin_groupedit_add	unix_name	Nom unix du nouveau groupe
-#
-#-----------------------------------------------
-# Script: SF/www/admin/groupedit.php
-#
-admin_groupedit	title	Editer un projet
-admin_groupedit	feedback_info	Mise à jour des infos du projet
-admin_groupedit	error_group	Projet invalide passé en paramètre.
-admin_groupedit	proj_edit	Editer les détails d'un projet
-admin_groupedit	proj_admin	Administration du Projet
-admin_groupedit	proj_member	Voir/Editer les membres d'un projet
-admin_groupedit	pending_data	Voir les données de projet en attente
-admin_groupedit	group_type	Type de projet
-admin_groupedit	status_I	Incomplet
-admin_groupedit	status_A	Actif
-admin_groupedit	status_P	En attente
-admin_groupedit	status_H	En suspend
-admin_groupedit	status_D	Détruit
-admin_groupedit	status_s	Système
-admin_groupedit	public	Public ?
-admin_groupedit	home_box	Serveur maison
-admin_groupedit	http_domain	Domaine HTTP
-admin_groupedit	other	Autre
-admin_groupedit	send_email	Envoyer les instructions pour un nouveau projet
-admin_groupedit	other_info	Autre information
-admin_groupedit	grp_name	Nom du projet
-admin_groupedit	unix_grp	Nom du groupe unix
-admin_groupedit	description	Description
-admin_groupedit	built_from_template	Créé à partir du patron
-admin_groupedit	rename_project_title	Renommage du Projet
-admin_groupedit	rename_project_label	Renommage du Projet en
-admin_groupedit	rename_project_msg	Le changement du nom du projet sur le système va être traité dans quelques instants ($1 -> $2).
-admin_groupedit	rename_project_warn	La mise à jour du nom du projet ne sera effective qu'après le traitement de l'événement système correspondant.
-admin_groupedit	rename_project_already_queued	Il y a déjà une opération de renommage prévue pour ce projet. Merci de consulter les <a href="/admin/system_events/">Événements Système</a>.
-admin_groupedit	invalid_short_name	Nom court du projet invalide
-admin_groupedit	manage_access	Gérer l'accès
-admin_groupedit	archived_wiki	Pièces jointes wiki supprimées
-admin_groupedit	archived_files	Fichiers supprimés
 
-#
-#-----------------------------------------------
-# Script: SF/www/admin/grouplist.php
-#
-admin_grouplist	title	Liste des groupes
-admin_grouplist	add_group	Ajouter un groupe
-admin_grouplist	for_categ	Liste de groupes pour la catégorie
-admin_grouplist	begins_with	Groupe commençant par $1
-admin_grouplist	all_categ	Toutes les catégories
-admin_grouplist	click	(cliquer pour éditer)
-admin_grouplist	categ	Catégories
-admin_grouplist	members	Membres
-admin_grouplist	id_group	Identifiant du groupe
 #
 #-----------------------------------------------
 # Script: SF/www/admin/lastlogins.php
@@ -324,43 +96,6 @@ admin_lastlogins	ip_column_header	Addresse IP
 admin_lastlogins	date_column_header	Date
 admin_lastlogins	filter_placeholder	Nom d'utilisateur, IP, date
 admin_lastlogins	filter_no_matching_result	Il n'y a aucune connexion récente correspondante au filtre
-#
-#-----------------------------------------------
-# Script: SF/www/admin/massmail_execute.php
-#
-admin_massmail_execute	post_recvd	Requête Post reçue. Interrogation en cours
-admin_massmail_execute	mailing	Démarrage du mailing vers $1 adresses e-mail distinctes
-admin_massmail_execute	sending	La prévisualisation a été envoyée
-admin_massmail_execute	no_sending	La prévisualisation n'a pas pu être envoyée
-admin_massmail_execute	done	Terminé !
-admin_massmail_execute	no_user_mail	L'utilisateur ajouté $1 n'a pas d'adresse mail.
-admin_massmail_execute	no_user	Aucun utilisateur ne correspond à votre entrée $1.
-admin_massmail_execute	no_mails	Aucune adresse valide à laquelle envoyer le message de prévisualisation.
-#
-#-----------------------------------------------
-# Script: SF/www/admin/massmail.php
-#
-admin_massmail	title	Envoi de courrier électronique en masse
-admin_massmail	header	Courrier électronique
-admin_massmail	warning	$1 utilisateurs vont recevoir ce courrier électronique.
-admin_massmail	to_additional	Abonnés à l'option "Courrier électronique supplémentaire au sujet de la communauté" ($1 utilisateurs)
-admin_massmail	to_update	Abonnés à l'option "Courrier électronique à propos des mises à jour du site" ($1 utilisateurs)
-admin_massmail	to_devel	Développeurs des projets ($1 utilisateurs)
-admin_massmail	to_proj_admin	Administrateurs des projets ($1 utilisateurs)
-admin_massmail	to_site_admin	Administrateurs du site ($1 utilisateurs)
-admin_massmail	to_all	Tous les utilisateurs quelles que soient leurs préférences ($1 utilisateurs)
-admin_massmail	subject	Objet
-admin_massmail	send_email_label	Envoyer le courrier électronique
-admin_massmail	destination_label	Destinataires
-admin_massmail	subject_label	Sujet
-admin_massmail	subject_placeholder	Phrase d'accroche
-admin_massmail	content_label	Contenu
-admin_massmail	content_placeholder	Message…
-admin_massmail	preview_label	Prévisualisation
-admin_massmail	send_preview_label	Envoyer une prévisualisation
-admin_massmail	massmail_queued	L'envoi du message a été <a href="$1">placé en file d'attente</a>
-admin_massmail	confirmation_title	Envoi du courrier
-admin_massmail	confirmation_body	Veuillez confirmer votre action.
 
 #
 #-----------------------------------------------
@@ -389,7 +124,6 @@ admin_search	grp_name	Nom du projet
 admin_user_changepw	error_userid	Pas d'ID utilisateur
 admin_user_changepw	error_nopasswd	Vous devez fournir un mot de passe.
 admin_user_changepw	error_passwd	Les mots de passe ne sont pas identiques.
-admin_user_changepw	error_update	Le mot de passe n'a pu être mis à jour.
 admin_user_changepw	title_changed	Mot de passe modifié avec succès
 admin_user_changepw	header_changed	Confirmation du changement de mot de passe
 admin_user_changepw	msg_changed	Le mot de passe utilisateur a été modifié.
@@ -542,10 +276,10 @@ admin_trove_cat_edit	update_forbidden	Il est impossible de déplacer une catégo
 #-----------------------------------------------
 # Script: SF/www/admin/trove/trove_cat_list.php
 #
-admin_trove_cat_list	title	Catégories de projets
+admin_trove_cat_list	title	Catégories de projets publics
 admin_trove_cat_list	header_name	Nom complet
 admin_trove_cat_list	header_description	Description
-admin_trove_cat_list	header	Catégories de projets
+admin_trove_cat_list	header	Catégories de projets publics
 admin_trove_cat_list	edit	Modifier
 admin_trove_cat_list	delete	Supprimer
 admin_trove_cat_list	add	Ajouter une catégorie
@@ -592,10 +326,7 @@ admin_desc_fields	desc_line	Chaîne de caractères
 admin_desc_fields	desc_text	Zone de texte
 admin_desc_fields	rank	Rang
 admin_desc_fields	rank_on_screen	Rang à l'écran
-admin_desc_fields	ins_desc_field_fail	L'ajout du champ a echoué.
-admin_desc_fields	del_desc_field_fail	La suppression du champ a échoué.
 admin_desc_fields	update_required_desc_field_fail	La mise à jour du champ a echoué.
-admin_desc_fields	update_desc_field_fail	La mise à jour du champ a echoué ou aucune donnée n'a été modifiée. $1.
 admin_desc_fields	info_missed	Informations manquantes. Veuillez remplir tous les champs obligatoires.
 admin_desc_fields	info_rank_noint	Le rang doit être une valeur numérique.
 admin_desc_fields	add_success	Le champ a été ajouté avec succès.
@@ -603,8 +334,6 @@ admin_desc_fields	update_success	Le champ a été modifié avec succès.
 admin_desc_fields	remove_success	Le champ a été supprimé avec succès.
 admin_desc_fields	edit_btn	Éditer
 admin_desc_fields	delete_btn	Supprimer
-admin_desc_fields	description_fields_header	Champs de projet personnalisés
-admin_desc_fields	no_description_fields	Aucun champ de projet personnalisé
 admin_desc_fields	add_modal_title	Ajouter un champ
 admin_desc_fields	add_modal_cancel	Annuler
 admin_desc_fields	add_modal_submit	Ajouter
@@ -695,7 +424,7 @@ admin_system_events	people_not_empty	La liste des personnes à alerter ne peut p
 # Script: SF/www/admin/show_pending_documents.php
 #
 admin_show_pending_documents	pending_doc	Les supprimés documents en suspens pour le projet <a href="/project/admin/?group_id=$1"> $2 </a>
-admin_show_pending_documents	delay_info	Comme défini dans la configuration <code>/etc/codendi/local.inc</code> par la variable <code>$sys_file_deletion_delay</code>, les éléments seront <strong>définitivement purgés</strong> du système de fichier après <strong>$1 jour.</strong>
+admin_show_pending_documents	delay_info	Comme défini dans la configuration <code>/etc/tuleap/conf/local.inc</code> par la variable <code>$sys_file_deletion_delay</code>, les éléments seront <strong>définitivement purgés</strong> du système de fichier après <strong>$1 jour.</strong>
 
 admin_show_pending_documents	note_intro	Info : il peut exister un délai (30 minutes maximum) entre le temps où un fichier a été supprimé et le temps où il peut devenir restaurable.
 admin_show_pending_documents	note_intro_system	Lorsqu'un fichier est supprimé par l'utilisateur, il devient restaurable après le SYSTEM_CHECK
@@ -818,8 +547,7 @@ admin_projectlist	any	Tous
 admin_projectlist	active	Actif
 admin_projectlist	system	Système
 admin_projectlist	pending	En attente
-admin_projectlist	incomplete	Incomplet
-admin_projectlist	holding	En suspens
+admin_projectlist	suspended	Suspendu
 admin_projectlist	deleted	Supprimés
 admin_projectlist	matching_projects	Projets correspondants
 admin_projectlist	no_matching_projects	Aucun projet correspondant

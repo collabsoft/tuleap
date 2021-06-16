@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014, 2015, 2016, 2017. All rights reserved
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -11,14 +11,15 @@
  *
  * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Tuleap. If not, see <http://www.gnu.org/licenses/
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class MediawikiAdminController {
+class MediawikiAdminController //phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace
+{
 
     /** @var MediawikiUserGroupsMapper */
     private $mapper;
@@ -35,7 +36,8 @@ class MediawikiAdminController {
     /** @var MediawikiLanguageManager */
     private $language_manager;
 
-    public function __construct(MediawikiManager $manager) {
+    public function __construct(MediawikiManager $manager)
+    {
         $this->manager = $manager;
 
         $this->mapper = new MediawikiUserGroupsMapper(
@@ -47,11 +49,15 @@ class MediawikiAdminController {
         $this->user_group_factory     = new User_ForgeUserGroupFactory($user_dao);
         $this->permissions_normalizer = new PermissionsNormalizer();
         $this->language_manager       = new MediawikiLanguageManager(new MediawikiLanguageDao());
-   }
+    }
 
-    public function index(ServiceMediawiki $service, HTTPRequest $request) {
+    public function index(ServiceMediawiki $service, HTTPRequest $request)
+    {
         $this->assertUserIsProjectAdmin($service, $request);
-        $GLOBALS['HTML']->includeFooterJavascriptFile(MEDIAWIKI_BASE_URL.'/forgejs/admin.js');
+
+        $assets = new \Tuleap\Layout\IncludeAssets(__DIR__ . '/../../../src/www/assets/mediawiki', '/assets/mediawiki');
+
+        $GLOBALS['HTML']->includeFooterJavascriptFile($assets->getFileURL('admin.js'));
 
         $project = $request->getProject();
 
@@ -63,11 +69,10 @@ class MediawikiAdminController {
                 if ($request->exist('nolang')) {
                     $GLOBALS['Response']->addFeedback(
                         Feedback::INFO,
-                        $GLOBALS['Language']->getText('plugin_mediawiki', 'language_not_set_admin_warning')
+                        dgettext('tuleap-mediawiki', 'You\'ve been redirected here since no language has been set for your Mediawiki instance.')
                     );
                 }
                 $service->renderInPage(
-                    $request,
                     $GLOBALS['Language']->getText('global', 'Administration'),
                     'language-pane-admin',
                     new MediawikiAdminLanguagePanePresenter(
@@ -79,83 +84,86 @@ class MediawikiAdminController {
             case 'permissions':
             default:
                 $service->renderInPage(
-                    $request,
                     $GLOBALS['Language']->getText('global', 'Administration'),
                     'permissions-pane-admin',
                     new MediawikiAdminPermissionsPanePresenter(
-                       $project,
-                       $this->getMappedGroupPresenter($project),
-                       $this->mapper->isDefaultMapping($project),
-                       $this->manager->isCompatibilityViewEnabled($project),
-                       $read_ugroups,
-                       $write_ugroups
+                        $project,
+                        $this->getMappedGroupPresenter($project),
+                        $this->manager->isCompatibilityViewEnabled($project),
+                        $read_ugroups,
+                        $write_ugroups
                     )
                 );
                 break;
         }
     }
 
-    private function getReadUGroups(Project $project) {
+    private function getReadUGroups(Project $project)
+    {
         $user_groups  = $this->user_group_factory->getAllForProject($project);
-        $read_ugroups = array();
+        $read_ugroups = [];
 
         $selected_ugroups = $this->manager->getReadAccessControl($project);
 
         foreach ($user_groups as $ugroup) {
-            $read_ugroups[] = array(
+            $read_ugroups[] = [
                 'label'    => $ugroup->getName(),
                 'value'    => $ugroup->getId(),
                 'selected' => in_array($ugroup->getId(), $selected_ugroups)
-            );
+            ];
         }
 
         return $read_ugroups;
     }
 
-    private function getWriteUGroups(Project $project) {
-        $user_groups  = $this->user_group_factory->getAllForProject($project);
-        $write_ugroups = array();
+    private function getWriteUGroups(Project $project)
+    {
+        $user_groups   = $this->user_group_factory->getAllForProject($project);
+        $write_ugroups = [];
 
         $selected_ugroups = $this->manager->getWriteAccessControl($project);
 
         foreach ($user_groups as $ugroup) {
-            $write_ugroups[] = array(
+            $write_ugroups[] = [
                 'label'    => $ugroup->getName(),
                 'value'    => $ugroup->getId(),
                 'selected' => in_array($ugroup->getId(), $selected_ugroups)
-            );
+            ];
         }
 
         return $write_ugroups;
     }
 
-    private function getMappedGroupPresenter(Project $project) {
-        $group_mapper_presenters = array();
-        $current_mapping = $this->mapper->getCurrentUserGroupMapping($project);
-        $all_ugroups     = $this->getIndexedUgroups($project);
-        foreach(MediawikiUserGroupsMapper::$MEDIAWIKI_MODIFIABLE_GROUP_NAMES as $mw_group_name) {
+    private function getMappedGroupPresenter(Project $project)
+    {
+        $group_mapper_presenters = [];
+        $current_mapping         = $this->mapper->getCurrentUserGroupMapping($project);
+        $all_ugroups             = $this->getIndexedUgroups($project);
+        foreach (MediawikiUserGroupsMapper::$MEDIAWIKI_MODIFIABLE_GROUP_NAMES as $mw_group_name) {
             $group_mapper_presenters[] = $this->getGroupPresenters($mw_group_name, $current_mapping, $all_ugroups);
         }
         return $group_mapper_presenters;
     }
 
-    private function getIndexedUgroups(Project $project) {
-        $ugroups        = array();
-        $ugroup_manager = new UGroupManager();
-        $excluded_groups = array_merge(ProjectUGroup::$legacy_ugroups, array(ProjectUGroup::NONE, ProjectUGroup::ANONYMOUS));
+    private function getIndexedUgroups(Project $project)
+    {
+        $ugroups         = [];
+        $ugroup_manager  = new UGroupManager();
+        $excluded_groups = array_merge(ProjectUGroup::$legacy_ugroups, [ProjectUGroup::NONE, ProjectUGroup::ANONYMOUS]);
         if (! $project->isPublic()) {
-            $excluded_groups = array_merge($excluded_groups, array(ProjectUGroup::REGISTERED));
+            $excluded_groups = array_merge($excluded_groups, [ProjectUGroup::REGISTERED]);
         }
-        $all_ugroups    = $ugroup_manager->getUGroups($project, $excluded_groups);
+        $all_ugroups = $ugroup_manager->getUGroups($project, $excluded_groups);
         foreach ($all_ugroups as $ugroup) {
             $ugroups[$ugroup->getId()] = $ugroup;
         }
         return $ugroups;
     }
 
-    private function getGroupPresenters($mw_group_name, array $current_mapping, array $all_ugroups) {
-        $mapped_groups    = array();
-        $available_groups = array();
+    private function getGroupPresenters($mw_group_name, array $current_mapping, array $all_ugroups)
+    {
+        $mapped_groups    = [];
+        $available_groups = [];
         foreach ($all_ugroups as $ugroup_id => $ugroup) {
             if (in_array($ugroup_id, $current_mapping[$mw_group_name])) {
                 $mapped_groups[] = $ugroup;
@@ -165,13 +173,31 @@ class MediawikiAdminController {
         }
         return new MediawikiGroupPresenter(
             $mw_group_name,
-            $GLOBALS['Language']->getText('plugin_mediawiki', 'group_name_'.$mw_group_name),
+            $this->getGroupName($mw_group_name),
             $available_groups,
             $mapped_groups
         );
     }
 
-    public function save_language(ServiceMediawiki $service, HTTPRequest $request) {
+    private function getGroupName($mw_group_name): string
+    {
+        switch ($mw_group_name) {
+            case 'user':
+                return dgettext('tuleap-mediawiki', 'User');
+            case 'bot':
+                return dgettext('tuleap-mediawiki', 'Bot');
+            case 'sysop':
+                return dgettext('tuleap-mediawiki', 'Administrator / sysop');
+            case 'bureaucrat':
+                return dgettext('tuleap-mediawiki', 'Bureaucrat');
+            case 'anonymous':
+            default:
+                return dgettext('tuleap-mediawiki', 'Anonymous');
+        }
+    }
+
+    public function save_language(ServiceMediawiki $service, HTTPRequest $request) //phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    {
         $this->assertUserIsProjectAdmin($service, $request);
         if ($request->isPost()) {
             $project  = $request->getProject();
@@ -179,22 +205,23 @@ class MediawikiAdminController {
 
             try {
                 $this->language_manager->saveLanguageOption($project, $language);
-            } catch(Mediawiki_UnsupportedLanguageException $exception) {
-                $GLOBALS['Response']->addFeedback(Feedback::ERROR, $GLOBALS['Language']->getText('plugin_mediawiki', 'unsupported_language', array($exception->getLanguage())));
+            } catch (Mediawiki_UnsupportedLanguageException $exception) {
+                $GLOBALS['Response']->addFeedback(Feedback::ERROR, sprintf(dgettext('tuleap-mediawiki', 'The language %1$s is not supported.'), $exception->getLanguage()));
             }
         }
 
-        $GLOBALS['Response']->redirect(MEDIAWIKI_BASE_URL .'/forge_admin.php?'. http_build_query(
-            array(
+        $GLOBALS['Response']->redirect(MEDIAWIKI_BASE_URL . '/forge_admin.php?' . http_build_query(
+            [
                 'group_id'   => $request->get('group_id'),
                 'pane'       => 'language',
-            )
+            ]
         ));
     }
 
-    public function save_permissions(ServiceMediawiki $service, HTTPRequest $request) {
+    public function save_permissions(ServiceMediawiki $service, HTTPRequest $request) //phpcs:ignore PSR1.Methods.CamelCapsMethodName.NotCamelCaps
+    {
         $this->assertUserIsProjectAdmin($service, $request);
-        if($request->isPost()) {
+        if ($request->isPost()) {
             $project          = $request->getProject();
             $new_mapping_list = $this->getSelectedMappingsFromRequest($request, $project);
             $this->mapper->saveMapping($new_mapping_list, $project);
@@ -202,11 +229,10 @@ class MediawikiAdminController {
             $this->manager->saveCompatibilityViewOption($project, $request->get('enable_compatibility_view'));
 
             if (! $this->requestIsRestore($request)) {
-
                 $selected_read_ugroup = $request->get('read_ugroups');
                 if ($selected_read_ugroup) {
                     $override_collection = new PermissionsNormalizerOverrideCollection();
-                    $normalized_ids = $this->permissions_normalizer->getNormalizedUGroupIds($project, $selected_read_ugroup, $override_collection);
+                    $normalized_ids      = $this->permissions_normalizer->getNormalizedUGroupIds($project, $selected_read_ugroup, $override_collection);
 
                     if ($this->manager->saveReadAccessControl($project, $normalized_ids)) {
                         $override_collection->emitFeedback(MediawikiManager::READ_ACCESS);
@@ -216,7 +242,7 @@ class MediawikiAdminController {
                 $selected_write_ugroup = $request->get('write_ugroups');
                 if ($selected_write_ugroup) {
                     $override_collection = new PermissionsNormalizerOverrideCollection();
-                    $normalized_ids = $this->permissions_normalizer->getNormalizedUGroupIds($project, $selected_write_ugroup, $override_collection);
+                    $normalized_ids      = $this->permissions_normalizer->getNormalizedUGroupIds($project, $selected_write_ugroup, $override_collection);
 
                     if ($this->manager->saveWriteAccessControl($project, $normalized_ids)) {
                         $override_collection->emitFeedback(MediawikiManager::WRITE_ACCESS);
@@ -225,38 +251,41 @@ class MediawikiAdminController {
             }
 
             if ($this->requestIsRestore($request)) {
-                $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_mediawiki', 'options_restored'));
+                $GLOBALS['Response']->addFeedback(Feedback::INFO, dgettext('tuleap-mediawiki', 'Options and groups mapping have been restored.'));
             } else {
-                $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_mediawiki', 'options_saved'));
+                $GLOBALS['Response']->addFeedback(Feedback::INFO, dgettext('tuleap-mediawiki', 'Changes have been saved.'));
             }
         }
 
-        $GLOBALS['Response']->redirect(MEDIAWIKI_BASE_URL .'/forge_admin.php?'. http_build_query(
-            array(
+        $GLOBALS['Response']->redirect(MEDIAWIKI_BASE_URL . '/forge_admin.php?' . http_build_query(
+            [
                 'group_id'   => $request->get('group_id'),
-            )
+            ]
         ));
     }
 
-    private function getSelectedMappingsFromRequest(HTTPRequest $request, Project $project) {
+    private function getSelectedMappingsFromRequest(HTTPRequest $request, Project $project)
+    {
         if ($this->requestIsRestore($request)) {
             return $this->mapper->getDefaultMappingsForProject($project);
         }
 
-        $list = array();
-        foreach(MediawikiUserGroupsMapper::$MEDIAWIKI_GROUPS_NAME as $mw_group_name) {
-            $list[$mw_group_name] = array_filter(explode(',', $request->get('hidden_selected_'.$mw_group_name)));
+        $list = [];
+        foreach (MediawikiUserGroupsMapper::$MEDIAWIKI_GROUPS_NAME as $mw_group_name) {
+            $list[$mw_group_name] = array_filter(explode(',', $request->get('hidden_selected_' . $mw_group_name)));
         }
         return $list;
     }
 
-    private function requestIsRestore(HTTPRequest $request) {
+    private function requestIsRestore(HTTPRequest $request)
+    {
         return $request->get('restore') != null;
     }
 
-    private function assertUserIsProjectAdmin(ServiceMediawiki $service, HTTPRequest $request) {
+    private function assertUserIsProjectAdmin(ServiceMediawiki $service, HTTPRequest $request)
+    {
         if (! $service->userIsAdmin($request->getCurrentUser())) {
-            $GLOBALS['Response']->redirect(MEDIAWIKI_BASE_URL.'/wiki/'.$request->getProject()->getUnixName());
+            $GLOBALS['Response']->redirect(MEDIAWIKI_BASE_URL . '/wiki/' . $request->getProject()->getUnixName());
         }
     }
 }

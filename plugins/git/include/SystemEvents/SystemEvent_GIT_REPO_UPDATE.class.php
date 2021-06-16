@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,36 +18,33 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/system_event/SystemEvent.class.php';
+use Tuleap\Git\DefaultBranch\CannotExecuteDefaultBranchUpdateException;
+use Tuleap\Git\DefaultBranch\DefaultBranchUpdateExecutor;
 
-class SystemEvent_GIT_REPO_UPDATE extends SystemEvent {
-    const NAME = 'GIT_REPO_UPDATE';
+class SystemEvent_GIT_REPO_UPDATE extends SystemEvent
+{
+    public const NAME = 'GIT_REPO_UPDATE';
 
     /** @var GitRepositoryFactory */
     private $repository_factory;
 
-    /** @var SystemEventDao */
-    private $system_event_dao;
-
-    /** @var Logger */
-    private $logger;
-
     /** @var Git_SystemEventManager */
     private $system_event_manager;
 
+    private DefaultBranchUpdateExecutor $default_branch_update_executor;
+
     public function injectDependencies(
         GitRepositoryFactory $repository_factory,
-        SystemEventDao $system_event_dao,
-        Logger $logger,
-        Git_SystemEventManager $system_event_manager
+        Git_SystemEventManager $system_event_manager,
+        DefaultBranchUpdateExecutor $default_branch_update_executor
     ) {
-        $this->repository_factory   = $repository_factory;
-        $this->system_event_dao     = $system_event_dao;
-        $this->logger               = $logger;
-        $this->system_event_manager = $system_event_manager;
+        $this->repository_factory             = $repository_factory;
+        $this->system_event_manager           = $system_event_manager;
+        $this->default_branch_update_executor = $default_branch_update_executor;
     }
 
-    public static function queueInSystemEventManager(SystemEventManager $system_event_manager, GitRepository $repository) {
+    public static function queueInSystemEventManager(SystemEventManager $system_event_manager, GitRepository $repository)
+    {
         $system_event_manager->createEvent(
             self::NAME,
             $repository->getId(),
@@ -56,16 +53,25 @@ class SystemEvent_GIT_REPO_UPDATE extends SystemEvent {
         );
     }
 
-    private function getRepositoryIdFromParameters() {
+    private function getRepositoryIdFromParameters(): int
+    {
         $parameters = $this->getParametersAsArray();
-        return intval($parameters[0]);
+        return (int) $parameters[0];
     }
 
-    private function getRepositoryFromParameters() {
+    private function getRepositoryFromParameters()
+    {
         return $this->repository_factory->getRepositoryById($this->getRepositoryIdFromParameters());
     }
 
-    public function process() {
+    private function getDefaultBranchIfItExistsFromParameters(): ?string
+    {
+        $parameters = $this->getParametersAsArray();
+        return $parameters[1] ?? null;
+    }
+
+    public function process()
+    {
         $repository = $this->getRepositoryFromParameters();
         if (! $repository) {
             if ($this->repository_factory->getDeletedRepository($this->getRepositoryIdFromParameters())) {
@@ -77,23 +83,53 @@ class SystemEvent_GIT_REPO_UPDATE extends SystemEvent {
             return;
         }
 
-        if (! $repository->getBackend()->updateRepoConf($repository)) {
-            $this->error('Unable to update gitolite configuration for repoistory with ID '.$this->getRepositoryIdFromParameters());
+        $backend = $repository->getBackend();
+
+        if (! $backend->updateRepoConf($repository)) {
+            $this->error('Unable to update gitolite configuration for repository with ID ' . $this->getRepositoryIdFromParameters());
             return;
         }
 
         $this->system_event_manager->queueGrokMirrorManifest($repository);
 
+        $default_branch = $this->getDefaultBranchIfItExistsFromParameters();
+        if ($default_branch !== null) {
+            $driver = $backend->getDriver();
+            $driver->commit(sprintf('Modifications from event #%d (repository #%d, default branch:%s)', $this->getId(), $repository->getId(), $default_branch));
+            $driver->push();
+
+            try {
+                $this->default_branch_update_executor->setDefaultBranch(Git_Exec::buildFromRepository($repository), $default_branch);
+            } catch (CannotExecuteDefaultBranchUpdateException $exception) {
+                $this->error($exception->getMessage());
+                return;
+            }
+        }
+
         $this->done();
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
+        $html_purifier  = Codendi_HTMLPurifier::instance();
+        $default_branch = $this->getDefaultBranchIfItExistsFromParameters();
+
         if ($with_link) {
             $repository = $this->getRepositoryFromParameters();
             if ($repository) {
-                return '<a href="/plugins/git/?action=repo_management&group_id='.$repository->getProjectId().'&repo_id='.$repository->getId().'">'.$repository->getName().'</a>';
+                $link_name = $repository->getName();
+                if ($default_branch !== null) {
+                    $link_name .= ' (' . $default_branch . ')';
+                }
+
+                return '<a href="/plugins/git/?action=repo_management&group_id=' . urlencode($repository->getProjectId()) . '&repo_id=' . urlencode($repository->getId()) . '">' . $html_purifier->purify($link_name) . '</a>';
             }
         }
-        return $this->getRepositoryIdFromParameters();
+
+        $verbalized_parameters = $this->getRepositoryIdFromParameters();
+        if ($default_branch !== null) {
+            $verbalized_parameters .= ' (' . $default_branch . ')';
+        }
+        return $html_purifier->purify($verbalized_parameters);
     }
 }

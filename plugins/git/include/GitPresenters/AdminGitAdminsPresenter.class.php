@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2015. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class GitPresenters_AdminGitAdminsPresenter extends GitPresenters_AdminPresenter {
+class GitPresenters_AdminGitAdminsPresenter extends GitPresenters_AdminPresenter
+{
 
-    const GIT_ADMIN_SELECTBOX_NAME = 'git_admins';
+    public const GIT_ADMIN_SELECTBOX_NAME = 'git_admins';
 
     /** @var ProjectUGroup[] */
     private $static_ugroups;
@@ -32,61 +33,70 @@ class GitPresenters_AdminGitAdminsPresenter extends GitPresenters_AdminPresenter
     public function __construct(
         $project_id,
         $are_mirrors_defined,
+        array $external_pane_presenters,
         $static_ugroups,
         $selected_ugroups
     ) {
-        parent::__construct($project_id, $are_mirrors_defined);
+        parent::__construct($project_id, $are_mirrors_defined, $external_pane_presenters);
 
-        $this->manage_git_admins = true;
-        $this->static_ugroups    = $static_ugroups;
-        $this->selected_ugroups  = $selected_ugroups;
+        $this->static_ugroups   = $static_ugroups;
+        $this->selected_ugroups = $selected_ugroups;
     }
 
-    public function git_admins_section() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_git_admins');
+    public function git_admins_section()
+    {
+        return dgettext('tuleap-git', 'Git administrators');
     }
 
-    public function git_admins_description() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_git_admins_description');
+    public function git_admins_description()
+    {
+        return dgettext('tuleap-git', 'This section allows you to select Git service administrators, in addition to project administrators.');
     }
 
-    public function git_admins_submit_button() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_git_admins_submit_button');
+    public function git_admins_submit_button()
+    {
+        return dgettext('tuleap-git', 'Submit');
     }
 
-    public function git_admins_form_action() {
-        return '/plugins/git/?group_id='. $this->project_id .'&action=admin-git-admins';
+    public function form_action(): string
+    {
+        return '/plugins/git/?group_id=' . $this->project_id . '&action=admin-git-admins';
     }
 
-    public function git_admins_selectbox_name() {
+    public function git_admins_selectbox_name()
+    {
         return self::GIT_ADMIN_SELECTBOX_NAME . '[]';
     }
 
-    public function git_admins_selectbox_id() {
+    public function git_admins_selectbox_id()
+    {
         return self::GIT_ADMIN_SELECTBOX_NAME;
     }
 
-    public function git_admins_options() {
+    public function git_admins_options()
+    {
         return $this->getSelectorOptions();
     }
 
-    private function getSelectorOptions() {
-        $options = array($this->getProjectMembersOption());
+    private function getSelectorOptions()
+    {
+        $options = [$this->getProjectMembersOption()];
         foreach ($this->static_ugroups as $group) {
-            $options[] = array(
+            $options[] = [
                 'value'    => $group->getId(),
                 'label'    => $group->getTranslatedName(),
                 'selected' => isset($this->selected_ugroups) ? in_array($group->getId(), $this->selected_ugroups) : false
-            );
+            ];
         }
         return $options;
     }
 
-    private function getProjectMembersOption() {
-        return array(
+    private function getProjectMembersOption()
+    {
+        return [
             'value'    => ProjectUGroup::PROJECT_MEMBERS,
             'label'    => $GLOBALS['Language']->getText('project_admin_editugroup', 'proj_members'),
             'selected' => isset($this->selected_ugroups) ? in_array(ProjectUGroup::PROJECT_MEMBERS, $this->selected_ugroups) : false
-        );
+        ];
     }
 }

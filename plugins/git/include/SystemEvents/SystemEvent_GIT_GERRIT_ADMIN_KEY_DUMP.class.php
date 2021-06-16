@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2011 - 2017. All rights reserved.
+ * Copyright Enalean (c) 2011 - Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -25,8 +25,10 @@
 use Tuleap\Git\Gitolite\SSHKey\Dumper;
 use Tuleap\Git\Gitolite\SSHKey\InvalidKeysCollector;
 
-class SystemEvent_GIT_GERRIT_ADMIN_KEY_DUMP extends SystemEvent {
-    const NAME = 'GIT_GERRIT_ADMIN_KEY_DUMP';
+// phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace,Squiz.Classes.ValidClassName.NotCamelCaps
+class SystemEvent_GIT_GERRIT_ADMIN_KEY_DUMP extends SystemEvent
+{
+    public const NAME = 'GIT_GERRIT_ADMIN_KEY_DUMP';
 
     /** @var Git_RemoteServer_GerritServerFactory */
     private $gerrit_server_factory;
@@ -39,20 +41,23 @@ class SystemEvent_GIT_GERRIT_ADMIN_KEY_DUMP extends SystemEvent {
         $this->ssh_key_dumper        = $ssh_key_dumper;
     }
 
-    private function getServerId() {
+    private function getServerId()
+    {
         return intval($this->getParameter(0));
     }
 
-    private function getServer() {
+    private function getServer()
+    {
         try {
             return $this->gerrit_server_factory->getServerById($this->getServerId());
         } catch (Git_RemoteServer_NotFoundException $e) {
-            return new Git_RemoteServer_GerritServer($this->getServerId(), '',  '', '', '',  '', '', false, '', '', '', '');
+            return new Git_RemoteServer_GerritServer($this->getServerId(), '', '', '', '', '', '', false, '', '', '');
         }
     }
 
-    public function process() {
-        $server = $this->getServer();
+    public function process()
+    {
+        $server          = $this->getServer();
         $replication_key = new Git_RemoteServer_Gerrit_ReplicationSSHKey();
         $replication_key
             ->setGerritHostId($server->getId())
@@ -60,14 +65,15 @@ class SystemEvent_GIT_GERRIT_ADMIN_KEY_DUMP extends SystemEvent {
         if ($this->ssh_key_dumper->dumpSSHKeys($replication_key, new InvalidKeysCollector())) {
             $this->done();
         } else {
-            $this->error('Impossible to dump replication ssh key for Gerrit server '.$server->getId());
+            $this->error('Impossible to dump replication ssh key for Gerrit server ' . $server->getId());
         }
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         if ($with_link) {
             $server = $this->getServer();
-            return 'Update SSH replication key of gerrit server '. $server->getBaseUrl() .' (Id: '.$server->getId().')';
+            return 'Update SSH replication key of gerrit server ' . $server->getBaseUrl() . ' (Id: ' . $server->getId() . ')';
         } else {
             return $this->getServerId();
         }

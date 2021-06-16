@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,7 +28,7 @@ class PermissionsOnArtifactValidator
     /**
      * @param  array $value
      *
-     * @return boolean
+     * @return bool
      */
     public function hasAGroupSelected(array $value)
     {
@@ -38,7 +38,7 @@ class PermissionsOnArtifactValidator
     /**
      * @param  array $value
      *
-     * @return boolean
+     * @return bool
      */
     public function isNoneGroupSelected(array $value)
     {

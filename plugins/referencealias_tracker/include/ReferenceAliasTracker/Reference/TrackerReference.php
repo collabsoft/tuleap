@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -34,7 +34,7 @@ class TrackerReference extends Reference
     {
         $base_id     = 0;
         $description = '';
-        $url         = "/plugins/tracker/?tracker=".urlencode($tracker_id);
+        $url         = "/plugins/tracker/?tracker=" . urlencode($tracker_id);
         $visibility  = 'P';
         $is_used     = 1;
 

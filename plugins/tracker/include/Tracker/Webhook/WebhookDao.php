@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -58,8 +58,8 @@ class WebhookDao extends DataAccessObject
     {
         return $this->getDB()->update(
             'plugin_tracker_webhook_url',
-            [ 'url' => $webhook_url ],
-            [ 'id' => $webhook_id ]
+            ['url' => $webhook_url],
+            ['id' => $webhook_id]
         );
     }
 

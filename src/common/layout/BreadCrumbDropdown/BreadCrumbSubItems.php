@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,5 +41,13 @@ class BreadCrumbSubItems
     public function getSections()
     {
         return $this->sections;
+    }
+
+    /**
+     * @param SubItemsSection[] $sections
+     */
+    public function setSections(array $sections): void
+    {
+        $this->sections = $sections;
     }
 }

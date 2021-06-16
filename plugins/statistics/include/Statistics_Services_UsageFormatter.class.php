@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,11 @@
  */
 require_once 'Statistics_Formatter.class.php';
 
-class Statistics_Services_UsageFormatter {
+class Statistics_Services_UsageFormatter
+{
 
     /** @const number of bytes in a MegaByte */
-    const BYTES_NUMBER_IN_MB = 1000;
+    public const BYTES_NUMBER_IN_MB = 1000;
 
     /** @var array */
     private $datas;
@@ -34,20 +35,22 @@ class Statistics_Services_UsageFormatter {
     /** @var Statistics_Formatter */
     private $stats_formatter;
 
-    const GROUP_ID = 'group_id';
-    const VALUES   = 'result';
+    public const GROUP_ID = 'group_id';
+    public const VALUES   = 'result';
 
-    public function __construct(Statistics_Formatter $stats_formatter) {
+    public function __construct(Statistics_Formatter $stats_formatter)
+    {
         $this->stats_formatter = $stats_formatter;
-        $this->datas           = array();
-        $this->title           = array();
+        $this->datas           = [];
+        $this->title           = [];
     }
 
     /**
      * Export in CSV the datas builded from SQL queries
      * @return String $content the CSV content
      */
-    public function exportCSV() {
+    public function exportCSV()
+    {
         $this->stats_formatter->clearContent();
         $this->stats_formatter->addLine(array_values($this->title));
         foreach ($this->datas as $value) {
@@ -59,40 +62,43 @@ class Statistics_Services_UsageFormatter {
     /**
      * Build CVS datas from SQL queries results to export them in a file
      * @param array|DataAccessResult $query_result
-     * @param type $title
      */
-    public function buildDatas($query_result, $title) {
+    public function buildDatas($query_result, string $title)
+    {
         $this->initiateDatas($query_result);
         $this->title[] = $title;
         $this->addDefaultValuesForTitle($title);
         $this->addValuesFromQueryResultForTitle($query_result, $title);
-        
+
         return $this->datas;
     }
 
     /**
      * Format a query result containing size to put them in MegaBytes
      *
-     * @param array|DataAccessResult $query_result
+     * @param array|DataAccessResult $query_results
      */
-    public function formatSizeInMegaBytes($query_results) {
-        $resized_results = array();
+    public function formatSizeInMegaBytes($query_results)
+    {
+        $resized_results = [];
         foreach ($query_results as $result) {
-            $result[self::VALUES] = round($result[self::VALUES]/self::BYTES_NUMBER_IN_MB);
+            $result[self::VALUES] = round($result[self::VALUES] / self::BYTES_NUMBER_IN_MB);
             $resized_results[]    = $result;
         }
 
         return $resized_results;
     }
 
-    private function addDefaultValuesForTitle($title) {
+    private function addDefaultValuesForTitle($title)
+    {
         $ids = array_keys($this->datas);
         foreach ($ids as $id) {
             $this->datas[$id][$title] = 0;
         }
     }
 
-    private function addValuesFromQueryResultForTitle($query_result, $title) {
+    private function addValuesFromQueryResultForTitle($query_result, $title)
+    {
         foreach ($query_result as $data) {
             if ($this->canAddValueFromQuery($data)) {
                 $this->datas[$data[self::GROUP_ID]][$title] = $data[self::VALUES];
@@ -100,19 +106,19 @@ class Statistics_Services_UsageFormatter {
         }
     }
 
-    private function initiateDatas($query_result) {
+    private function initiateDatas($query_result)
+    {
         if (! empty($this->datas)) {
             return;
         }
 
         foreach ($query_result as $data) {
-            $this->datas[$data[self::GROUP_ID]] = array();
+            $this->datas[$data[self::GROUP_ID]] = [];
         }
     }
 
-    private function canAddValueFromQuery(array $data) {
+    private function canAddValueFromQuery(array $data)
+    {
         return array_key_exists($data[self::GROUP_ID], $this->datas) && isset($data[self::VALUES]);
     }
 }
-
-?>

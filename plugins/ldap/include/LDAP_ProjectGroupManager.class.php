@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2008. All Rights Reserved.
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use \Tuleap\LDAP\GroupSyncNotificationsManager;
+use Tuleap\LDAP\GroupSyncNotificationsManager;
+use Tuleap\LDAP\LDAPSetOfUserIDsForDiff;
+use Tuleap\LDAP\ProjectGroupManagerRestrictedUserFilter;
 
 /**
  * Manage interaction between an LDAP group and Project members
@@ -35,53 +37,74 @@ class LDAP_ProjectGroupManager extends LDAP_GroupManager
      * @var ProjectManager
      */
     private $project_manager;
+    /**
+     * @var UserManager
+     */
+    private $user_manager;
+    /**
+     * @var ProjectGroupManagerRestrictedUserFilter
+     */
+    private $project_restricted_user_filter;
 
     public function __construct(
         LDAP $ldap,
         LDAP_UserManager $ldap_user_manager,
         LDAP_ProjectGroupDao $dao,
         ProjectManager $project_manager,
-        GroupSyncNotificationsManager $notifications_manager
+        UserManager $user_manager,
+        GroupSyncNotificationsManager $notifications_manager,
+        ProjectGroupManagerRestrictedUserFilter $project_restricted_user_filter
     ) {
         parent::__construct($ldap, $ldap_user_manager, $project_manager, $notifications_manager);
 
-        $this->dao             = $dao;
-        $this->project_manager = $project_manager;
+        $this->dao                            = $dao;
+        $this->project_manager                = $project_manager;
+        $this->user_manager                   = $user_manager;
+        $this->project_restricted_user_filter = $project_restricted_user_filter;
     }
 
     /**
      * Add user to a project
      *
-     * @param Integer $groupId Id of the project
-     * @param Integer $userId  User Id
+     * @param int $id Id of the project
+     * @param int $userId User Id
      *
-     * @return Boolean
+     * @return bool
      */
-    protected function addUserToGroup($groupId, $userId)
+    protected function addUserToGroup($id, $userId)
     {
-        $user = UserManager::instance()->getUserById($userId);
-        return $this->getDao()->addUserToGroup($groupId, $user->getUserName());
+        $user = $this->user_manager->getUserById($userId);
+        if ($user === null) {
+            return false;
+        }
+        $project                  = $this->project_manager->getProject($this->id);
+        $set_of_user_ids          = new LDAPSetOfUserIDsForDiff([$user->getId()], [], []);
+        $filtered_set_of_user_ids = $this->project_restricted_user_filter->filter($project, $set_of_user_ids);
+        if (empty($filtered_set_of_user_ids->getUserIDsToAdd())) {
+            return false;
+        }
+        return $this->getDao()->addUserToGroup($id, $user->getUserName());
     }
 
     /**
      * Remove user from a project
      *
-     * @param Integer $groupId Id of the project
-     * @param Integer $userId  User ID
+     * @param int $id Id of the project
+     * @param int $userId User ID
      *
-     * @return Boolean
+     * @return bool
      */
-    protected function removeUserFromGroup($groupId, $userId)
+    protected function removeUserFromGroup($id, $userId)
     {
-        $this->logInProjectHistory($groupId, $userId);
+        $this->logInProjectHistory($id, $userId);
 
-        return $this->getDao()->removeUserFromGroup($groupId, $userId);
+        return $this->getDao()->removeUserFromGroup($id, $userId);
     }
 
     /**
      * Get project members user id
      *
-     * @param Integer $groupId Id of project
+     * @param int $groupId Id of project
      *
      * @return Array
      */
@@ -134,6 +157,24 @@ class LDAP_ProjectGroupManager extends LDAP_GroupManager
         }
     }
 
+    protected function diffDbAndDirectory($option): void
+    {
+        parent::diffDbAndDirectory($option);
+
+        $set_of_user_ids = new LDAPSetOfUserIDsForDiff(
+            $this->usersToAdd,
+            $this->usersToRemove,
+            $this->usersNotImpacted
+        );
+
+        $project                  = $this->project_manager->getProject($this->id);
+        $filtered_set_of_user_ids = $this->project_restricted_user_filter->filter($project, $set_of_user_ids);
+
+        $this->usersToAdd       = $filtered_set_of_user_ids->getUserIDsToAdd();
+        $this->usersToRemove    = $filtered_set_of_user_ids->getUserIDsToRemove();
+        $this->usersNotImpacted = $filtered_set_of_user_ids->getUserIDsNotImpacted();
+    }
+
     private function doesLdapGroupExist($dn)
     {
         return $this->getLdap()->searchDn($dn);
@@ -149,7 +190,7 @@ class LDAP_ProjectGroupManager extends LDAP_GroupManager
                 'project_admins_daily_synchronization_user_not_removed',
                 $user->getUnixName(),
                 $this->id,
-                array()
+                []
             );
         }
 

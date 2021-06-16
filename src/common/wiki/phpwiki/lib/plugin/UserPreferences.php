@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: UserPreferences.php,v 1.35 2004/10/13 14:13:55 rurban Exp $');
 /**
  Copyright (C) 2001,2002,2003,2004,2005 $ThePhpWikiProgrammingTeam
@@ -23,38 +24,45 @@ rcs_id('$Id: UserPreferences.php,v 1.35 2004/10/13 14:13:55 rurban Exp $');
 /**
  * Plugin to allow any user to adjust his own preferences.
  * This must be used in the page "UserPreferences".
- * Prefs are stored in metadata in the current session, 
+ * Prefs are stored in metadata in the current session,
  *  within the user's home page or in a database.
  *
- * Theme extension: Themes are able to extend the predefined list 
+ * Theme extension: Themes are able to extend the predefined list
  * of preferences.
  */
-class WikiPlugin_UserPreferences
-extends WikiPlugin
+class WikiPlugin_UserPreferences extends WikiPlugin
 {
-    var $bool_args;
+    public $bool_args;
 
-    function getName () {
+    public function getName()
+    {
         return _("UserPreferences");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.35 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.35 $"
+        );
     }
 
-    function getDefaultArguments() {
+    public function getDefaultArguments()
+    {
         global $request;
         $pagename = $request->getArg('pagename');
-        $user = $request->getUser();
-        if ( isset($user->_prefs) and 
-             isset($user->_prefs->_prefs) and 
-             isset($user->_prefs->_method) ) {
-            $pref =& $user->_prefs;
+        $user     = $request->getUser();
+        if (
+            isset($user->_prefs) and
+             isset($user->_prefs->_prefs) and
+             isset($user->_prefs->_method)
+        ) {
+            $pref = $user->_prefs;
         } else {
             $pref = $user->getPreferences();
         }
-        $prefs = array();
+        $prefs = [];
         //we need a hash of pref => default_value
         foreach ($pref->_prefs as $name => $obj) {
             $prefs[$name] = $obj->default_value;
@@ -62,78 +70,93 @@ extends WikiPlugin
         return $prefs;
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         $args = $this->getArgs($argstr, $request);
-        $user =& $request->_user;
-        if (isa($request,'MockRequest'))
+        $user = $request->_user;
+        if (isa($request, 'MockRequest')) {
             return '';
-        if ((!$request->isActionPage($request->getArg('pagename')) 
-             and (!isset($user->_prefs->_method) 
-                  or !in_array($user->_prefs->_method,array('ADODB','SQL'))))
-            or (in_array($request->getArg('action'),array('zip','ziphtml')))
-            or (isa($user,'_ForbiddenUser'))) 
-        {
+        }
+        if (
+            (! $request->isActionPage($request->getArg('pagename'))
+             and (! isset($user->_prefs->_method)
+                  or ! in_array($user->_prefs->_method, ['ADODB', 'SQL'])))
+            or (in_array($request->getArg('action'), ['zip', 'ziphtml']))
+            or (isa($user, '_ForbiddenUser'))
+        ) {
             $no_args = $this->getDefaultArguments();
 // ?
 //            foreach ($no_args as $key => $value) {
 //                $no_args[$value] = false;
 //            }
-            $no_args['errmsg'] = HTML(HTML::h2(_("Error: The user HomePage must be a valid WikiWord. Sorry, UserPreferences cannot be saved."),HTML::hr()));
+            $no_args['errmsg'] = HTML(HTML::h2(_("Error: The user HomePage must be a valid WikiWord. Sorry, UserPreferences cannot be saved."), HTML::hr()));
             $no_args['isForm'] = false;
             return Template('userprefs', $no_args);
         }
         $userid = $user->UserName();
-        if (// ((defined('ALLOW_BOGO_LOGIN') && ALLOW_BOGO_LOGIN && $user->isSignedIn()) ||
-             $user->isAuthenticated() and !empty($userid))
-        {
-            $pref = &$request->_prefs;
-	    $args['isForm'] = true;
+        if (
+// ((defined('ALLOW_BOGO_LOGIN') && ALLOW_BOGO_LOGIN && $user->isSignedIn()) ||
+             $user->isAuthenticated() and ! empty($userid)
+        ) {
+            $pref           = &$request->_prefs;
+            $args['isForm'] = true;
             //trigger_error("DEBUG: reading prefs from getPreferences".print_r($pref));
- 
+
             if ($request->isPost()) {
-            	$errmsg = '';
+                $errmsg = '';
                 $delete = $request->getArg('delete');
                 if ($delete and $request->getArg('verify')) {
                     // deleting prefs, verified
-                    $default_prefs = $pref->defaultPreferences();
+                    $default_prefs           = $pref->defaultPreferences();
                     $default_prefs['userid'] = $user->UserName();
                     $user->setPreferences($default_prefs);
                     $request->_setUser($user);
-                    $request->setArg("verify",false);
-                    $request->setArg("delete",false);
-                    $alert = new Alert(_("Message"),
-                                       _("Your UserPreferences have been successfully deleted."));
+                    $request->setArg("verify", false);
+                    $request->setArg("delete", false);
+                    $alert = new Alert(
+                        _("Message"),
+                        _("Your UserPreferences have been successfully deleted.")
+                    );
                     $alert->show();
                     return;
-                } elseif ($delete and !$request->getArg('verify')) {
-                    return HTML::form(array('action' => $request->getPostURL(),
-                                            'method' => 'post'),
-                                       HiddenInputs(array('verify' => 1)),
-                                       HiddenInputs($request->getArgs()),
-                                       HTML::p(_("Do you really want to delete all your UserPreferences?")),
-                                       HTML::p(Button('submit:delete', _("Yes"), 'delete'),
-                                               HTML::Raw('&nbsp;'),
-                                               Button('cancel', _("Cancel")))
-                                       );
+                } elseif ($delete and ! $request->getArg('verify')) {
+                    return HTML::form(
+                        ['action' => $request->getPostURL(),
+                                            'method' => 'post'],
+                        HiddenInputs(['verify' => 1]),
+                        HiddenInputs($request->getArgs()),
+                        HTML::p(_("Do you really want to delete all your UserPreferences?")),
+                        HTML::p(
+                            Button('submit:delete', _("Yes"), 'delete'),
+                            HTML::Raw('&nbsp;'),
+                            Button('cancel', _("Cancel"))
+                        )
+                    );
                 } elseif ($rp = $request->getArg('pref')) {
                     // replace only changed prefs in $pref with those from request
-                    if (!empty($rp['passwd']) and ($rp['passwd2'] != $rp['passwd'])) {
+                    if (! empty($rp['passwd']) and ($rp['passwd2'] != $rp['passwd'])) {
                         $errmsg = _("Wrong password. Try again.");
                     } else {
                         //trigger_error("DEBUG: reading prefs from request".print_r($rp));
                         //trigger_error("DEBUG: writing prefs with setPreferences".print_r($pref));
-                        if (empty($rp['passwd'])) unset($rp['passwd']);
+                        if (empty($rp['passwd'])) {
+                            unset($rp['passwd']);
+                        }
                         // fix to set system pulldown's. empty values don't get posted
-                        if (empty($rp['theme'])) $rp['theme'] = '';
-                        if (empty($rp['lang']))  $rp['lang']  = '';
+                        if (empty($rp['theme'])) {
+                            $rp['theme'] = '';
+                        }
+                        if (empty($rp['lang'])) {
+                            $rp['lang'] = '';
+                        }
                         $num = $user->setPreferences($rp);
-                        if (!empty($rp['passwd'])) {
+                        if (! empty($rp['passwd'])) {
                             $passchanged = false;
                             if ($user->mayChangePass()) {
                                 if (method_exists($user, 'storePass')) {
                                     $passchanged = $user->storePass($rp['passwd']);
                                 }
-                                if (!$passchanged and method_exists($user, 'changePass')) {
+                                if (! $passchanged and method_exists($user, 'changePass')) {
                                     $passchanged = $user->changePass($rp['passwd']);
                                 }
                                 if ($passchanged) {
@@ -145,18 +168,18 @@ extends WikiPlugin
                                 $errmsg = _("Password cannot be changed.");
                             }
                         }
-                        if (!$num) {
-                            $errmsg .= " " ._("No changes.");
+                        if (! $num) {
+                            $errmsg .= " " . _("No changes.");
                         } else {
                             $request->_setUser($user);
-                            $pref = $user->_prefs;	
+                            $pref    = $user->_prefs;
                             $errmsg .= sprintf(_("%d UserPreferences fields successfully updated."), $num);
-                        }  
+                        }
                     }
                     $args['errmsg'] = HTML(HTML::h2($errmsg), HTML::hr());
                 }
             }
-            $args['available_themes'] = listAvailableThemes();
+            $args['available_themes']    = listAvailableThemes();
             $args['available_languages'] = listAvailableLanguages();
 
             return Template('userprefs', $args);
@@ -166,7 +189,7 @@ extends WikiPlugin
             //return $user->PrintLoginForm ($request, $args, false, false);
         }
     }
-};
+}
 
 // $Log: UserPreferences.php,v $
 // Revision 1.35  2004/10/13 14:13:55  rurban
@@ -306,8 +329,6 @@ extends WikiPlugin
 //
 // Revision 1.9  2003/09/13 21:53:41  carstenklapp
 // Added lang and theme arguments, getVersion(), copyright and cvs log.
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -316,4 +337,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

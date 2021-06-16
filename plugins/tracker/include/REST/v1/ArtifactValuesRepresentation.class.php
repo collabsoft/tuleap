@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 
 namespace Tuleap\Tracker\REST\v1;
 
-class ArtifactValuesRepresentation {
+class ArtifactValuesRepresentation
+{
 
     /**
      * @var int {@type int} {@required true}
@@ -44,7 +45,12 @@ class ArtifactValuesRepresentation {
     public $links;
 
     /**
-     * @var boolean {@type boolean} {@required false}
+     * @var array {@required false}
+     */
+    public $parent;
+
+    /**
+     * @var bool {@type boolean} {@required false}
      */
     public $is_autocomputed;
 
@@ -56,8 +62,9 @@ class ArtifactValuesRepresentation {
     /**
      * @return array
      */
-    public function toArray() {
-        $array_representation = array();
+    public function toArray()
+    {
+        $array_representation = [];
 
         $array_representation['field_id'] = $this->field_id;
 
@@ -73,6 +80,10 @@ class ArtifactValuesRepresentation {
             $array_representation['links'] = $this->links;
         }
 
+        if ($this->parent !== null) {
+            $array_representation['parent'] = $this->parent;
+        }
+
         if ($this->is_autocomputed !== null) {
             $array_representation['is_autocomputed'] = $this->is_autocomputed;
         }
@@ -83,5 +94,4 @@ class ArtifactValuesRepresentation {
 
         return $array_representation;
     }
-
 }

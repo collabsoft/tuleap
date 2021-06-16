@@ -1,0 +1,186 @@
+#
+# Translators:
+# Benjamin Dauton <benjamin.dauton@enalean.com>, 2014
+msgid ""
+msgstr ""
+"Project-Id-Version: AgileDashboard Planning\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2021-02-03 15:58+0100\n"
+"Last-Translator: Joris MASSON <joris.masson@enalean.com>\n"
+"Language-Team: French (http://www.transifex.com/projects/p/test-188/language/"
+"fr/)\n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 2.4.2\n"
+
+msgid "(auto-computed)"
+msgstr "(calculé automatiquement)"
+
+msgid "...to get"
+msgstr "...pour voir"
+
+msgid "Add another file"
+msgstr "Ajouter un autre fichier"
+
+msgid "An error occurred while saving the artifact."
+msgstr "Une erreur s'est produite pendant la sauvegarde de cet artéfact."
+
+msgid "An error occurred while uploading this file: {{ file_name }}."
+msgstr ""
+"Une erreur s'est produite pendant le téléversement de ce fichier : "
+"{{ file_name }}."
+
+msgid "Auto-compute"
+msgstr "Calcul automatique"
+
+msgid "By: {{ file.submitted_by }}"
+msgstr "Par: {{ file.submitted_by }}"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Comment"
+msgstr "Commenter"
+
+msgid "Create a new {{ modal.title }}"
+msgstr "Créer un nouveau {{ modal.title }}"
+
+msgid "Edit"
+msgstr "Editer"
+
+msgid "Edited by"
+msgstr "Modifié par"
+
+msgid "Empty"
+msgstr "Aucun(e)"
+
+msgid "Enter artifact ids separated by a comma"
+msgstr "Entrer des ids d'artefacts séparés par une virgule"
+
+msgid "Error:"
+msgstr "Erreur :"
+
+msgid "File description"
+msgstr "Description du fichier"
+
+msgid "File upload quota allowed"
+msgstr "Quota d'envoi de fichiers autorisé"
+
+msgid "Follow-ups"
+msgstr "Commentaires"
+
+msgid "For your information..."
+msgstr "Pour votre information..."
+
+msgid "HTML"
+msgstr "HTML"
+
+msgid "Help"
+msgstr "Aide"
+
+msgid "Hidden fieldsets:"
+msgstr "Groupes de champs cachés :"
+
+msgid "Keep the file"
+msgstr "Garder le fichier"
+
+msgid "Mark for removal"
+msgstr "Marquer pour suppression"
+
+msgid "Markdown"
+msgstr "Markdown"
+
+msgid ""
+"Max allowed upload size: {{ quota_display.file_upload_rules.disk_quota | "
+"byteFmt: 2 }}"
+msgstr ""
+"Taille max d'envoi de fichiers : {{ quota_display.file_upload_rules."
+"disk_quota | byteFmt: 2 }}"
+
+msgid "No follow-ups"
+msgstr "Aucun commentaire"
+
+msgid "None"
+msgstr "Aucun"
+
+msgid "Only comments are displayed"
+msgstr "Seuls les commentaires sont affichés"
+
+msgid "Parent artifact"
+msgstr "Artéfact parent"
+
+msgid "Please choose a parent…"
+msgstr "Veuillez choisir un parent…"
+
+msgid "Please select a date"
+msgstr "Veuillez choisir une date"
+
+msgid "Please select an item in the list"
+msgstr "Veuillez choisir un élément dans la liste"
+
+msgid "Preview"
+msgstr "Aperçu"
+
+msgid "References list is empty."
+msgstr "Cet artefact n'est pas référencé, et n'est pas source de références."
+
+msgid "Reset"
+msgstr "Annuler"
+
+msgid "Restrict access to this artifact for the following user groups:"
+msgstr ""
+"Restreindre l'accès à cet artefact pour les groupes d'utilisateurs suivants :"
+
+msgid "Save changes"
+msgstr "Enregistrer les changements"
+
+msgid "Select parent"
+msgstr "Sélectionner un parent"
+
+msgid "Size: {{ file.size | byteFmt: 2 }}"
+msgstr "Taille : {{ file.size | byteFmt: 2 }}"
+
+msgid "Text"
+msgstr "Texte"
+
+msgid "The artifact will be linked to {{ modal.parent.title }}."
+msgstr "L'artefact sera lié à  {{ modal.parent.title }}."
+
+msgid "There was an error in the Markdown preview:"
+msgstr "Il y a eu une erreur dans l'aperçu Markdown :"
+
+msgid "Type..."
+msgstr "Ecrivez..."
+
+msgid "Unable to upload the file"
+msgstr "Impossible de téléverser le fichier"
+
+msgid "You are not allowed to paste images here"
+msgstr "Vous n'êtes pas autorisé à coller des images ici"
+
+msgid "You are not allowed to upload files bigger than %s."
+msgstr ""
+"Vous n'êtes pas autorisé à téléverser des fichiers avec une taille excédant "
+"%s."
+
+msgid "You can drag 'n drop or paste image directly in the editor."
+msgstr ""
+"Vous pouvez glisser-déposer ou coller une image directement dans l'éditeur."
+
+msgid ""
+"You exceeded your current file upload quota. Please remove existing "
+"temporary files or wait until they are cleaned up."
+msgstr ""
+"Vous avez dépassé votre quota actuel de téléversement de fichiers. Veuillez "
+"supprimer des fichiers temporaires existants ou attendre jusqu'à ce qu'ils "
+"soient nettoyés."
+
+msgid ""
+"{{ quota_display.file_upload_rules.disk_usage | byteFmt: 2 }} of "
+"{{ quota_display.file_upload_rules.disk_quota | byteFmt: 2 }}"
+msgstr ""
+"{{ quota_display.file_upload_rules.disk_usage | byteFmt: 2 }} sur "
+"{{ quota_display.file_upload_rules.disk_quota | byteFmt: 2 }}"

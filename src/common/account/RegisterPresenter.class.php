@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,8 @@
 use Tuleap\Password\Configuration\PasswordConfigurationDAO;
 use Tuleap\Password\Configuration\PasswordConfigurationRetriever;
 
-class Account_RegisterPresenter {
+class Account_RegisterPresenter
+{
 
     public $prefill_values;
     public $login;
@@ -30,9 +31,6 @@ class Account_RegisterPresenter {
     public $siteupdate;
     public $purpose;
     public $purpose_directions;
-    public $password_robustness;
-    public $good;
-    public $bad;
     public $new_password;
     public $timezone_selector;
     public $should_display_purpose;
@@ -41,7 +39,8 @@ class Account_RegisterPresenter {
     public $legal = '';
     private $extra_plugin_field;
 
-    public function __construct(Account_RegisterPrefillValuesPresenter $prefill_values, $extra_plugin_field) {
+    public function __construct(Account_RegisterPrefillValuesPresenter $prefill_values, $extra_plugin_field)
+    {
         $this->prefill_values         = $prefill_values;
         $this->login                  = $GLOBALS['Language']->getText('account_register', 'login');
         $this->email                  = $GLOBALS['Language']->getText('account_register', 'email');
@@ -50,31 +49,29 @@ class Account_RegisterPresenter {
         $this->siteupdate             = $GLOBALS['Language']->getText('account_register', 'siteupdate');
         $this->purpose                = $GLOBALS['Language']->getText('account_register', 'purpose');
         $this->purpose_directions     = $GLOBALS['Language']->getText('account_register', 'purpose_directions');
-        $this->password_robustness    = $GLOBALS['Language']->getText('account_check_pw', 'password_robustness');
-        $this->good                   = $GLOBALS['Language']->getText('account_check_pw', 'good');
-        $this->bad                    = $GLOBALS['Language']->getText('account_check_pw', 'bad');
         $this->new_password           = $GLOBALS['Language']->getText('account_change_pw', 'new_password');
         $this->timezone_selector      = new Account_TimezoneSelectorPresenter(
             $this->prefill_values->form_timezone->value
         );
-        $this->should_display_purpose = $GLOBALS['sys_user_approval'] == 1;
+        $this->should_display_purpose = ForgeConfig::getInt(User_UserStatusManager::CONFIG_USER_REGISTRATION_APPROVAL) === 1;
         $this->extra_plugin_field     = $extra_plugin_field;
 
         $password_configuration_retriever = new PasswordConfigurationRetriever(new PasswordConfigurationDAO());
         $password_configuration           = $password_configuration_retriever->getPasswordConfiguration();
         $password_strategy                = new PasswordStrategy($password_configuration);
         include($GLOBALS['Language']->getContent('account/password_strategy'));
-        $this->json_password_strategy_keys = json_encode(array_keys($password_strategy->validators));
-        $this->password_strategy_validators = array();
-        foreach($password_strategy->validators as $key => $v) {
-            $this->password_strategy_validators[] = array(
+        $this->json_password_strategy_keys  = json_encode(array_keys($password_strategy->validators));
+        $this->password_strategy_validators = [];
+        foreach ($password_strategy->validators as $key => $v) {
+            $this->password_strategy_validators[] = [
                 'key'         => $key,
                 'description' => $v->description()
-            );
+            ];
         }
     }
 
-    public function extra_plugin_field() {
+    public function extra_plugin_field()
+    {
         return $this->extra_plugin_field;
     }
 }

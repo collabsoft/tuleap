@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,6 @@
 namespace Tuleap\AgileDashboard\Milestone\Pane\Details;
 
 use AgileDashboard_Pane;
-use Planning_Milestone;
 use TemplateRendererFactory;
 
 /**

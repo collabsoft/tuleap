@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,7 +27,7 @@ use Tuleap\Tracker\Action\Move\FeedbackFieldCollectorInterface;
 
 class MoveArtifactParseFieldChangeNodes implements Dispatchable
 {
-    const NAME = "moveArtifactParseFieldChangeNodes";
+    public const NAME = "moveArtifactParseFieldChangeNodes";
 
     /**
      * @var Tracker

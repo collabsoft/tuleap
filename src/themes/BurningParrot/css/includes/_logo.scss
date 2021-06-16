@@ -1,0 +1,86 @@
+/**
+ * Copyright (c) Enalean, 2020 - Present. All Rights Reserved.
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+@use 'global-variables';
+
+#logo {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: global-variables.$sidebar-expanded-width;
+    height: global-variables.$navbar-height;
+    background: var(--tlp-theme-color) url("/images/organization_logo.png") no-repeat center center;
+}
+
+.sidebar > #logo {
+    background-color: var(--tlp-theme-dark-background-color-darker);
+}
+
+.logo-svg-link {
+    display: flex;
+    align-items: center;
+    height: global-variables.$navbar-height;
+    min-height: global-variables.$navbar-height;
+}
+
+/* stylelint-disable selector-no-qualifying-type */
+header.pinned .logo-svg-link {
+    margin: 0 0 0 var(--tlp-medium-spacing);
+}
+/* stylelint-enable selector-no-qualifying-type */
+
+.logo-svg-fill-theme-color {
+    fill: var(--tlp-theme-color);
+}
+
+.logo-svg-fill-default-text-color {
+    fill: var(--tlp-theme-dark-background-color);
+}
+
+.sidebar > .logo-svg-link {
+    justify-content: center;
+    width: global-variables.$sidebar-expanded-width;
+    margin: 0;
+    background: var(--tlp-theme-dark-background-color-darker);
+
+    .logo-svg-fill-default-text-color {
+        fill: var(--tlp-ui-white);
+    }
+}
+
+.logo-svg-normal {
+    display: flex;
+}
+
+.logo-svg-small {
+    display: none;
+}
+
+.sidebar-collapsed {
+    .logo-svg-link {
+        width: global-variables.$sidebar-collapsed-width;
+    }
+
+    .logo-svg-normal {
+        display: none;
+    }
+
+    .logo-svg-small {
+        display: flex;
+    }
+}

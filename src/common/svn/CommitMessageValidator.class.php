@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2014 - 2016. All rights reserved.
+ * Copyright Enalean (c) 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -25,17 +25,21 @@
 /**
  * I'm responsible of checking that commit message is valid
  */
-class SVN_CommitMessageValidator {
+class SVN_CommitMessageValidator
+{
 
     /** @var ReferenceManager */
     private $reference_manager;
 
-    public function __construct(ReferenceManager $reference_manager) {
+    public function __construct(ReferenceManager $reference_manager)
+    {
         $this->reference_manager = $reference_manager;
     }
 
-    public function assertCommitMessageIsValid(Project $project, $commit_message) {
-        if ($project->isSVNMandatoryRef()
+    public function assertCommitMessageIsValid(Project $project, $commit_message)
+    {
+        if (
+            $project->isSVNMandatoryRef()
             && ! $this->reference_manager->stringContainsReferences($commit_message, $project)
         ) {
             throw new Exception('Commit message must contains a reference');

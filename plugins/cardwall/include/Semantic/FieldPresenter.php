@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -54,7 +54,7 @@ class FieldPresenter
         $this->delete_image                              = $GLOBALS['HTML']->getimage(
             'ic/cross.png',
             [
-                'alt' => $GLOBALS['Language']->getText('plugin_cardwall', 'semantic_cardFields_fields')
+                'alt' => dgettext('tuleap-cardwall', 'The following fields are added to the cards:')
             ]
         );
     }

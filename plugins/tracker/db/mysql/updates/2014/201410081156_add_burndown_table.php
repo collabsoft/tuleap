@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2014. All rights reserved
+ * Copyright (c) Enalean SAS 2014 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201410081156_add_burndown_table extends ForgeUpgrade_Bucket {
+class b201410081156_add_burndown_table extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'Add table for burndown form elements';
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE IF NOT EXISTS tracker_field_burndown (
                     field_id INT(11) NOT NULL PRIMARY KEY,
                     use_cache TINYINT DEFAULT 0
@@ -38,8 +42,9 @@ class b201410081156_add_burndown_table extends ForgeUpgrade_Bucket {
         $this->db->dbh->exec($sql);
     }
 
-    public function postUp() {
-        if (!$this->db->tableNameExists('tracker_field_burndown')) {
+    public function postUp()
+    {
+        if (! $this->db->tableNameExists('tracker_field_burndown')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('table tracker_field_burndown not created');
         }
     }

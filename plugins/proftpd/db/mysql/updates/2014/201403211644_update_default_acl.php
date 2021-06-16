@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,17 +18,19 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201403211644_update_default_acl extends ForgeUpgrade_Bucket {
+class b201403211644_update_default_acl extends ForgeUpgrade_Bucket
+{
 
-    const TULEAP_SECURE_FTP_CONFIG_FILE_CENTOS5  = '/etc/codendi/plugins/proftpd/etc/config.inc';
-    const TULEAP_SECURE_FTP_CONFIG_FILE_OTHER_OS = '/etc/tuleap/plugins/proftpd/etc/config.inc';
+    public const TULEAP_SECURE_FTP_CONFIG_FILE_CENTOS5  = '/etc/codendi/plugins/proftpd/etc/config.inc';
+    public const TULEAP_SECURE_FTP_CONFIG_FILE_OTHER_OS = '/etc/tuleap/plugins/proftpd/etc/config.inc';
 
     /**
      * Description of the bucket
      *
      * @return String
      */
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Update default ACL for the secure FTPs
 EOT;
@@ -39,7 +41,8 @@ EOT;
      *
      * @return void
      */
-    public function up() {
+    public function up()
+    {
         $proftpd_base_directory = $this->getProftpdBaseDirectoryPath();
         $iterator               = new DirectoryIterator($proftpd_base_directory);
 
@@ -50,7 +53,8 @@ EOT;
         }
     }
 
-    private function getProftpdBaseDirectoryPath() {
+    private function getProftpdBaseDirectoryPath()
+    {
         if (is_file(self::TULEAP_SECURE_FTP_CONFIG_FILE_CENTOS5)) {
             include(self::TULEAP_SECURE_FTP_CONFIG_FILE_CENTOS5);
             return $proftpd_base_directory;

@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS tracker_workflow (
   tracker_id int(11) NOT NULL,
   field_id int(11) NOT NULL,
   is_used tinyint(1) NOT NULL,
+  is_legacy tinyint(1) NOT NULL DEFAULT 0,
+  is_advanced tinyint(1) NOT NULL,
   INDEX idx_wf_tracker_id( tracker_id ),
   INDEX idx_wf_field_id( field_id )
 ) ENGINE=InnoDB;
@@ -20,7 +22,7 @@ CREATE TABLE IF NOT EXISTS tracker_workflow_transition (
   from_id int(11) default NULL,
   to_id int(11) NOT NULL,
   workflow_id int(11) NOT NULL,
-  INDEX idx_wf_workflow_id( workflow_id )
+  INDEX idx_wf_workflow_id(workflow_id, transition_id)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS tracker_workflow_transition_condition_field_notempty;
@@ -109,7 +111,7 @@ CREATE TABLE tracker(
     log_priority_changes TINYINT(1) NOT NULL default '0',
     notifications_level INT( 11 ) NOT NULL default '0',
     from_tv3_id INT(11) NULL,
-    color varchar(64) NOT NULL DEFAULT 'inca_silver',
+    color varchar(64) NOT NULL DEFAULT 'inca-silver',
     enable_emailgateway TINYINT(1) NOT NULL DEFAULT '0',
     INDEX idx_fk_group_id( group_id )
 ) ENGINE=InnoDB;
@@ -155,7 +157,7 @@ DROP TABLE IF EXISTS tracker_field_text;
 CREATE TABLE tracker_field_text(
     field_id INT(11) NOT NULL PRIMARY KEY,
     default_value TEXT NULL,
-    rows INT(11) NOT NULL,
+    `rows` INT(11) NOT NULL,
     cols INT(11) NOT NULL
 ) ENGINE=InnoDB;
 
@@ -196,6 +198,7 @@ CREATE TABLE tracker_field_openlist(
 DROP TABLE IF EXISTS tracker_field_computed;
 CREATE TABLE tracker_field_computed (
     field_id INT(11) NOT NULL PRIMARY KEY,
+    default_value DOUBLE NULL,
     target_field_name VARCHAR(255) NULL,
     fast_compute TINYINT DEFAULT 0
 ) ENGINE=InnoDB;
@@ -205,6 +208,7 @@ CREATE TABLE tracker_field_openlist_value(
     id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     field_id INT(11) UNSIGNED NOT NULL,
     label VARCHAR(255) NOT NULL DEFAULT '',
+    is_hidden BOOL DEFAULT FALSE,
     INDEX idx_search(field_id)
 ) ENGINE=InnoDB AUTO_INCREMENT=101;
 
@@ -246,8 +250,8 @@ CREATE TABLE tracker_field_list_bind_static_value(
     rank INT(11) NOT NULL,
     is_hidden TINYINT(1) NOT NULL,
     original_value_id INT(11) NOT NULL DEFAULT '0',
-    INDEX field_id_idx(field_id),
-    INDEX idx_original_value_id (original_value_id, id)
+    INDEX idx_original_value_id (original_value_id, id),
+    INDEX idx_bind_value_field_id(field_id, id)
 ) ENGINE=InnoDB AUTO_INCREMENT=101;
 
 CREATE TABLE IF NOT EXISTS tracker_field_burndown (
@@ -293,12 +297,19 @@ CREATE TABLE tracker_changeset_comment_fulltext(
     comment_id INT(11) NOT NULL PRIMARY KEY,
     stripped_body TEXT DEFAULT NULL,
     FULLTEXT stripped_body_idx(stripped_body)
-) ENGINE=MyISAM;
+) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS tracker_changeset_incomingmail;
 CREATE TABLE tracker_changeset_incomingmail(
     changeset_id INT(11) NOT NULL PRIMARY KEY,
     raw_mail TEXT NOT NULL
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_changeset_from_xml;
+CREATE TABLE plugin_tracker_changeset_from_xml(
+   changeset_id INT(11) NOT NULL PRIMARY KEY,
+   user_id INT(11) NOT NULL,
+   timestamp INT(11) NOT NULL
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS tracker_changeset_value;
@@ -308,7 +319,7 @@ CREATE TABLE tracker_changeset_value(
     field_id INT(11) NOT NULL,
     has_changed TINYINT(1) NOT NULL,
     INDEX value_idx(changeset_id, field_id),
-    INDEX field_idx(field_id)
+    INDEX idx_value_field_id(field_id, id)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS tracker_changeset_value_file;
@@ -358,7 +369,8 @@ CREATE TABLE tracker_changeset_value_openlist(
     bindvalue_id INT(11) NULL,
     openvalue_id INT(11) NULL,
     insertion_order INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    UNIQUE idx(changeset_value_id, bindvalue_id, openvalue_id)
+    UNIQUE idx(changeset_value_id, bindvalue_id, openvalue_id),
+    INDEX idx_bindvalue_id(bindvalue_id, changeset_value_id)
 ) ENGINE=InnoDB AUTO_INCREMENT=101;
 
 DROP TABLE IF EXISTS tracker_changeset_value_artifactlink;
@@ -545,13 +557,18 @@ CREATE TABLE tracker_artifact(
   INDEX idx_tracker_id (tracker_id),
   INDEX idx_my (submitted_by, tracker_id, last_changeset_id),
   INDEX idx_id_changeset_id(id, last_changeset_id),
-  INDEX idx_changeset_tracker(last_changeset_id, tracker_id)
+  INDEX idx_changeset_tracker(last_changeset_id, tracker_id),
+  INDEX idx_submitted_on(submitted_on)
 ) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_artifact_pending_removal;
+CREATE TABLE plugin_tracker_artifact_pending_removal LIKE tracker_artifact;
 
 DROP TABLE IF EXISTS tracker_artifact_priority_rank;
 CREATE TABLE tracker_artifact_priority_rank(
     artifact_id INT(11) PRIMARY KEY,
-    rank INT(11) UNSIGNED NOT NULL
+    rank INT(11) UNSIGNED NOT NULL,
+    INDEX idx_rank(rank)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS tracker_artifact_priority_history;
@@ -607,6 +624,12 @@ CREATE TABLE IF NOT EXISTS tracker_only_status_change_notification_subscribers (
     tracker_id INT(11) NOT NULL,
     user_id INT(11) NOT NULL,
     PRIMARY KEY (tracker_id, user_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS plugin_tracker_involved_notification_subscribers (
+   tracker_id INT(11) NOT NULL,
+   user_id INT(11) NOT NULL,
+   PRIMARY KEY (tracker_id, user_id)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS    tracker_watcher;
@@ -719,6 +742,24 @@ CREATE TABLE tracker_semantic_contributor (
   INDEX filed_id_idx(field_id)
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS tracker_semantic_timeframe;
+CREATE TABLE tracker_semantic_timeframe (
+  tracker_id int(11) NOT NULL PRIMARY KEY,
+  start_date_field_id int(11) NULL,
+  duration_field_id int(11) NULL,
+  end_date_field_id int(11) NULL,
+  implied_from_tracker_id int(11) NULL,
+  INDEX idx_implied(implied_from_tracker_id)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS tracker_semantic_progress;
+CREATE TABLE tracker_semantic_progress (
+    tracker_id int(11) NOT NULL PRIMARY KEY,
+    total_effort_field_id int(11) NULL,
+    remaining_effort_field_id int(11) NULL,
+    artifact_link_type TEXT NULL
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS tracker_rule;
 CREATE TABLE IF NOT EXISTS tracker_rule(
   id int(11) unsigned NOT NULL auto_increment PRIMARY KEY,
@@ -747,7 +788,8 @@ CREATE TABLE IF NOT EXISTS tracker_rule_date(
 DROP TABLE IF EXISTS tracker_hierarchy;
 CREATE TABLE IF NOT EXISTS tracker_hierarchy (
   parent_id int(11) NOT NULL,
-  child_id int(11) NOT NULL PRIMARY KEY
+  child_id int(11) NOT NULL PRIMARY KEY,
+  INDEX idx_tracker_hierarchy_parent_id(parent_id)
 ) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS tracker_reminder;
@@ -893,6 +935,99 @@ CREATE TABLE IF NOT EXISTS plugin_tracker_webhook_log (
     INDEX idx(webhook_id)
 );
 
+DROP TABLE IF EXISTS plugin_tracker_source_artifact_id;
+CREATE TABLE IF NOT EXISTS plugin_tracker_source_artifact_id (
+    artifact_id INT(11) NOT NULL,
+    source_artifact_id INT(11) NOT NULL,
+    source_platform VARCHAR(100) NOT NULL,
+    PRIMARY KEY (artifact_id),
+    INDEX (source_platform)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_workflow_postactions_frozen_fields;
+CREATE TABLE IF NOT EXISTS plugin_tracker_workflow_postactions_frozen_fields (
+    id INT(11) UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    transition_id INT(11) NOT NULL,
+    INDEX idx_wf_transition_id( transition_id )
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_workflow_postactions_frozen_fields_value;
+CREATE TABLE IF NOT EXISTS plugin_tracker_workflow_postactions_frozen_fields_value (
+    postaction_id INT(11) UNSIGNED NOT NULL,
+    field_id INT(11) NOT NULL,
+    PRIMARY KEY (postaction_id, field_id)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_file_upload;
+CREATE TABLE plugin_tracker_file_upload (
+    fileinfo_id int(11) PRIMARY KEY,
+    expiration_date int(11) UNSIGNED,
+    field_id int(11) NOT NULL,
+    KEY idx_expiration_date(expiration_date)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_workflow_postactions_hidden_fieldsets;
+CREATE TABLE IF NOT EXISTS plugin_tracker_workflow_postactions_hidden_fieldsets (
+    id INT(11) UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    transition_id INT(11) NOT NULL,
+    INDEX idx_wf_transition_id(transition_id)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_workflow_postactions_hidden_fieldsets_value;
+CREATE TABLE IF NOT EXISTS plugin_tracker_workflow_postactions_hidden_fieldsets_value (
+    postaction_id INT(11) UNSIGNED NOT NULL,
+    fieldset_id INT(11) NOT NULL,
+    PRIMARY KEY (postaction_id, fieldset_id)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_pending_jira_import;
+CREATE TABLE IF NOT EXISTS plugin_tracker_pending_jira_import (
+    id INT(11) UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    created_on INT(11) UNSIGNED NOT NULL,
+    project_id INT(11) NOT NULL,
+    user_id INT(11) NOT NULL,
+    jira_server TEXT NOT NULL,
+    jira_user_email TEXT NOT NULL,
+    encrypted_jira_token BLOB NOT NULL,
+    jira_project_id TEXT NOT NULL,
+    jira_issue_type_name TEXT NOT NULL,
+    jira_issue_type_id TEXT NOT NULL,
+    tracker_name TEXT NOT NULL,
+    tracker_shortname TEXT NOT NULL,
+    tracker_color VARCHAR(64) NOT NULL,
+    tracker_description TEXT NOT NULL,
+    INDEX idx_project_id(project_id),
+    INDEX idx_created_on(created_on)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_in_new_dropdown;
+CREATE TABLE IF NOT EXISTS plugin_tracker_in_new_dropdown(
+    tracker_id int(11) NOT NULL PRIMARY KEY
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_legacy_tracker_migrated;
+CREATE TABLE IF NOT EXISTS plugin_tracker_legacy_tracker_migrated(
+    legacy_tracker_id int(11) NOT NULL PRIMARY KEY
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS plugin_tracker_private_comment_disabled_tracker(
+    tracker_id INT(11) PRIMARY KEY
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS plugin_tracker_private_comment_permission(
+    comment_id INT(11) NOT NULL,
+    ugroup_id int(11) NOT NULL,
+    PRIMARY KEY(comment_id, ugroup_id)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_tracker_semantic_done;
+CREATE TABLE plugin_tracker_semantic_done (
+     tracker_id INT(11) NOT NULL,
+     value_id INT(11) NOT NULL,
+     PRIMARY KEY(tracker_id, value_id),
+     INDEX semantic_done_tracker_idx(tracker_id)
+) ENGINE=InnoDB;
+
 -- Enable service for project 100
 INSERT INTO service(group_id, label, description, short_name, link, is_active, is_used, scope, rank)
        VALUES      ( 100, 'plugin_tracker:service_lbl_key', 'plugin_tracker:service_desc_key', 'plugin_tracker', '/plugins/tracker/?group_id=$group_id', 1, 1, 'system', 151);
@@ -963,13 +1098,41 @@ INSERT INTO user SET
         authorized_keys = NULL,
         email_new = NULL,
         timezone = 'GMT',
-        theme = '',
         language_id = 'en_US',
         last_pwd_update = '0';
 
 INSERT INTO user_access SET
         user_id = 90,
         last_access_date = '0';
+
+INSERT INTO user SET
+     user_id = 91,
+     user_name = 'forge__tracker_importer_user',
+     email = 'noreply+tracker_importer@_DOMAIN_NAME_',
+     user_pw = '#~2mouahahaha',
+     realname = 'Tracker Importer',
+     register_purpose = NULL,
+     status = 'S',
+     shell = '0',
+     unix_pw = '0',
+     unix_status = '0',
+     unix_uid = 0,
+     unix_box = '0',
+     ldap_id = NULL,
+     add_date = 370514700,
+     confirm_hash = NULL,
+     mail_siteupdates = 0,
+     mail_va = 0,
+     sticky_login = 0,
+     authorized_keys = NULL,
+     email_new = NULL,
+     timezone = 'GMT',
+     language_id = 'en_US',
+     last_pwd_update = '0';
+
+INSERT INTO user_access SET
+    user_id = 91,
+    last_access_date = '0';
 
 INSERT INTO tracker_report_config (query_limit) VALUES (30);
 
@@ -979,3 +1142,5 @@ FROM groups
     INNER JOIN service USING (group_id)
 WHERE groups.status != 'D'
       AND service.short_name = 'plugin_tracker';
+
+INSERT INTO forgeconfig (name, value) VALUES ('feature_flag_use_list_pickers_in_trackers_and_modals', 1);

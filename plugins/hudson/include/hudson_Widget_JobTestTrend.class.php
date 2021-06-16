@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -20,6 +20,8 @@
  */
 
 use Tuleap\Dashboard\User\UserDashboardController;
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\HTTPFactoryBuilder;
 use Tuleap\Hudson\HudsonJobBuilder;
 
 class hudson_Widget_JobTestTrend extends HudsonJobWidget
@@ -48,10 +50,10 @@ class hudson_Widget_JobTestTrend extends HudsonJobWidget
         $request = HTTPRequest::instance();
         if ($owner_type == UserDashboardController::LEGACY_DASHBOARD_TYPE) {
             $this->widget_id = 'plugin_hudson_my_jobtesttrend';
-            $this->group_id = $owner_id;
+            $this->group_id  = $owner_id;
         } else {
             $this->widget_id = 'plugin_hudson_project_jobtesttrend';
-            $this->group_id = $request->get('group_id');
+            $this->group_id  = $request->get('group_id');
         }
         parent::__construct($this->widget_id, $factory);
 
@@ -63,16 +65,16 @@ class hudson_Widget_JobTestTrend extends HudsonJobWidget
     {
         $title = '';
         if ($this->job) {
-            $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_testtrend', array($this->job->getName()));
+            $title .= sprintf(dgettext('tuleap-hudson', '%1$s Test Result Trend'), $this->job->getName());
         } else {
-             $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_testtrend');
+             $title .= sprintf(dgettext('tuleap-hudson', '%1$s Test Result Trend'), '');
         }
         return $title;
     }
 
     public function getDescription()
     {
-        return $GLOBALS['Language']->getText('plugin_hudson', 'widget_description_testtrend');
+        return dgettext('tuleap-hudson', 'Show the test result trend for the selected job. To display something, your job needs to have tests. The graph will show the number of tests (failed and successful) along  time. The number of tests is increasing while the number of build and commits are increasing too.');
     }
 
     public function loadContent($id)
@@ -92,17 +94,18 @@ class hudson_Widget_JobTestTrend extends HudsonJobWidget
                 try {
                     $used_job          = $jobs[$this->job_id];
                     $this->job         = $this->job_builder->getHudsonJob($used_job);
-                    $http_client       = new Http_Client();
-                    $this->test_result = new HudsonTestResult($this->job->getUrl(), $http_client);
+                    $this->test_result = new HudsonTestResult(
+                        $this->job->getUrl(),
+                        HttpClientFactory::createClient(),
+                        HTTPFactoryBuilder::requestFactory()
+                    );
                 } catch (Exception $e) {
                     $this->test_result = null;
                 }
-
             } else {
-                $this->job = null;
+                $this->job         = null;
                 $this->test_result = null;
             }
-
         }
     }
 
@@ -113,20 +116,18 @@ class hudson_Widget_JobTestTrend extends HudsonJobWidget
         $purifier = Codendi_HTMLPurifier::instance();
         $html     = '';
         if ($this->job != null && $this->test_result != null) {
-
             $job = $this->job;
 
             $html .= '<div style="padding: 20px;">';
-            $html .= '<a href="/plugins/hudson/?action=view_test_trend&group_id='.urlencode($this->group_id).'&job_id='.urlencode($this->job_id).'">';
-            $html .= '<img src="'.$purifier->purify($job->getUrl()).'/test/trend?width=320&height=240" alt="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson', 'project_job_testtrend', array($this->job->getName()))).'" title="'.$purifier->purify($GLOBALS['Language']->getText('plugin_hudson', 'project_job_testtrend', array($this->job->getName()))).'" />';
+            $html .= '<a href="/plugins/hudson/?action=view_test_trend&group_id=' . urlencode($this->group_id) . '&job_id=' . urlencode($this->job_id) . '">';
+            $html .= '<img src="' . $purifier->purify($job->getUrl()) . '/test/trend?width=320&height=240" alt="' . $purifier->purify(sprintf(dgettext('tuleap-hudson', '%1$s Test Result Trend'), $this->job->getName())) . '" title="' . $purifier->purify(sprintf(dgettext('tuleap-hudson', '%1$s Test Result Trend'), $this->job->getName())) . '" />';
             $html .= '</a>';
             $html .= '</div>';
-
         } else {
             if ($this->job != null) {
-                $html .= $purifier->purify($GLOBALS['Language']->getText('plugin_hudson', 'widget_tests_not_found'));
+                $html .= $purifier->purify(dgettext('tuleap-hudson', 'No test found for this job.'));
             } else {
-                $html .= $purifier->purify($GLOBALS['Language']->getText('plugin_hudson', 'widget_job_not_found'));
+                $html .= $purifier->purify(dgettext('tuleap-hudson', 'Job not found.'));
             }
         }
 

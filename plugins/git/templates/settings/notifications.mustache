@@ -1,6 +1,9 @@
 <h2>{{ title }}</h2>
 
 <form id="mail_prefix_form" action="/plugins/git/" method="POST">
+    {{# csrf_token }}
+        {{> csrf_token_input }}
+    {{/ csrf_token }}
     <input type="hidden" id="action" name="action" value="mail" />
     <input type="hidden" name="pane" value="{{ identifier }}" />
     <input type="hidden" id="group_id" name="group_id" value="{{ repository_project_id }}" />
@@ -14,7 +17,7 @@
     <table id="git-notification-mail-list" class="table">
         <thead>
             <tr>
-                <th><i class="icon-trash"></i></th>
+                <th><i class="far fa-trash-alt"></i></th>
                 <th class="git-notification-mail-list-people">{{ notified_people }}</th>
             </tr>
         </thead>
@@ -26,7 +29,7 @@
                         <input type="checkbox" name="remove_ugroup[]" value="{{ ugroup_id }}" />
                     </td>
                     <td>
-                        <i class="icon-group git-notification-mail-list-group-icon"></i>
+                        <i class="fa fa-users git-notification-mail-list-group-icon"></i>
                         {{ label }}
                     </td>
                 </tr>
@@ -39,7 +42,7 @@
                     <td class="git-notification-mail-list-user">
                         <div
                             class="avatar git-notification-mail-list-user-avatar"
-                        >{{# has_avatar }}<img src="{{ avatar_url }}" />{{/ has_avatar }}</div>
+                        ><img src="{{ avatar_url }}" /></div>
                         {{ label }}
                     </td>
                 </tr>

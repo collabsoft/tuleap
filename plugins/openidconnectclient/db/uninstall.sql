@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,3 +19,5 @@
 DROP TABLE IF EXISTS plugin_openidconnectclient_user_mapping;
 DROP TABLE IF EXISTS plugin_openidconnectclient_provider;
 DROP TABLE IF EXISTS plugin_openidconnectclient_unlinked_account;
+DROP TABLE IF EXISTS plugin_openidconnectclient_provider_generic;
+DROP TABLE IF EXISTS plugin_openidconnectclient_provider_azure_ad;

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,26 +18,29 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class Git_Gitolite_Presenter_GitoliteConfPresenter {
+class Git_Gitolite_Presenter_GitoliteConfPresenter
+{
 
     /**
      * @var array
      */
-    public $mirrors = array();
+    public $mirrors = [];
 
     /**
      * @var array
      */
     public $project_names;
 
-    public function __construct(array $project_names, array $mirrors) {
+    public function __construct(array $project_names, array $mirrors)
+    {
         $this->project_names = $project_names;
         foreach ($mirrors as $mirror) {
             $this->mirrors[] = $mirror->owner->getUserName();
         }
     }
 
-    public function has_mirror() {
+    public function has_mirror()
+    {
         return count($this->mirrors);
     }
 }

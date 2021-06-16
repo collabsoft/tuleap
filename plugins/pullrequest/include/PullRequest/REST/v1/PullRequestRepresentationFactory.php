@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,19 +20,19 @@
 
 namespace Tuleap\PullRequest\REST\v1;
 
-use Tuleap\Git\CommitStatus\CommitStatus;
 use Tuleap\Git\CommitStatus\CommitStatusRetriever;
 use Tuleap\Git\Gitolite\GitoliteAccessURLGenerator;
-use Tuleap\PullRequest\Authorization\AccessControlVerifier;
+use Tuleap\Git\Permissions\AccessControlVerifier;
 use Tuleap\PullRequest\GitExec;
 use Tuleap\PullRequest\PullRequest;
 use Tuleap\PullRequest\PullRequestWithGitReference;
 
 class PullRequestRepresentationFactory
 {
-    const BUILD_STATUS_UNKNOWN = 'unknown';
-    const BUILD_STATUS_SUCESS  = 'success';
-    const BUILD_STATUS_FAIL    = 'fail';
+    public const BUILD_STATUS_UNKNOWN = 'unknown';
+    public const BUILD_STATUS_SUCCESS = 'success';
+    public const BUILD_STATUS_FAIL    = 'fail';
+    public const BUILD_STATUS_PENDING = 'pending';
 
     /**
      * @var AccessControlVerifier
@@ -70,8 +70,7 @@ class PullRequestRepresentationFactory
             $pull_request->getSha1Dest(),
             $pull_request->getSha1Src()
         );
-        $short_stat_repres = new PullRequestShortStatRepresentation();
-        $short_stat_repres->build($short_stat);
+        $short_stat_repres = new PullRequestShortStatRepresentation($short_stat);
 
         $user_can_merge   = $this->access_control_verifier->canWrite($user, $repository_dest, $pull_request->getBranchDest());
         $user_can_abandon = $user_can_merge ||
@@ -79,7 +78,7 @@ class PullRequestRepresentationFactory
 
         $user_can_update_labels = $user_can_merge;
 
-        list($last_build_status_name, $last_build_date, $build_status_deprecated) = $this->getLastBuildInformation($pull_request, $repository_dest);
+        [$last_build_status_name, $last_build_date] = $this->getLastBuildInformation($pull_request, $repository_dest);
 
         $pull_request_representation = new PullRequestRepresentation($this->gitolite_access_URL_generator);
         $pull_request_representation->build(
@@ -92,56 +91,31 @@ class PullRequestRepresentationFactory
             $user_can_update_labels,
             $last_build_status_name,
             $last_build_date,
-            $build_status_deprecated,
             $short_stat_repres
         );
 
         return $pull_request_representation;
     }
 
-    private function getLastBuildInformation(PullRequest $pull_request, \GitRepository $repository_destination)
+    /**
+     * @return array{string, int|null}
+     */
+    private function getLastBuildInformation(PullRequest $pull_request, \GitRepository $repository_destination): array
     {
         $commit_status = $this->commit_status_retriever->getLastCommitStatus(
             $repository_destination,
             $pull_request->getSha1Src()
         );
 
-        if ($pull_request->getLastBuildDate() === null) {
-            return $this->convertCommitStatusToBuildStatus($commit_status);
-        }
-
         switch ($commit_status->getStatusName()) {
-            case 'success':
+            case self::BUILD_STATUS_SUCCESS:
+                return [self::BUILD_STATUS_SUCCESS, $commit_status->getDate()->getTimestamp()];
             case 'failure':
-                if ($commit_status->getDate()->getTimestamp() > $pull_request->getLastBuildDate()) {
-                    return $this->convertCommitStatusToBuildStatus($commit_status);
-                }
-                return [$this->expandDeprecatedBuildStatusName($pull_request->getLastBuildStatus()), $pull_request->getLastBuildDate(), true];
+                return [self::BUILD_STATUS_FAIL, $commit_status->getDate()->getTimestamp()];
+            case self::BUILD_STATUS_PENDING:
+                return [self::BUILD_STATUS_PENDING, $commit_status->getDate()->getTimestamp()];
             default:
-                return [$this->expandDeprecatedBuildStatusName($pull_request->getLastBuildStatus()), $pull_request->getLastBuildDate(), true];
+                return [self::BUILD_STATUS_UNKNOWN, null];
         }
-    }
-
-    private function convertCommitStatusToBuildStatus(CommitStatus $commit_status)
-    {
-        switch ($commit_status->getStatusName()) {
-            case 'success':
-                return [self::BUILD_STATUS_SUCESS, $commit_status->getDate()->getTimestamp(), false];
-            case 'failure':
-                return [self::BUILD_STATUS_FAIL, $commit_status->getDate()->getTimestamp(), false];
-            default:
-                return [self::BUILD_STATUS_UNKNOWN, null, false];
-        }
-    }
-
-    private function expandDeprecatedBuildStatusName($status_acronym)
-    {
-        $status_name = array(
-            PullRequest::BUILD_STATUS_UNKNOWN => self::BUILD_STATUS_UNKNOWN,
-            PullRequest::BUILD_STATUS_SUCCESS => self::BUILD_STATUS_SUCESS,
-            PullRequest::BUILD_STATUS_FAIL    => self::BUILD_STATUS_FAIL
-        );
-
-        return $status_name[$status_acronym];
     }
 }

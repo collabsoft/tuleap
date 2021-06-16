@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,11 +20,11 @@
 
 namespace Tuleap\Tracker\REST;
 
-use \Tracker_FormElement_Field_List_Value;
+use Tracker_FormElement_Field_List_Value;
 use Tuleap\REST\JsonCast;
-use Project;
 
-class FieldListStaticValueRepresentation {
+class FieldListStaticValueRepresentation
+{
     /**
      * @var int
      */
@@ -40,9 +40,16 @@ class FieldListStaticValueRepresentation {
      */
     public $is_hidden;
 
-    public function build(Tracker_FormElement_Field_List_Value $value) {
-        $this->id               = JsonCast::toInt($value->getId());
-        $this->label            = $value->getLabel();
-        $this->is_hidden        = (bool)$value->isHidden();
+    /**
+     * @var string | null
+     */
+    public $value_color;
+
+    public function build(Tracker_FormElement_Field_List_Value $value, ?string $value_color)
+    {
+        $this->id          = JsonCast::toInt($value->getId());
+        $this->label       = $value->getLabel();
+        $this->is_hidden   = (bool) $value->isHidden();
+        $this->value_color = $value_color;
     }
 }

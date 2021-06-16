@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,8 +37,6 @@ class ProjectTemplatesController implements DispatchableWithRequest
     /**
      * Is able to process a request routed by FrontRouter
      *
-     * @param HTTPRequest $request
-     * @param BaseLayout $layout
      * @param array $variables
      * @throws NotFoundException
      * @throws ForbiddenException
@@ -50,18 +48,18 @@ class ProjectTemplatesController implements DispatchableWithRequest
             throw new ForbiddenException();
         }
 
-        $templates_presenters = array();
+        $templates_presenters = [];
         foreach (ProjectManager::instance()->getSiteTemplates() as $template) {
             $templates_presenters[] = new TemplatePresenter($template);
         }
 
-        $title = _('Project templates');
+        $title     = _('Project templates');
         $presenter = new TemplateListPresenter(new ProjectCreationNavBarPresenter('templates'), $title, $templates_presenters);
 
         $admin_page = new AdminPageRenderer();
         $admin_page->renderANoFramedPresenter(
             $title,
-            ForgeConfig::get('codendi_dir') .'/src/templates/admin/projects/',
+            ForgeConfig::get('codendi_dir') . '/src/templates/admin/projects/',
             'templatelist',
             $presenter
         );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,16 +19,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-namespace Tuleap\Svn\Reference;
+namespace Tuleap\SVN\Reference;
 
-use Tuleap\Svn\Repository\Repository;
+use Tuleap\SVN\Repository\Repository;
 use Project;
 use SvnPlugin;
-use BackendLogger;
 
-class Reference extends \Reference {
-
-    public function __construct(Project $project, Repository $repository, $keyword, $revision_id) {
+class Reference extends \Reference
+{
+    public function __construct(Project $project, Repository $repository, $keyword, $revision_id)
+    {
         $base_id         = 0;
         $visibility      = 'P';
         $is_used         = 1;
@@ -39,7 +39,7 @@ class Reference extends \Reference {
             $base_id,
             $keyword,
             '',
-            SVN_BASE_URL . "/index.php?roottype=svn&view=rev&root=$repository_path&revision=$revision_id",
+            SVN_BASE_URL . "?roottype=svn&view=rev&root=$repository_path&revision=$revision_id",
             $visibility,
             SvnPlugin::SERVICE_SHORTNAME,
             SvnPlugin::SYSTEM_NATURE_NAME,
@@ -47,5 +47,4 @@ class Reference extends \Reference {
             $project_id
         );
     }
-
 }

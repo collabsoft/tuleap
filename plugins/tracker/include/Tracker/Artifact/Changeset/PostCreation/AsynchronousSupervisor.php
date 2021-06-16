@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,49 +21,54 @@
 
 namespace Tuleap\Tracker\Artifact\Changeset\PostCreation;
 
-use Logger;
+use Psr\Log\LoggerInterface;
+use Tuleap\Queue\WorkerAvailability;
 use WrapperLogger;
-use ForgeConfig;
 
 class AsynchronousSupervisor
 {
-    const ACCEPTABLE_PROCESS_DELAY = 120;
+    public const ACCEPTABLE_PROCESS_DELAY = 120;
 
-    const ONE_WEEK_IN_SECONDS = 604800;
+    public const ONE_WEEK_IN_SECONDS = 604800;
 
     /**
      * @var ActionsRunnerDao
      */
     private $dao;
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
+    /**
+     * @var WorkerAvailability
+     */
+    private $worker_availability;
 
-    public function __construct(Logger $logger, ActionsRunnerDao $dao)
+    public function __construct(LoggerInterface $logger, ActionsRunnerDao $dao, WorkerAvailability $worker_availability)
     {
-        $this->logger = new WrapperLogger($logger, __CLASS__);
-        $this->dao    = $dao;
+        $this->logger              = new WrapperLogger($logger, self::class);
+        $this->dao                 = $dao;
+        $this->worker_availability = $worker_availability;
     }
 
-    public function runSystemCheck()
+    public function runSystemCheck(): void
     {
-        if (ForgeConfig::get('sys_async_emails') !== false) {
+        if ($this->worker_availability->canProcessAsyncTasks()) {
             $this->warnWhenToMuchDelay();
             $this->purgeOldLogs();
         }
     }
 
-    private function warnWhenToMuchDelay()
+    private function warnWhenToMuchDelay(): void
     {
         $last_end_date     = $this->dao->getLastEndDate();
         $nb_pending_events = $this->dao->searchPostCreationEventsAfter($last_end_date + self::ACCEPTABLE_PROCESS_DELAY);
         if ($nb_pending_events > 0) {
-            $this->logger->warn('There are ' . $nb_pending_events . " post creation events waiting to be processed, you should check '/usr/share/tuleap/src/utils/worker.php' and it's log file to ensure it's still running.");
+            $this->logger->warning('There are ' . $nb_pending_events . " post creation events waiting to be processed, you should check '/usr/share/tuleap/src/utils/worker.php' and it's log file to ensure it's still running.");
         }
     }
 
-    private function purgeOldLogs()
+    private function purgeOldLogs(): void
     {
         $this->dao->deleteLogsOlderThan(self::ONE_WEEK_IN_SECONDS);
     }

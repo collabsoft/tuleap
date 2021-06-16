@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2016. All rights reserved
+ * Copyright (c) Enalean, 2015 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,11 @@
 
 use Tuleap\Git\Gitolite\VersionDetector;
 
-class Git_Gitolite_GitoliteRCReader {
+class Git_Gitolite_GitoliteRCReader
+{
 
-    const OLD_GITOLITE_RC_PATH = "/usr/com/gitolite/.gitolite.rc";
-    const NEW_GITOLITE_RC_PATH = "/var/lib/gitolite/.gitolite.rc";
+    public const OLD_GITOLITE_RC_PATH = "/usr/com/gitolite/.gitolite.rc";
+    public const NEW_GITOLITE_RC_PATH = "/var/lib/gitolite/.gitolite.rc";
 
     public function __construct(VersionDetector $version_detector)
     {
@@ -43,7 +44,7 @@ class Git_Gitolite_GitoliteRCReader {
     {
         $file_path    = $this->getGitoliteRCPath();
         $file_content = file_get_contents($file_path);
-        $match        = array();
+        $match        = [];
 
         $hostname_found = preg_match('/^\s*HOSTNAME\s*=>\s*\"(.+)\".*/m', $file_content, $match);
 
@@ -52,7 +53,6 @@ class Git_Gitolite_GitoliteRCReader {
         }
 
         return $match[1];
-
     }
 
     public function getHostname()

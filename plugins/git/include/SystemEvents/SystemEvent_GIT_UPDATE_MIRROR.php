@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SystemEvent_GIT_UPDATE_MIRROR extends SystemEvent {
-    const NAME = 'GIT_UPDATE_MIRROR';
+class SystemEvent_GIT_UPDATE_MIRROR extends SystemEvent
+{
+    public const NAME = 'GIT_UPDATE_MIRROR';
 
     /** @var Git_GitoliteDriver */
     private $gitolite_driver;
@@ -27,11 +28,11 @@ class SystemEvent_GIT_UPDATE_MIRROR extends SystemEvent {
     public function injectDependencies(
         Git_GitoliteDriver $gitolite_driver
     ) {
-        $this->gitolite_driver  = $gitolite_driver;
+        $this->gitolite_driver = $gitolite_driver;
     }
 
-    public function process() {
-
+    public function process()
+    {
         $dump_is_done = $this->gitolite_driver->updateMirror(
             $this->getMirrorIdFromParameters(),
             $this->getMirrorOldHostnameFromParameters()
@@ -45,19 +46,22 @@ class SystemEvent_GIT_UPDATE_MIRROR extends SystemEvent {
         $this->error("Something went wrong while updating mirror");
     }
 
-    private function getMirrorIdFromParameters() {
-        $parameters    = $this->getParametersAsArray();
+    private function getMirrorIdFromParameters()
+    {
+        $parameters = $this->getParametersAsArray();
 
         return $parameters[0];
     }
 
-    private function getMirrorOldHostnameFromParameters() {
-        $parameters    = $this->getParametersAsArray();
+    private function getMirrorOldHostnameFromParameters()
+    {
+        $parameters = $this->getParametersAsArray();
 
         return $parameters[1];
     }
 
-    public function verbalizeParameters($with_link) {
-        return 'Mirror: '.$this->getMirrorIdFromParameters();
+    public function verbalizeParameters($with_link)
+    {
+        return 'Mirror: ' . $this->getMirrorIdFromParameters();
     }
 }

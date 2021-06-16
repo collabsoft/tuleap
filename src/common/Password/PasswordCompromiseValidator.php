@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,12 +31,12 @@ class PasswordCompromiseValidator extends \PasswordValidator
 
     public function __construct(PwnedPasswordChecker $pwned_password_checker)
     {
-        parent::__construct(_('The password must not be considered as compromised due to his presence in known data breaches.'));
+        parent::__construct(_('The password must not be considered as compromised (this password is present in known data breaches)'));
         $this->pwned_password_checker = $pwned_password_checker;
     }
 
     public function validate($password)
     {
-        return !$this->pwned_password_checker->isPasswordCompromised($password);
+        return ! $this->pwned_password_checker->isPasswordCompromised($password);
     }
 }

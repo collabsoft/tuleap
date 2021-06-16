@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -81,6 +81,6 @@ class SemanticCardPresenter
             ]
         );
 
-        $this->user_has_accessibility_mode = $user->getPreference(PFUser::ACCESSIBILITY_MODE);
+        $this->user_has_accessibility_mode = (bool) $user->getPreference(PFUser::ACCESSIBILITY_MODE);
     }
 }

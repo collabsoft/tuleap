@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -52,10 +52,8 @@ class GreaterThanComparisonFromWhereBuilder implements FromWhereBuilder
         switch ($metadata->getName()) {
             case AllowedMetadata::SUBMITTED_ON:
                 return $this->submitted_on_builder->getFromWhere($metadata, $comparison, $trackers);
-                break;
             case AllowedMetadata::LAST_UPDATE_DATE:
                 return $this->last_update_date_builder->getFromWhere($metadata, $comparison, $trackers);
-                break;
         }
     }
 }

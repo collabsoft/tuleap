@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,7 @@ namespace Tuleap\Admin\SystemEvents;
 
 class HomepagePanePresenter
 {
-    const TEMPLATE = 'homepage_pane';
+    public const TEMPLATE = 'homepage_pane';
 
     public $sections;
     public $pane_title;
@@ -30,9 +30,9 @@ class HomepagePanePresenter
 
     public function __construct(array $sections)
     {
-        $this->sections       = $sections;
+        $this->sections = $sections;
 
-        $this->pane_title     = $GLOBALS['Language']->getText('admin_main', 'system_events_pane_title');
-        $this->view_all_label = $GLOBALS['Language']->getText('admin_main', 'system_events_view_all_label');
+        $this->pane_title     = _('System events (last 48 hours)');
+        $this->view_all_label = _('View all system events');
     }
 }

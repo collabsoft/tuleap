@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All rights reserved
+ * Copyright (c) Enalean, 2018-Present. All rights reserved
  * Copyright (c) STMicroelectronics 2011. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
@@ -20,16 +20,18 @@
 /**
  *  Data Access Object for Project history
  */
-class ProjectHistoryDao extends DataAccessObject {
+class ProjectHistoryDao extends DataAccessObject
+{
 
     /**
      * Constructor of the class
      *
-     * @param \Tuleap\DB\Compat\Legacy2018\LegacyDataAccessInterface $da instance of the DataAccess class
+     * @param \Tuleap\DB\Compat\Legacy2018\LegacyDataAccessInterface $da
      *
      * @return void
      */
-    public function __construct($da = null) {
+    public function __construct($da = null)
+    {
         parent::__construct($da);
         $this->table_name = 'group_history';
     }
@@ -37,28 +39,29 @@ class ProjectHistoryDao extends DataAccessObject {
     /**
      * Returns an array containing project history elements and their count
      *
-     * @param Integer $offset        OFFSET keyword for the LIMIT clause
-     * @param Integer $limit         Number of results to be returned
-     * @param Integer $groupId       Project ID
+     * @param int $offset OFFSET keyword for the LIMIT clause
+     * @param int $limit Number of results to be returned
+     * @param int $groupId Project ID
      * @param String  $historyFilter Filtering statement
      *
      * @return Array
      */
-    public function groupGetHistory ($offset, $limit, $groupId = false, $historyFilter = null) {
-        $sql='select SQL_CALC_FOUND_ROWS group_history.field_name,
+    public function groupGetHistory($offset, $limit, $groupId = false, $historyFilter = null)
+    {
+        $sql = 'select SQL_CALC_FOUND_ROWS group_history.field_name,
               group_history.old_value,
               group_history.date,
               user.user_name 
-              FROM '.$this->table_name.',user
+              FROM ' . $this->table_name . ',user
               WHERE group_history.mod_by=user.user_id ';
         if ($historyFilter) {
             $sql .= $historyFilter;
         }
-        $sql.=' AND group_id='.$this->da->escapeInt($groupId).' ORDER BY group_history.date DESC';
+        $sql .= ' AND group_id=' . $this->da->escapeInt($groupId) . ' ORDER BY group_history.date DESC';
         if ($offset > 0 || $limit > 0) {
-            $sql .= ' LIMIT '.$this->da->escapeInt($offset).', '.$this->da->escapeInt($limit);
+            $sql .= ' LIMIT ' . $this->da->escapeInt($offset) . ', ' . $this->da->escapeInt($limit);
         }
-        return array('history' => $this->retrieve($sql), 'numrows' => $this->foundRows());
+        return ['history' => $this->retrieve($sql), 'numrows' => $this->foundRows()];
     }
 
     /**
@@ -71,24 +74,24 @@ class ProjectHistoryDao extends DataAccessObject {
      *
      * @param String  $fieldName Event category
      * @param String  $oldValue  Event value
-     * @param Integer $groupId   Project ID
+     * @param int $groupId Project ID
      * @param Array   $args      list of parameters used for message display
      *
      * @return DataAccessResult
      */
-    public function groupAddHistory ($fieldName,$oldValue,$groupId, $args = false) {
+    public function groupAddHistory($fieldName, $oldValue, $groupId, $args = false)
+    {
         if ($args) {
-            $fieldName .= " %% ".implode("||", $args);
+            $fieldName .= " %% " . implode("||", $args);
         }
-        $userId = user_getid();
+        $userId = UserManager::instance()->getCurrentUser()->getId();
         if ($userId == 0) {
             $userId = 100;
         }
-        $sql= 'insert into '.$this->table_name.'(group_id,field_name,old_value,mod_by,date)
-               VALUES ('.$this->da->escapeInt($groupId).' , '.$this->da->quoteSmart($fieldName). ', '.
-               $this->da->quoteSmart($oldValue).' , '.$this->da->escapeInt($userId).' , '.$this->da->escapeInt($_SERVER['REQUEST_TIME']).')';
+        $sql = 'insert into ' . $this->table_name . '(group_id,field_name,old_value,mod_by,date)
+               VALUES (' . $this->da->escapeInt($groupId) . ' , ' . $this->da->quoteSmart($fieldName) . ', ' .
+               $this->da->quoteSmart($oldValue) . ' , ' . $this->da->escapeInt($userId) . ' , ' . $this->da->escapeInt($_SERVER['REQUEST_TIME']) . ')';
 
         $this->retrieve($sql);
     }
-
 }

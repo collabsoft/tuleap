@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,13 +20,14 @@
 
 namespace Tuleap\HudsonSvn\Job;
 
-use Tuleap\Svn\Repository\Exception\CannotFindRepositoryException;
-use Tuleap\Svn\Repository\RepositoryManager;
+use Tuleap\SVN\Repository\Exception\CannotFindRepositoryException;
+use Tuleap\SVN\Repository\RepositoryManager;
 use Valid_UInt;
 use Project;
 use SVNPathsUpdater;
 
-class Manager {
+class Manager
+{
 
     /**
      * @var SVNPathsUpdater
@@ -34,7 +35,7 @@ class Manager {
     private $path_updater;
 
     /**
-     * @var Tuleap\Svn\Repository\RepositoryManager
+     * @var Tuleap\SVN\Repository\RepositoryManager
      */
     private $repository_manager;
 
@@ -43,17 +44,20 @@ class Manager {
      */
     private $dao;
 
-    public function __construct(Dao $dao, RepositoryManager $repository_manager, SVNPathsUpdater $path_updater) {
+    public function __construct(Dao $dao, RepositoryManager $repository_manager, SVNPathsUpdater $path_updater)
+    {
         $this->dao                = $dao;
         $this->repository_manager = $repository_manager;
         $this->path_updater       = $path_updater;
     }
 
-    public function delete($job_id) {
+    public function delete(int $job_id): bool
+    {
         return $this->dao->deleteTrigger($job_id);
     }
 
-    public function save(array $params) {
+    public function save(array $params)
+    {
         $repository_id = $params['request']->get('hudson_use_plugin_svn_trigger');
         $valid_repo_id = new Valid_UInt('hudson_use_plugin_svn_trigger');
         $valid_repo_id->required();
@@ -61,7 +65,7 @@ class Manager {
         if (! $params['request']->valid($valid_repo_id) && ! $repository_id) {
             $GLOBALS['Response']->addFeedback(
                 'error',
-                $GLOBALS['Language']->getText('plugin_hudson_svn','request_not_valid')
+                dgettext('tuleap-hudson_svn', 'This request is not valid.')
             );
 
             return;
@@ -70,7 +74,7 @@ class Manager {
         if (! $this->doesRepositoryExist($params['request']->getProject(), $repository_id)) {
             $GLOBALS['Response']->addFeedback(
                 'error',
-                $GLOBALS['Language']->getText('plugin_hudson_svn','repository_not_found')
+                dgettext('tuleap-hudson_svn', 'Repository not found.')
             );
 
             return;
@@ -79,15 +83,16 @@ class Manager {
         $submitted_content = $params['request']->get('hudson_svn_trigger_path');
         $path              = $this->path_updater->transformContent($submitted_content);
 
-        if (! $this->dao->saveTrigger($params['job_id'], $repository_id, $path)) {
+        if (! $this->dao->saveTrigger((int) $params['job_id'], (int) $repository_id, $path)) {
             $GLOBALS['Response']->addFeedback(
                 'error',
-                $GLOBALS['Language']->getText('plugin_hudson_svn','ci_trigger_not_saved')
+                dgettext('tuleap-hudson_svn', 'An error occurred while adding job.')
             );
         }
     }
 
-    private function doesRepositoryExist(Project $project, $repository_id) {
+    private function doesRepositoryExist(Project $project, $repository_id)
+    {
         try {
             $this->repository_manager->getByIdAndProject($repository_id, $project);
             return true;

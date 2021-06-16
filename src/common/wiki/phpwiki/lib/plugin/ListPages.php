@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: ListPages.php,v 1.10 2005/09/27 17:34:19 rurban Exp $');
 /*
  Copyright 2004 $ThePhpWikiProgrammingTeam
@@ -26,56 +27,65 @@ require_once('lib/PageList.php');
  * ListPages - List pages that are explicitly given as the pages argument.
  *
  * Mainly used to see some ratings and recommendations.
- * But also possible to list some Categories or Users, or as generic 
+ * But also possible to list some Categories or Users, or as generic
  * frontend for plugin-list page lists.
  *
  * @author: Dan Frankowski
  */
-class WikiPlugin_ListPages
-extends WikiPlugin
+class WikiPlugin_ListPages extends WikiPlugin
 {
-    function getName() {
+    public function getName()
+    {
         return _("ListPages");
     }
 
-    function getDescription() {
+    public function getDescription()
+    {
         return _("List pages that are explicitly given as the pages argument.");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.10 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.10 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array_merge
-            (
-             PageList::supportedArgs(),
-             array('pages'    => false,
+    public function getDefaultArguments()
+    {
+        return array_merge(
+            PageList::supportedArgs(),
+            ['pages'    => false,
                    //'exclude'  => false,
                    'info'     => 'pagename',
                    'dimension' => 0,
-                   ));
+            ]
+        );
     }
 
     // info arg allows multiple columns
     // info=mtime,hits,summary,version,author,locked,minor
-    // additional info args: 
+    // additional info args:
     //   top3recs      : recommendations
     //   numbacklinks  : number of backlinks (links to the given page)
     //   numpagelinks  : number of forward links (links at the given page)
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         $args = $this->getArgs($argstr, $request);
         extract($args);
-        // If the ratings table does not exist, or on dba it will break otherwise. 
+        // If the ratings table does not exist, or on dba it will break otherwise.
         // Check if Theme isa 'wikilens'
-	if ($info == 'pagename' and isa($GLOBALS['WikiTheme'], 'wikilens'))
-	    $info .= ",top3recs";
-        if ($info)
+        if ($info == 'pagename' and isa($GLOBALS['WikiTheme'], 'wikilens')) {
+            $info .= ",top3recs";
+        }
+        if ($info) {
             $info = preg_split('/,/D', $info);
-        else
-            $info = array();
+        } else {
+            $info = [];
+        }
 
         if (in_array('top3recs', $info)) {
             require_once('lib/wikilens/Buddy.php');
@@ -85,28 +95,30 @@ extends WikiPlugin
             $active_userid = $active_user->_userid;
 
             // if userids is null or empty, fill it with just the active user
-            if (!isset($userids) || !is_array($userids) || !count($userids)) {
+            if (! isset($userids) || ! is_array($userids) || ! count($userids)) {
                 // TKL: moved getBuddies call inside if statement because it was
                 // causing the userids[] parameter to be ignored
-                if (is_string($active_userid) 
-		    and strlen($active_userid) 
-		    and $active_user->isSignedIn()) 
-		{
+                if (
+                    is_string($active_userid)
+                    and strlen($active_userid)
+                    and $active_user->isSignedIn()
+                ) {
                     $userids = getBuddies($active_userid, $dbi);
                 } else {
-                    $userids = array();
+                    $userids = [];
                     // XXX: this wipes out the category caption...
                     $caption = _("You must be logged in to view ratings.");
                 }
             }
 
             // find out which users we should show ratings for
-            $options = array('dimension' => $dimension,
-                             'users' => array());
-            $args = array_merge($options, $args);
+            $options = ['dimension' => $dimension,
+                             'users' => []];
+            $args    = array_merge($options, $args);
         }
-        if (empty($pages) and $pages != '0')
+        if (empty($pages) and $pages != '0') {
             return '';
+        }
 
         if (in_array('numbacklinks', $info)) {
             $args['types']['numbacklinks'] = new _PageList_Column_ListPages_count('numbacklinks', _("#"), true);
@@ -115,21 +127,24 @@ extends WikiPlugin
             $args['types']['numpagelinks'] = new _PageList_Column_ListPages_count('numpagelinks', _("#"));
         }
 
-        $pagelist = new PageList($info, $exclude, $args);
-        $pages_array = is_string($pages) ? explodePageList($pages) : (is_array($pages) ? $pages : array());
+        $pagelist    = new PageList($info, $exclude, $args);
+        $pages_array = is_string($pages) ? explodePageList($pages) : (is_array($pages) ? $pages : []);
         $pagelist->addPageList($pages_array);
         return $pagelist;
     }
-};
+}
 
 // how many back-/forwardlinks for this page
-class _PageList_Column_ListPages_count extends _PageList_Column {
-    function __construct($field, $display, $backwards = false) {
+class _PageList_Column_ListPages_count extends _PageList_Column
+{
+    public function __construct($field, $display, $backwards = false)
+    {
         $this->_direction = $backwards;
         return parent::__construct($field, $display, 'center');
     }
-    function _getValue($page, &$revision_handle) {
-        $iter = $page->getLinks($this->_direction);
+    public function _getValue($page, &$revision_handle)
+    {
+        $iter  = $page->getLinks($this->_direction);
         $count = $iter->count();
         return $count;
     }
@@ -172,8 +187,6 @@ class _PageList_Column_ListPages_count extends _PageList_Column {
 //
 // Revision 1.1  2004/06/08 13:49:43  rurban
 // List pages that are explicitly given as the pages argument, by DanFr
-// 
-
 // Local Variables:
 // mode: php
 // tab-width: 8
@@ -181,4 +194,3 @@ class _PageList_Column_ListPages_count extends _PageList_Column {
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

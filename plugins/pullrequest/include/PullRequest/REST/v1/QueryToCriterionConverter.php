@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -44,14 +44,14 @@ class QueryToCriterionConverter
             throw new MalformedQueryParameterException();
         }
 
-        if ($query_object == new stdClass) {
+        if ($query_object == new stdClass()) {
             return new StatusAll();
         }
 
         if (isset($query_object->status)) {
             if ($query_object->status === 'open') {
                 return new StatusOpen();
-            } else if ($query_object->status === 'closed') {
+            } elseif ($query_object->status === 'closed') {
                 return new StatusClosed();
             } else {
                 throw new MalformedQueryParameterException();

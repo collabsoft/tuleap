@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,23 +28,23 @@ use Codendi_HTMLPurifier;
 
 class PullRequestRepresentation extends PullRequestMinimalRepresentation
 {
-    const ROUTE = parent::ROUTE;
+    public const ROUTE = parent::ROUTE;
 
-    const COMMENTS_ROUTE = 'comments';
-    const INLINE_ROUTE   = 'inline-comments';
-    const LABELS_ROUTE   = 'labels';
-    const FILES_ROUTE    = 'files';
-    const DIFF_ROUTE     = 'file_diff';
-    const TIMELINE_ROUTE = 'timeline';
+    public const COMMENTS_ROUTE = 'comments';
+    public const INLINE_ROUTE   = 'inline-comments';
+    public const LABELS_ROUTE   = 'labels';
+    public const FILES_ROUTE    = 'files';
+    public const DIFF_ROUTE     = 'file_diff';
+    public const TIMELINE_ROUTE = 'timeline';
 
-    const STATUS_ABANDON = 'abandon';
-    const STATUS_MERGE   = 'merge';
-    const STATUS_REVIEW  = 'review';
+    public const STATUS_ABANDON = 'abandon';
+    public const STATUS_MERGE   = 'merge';
+    public const STATUS_REVIEW  = 'review';
 
-    const NO_FASTFORWARD_MERGE = 'no_fastforward';
-    const FASTFORWARD_MERGE    = 'fastforward';
-    const CONFLICT_MERGE       = 'conflict';
-    const UNKNOWN_MERGE        = 'unknown-merge-status';
+    public const NO_FASTFORWARD_MERGE = 'no_fastforward';
+    public const FASTFORWARD_MERGE    = 'fastforward';
+    public const CONFLICT_MERGE       = 'conflict';
+    public const UNKNOWN_MERGE        = 'unknown-merge-status';
 
     /**
      * @var string {@type string}
@@ -112,12 +112,6 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
     public $last_build_date;
 
     /**
-     * @var bool
-     * @deprecated
-     */
-    public $build_status_with_deprecated_route;
-
-    /**
      * @var string {@type string}
      */
     public $raw_title;
@@ -137,7 +131,6 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
         $user_can_update_labels,
         $last_build_status_name,
         $last_build_date,
-        $build_status_with_deprecated_route,
         PullRequestShortStatRepresentation $pr_short_stat_representation
     ) {
         $this->buildMinimal($pull_request, $repository, $repository_dest);
@@ -151,9 +144,8 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
         $this->head_reference = $git_reference->getGitHeadReference();
         $this->status         = $this->expandStatusName($pull_request->getStatus());
 
-        $this->last_build_status                  = $last_build_status_name;
-        $this->last_build_date                    = JsonCast::toDate($last_build_date);
-        $this->build_status_with_deprecated_route = JsonCast::toBoolean($build_status_with_deprecated_route);
+        $this->last_build_status = $last_build_status_name;
+        $this->last_build_date   = JsonCast::toDate($last_build_date);
 
         $this->user_can_update_labels = $user_can_update_labels;
         $this->user_can_merge         = $user_can_merge;
@@ -165,47 +157,47 @@ class PullRequestRepresentation extends PullRequestMinimalRepresentation
         $this->raw_title       = $pull_request->getTitle();
         $this->raw_description = $pull_request->getDescription();
 
-        $this->resources = array(
-            self::COMMENTS_ROUTE => array(
-                'uri' => $this->uri . '/'. self::COMMENTS_ROUTE
-            ),
-            self::INLINE_ROUTE => array(
-                'uri' => $this->uri . '/'. self::INLINE_ROUTE
-            ),
-            self::LABELS_ROUTE => array(
-                'uri' => $this->uri . '/'. self::LABELS_ROUTE
-            ),
-            self::FILES_ROUTE => array(
-                'uri' => $this->uri . '/'. self::FILES_ROUTE
-            ),
-            self::DIFF_ROUTE => array(
-                'uri' => $this->uri . '/'. self::DIFF_ROUTE
-            ),
-            self::TIMELINE_ROUTE => array(
-                'uri' => $this->uri . '/'. self::TIMELINE_ROUTE
-            ),
-        );
+        $this->resources = [
+            self::COMMENTS_ROUTE => [
+                'uri' => $this->uri . '/' . self::COMMENTS_ROUTE
+            ],
+            self::INLINE_ROUTE => [
+                'uri' => $this->uri . '/' . self::INLINE_ROUTE
+            ],
+            self::LABELS_ROUTE => [
+                'uri' => $this->uri . '/' . self::LABELS_ROUTE
+            ],
+            self::FILES_ROUTE => [
+                'uri' => $this->uri . '/' . self::FILES_ROUTE
+            ],
+            self::DIFF_ROUTE => [
+                'uri' => $this->uri . '/' . self::DIFF_ROUTE
+            ],
+            self::TIMELINE_ROUTE => [
+                'uri' => $this->uri . '/' . self::TIMELINE_ROUTE
+            ],
+        ];
     }
 
     private function expandStatusName($status_acronym)
     {
-        $status_name = array(
+        $status_name = [
             PullRequest::STATUS_ABANDONED => self::STATUS_ABANDON,
             PullRequest::STATUS_MERGED    => self::STATUS_MERGE,
             PullRequest::STATUS_REVIEW    => self::STATUS_REVIEW
-        );
+        ];
 
         return $status_name[$status_acronym];
     }
 
     private function expandMergeStatusName($merge_status_acronym)
     {
-        $status_name = array(
+        $status_name = [
             PullRequest::NO_FASTFORWARD_MERGE => self::NO_FASTFORWARD_MERGE,
             PullRequest::FASTFORWARD_MERGE    => self::FASTFORWARD_MERGE,
             PullRequest::CONFLICT_MERGE       => self::CONFLICT_MERGE,
             PullRequest::UNKNOWN_MERGE        => self::UNKNOWN_MERGE
-        );
+        ];
 
         return $status_name[$merge_status_acronym];
     }

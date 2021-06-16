@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
-require_once dirname(__FILE__).'/PullRequestDataBuilder.php';
+require_once dirname(__FILE__) . '/PullRequestDataBuilder.php';
 
 $data_builder = new PullRequestDataBuilder();
 $data_builder->setUp();

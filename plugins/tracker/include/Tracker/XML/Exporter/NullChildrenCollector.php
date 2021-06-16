@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,26 +18,32 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Exporter_NullChildrenCollector extends Tracker_XML_ChildrenCollector {
+class Tracker_XML_Exporter_NullChildrenCollector extends Tracker_XML_ChildrenCollector
+{
 
-    const MAX = 50;
+    public const MAX = 50;
 
-    public function addChild($artifact_id, $parent_id) {
+    public function addChild($artifact_id, $parent_id)
+    {
     }
 
-    public function getAllChildrenIds() {
-        return array();
+    public function getAllChildrenIds()
+    {
+        return [];
     }
 
-    public function pop() {
+    public function pop()
+    {
         return;
     }
 
-    public function getAllParents() {
-        return array();
+    public function getAllParents()
+    {
+        return [];
     }
 
-    public function getChildrenForParent($parent_id) {
-        return array();
+    public function getChildrenForParent($parent_id)
+    {
+        return [];
     }
 }

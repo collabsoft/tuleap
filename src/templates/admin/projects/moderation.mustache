@@ -22,7 +22,6 @@
 
                         {{# warn_local_inc}}
                             <div class="tlp-alert-warning">
-                                <i class="fa fa-warning tlp-alert-icon"></i>
                                 {{# gettext }}You still have <code>$sys_project_approval</code> variable defined in local.inc. It's now stored in DB, you should remove it from the file to avoid confusion.{{/ gettext }}
                             </div>
                         {{/ warn_local_inc }}
@@ -45,6 +44,26 @@
                             </div>
                         </div>
 
+                        {{# platform_have_restricted }}
+                            <div class="tlp-form-element">
+                                <label class="tlp-label" for="toggle-restricted-users-can-create-projects">
+                                    {{# gettext }}Restricted users can create projects{{/ gettext}}
+                                </label>
+                                <div class="tlp-switch">
+                                    <input
+                                            type="checkbox"
+                                            name="restricted_users_can_create_projects"
+                                            id="toggle-restricted-users-can-create-projects"
+                                            class="tlp-switch-checkbox"
+                                            value="1"
+                                            data-test="restricted-users-can-create-project"
+                                            {{# restricted_users_can_create_projects }}checked{{/ restricted_users_can_create_projects }}
+                                    >
+                                    <label for="toggle-restricted-users-can-create-projects" class="tlp-switch-button" aria-hidden></label>
+                                </div>
+                            </div>
+                        {{/ platform_have_restricted }}
+
                         <div class="tlp-form-element">
                             <label class="tlp-label" for="nb-max-projects-waiting-for-validation">{{# gettext }}Maximum number of projects waiting for validation (-1 means no limits){{/ gettext }}</label>
                             <input type="number" class="tlp-input" id="nb-max-projects-waiting-for-validation" name="nb_max_projects_waiting_for_validation" size="4" value="{{ nb_max_projects_waiting_for_validation }}"/>
@@ -56,7 +75,7 @@
                         </div>
 
                         <div class="tlp-pane-section-submit">
-                            <button class="tlp-button-primary" type="submit">
+                            <button class="tlp-button-primary" type="submit" data-test="save-settings">
                                 <i class="fa fa-save tlp-button-icon"></i>
                                 {{# gettext }}Save settings{{/ gettext }}
                             </button>

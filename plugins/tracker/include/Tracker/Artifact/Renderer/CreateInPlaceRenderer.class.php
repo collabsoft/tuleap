@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2014. All rights reserved.
+ * Copyright Enalean (c) 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,7 +22,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_Renderer_CreateInPlaceRenderer{
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Tracker_Artifact_Renderer_CreateInPlaceRenderer
+{
 
     /** @var Tracker */
     private $tracker;
@@ -33,15 +36,17 @@ class Tracker_Artifact_Renderer_CreateInPlaceRenderer{
     /** @var Tracker_ArtifactFactory */
     private $tracker_artifact_factory;
 
-    public function __construct(Tracker $tracker, MustacheRenderer $renderer) {
+    public function __construct(Tracker $tracker, MustacheRenderer $renderer)
+    {
         $this->tracker                  = $tracker;
         $this->renderer                 = $renderer;
         $this->tracker_artifact_factory = Tracker_ArtifactFactory::instance();
     }
 
-    public function display($artifact_link_id, $render_with_javascript) {
+    public function display($artifact_link_id, $render_with_javascript)
+    {
         $artifact_to_link = null;
-        $submitted_values = array();
+        $submitted_values = [];
 
         if ($artifact_link_id) {
             $artifact_to_link = $this->tracker_artifact_factory->getArtifactByid($artifact_link_id);
@@ -63,7 +68,8 @@ class Tracker_Artifact_Renderer_CreateInPlaceRenderer{
         $this->renderer->renderToPage('create-artifact-modal', $presenter);
     }
 
-    private function isArtifactInParentTracker(Tracker_Artifact $linked_artifact) {
+    private function isArtifactInParentTracker(Artifact $linked_artifact)
+    {
         $linked_artifact_tracker_id = $linked_artifact->getTrackerId();
         $parent_tracker             = $this->tracker->getParent();
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,8 +20,9 @@
 
 use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessResultInterface;
 
-class Search_SearchForum {
-    const NAME = 'forums';
+class Search_SearchForum
+{
+    public const NAME = 'forums';
 
     /**
      * @var ForumDao
@@ -29,11 +30,13 @@ class Search_SearchForum {
     private $dao;
 
 
-    public function __construct(ForumDao $dao) {
+    public function __construct(ForumDao $dao)
+    {
         $this->dao = $dao;
     }
 
-    public function search(Search_SearchQuery $query, Search_SearchResults $search_results) {
+    public function search(Search_SearchQuery $query, Search_SearchResults $search_results)
+    {
         $dao_results = $this->dao->searchGlobalPaginated($query->getWords(), $query->getExact(), $query->getOffset(), $query->getForumId(), $query->getNumberOfResults());
 
         $results_count      = count($dao_results);
@@ -44,7 +47,8 @@ class Search_SearchForum {
         return $this->getSearchForumResultPresenter($dao_results, $query->getWords(), $maybe_more_results);
     }
 
-    private function getSearchForumResultPresenter(LegacyDataAccessResultInterface $results, $words, $maybe_more_results) {
+    private function getSearchForumResultPresenter(LegacyDataAccessResultInterface $results, $words, $maybe_more_results)
+    {
         return new Search_SearchResultsPresenter(
             new Search_SearchResultsIntroPresenter($results, $words),
             $this->getResultsPresenters($results),
@@ -53,8 +57,9 @@ class Search_SearchForum {
         );
     }
 
-    private function getResultsPresenters(LegacyDataAccessResultInterface $results) {
-        $results_presenters = array();
+    private function getResultsPresenters(LegacyDataAccessResultInterface $results)
+    {
+        $results_presenters = [];
 
         foreach ($results as $result) {
             $results_presenters[] = new Search_SearchForumResultPresenter($result);

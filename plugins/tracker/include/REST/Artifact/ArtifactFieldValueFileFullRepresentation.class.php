@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,8 @@ namespace Tuleap\Tracker\REST\Artifact;
 
 use Tuleap\REST\JsonCast;
 
-class ArtifactFieldValueFileFullRepresentation {
+class ArtifactFieldValueFileFullRepresentation extends ArtifactFieldValueRepresentationData
+{
     /**
      * @var int ID of the field
      */
@@ -41,9 +42,10 @@ class ArtifactFieldValueFileFullRepresentation {
     /**
      * @var Tuleap\Tracker\REST\Artifact\FileInfoRepresentation[]
      */
-    public $file_descriptions = array();
+    public $file_descriptions = [];
 
-    public function build($id, $type, $label, array $values) {
+    public function build($id, $type, $label, array $values)
+    {
         $this->field_id          = JsonCast::toInt($id);
         $this->type              = $type;
         $this->label             = $label;

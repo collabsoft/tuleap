@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,13 +22,13 @@ namespace Tuleap\Timetracking\ArtifactView;
 
 use Codendi_Request;
 use PFUser;
-use Tracker_Artifact_View_View;
-use Tracker_Artifact;
 use TemplateRendererFactory;
+use Tracker_Artifact_View_View;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class ArtifactView extends Tracker_Artifact_View_View
 {
-    const IDENTIFIER = 'timetracking';
+    public const IDENTIFIER = 'timetracking';
 
     /**
      * @var ArtifactViewPresenter
@@ -36,7 +36,7 @@ class ArtifactView extends Tracker_Artifact_View_View
     private $presenter;
 
     public function __construct(
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Codendi_Request $request,
         PFUser $user,
         ArtifactViewPresenter $presenter

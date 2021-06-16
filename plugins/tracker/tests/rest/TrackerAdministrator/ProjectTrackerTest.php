@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All rights reserved
+ * Copyright (c) Enalean, 2018 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -57,9 +57,6 @@ class ProjectTrackerTest extends TrackerBase
         $this->assertTrue($json_trackers[0]['item_name'] === TrackerBase::SIMPLE_02_TRACKER_SHORTNAME);
     }
 
-    /**
-     * @expectedException \Guzzle\Http\Exception\ClientErrorResponseException
-     */
     public function testItReturnsAnErrorIfTheTrackerAdministratorFilterIsSetToFalse()
     {
         $url = 'projects/' . $this->tracker_administrator_project_id . '/trackers?' . http_build_query([

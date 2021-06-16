@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,42 +18,47 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_CardFields {
-    
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Tracker_CardFields
+{
+
     /**
      * @var Array
      */
     private $displayed_fields;
-    
+
     /**
      * @var PFUser
      */
     private $user_manager;
-    
-    
-    public function __construct() {
-        $this->displayed_fields     = array(Tracker::REMAINING_EFFORT_FIELD_NAME,
+
+
+    public function __construct()
+    {
+        $this->displayed_fields     = [Tracker::REMAINING_EFFORT_FIELD_NAME,
                                             Tracker::ASSIGNED_TO_FIELD_NAME,
-                                            Tracker::IMPEDIMENT_FIELD_NAME);
-        $this->user_manager                 = UserManager::instance();
+                                            Tracker::IMPEDIMENT_FIELD_NAME];
+        $this->user_manager         = UserManager::instance();
         $this->form_element_factory = Tracker_FormElementFactory::instance();
     }
 
     /**
      *
-     * @param Tracker_Artifact $artifact
      *
      * @return Tracker_FormElement_Field[]
      */
-    public function getFields(Tracker_Artifact $artifact) {
-        $diplayed_fields = array();
+    public function getFields(Artifact $artifact)
+    {
+        $diplayed_fields = [];
         $tracker_id      = $artifact->getTrackerId();
-        
+
         foreach ($this->displayed_fields as $diplayed_field_name) {
             $field = $this->form_element_factory->getUsedFieldByNameForUser(
-                        $tracker_id,
-                        $diplayed_field_name,
-                        $this->user_manager->getCurrentUser());
+                $tracker_id,
+                $diplayed_field_name,
+                $this->user_manager->getCurrentUser()
+            );
             if ($field) {
                 $diplayed_fields[] = $field;
             }
@@ -62,4 +67,3 @@ class Tracker_CardFields {
         return $diplayed_fields;
     }
 }
-?>

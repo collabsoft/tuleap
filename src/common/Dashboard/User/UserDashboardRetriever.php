@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -39,7 +39,7 @@ class UserDashboardRetriever
      */
     public function getAllUserDashboards(PFUser $user)
     {
-        $user_dashboards = array();
+        $user_dashboards = [];
 
         foreach ($this->dao->searchAllUserDashboards($user) as $row) {
             $user_dashboards[] = $this->instantiateFromRow($row);

@@ -1,6 +1,6 @@
 <?php
 /**
-* Copyright Enalean (c) 2014. All rights reserved.
+* Copyright Enalean (c) 2014 - Present. All rights reserved.
 *
 * Tuleap and Enalean names and logos are registrated trademarks owned by
 * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,26 +22,29 @@
 * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
 */
 
-class b201412031051_remove_project_id_in_kanban_configuration extends ForgeUpgrade_Bucket {
+class b201412031051_remove_project_id_in_kanban_configuration extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Remove project_id from table plugin_agiledashboard_kanban_configuration.
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
-
+    public function up()
+    {
         $sql = "ALTER TABLE plugin_agiledashboard_kanban_configuration
                 DROP COLUMN project_id";
 
         $res = $this->db->dbh->exec($sql);
         if ($res === false) {
-            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while removing column project_id in table plugin_agiledashboard_kanban_configuration: '.implode(', ', $this->db->dbh->errorInfo()));
+            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while removing column project_id in table plugin_agiledashboard_kanban_configuration: ' . implode(', ', $this->db->dbh->errorInfo()));
         }
     }
 }

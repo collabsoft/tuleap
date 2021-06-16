@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,12 +27,12 @@ use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NaturePresenter;
 
 class GetEditableTypesInProject implements Dispatchable
 {
-    const NAME = 'tracker_get_editable_type_in_project';
+    public const NAME = 'tracker_get_editable_type_in_project';
 
     /**
      * @var array
      */
-    private $types = array();
+    private $types = [];
 
     /**
      * @var Project

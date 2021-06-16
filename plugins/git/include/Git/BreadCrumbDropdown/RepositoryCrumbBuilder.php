@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -39,8 +39,6 @@ class RepositoryCrumbBuilder
     private $plugin_path;
 
     /**
-     * @param \Git_GitRepositoryUrlManager $url_manager
-     * @param \GitPermissionsManager       $permissions_manager
      * @param string                       $plugin_path
      */
     public function __construct(
@@ -85,7 +83,7 @@ class RepositoryCrumbBuilder
                         new BreadCrumbLinkWithIcon(
                             $GLOBALS['Language']->getText('global', 'Settings'),
                             $this->getRepositoryAdminUrl($repository),
-                            'fa-cog icon-cog'
+                            'fa-cog'
                         )
                     ]
                 )
@@ -96,7 +94,7 @@ class RepositoryCrumbBuilder
 
     private function getRepositoryAdminUrl(GitRepository $repository)
     {
-        return $this->plugin_path . '/?' .http_build_query([
+        return $this->plugin_path . '/?' . http_build_query([
             'action' => 'repo_management',
                 'group_id' => $repository->getProjectId(),
                 'repo_id' => $repository->getId()

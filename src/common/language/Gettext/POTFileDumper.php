@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,9 +24,22 @@ class POTFileDumper
 {
     public function dump(POTEntryCollection $collection, $path)
     {
-        $content = '';
-        foreach ($collection->getEntries() as $entry) {
-            $msgid = $this->escape($entry->getMsgid());
+        $entries = $collection->getEntries();
+        if (count($entries) === 0) {
+            file_put_contents($path, '');
+            return;
+        }
+
+        $content = <<<'EOS'
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+
+EOS;
+
+        foreach ($entries as $entry) {
+            $msgid    = $this->escape($entry->getMsgid());
             $content .= "msgid \"$msgid\"\n";
 
             $msgid_plural = $this->escape($entry->getMsgidPlural());
@@ -45,8 +58,8 @@ class POTFileDumper
 
     private function escape($string)
     {
-        $search  = array('\\',   "\n",  '"');
-        $replace = array('\\\\', "\\n", '\\"');
+        $search  = ['\\', "\n", '"'];
+        $replace = ['\\\\', "\\n", '\\"'];
 
         return str_replace($search, $replace, $string);
     }

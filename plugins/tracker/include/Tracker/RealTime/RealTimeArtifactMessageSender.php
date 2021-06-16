@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,14 +21,14 @@
 namespace Tuleap\Tracker\RealTime;
 
 use PFUser;
-use Tracker_Artifact;
 use Tracker_Permission_PermissionsSerializer;
 use Tuleap\RealTime\MessageDataPresenter;
 use Tuleap\RealTime\NodeJSClient;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class RealTimeArtifactMessageSender
 {
-    const HTTP_CLIENT_UUID = 'HTTP_X_CLIENT_UUID';
+    public const HTTP_CLIENT_UUID = 'HTTP_X_CLIENT_UUID';
 
     /** @var  NodeJSClient */
     private $node_js_client;
@@ -47,7 +47,7 @@ class RealTimeArtifactMessageSender
 
     public function sendMessage(
         PFUser $user,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         array $data,
         $event_name,
         $room_id

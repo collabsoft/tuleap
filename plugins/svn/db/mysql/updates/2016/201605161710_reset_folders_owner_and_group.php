@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean 2016. All rights reserved
+ * Copyright (c) Enalean 2016 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,15 +26,15 @@ class b201605161710_reset_folders_owner_and_group extends ForgeUpgrade_Bucket
 
     public function up()
     {
-        include ('/etc/tuleap/conf/local.inc');
-        $svn_plugin_folder = $sys_data_dir .'/svn_plugin/';
+        include('/etc/tuleap/conf/local.inc');
+        $svn_plugin_folder = $sys_data_dir . '/svn_plugin/';
 
         echo 'Checking ' . $svn_plugin_folder . PHP_EOL;
 
         chown($svn_plugin_folder, $sys_http_user);
         chgrp($svn_plugin_folder, $sys_http_user);
 
-        $project_dirs      = new DirectoryIterator($svn_plugin_folder);
+        $project_dirs = new DirectoryIterator($svn_plugin_folder);
 
         foreach ($project_dirs as $project_dir) {
             if (! $project_dir->isDot() && $project_dir->isDir()) {

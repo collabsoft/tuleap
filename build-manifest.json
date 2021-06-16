@@ -1,49 +1,57 @@
 {
     "name": "core",
-    "themes": {
-        "common": {
-            "files": [
-                "src/www/themes/common/css/print.scss",
-                "src/www/themes/common/css/style.scss"
-            ],
-            "target_dir": "src/www/themes/common/css"
-        },
-        "FlamingParrot": {
-            "files": [
-                "src/www/themes/FlamingParrot/css/print.scss",
-                "src/www/themes/FlamingParrot/css/FlamingParrot_Orange.scss",
-                "src/www/themes/FlamingParrot/css/FlamingParrot_Red.scss",
-                "src/www/themes/FlamingParrot/css/FlamingParrot_Green.scss",
-                "src/www/themes/FlamingParrot/css/FlamingParrot_Blue.scss",
-                "src/www/themes/FlamingParrot/css/FlamingParrot_Purple.scss",
-                "src/www/themes/FlamingParrot/css/FlamingParrot_BlueGrey.scss"
-            ],
-            "watched_includes": ["src/www/themes/FlamingParrot/css/**/_*.scss"],
-            "target_dir": "src/www/themes/FlamingParrot/assets",
-            "is_revisioned": true
-        },
-        "BurningParrot": {
-            "files": [
-                "src/www/themes/BurningParrot/css/burning-parrot-blue.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-blue-condensed.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-green.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-green-condensed.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-grey.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-grey-condensed.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-orange.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-orange-condensed.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-purple.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-purple-condensed.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-red.scss",
-                "src/www/themes/BurningParrot/css/burning-parrot-red-condensed.scss"
-            ],
-            "watched_includes": ["src/www/themes/BurningParrot/css/**/_*.scss"],
-            "target_dir": "src/www/themes/BurningParrot/assets",
-            "is_revisioned": true
+    "gettext-js": {
+        "chart-builders": {
+            "src": "src/scripts/charts-builders",
+            "po": "src/scripts/charts-builders/po"
         }
     },
-    "components": [
-        "src/www/themes/common/tlp/",
-        "src/www/scripts/"
-    ]
+    "gettext-ts": {
+        "list-picker": {
+            "src": "src/scripts/lib/list-picker/src",
+            "po": "src/scripts/lib/list-picker/po"
+        },
+        "access-denied-error": {
+            "src": "src/scripts/BurningParrot/src/",
+            "po": "src/scripts/BurningParrot/po"
+        },
+        "global-shortcuts": {
+            "src": "src/scripts/global-shortcuts/src",
+            "po": "src/scripts/global-shortcuts/po"
+        },
+        "project-admin-ugroups": {
+            "src": "src/scripts/project/admin/src/",
+            "po": "src/scripts/project/admin/po"
+        }
+    },
+    "gettext-vue": {
+        "permissions-per-group-frs": {
+            "src": "src/scripts/frs/permissions-per-group",
+            "po": "src/scripts/frs/permissions-per-group/po"
+        },
+        "permissions-per-group-news": {
+            "src": "src/scripts/news/permissions-per-group",
+            "po": "src/scripts/news/permissions-per-group/po"
+        },
+        "project-admin-services": {
+            "src": "src/scripts/project/admin/services/src",
+            "po": "src/scripts/project/admin/services/po"
+        },
+        "project-admin-banner": {
+            "src": "src/scripts/project/admin/banner/src",
+            "po": "src/scripts/project/admin/banner/po"
+        },
+        "project-registration": {
+            "src": "src/scripts/project/registration/src",
+            "po": "src/scripts/project/registration/po"
+        },
+        "switch-to": {
+            "src": "src/scripts/switch-to/src",
+            "po": "src/scripts/switch-to/po"
+        },
+        "platform-banner-admin": {
+            "src": "src/scripts/platform/banner/admin/src",
+            "po": "src/scripts/platform/banner/admin/po"
+        }
+    }
 }

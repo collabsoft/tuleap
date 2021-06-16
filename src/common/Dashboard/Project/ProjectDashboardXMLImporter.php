@@ -1,6 +1,6 @@
 <?php
 /**
- *  Copyright (c) Enalean, 2017. All Rights Reserved.
+ *  Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  *  This file is a part of Tuleap.
  *
@@ -39,7 +39,7 @@ class ProjectDashboardXMLImporter
      */
     private $project_dashboard_saver;
     /**
-     * @var \Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
     /**
@@ -55,13 +55,25 @@ class ProjectDashboardXMLImporter
      */
     private $event_manager;
 
-    public function __construct(ProjectDashboardSaver $project_dashboard_saver, WidgetFactory $widget_factory, DashboardWidgetDao $widget_dao, \Logger $logger, \EventManager $event_manager)
-    {
-        $this->project_dashboard_saver = $project_dashboard_saver;
-        $this->widget_factory          = $widget_factory;
-        $this->widget_dao              = $widget_dao;
-        $this->logger                  = new \WrapperLogger($logger, 'Dashboards');
-        $this->event_manager           = $event_manager;
+    /**
+     * @var DisabledProjectWidgetsChecker
+     */
+    private $disabled_project_widgets_checker;
+
+    public function __construct(
+        ProjectDashboardSaver $project_dashboard_saver,
+        WidgetFactory $widget_factory,
+        DashboardWidgetDao $widget_dao,
+        \Psr\Log\LoggerInterface $logger,
+        \EventManager $event_manager,
+        DisabledProjectWidgetsChecker $disabled_project_widgets_checker
+    ) {
+        $this->project_dashboard_saver          = $project_dashboard_saver;
+        $this->widget_factory                   = $widget_factory;
+        $this->widget_dao                       = $widget_dao;
+        $this->logger                           = new \WrapperLogger($logger, 'Dashboards');
+        $this->event_manager                    = $event_manager;
+        $this->disabled_project_widgets_checker = $disabled_project_widgets_checker;
     }
 
     public function import(\SimpleXMLElement $xml_element, PFUser $user, Project $project, MappingsRegistry $mapping_registry)
@@ -73,14 +85,14 @@ class ProjectDashboardXMLImporter
                     $dashboard_name = trim((string) $dashboard_xml["name"]);
                     $this->logger->info("Create dashboard $dashboard_name");
                     $dashboard_id = $this->project_dashboard_saver->save($user, $project, $dashboard_name);
-                    $dashboard = new Dashboard($dashboard_id, $dashboard_name);
+                    $dashboard    = new Dashboard($dashboard_id, $dashboard_name);
                     $this->importWidgets($dashboard, $project, $dashboard_xml, $mapping_registry);
                 } catch (UserCanNotUpdateProjectDashboardException $e) {
-                    $this->logger->warn($e->getMessage());
+                    $this->logger->warning($e->getMessage());
                 } catch (NameDashboardDoesNotExistException $e) {
-                    $this->logger->warn($e->getMessage());
+                    $this->logger->warning($e->getMessage());
                 } catch (NameDashboardAlreadyExistsException $e) {
-                    $this->logger->warn($e->getMessage());
+                    $this->logger->warning($e->getMessage());
                 }
             }
         }
@@ -94,7 +106,7 @@ class ProjectDashboardXMLImporter
             return;
         }
 
-        $line_rank = 1;
+        $line_rank   = 1;
         $all_widgets = [];
         foreach ($dashboard_xml->line as $line) {
             $this->createLine($line, $project, $dashboard, $line_rank, $all_widgets, $mapping_registry);
@@ -105,19 +117,19 @@ class ProjectDashboardXMLImporter
 
     private function createLine(\SimpleXMLElement $line, Project $project, Dashboard $dashboard, $line_rank, array &$all_widgets, MappingsRegistry $mapping_registry)
     {
-        $line_id = -1;
+        $line_id     = -1;
         $column_rank = 1;
         foreach ($line->column as $column) {
             $this->createColumn($column, $project, $dashboard, $line_id, $line_rank, $column_rank, $all_widgets, $mapping_registry);
             $column_rank++;
         }
         $nb_columns = $column_rank - 1;
-        $layout = '';
+        $layout     = '';
         if (isset($line['layout'])) {
             $layout = (string) $line['layout'];
             if (! $dashboard->isLayoutValid($layout, $nb_columns)) {
                 $layout = '';
-                $this->logger->warn("Invalid layout $layout for $nb_columns columns");
+                $this->logger->warning("Invalid layout $layout for $nb_columns columns");
             }
         }
         if ($layout !== '') {
@@ -129,7 +141,7 @@ class ProjectDashboardXMLImporter
 
     private function createColumn(\SimpleXMLElement $column, Project $project, Dashboard $dashboard, &$line_id, $line_rank, $column_rank, array &$all_widgets, MappingsRegistry $mapping_registry)
     {
-        $column_id = -1;
+        $column_id   = -1;
         $widget_rank = 1;
         foreach ($column->widget as $widget_xml) {
             try {
@@ -147,11 +159,11 @@ class ProjectDashboardXMLImporter
                     $this->widget_dao->insertWidgetInColumnWithRank($widget->getId(), $content_id, $column_id, $widget_rank);
                     $all_widgets[$widget->getId()] = true;
                 } else {
-                    $this->logger->warn("Impossible to create line or column, widget {$widget->getId()} not added");
+                    $this->logger->warning("Impossible to create line or column, widget {$widget->getId()} not added");
                 }
                 $widget_rank++;
             } catch (\Exception $exception) {
-                $this->logger->warn("Impossible to create widget: ".$exception->getMessage());
+                $this->logger->warning("Impossible to create widget: " . $exception->getMessage());
             }
         }
     }
@@ -172,9 +184,7 @@ class ProjectDashboardXMLImporter
     }
 
     /**
-     * @param Project $project
-     * @param \SimpleXMLElement $widget_xml
-     * @return []
+     * @return array
      */
     private function getWidget(Project $project, \SimpleXMLElement $widget_xml, array $all_widgets, MappingsRegistry $mapping_registry)
     {
@@ -182,21 +192,27 @@ class ProjectDashboardXMLImporter
         $this->logger->info("Import widget $widget_name");
         $widget = $this->widget_factory->getInstanceByWidgetName($widget_name);
         if ($widget === null) {
-            $this->logger->error("Impossible to instantiate widget named '".$widget_name."'.  Widget skipped");
+            $this->logger->error("Impossible to instantiate widget named '" . $widget_name . "'.  Widget skipped");
             return [null, null];
         }
+
+        if ($this->disabled_project_widgets_checker->isWidgetDisabled($widget, ProjectDashboardController::DASHBOARD_TYPE)) {
+            $this->logger->error("The widget named '" . $widget_name . "' is disabled. Widget skipped");
+            return [null, null];
+        }
+
         $widget->setOwner($project->getID(), ProjectDashboardController::LEGACY_DASHBOARD_TYPE);
         if ($widget->isUnique() && isset($all_widgets[$widget->getId()])) {
-            $this->logger->warn("Impossible to instantiate twice widget named '".$widget_name."'.  Widget skipped");
+            $this->logger->warning("Impossible to instantiate twice widget named '" . $widget_name . "'.  Widget skipped");
             return [null, null];
         }
-        $event = new ConfigureAtXMLImport($widget, $widget_xml, $mapping_registry);
+        $event = new ConfigureAtXMLImport($widget, $widget_xml, $mapping_registry, $project);
         $this->event_manager->processEvent($event);
         if ($event->isWidgetConfigured()) {
             return [$widget, $event->getContentId()];
         }
         if (! in_array($widget->getId(), GetProjectWidgetList::CORE_WIDGETS)) {
-            $this->logger->error("Widget named '".$widget_name."' is not supported at import.  Widget skipped");
+            $this->logger->error("Widget named '" . $widget_name . "' is not supported at import.  Widget skipped");
             return [null, null];
         }
         $content_id = $this->configureWidget($widget, $widget_xml);
@@ -208,8 +224,6 @@ class ProjectDashboardXMLImporter
     }
 
     /**
-     * @param \Widget $widget
-     * @param \SimpleXMLElement $widget_xml
      *
      * @return null|false|int
      */
@@ -218,10 +232,10 @@ class ProjectDashboardXMLImporter
         $params = [];
         if (isset($widget_xml->preference)) {
             foreach ($widget_xml->preference as $preference) {
-                $preference_name = trim((string)$preference['name']);
+                $preference_name = trim((string) $preference['name']);
                 foreach ($preference->value as $value) {
-                    $key = trim((string)$value['name']);
-                    $val = trim((string)$value);
+                    $key                            = trim((string) $value['name']);
+                    $val                            = trim((string) $value);
                     $params[$preference_name][$key] = $val;
                 }
             }

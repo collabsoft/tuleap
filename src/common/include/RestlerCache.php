@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All rights reserved
+ * Copyright (c) Enalean, 2015 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -23,30 +23,34 @@
  *
  * Note in Tuleap/REST namespace because of php51
  */
-class RestlerCache {
+class RestlerCache
+{
 
-    const PREFIX = 'v';
+    public const PREFIX = 'v';
 
-    const RESTLER_CACHE_FILE = 'routes.php';
+    public const RESTLER_CACHE_FILE = 'routes.php';
 
-    public function getAndInitiateCacheDirectory($version) {
-        $path = $this->getCacheDirectory().DIRECTORY_SEPARATOR.self::PREFIX.$version;
+    public function getAndInitiateCacheDirectory($version)
+    {
+        $path = $this->getCacheDirectory() . DIRECTORY_SEPARATOR . self::PREFIX . $version;
         if (! is_dir($path)) {
             mkdir($path, 0700, true);
         }
         return $path;
     }
 
-    public function invalidateCache() {
-        foreach (glob($this->getCacheDirectory().DIRECTORY_SEPARATOR.self::PREFIX.'*') as $version_directory) {
-            $cache_file = $version_directory.DIRECTORY_SEPARATOR.self::RESTLER_CACHE_FILE;
+    public function invalidateCache()
+    {
+        foreach (glob($this->getCacheDirectory() . DIRECTORY_SEPARATOR . self::PREFIX . '*') as $version_directory) {
+            $cache_file = $version_directory . DIRECTORY_SEPARATOR . self::RESTLER_CACHE_FILE;
             if (file_exists($cache_file)) {
                 unlink($cache_file);
             }
         }
     }
 
-    private function getCacheDirectory() {
-        return ForgeConfig::get('codendi_cache_dir').DIRECTORY_SEPARATOR.'restler';
+    private function getCacheDirectory()
+    {
+        return ForgeConfig::get('codendi_cache_dir') . DIRECTORY_SEPARATOR . 'restler';
     }
 }

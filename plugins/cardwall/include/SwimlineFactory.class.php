@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,54 +25,56 @@ require_once 'FieldProviders/IProvideFieldGivenAnArtifact.class.php';
 /**
  * Build swimlines for the dashboard
  */
-class Cardwall_SwimlineFactory {
+class Cardwall_SwimlineFactory
+{
 
     /** @var Cardwall_OnTop_Config */
     private $config;
-    
+
     /** @var Cardwall_FieldProviders_IProvideFieldGivenAnArtifact */
     private $field_provider;
 
-    public function __construct(Cardwall_OnTop_Config $config, Cardwall_FieldProviders_IProvideFieldGivenAnArtifact $field_provider) {
-        $this->config = $config;
+    public function __construct(Cardwall_OnTop_Config $config, Cardwall_FieldProviders_IProvideFieldGivenAnArtifact $field_provider)
+    {
+        $this->config         = $config;
         $this->field_provider = $field_provider;
     }
 
     /**
      * public for testing
-     * 
+     *
      * @param array of Cardwall_Column $columns
      * @param array of Cardwall_CardInCellPresenter $potential_presenters
      * @return array
      */
-    public function getCells(Cardwall_OnTop_Config_ColumnCollection $columns, array $potential_presenters) {
-        $cells = array();
+    public function getCells(Cardwall_OnTop_Config_ColumnCollection $columns, array $potential_presenters)
+    {
+        $cells = [];
         foreach ($columns as $column) {
             $cells[] = $this->getCell($column, $potential_presenters);
         }
         return $cells;
     }
 
-    private function getCell(Cardwall_Column $column, array $potential_presenters) {
-        $retained_presenters = array();
+    private function getCell(Cardwall_Column $column, array $potential_presenters)
+    {
+        $retained_presenters = [];
         foreach ($potential_presenters as $p) {
             $this->addNodeToCell($p, $column, $retained_presenters);
         }
 
-        return array(
+        return [
             'column_id' => $column->getId(),
             'column_stacked' => $column->isAutostacked(),
             'cardincell_presenters' => $retained_presenters
-        );
+        ];
     }
 
-    private function addNodeToCell(Cardwall_CardInCellPresenter $presenter, Cardwall_Column $column, array &$presenters) {
-        $artifact        = $presenter->getArtifact();
+    private function addNodeToCell(Cardwall_CardInCellPresenter $presenter, Cardwall_Column $column, array &$presenters)
+    {
+        $artifact = $presenter->getArtifact();
         if ($this->config->isInColumn($artifact, $this->field_provider, $column)) {
             $presenters[] = $presenter;
-            
         }
     }
-
 }
-?>

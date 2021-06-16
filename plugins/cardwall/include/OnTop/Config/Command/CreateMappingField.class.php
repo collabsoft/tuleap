@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,8 @@
 /**
  * Create a MappingField for a cardwall on top of a tracker
  */
-class Cardwall_OnTop_Config_Command_CreateMappingField extends Cardwall_OnTop_Config_Command {
+class Cardwall_OnTop_Config_Command_CreateMappingField extends Cardwall_OnTop_Config_Command
+{
 
     /**
      * @var Cardwall_OnTop_ColumnMappingFieldDao
@@ -34,7 +35,8 @@ class Cardwall_OnTop_Config_Command_CreateMappingField extends Cardwall_OnTop_Co
      */
     private $tracker_factory;
 
-    public function __construct(Tracker $tracker, Cardwall_OnTop_ColumnMappingFieldDao $dao, TrackerFactory $tracker_factory) {
+    public function __construct(Tracker $tracker, Cardwall_OnTop_ColumnMappingFieldDao $dao, TrackerFactory $tracker_factory)
+    {
         parent::__construct($tracker);
         $this->dao             = $dao;
         $this->tracker_factory = $tracker_factory;
@@ -43,13 +45,13 @@ class Cardwall_OnTop_Config_Command_CreateMappingField extends Cardwall_OnTop_Co
     /**
      * @see Cardwall_OnTop_Config_Command::execute()
      */
-    public function execute(Codendi_Request $request) {
+    public function execute(Codendi_Request $request)
+    {
         if ($request->get('add_mapping_on')) {
             $new_mapping_tracker = $this->tracker_factory->getTrackerById($request->get('add_mapping_on'));
             if ($new_mapping_tracker && $this->dao->create($this->tracker->getId(), $new_mapping_tracker->getId(), null)) {
-                $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_cardwall', 'on_top_mapping_added', array($new_mapping_tracker->getName())));
+                $GLOBALS['Response']->addFeedback('info', sprintf(dgettext('tuleap-cardwall', 'Mapping on %1$s added'), $new_mapping_tracker->getName()));
             }
         }
     }
 }
-?>

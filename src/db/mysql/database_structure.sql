@@ -1,6 +1,6 @@
 #
 # Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
-# Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
+# Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
 #
 # This file is a part of Tuleap.
 #
@@ -27,6 +27,10 @@
 # Host: localhost    Database: tuleap
 #-------------------------------------------------------
 # Server version	3.23.51-log
+CREATE TABLE tuleap_installed_version
+(
+    version VARCHAR(254) NULL
+);
 
 #
 # Table structure for table 'filedownload_log'
@@ -121,16 +125,6 @@ CREATE TABLE forum (
 );
 
 #
-# Table structure for table 'forum_agg_msg_count'
-#
-
-CREATE TABLE forum_agg_msg_count (
-  group_forum_id int(11) NOT NULL default '0',
-  count int(11) NOT NULL default '0',
-  PRIMARY KEY  (group_forum_id)
-);
-
-#
 # Table structure for table 'forum_group_list'
 #
 
@@ -143,7 +137,7 @@ CREATE TABLE forum_group_list (
   PRIMARY KEY  (group_forum_id),
   FULLTEXT (description),
   KEY idx_forum_group_list_group_id (group_id)
-) ENGINE=MyISAM;
+);
 
 #
 # Table structure for table 'forum_monitored_forums'
@@ -321,6 +315,28 @@ CREATE TABLE frs_package (
   KEY idx_package_group_id (group_id)
 );
 
+CREATE TABLE frs_download_agreement (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    project_id int(11) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    PRIMARY KEY  (id),
+    INDEX idx_project_id(project_id, id)
+);
+
+CREATE TABLE frs_package_download_agreement (
+    package_id INT(11) NOT NULL,
+    agreement_id INT(11) NOT NULL,
+    PRIMARY KEY (package_id, agreement_id),
+    INDEX idx_reverse(agreement_id, package_id)
+);
+
+CREATE TABLE frs_download_agreement_default (
+    project_id int(11) NOT NULL,
+    agreement_id INT(11) NOT NULL,
+    PRIMARY KEY (project_id)
+);
+
 #
 # Table structure for table 'frs_processor'
 #
@@ -471,22 +487,8 @@ CREATE TABLE groups (
   svn_box varchar(20) NOT NULL default 'svn1',
   register_time int(11) NOT NULL default '0',
   rand_hash text,
-  new_bug_address text NOT NULL,
-  new_patch_address text NOT NULL,
-  new_support_address text NOT NULL,
-  new_task_address text NOT NULL,
   type int(11) NOT NULL default '1',
   built_from_template int(11) NOT NULL default '100',
-  send_all_bugs int(11) NOT NULL default '0',
-  send_all_patches int(11) NOT NULL default '0',
-  send_all_support int(11) NOT NULL default '0',
-  send_all_tasks int(11) NOT NULL default '0',
-  bug_preamble text NOT NULL,
-  support_preamble text NOT NULL,
-  patch_preamble text NOT NULL,
-  pm_preamble text NOT NULL,
-  xrx_export_ettm int(11) NOT NULL default '0',
-  bug_allow_anon int(11) NOT NULL default '1',
   cvs_tracker int(11)   NOT NULL default '1',
   cvs_watch_mode int(11)   NOT NULL default '0',
   cvs_events_mailing_list text NOT NULL,
@@ -522,6 +524,11 @@ CREATE TABLE project_webhook_log (
   INDEX idx_webhook_id(webhook_id)
 );
 
+CREATE TABLE project_template_xml (
+    id INT(11) UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    template_name VARCHAR(255)
+);
+
 CREATE TABLE svn_accessfile_history (
     id INT(11) AUTO_INCREMENT,
     version_number INT(11) NOT NULL,
@@ -551,10 +558,10 @@ CREATE TABLE svn_cache_parameter (
 CREATE TABLE group_desc (
   group_desc_id INT( 11 ) NOT NULL AUTO_INCREMENT ,
   desc_required BOOL NOT NULL DEFAULT FALSE,
-  desc_name VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
-  desc_description text CHARACTER SET utf8 COLLATE utf8_general_ci NULL ,
+  desc_name VARCHAR( 255 ) NOT NULL ,
+  desc_description text NULL ,
   desc_rank INT( 11 ) NOT NULL DEFAULT '0',
-  desc_type ENUM( 'line', 'text' ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT 'text',
+  desc_type ENUM( 'line', 'text' ) NOT NULL DEFAULT 'text',
   PRIMARY KEY (group_desc_id),
   UNIQUE (desc_name)
 );
@@ -566,7 +573,7 @@ CREATE TABLE group_desc_value (
   desc_value_id INT( 11 ) NOT NULL AUTO_INCREMENT ,
   group_id INT( 11 ) NOT NULL ,
   group_desc_id INT( 11 ) NOT NULL ,
-  value text CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+  value text NOT NULL ,
   PRIMARY KEY (desc_value_id),
   INDEX idx (group_id)
 );
@@ -680,6 +687,7 @@ CREATE TABLE session (
   session_hash CHAR(64) NOT NULL,
   ip_addr varchar(45) NOT NULL default '',
   time int(11) NOT NULL default '0',
+  user_agent TEXT NOT NULL DEFAULT '',
   KEY idx_session_user_id (user_id),
   KEY idx_session_time (time)
 ) ENGINE=InnoDB;
@@ -762,17 +770,6 @@ CREATE TABLE stats_project_tmp (
 );
 
 #
-# Table structure for table 'tmp_projs_releases_tmp'
-#
-
-CREATE TABLE tmp_projs_releases_tmp (
-  year int(11) NOT NULL default '0',
-  month int(11) NOT NULL default '0',
-  total_proj int(11) NOT NULL default '0',
-  total_releases int(11) NOT NULL default '0'
-);
-
-#
 # Table structure for table 'top_group'
 #
 
@@ -815,6 +812,8 @@ CREATE TABLE trove_cat (
   fullpath_ids text,
   mandatory TINYINT(1) NOT NULL DEFAULT 0,
   display_during_project_creation TINYINT(1) NOT NULL DEFAULT 0,
+  is_project_flag BOOL NOT NULL DEFAULT false,
+  nb_max_values INT(11) NOT NULL default '3',
   PRIMARY KEY  (trove_cat_id),
   KEY parent_idx (parent),
   KEY root_parent_idx (root_parent),
@@ -846,11 +845,11 @@ CREATE TABLE user (
   email text NOT NULL,
   user_pw varchar(32) NOT NULL default '',
   password varchar(255) DEFAULT NULL,
-  realname varchar(32) NOT NULL default '',
+  realname text NOT NULL default '',
   register_purpose text,
   status char(1) NOT NULL default 'A',
   shell varchar(50) NOT NULL default '/sbin/nologin',
-  unix_pw varchar(255) NOT NULL default '',
+  unix_pw varchar(255) NOT NULL default 'no_passwd',
   unix_status char(1) NOT NULL default 'N',
   unix_uid int(11) NOT NULL default '0',
   unix_box varchar(10) NOT NULL default 'shell1',
@@ -864,13 +863,14 @@ CREATE TABLE user (
   authorized_keys text,
   email_new text,
   timezone varchar(64) default 'GMT',
-  theme varchar(50),
   language_id VARCHAR( 17 ) NOT NULL DEFAULT 'en_US',
   last_pwd_update int(11) NOT NULL default '0',
   expiry_date int(11),
-  has_avatar TINYINT(1) NOT NULL DEFAULT 0,
+  has_custom_avatar TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY  (user_id),
   INDEX idx_user_name(user_name(10)),
+  INDEX idx_user_mail(email(10)),
+  INDEX idx_ldap_id(ldap_id(10)),
   KEY idx_user_user (status)
 );
 
@@ -897,6 +897,23 @@ CREATE TABLE user_lost_password (
   INDEX idx_user_id (user_id)
 );
 
+CREATE TABLE user_access_key (
+  id INT(11) NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  user_id INT(11) NOT NULL,
+  verifier VARCHAR(255) NOT NULL,
+  creation_date INT(11) UNSIGNED NOT NULL,
+  expiration_date INT(11) UNSIGNED DEFAULT NULL,
+  description TEXT,
+  last_usage INT(11) UNSIGNED DEFAULT NULL,
+  last_ip VARCHAR(45) DEFAULT NULL,
+  INDEX idx_expiration_date (expiration_date)
+);
+
+CREATE TABLE user_access_key_scope (
+  access_key_id INT(11) NOT NULL,
+  scope_key VARCHAR(255) NOT NULL,
+  PRIMARY KEY (access_key_id, scope_key)
+);
 
 #
 # Table structure for table 'user_bookmarks'
@@ -1064,8 +1081,9 @@ CREATE TABLE svn_commits (
   KEY idx_search (group_id, whoid, id),
   KEY idx_repositoryid_date (repositoryid, date),
   INDEX idx_date (date),
+  INDEX reverse_rev (group_id, revision),
   FULLTEXT (description)
-) ENGINe=MyISAM;
+);
 
 CREATE TABLE svn_dirs (
   id int(11) NOT NULL auto_increment,
@@ -1103,20 +1121,22 @@ CREATE TABLE svn_token (
 # Service table
 #
 CREATE TABLE service (
-	service_id int(11) NOT NULL auto_increment,
-	group_id int(11) NOT NULL,
-	label text,
-	description text,
-	short_name text,
-	link text,
-	is_active int(11) DEFAULT 0 NOT NULL,
-	is_used int(11) DEFAULT 0 NOT NULL,
-        scope text NOT NULL,
-        rank int(11) NOT NULL default '0',
-        location ENUM( 'master', 'same', 'satellite' ) NOT NULL DEFAULT 'master', -- distributed architecture: to be deleted (but requires to check all plugins)
-        server_id INT( 11 ) UNSIGNED NULL,  -- distributed architecture: to be deleted (but requires to check all plugins)
-        is_in_iframe TINYINT(1) NOT NULL DEFAULT '0',
-	primary key (service_id),
+    service_id int(11) NOT NULL auto_increment,
+    group_id int(11) NOT NULL,
+    label text,
+    description text,
+    short_name text,
+    link text,
+    is_active int(11) DEFAULT 0 NOT NULL,
+    is_used int(11) DEFAULT 0 NOT NULL,
+    scope text NOT NULL,
+    rank int(11) NOT NULL default '0',
+    location ENUM( 'master', 'same', 'satellite' ) NOT NULL DEFAULT 'master', -- distributed architecture: to be deleted (but requires to check all plugins)
+    server_id INT( 11 ) UNSIGNED NULL,  -- distributed architecture: to be deleted (but requires to check all plugins)
+    is_in_iframe TINYINT(1) NOT NULL DEFAULT '0',
+    is_in_new_tab BOOL NOT NULL DEFAULT false,
+    icon VARCHAR(255) NOT NULL DEFAULT '',
+    primary key (service_id),
     key idx_group_id(group_id),
     INDEX idx_short_name (short_name(10))
 );
@@ -1144,7 +1164,8 @@ CREATE TABLE ugroup (
 CREATE TABLE ugroup_user (
   ugroup_id int(11) NOT NULL,
   user_id int(11) NOT NULL,
-  PRIMARY KEY (ugroup_id, user_id)
+  PRIMARY KEY (ugroup_id, user_id),
+  INDEX idx_user_ugroup(user_id, ugroup_id)
 ) ENGINE=InnoDB;
 
 
@@ -1153,7 +1174,7 @@ CREATE TABLE ugroup_user (
 #
 CREATE TABLE permissions (
   permission_type VARCHAR(255) NOT NULL,
-  object_id VARCHAR(255) CHARACTER SET utf8 NOT NULL,
+  object_id VARCHAR(255) NOT NULL,
   ugroup_id int(11) NOT NULL,
   INDEX object_id (object_id (10))
 );
@@ -1293,12 +1314,6 @@ CREATE TABLE wiki_link (
 
 # Plugin tables
 # {{{
-CREATE TABLE priority_plugin_hook (
-plugin_id INT NOT NULL,
-hook VARCHAR(100) NOT NULL,
-priority INT NOT NULL
-);
-
 CREATE TABLE plugin (
   id int(11) NOT NULL auto_increment,
   name varchar(100) NOT NULL,
@@ -1316,10 +1331,6 @@ CREATE TABLE project_plugin (
   UNIQUE project_plugin (project_id, plugin_id)
 );
 
-CREATE TABLE user_plugin (
-user_id INT NOT NULL ,
-plugin_id INT NOT NULL
-);
 # }}}
 
 #
@@ -1386,16 +1397,6 @@ CREATE TABLE IF NOT EXISTS widget_rss (
   KEY (owner_id, owner_type)
 );
 
-DROP TABLE IF EXISTS widget_twitterfollow;
-CREATE TABLE IF NOT EXISTS widget_twitterfollow (
-  id int(11) unsigned NOT NULL auto_increment PRIMARY KEY,
-  owner_id int(11) unsigned NOT NULL default '0',
-  owner_type varchar(1) NOT NULL default 'u',
-  title varchar(255) NOT NULL,
-  user TEXT NOT NULL,
-  KEY (owner_id, owner_type)
-);
-
 DROP TABLE IF EXISTS widget_image;
 CREATE TABLE IF NOT EXISTS widget_image (
   id int(11) unsigned NOT NULL auto_increment PRIMARY KEY,
@@ -1403,17 +1404,6 @@ CREATE TABLE IF NOT EXISTS widget_image (
   owner_type varchar(1) NOT NULL default 'u',
   title varchar(255) NOT NULL,
   url TEXT NOT NULL,
-  KEY (owner_id, owner_type)
-);
-
-DROP TABLE IF EXISTS widget_wikipage;
-CREATE TABLE IF NOT EXISTS widget_wikipage (
-  id int(11) unsigned NOT NULL auto_increment PRIMARY KEY,
-  owner_id int(11) unsigned NOT NULL default '0',
-  owner_type varchar(1) NOT NULL default 'u',
-  title varchar(255) NOT NULL,
-  group_id int(11) unsigned NOT NULL default '0',
-  wiki_page TEXT NULL,
   KEY (owner_id, owner_type)
 );
 
@@ -1436,11 +1426,11 @@ CREATE TABLE IF NOT EXISTS cross_references (
   id int(11) unsigned NOT NULL AUTO_INCREMENT,
   created_at INT(11) NOT NULL DEFAULT '0',
   user_id INT(11) unsigned NOT NULL DEFAULT '0',
-  source_type VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+  source_type VARCHAR( 255 ) NOT NULL ,
   source_keyword VARCHAR( 32 ) NOT NULL ,
   source_id VARCHAR( 255 ) NOT NULL DEFAULT '0',
   source_gid INT(11) unsigned NOT NULL DEFAULT '0',
-  target_type VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
+  target_type VARCHAR( 255 ) NOT NULL ,
   target_keyword VARCHAR( 32 ) NOT NULL ,
   target_id VARCHAR( 255 )  NOT NULL DEFAULT '0',
   target_gid INT(11) unsigned NOT NULL DEFAULT '0',
@@ -1455,7 +1445,7 @@ CREATE TABLE IF NOT EXISTS cross_references (
 #
 # Table structure for System Events
 #
-# type        : one of "PROJECT_CREATE", "PROJECT_DELETE", "USER_CREATE", etc.
+# type        : one of "PROJECT_CREATE", "PROJECT_DELETE", etc.
 # parameters  : event parameters (group_id, etc.) depending on event type
 # priority    : event priority from 3 (high prio) to 1 (low prio)
 # status      : event status: 'NEW' = nothing done yet, 'RUNNING' = event is being processed,
@@ -1477,7 +1467,8 @@ CREATE TABLE IF NOT EXISTS system_event (
   owner VARCHAR(255) NOT NULL default 'root',
   log TEXT,
   PRIMARY KEY (id),
-  INDEX type_idx (type(20))
+  INDEX type_idx (type(20)),
+  INDEX idx_status (status)
 );
 
 CREATE TABLE system_events_followers (
@@ -1590,22 +1581,6 @@ CREATE TABLE email_gateway_salt (
     )
 ;
 
-DROP TABLE IF EXISTS tour_usage_statistics;
-CREATE TABLE tour_usage_statistics (
-    id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    user_id INT(11) NOT NULL,
-    executed_on INT(11) UNSIGNED NOT NULL,
-    tour_name VARCHAR(255) NOT NULL,
-    nb_steps TINYINT(4) UNSIGNED NOT NULL,
-    current_step TINYINT(4) UNSIGNED NOT NULL,
-    the_end TINYINT(1) NOT NULL
-);
-
-DROP TABLE IF EXISTS homepage;
-CREATE TABLE homepage (
-    use_standard_homepage TINYINT(1) NOT NULL PRIMARY KEY
-);
-
 DROP TABLE IF EXISTS homepage_headline;
 CREATE TABLE homepage_headline (
     language_id VARCHAR(17) NOT NULL PRIMARY KEY,
@@ -1638,6 +1613,11 @@ CREATE TABLE project_dashboards (
   name VARCHAR(255) NOT NULL,
   INDEX idx(project_id, name(5))
 );
+
+DROP TABLE IF EXISTS project_dashboards_disabled_widgets;
+CREATE TABLE project_dashboards_disabled_widgets (
+    name VARCHAR(255) PRIMARY KEY
+) ENGINE=InnoDB;
 
 DROP TABLE IF EXISTS dashboards_lines;
 CREATE TABLE dashboards_lines (
@@ -1682,7 +1662,53 @@ DROP TABLE IF EXISTS project_membership_delegation;
 CREATE TABLE project_membership_delegation (
     ugroup_id INT(11) NOT NULL PRIMARY KEY
 );
+
+DROP TABLE IF EXISTS project_ugroup_synchronized_membership;
+CREATE TABLE project_ugroup_synchronized_membership (
+    project_id INT(11) NOT NULL PRIMARY KEY,
+    is_activated TINYINT(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS project_banner;
+CREATE TABLE project_banner (
+    project_id INT(11) NOT NULL PRIMARY KEY,
+    message text
+);
+
+DROP TABLE IF EXISTS platform_banner;
+CREATE TABLE platform_banner (
+    message text,
+    importance VARCHAR(8)
+);
+
+DROP TABLE IF EXISTS release_note_link;
+CREATE TABLE release_note_link (
+    enforce_one_row_table ENUM('SHOULD_HAVE_AT_MOST_ONE_ROW') NOT NULL PRIMARY KEY DEFAULT 'SHOULD_HAVE_AT_MOST_ONE_ROW',
+    actual_link TEXT,
+    tuleap_version TEXT NOT NULL
+);
+
+DROP TABLE IF EXISTS invitations;
+CREATE TABLE invitations(
+    id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    created_on INT(11) NOT NULL,
+    from_user_id INT(11) NOT NULL,
+    to_email TEXT NOT NULL,
+    to_user_id INT(11) NULL,
+    custom_message TEXT NULL,
+    status VARCHAR(10),
+    created_user_id INT(11) NULL,
+    INDEX idx(created_on, from_user_id),
+    INDEX idx_email(to_email(20)),
+    INDEX idx_created(created_user_id, status, to_email(20))
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS project_background;
+CREATE TABLE project_background(
+    project_id INT(11) NOT NULL PRIMARY KEY,
+    background VARCHAR(255) NOT NULL
+) ENGINE=InnoDB;
+
 #
 # EOF
 #
-

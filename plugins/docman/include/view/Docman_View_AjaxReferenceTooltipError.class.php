@@ -21,11 +21,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once('Docman_View_View.class.php');
-
-class Docman_View_AjaxReferenceTooltipError extends Docman_View_View {
-    function display($params = array()) {
-        echo '<em>'. $GLOBALS['Language']->getText('plugin_docman', 'error_perms_view') .'</em>';
+class Docman_View_AjaxReferenceTooltipError extends Docman_View_View
+{
+    public function display($params = [])
+    {
+        echo '<em>' . dgettext('tuleap-docman', 'You do not have sufficient access rights to view this item.') . '</em>';
     }
 }
-?>

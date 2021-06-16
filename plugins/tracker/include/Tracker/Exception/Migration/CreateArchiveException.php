@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2014. All rights reserved.
+ * Copyright Enalean (c) 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,11 +22,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Exception_Migration_CreateArchiveException extends Exception {
+class Tracker_Exception_Migration_CreateArchiveException extends Exception
+{
 
-    public function __construct($archive_path) {
-        $message = 'Impossible to create archive '.$archive_path;
+    public function __construct($archive_path)
+    {
+        $message = 'Impossible to create archive ' . $archive_path;
         parent::__construct($message);
     }
-
 }

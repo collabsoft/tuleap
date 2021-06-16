@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\OpenIDConnectClient\Administration;
 
 use Tuleap\OpenIDConnectClient\Provider\Provider;
 
-class IconPresenterFactory {
-
-    private $available_icons = array(
+class IconPresenterFactory
+{
+    private const AVAILABLE_ICONS = [
         'github',
         'google-plus',
         'linkedin',
@@ -36,23 +38,32 @@ class IconPresenterFactory {
         'cloud',
         'asterisk',
         'certificate',
-        'heart'
-    );
+        'heart',
+        'tlp-tuleap',
+    ];
 
-    public function getIconsPresenters() {
-        $icons_presenters = array();
+    /**
+     * @return IconPresenter[]
+     */
+    public function getIconsPresenters(): array
+    {
+        $icons_presenters = [];
 
-        foreach($this->available_icons as $icon) {
+        foreach (self::AVAILABLE_ICONS as $icon) {
             $icons_presenters[] = new IconPresenter($icon, false);
         }
 
         return $icons_presenters;
     }
 
-    public function getIconsPresentersForProvider(Provider $provider) {
-        $icons_presenters = array();
+    /**
+     * @return IconPresenter[]
+     */
+    public function getIconsPresentersForProvider(Provider $provider): array
+    {
+        $icons_presenters = [];
 
-        foreach($this->available_icons as $icon) {
+        foreach (self::AVAILABLE_ICONS as $icon) {
             $is_icon_selected = false;
 
             if ($provider->getIcon() === $icon) {
@@ -64,5 +75,4 @@ class IconPresenterFactory {
 
         return $icons_presenters;
     }
-
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,8 +20,9 @@
 
 use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessResultInterface;
 
-class Search_SearchProject {
-    const NAME = 'soft';
+class Search_SearchProject
+{
+    public const NAME = 'soft';
 
     /**
      * @var ProjectDao
@@ -29,11 +30,13 @@ class Search_SearchProject {
     private $dao;
 
 
-    public function __construct(ProjectDao $dao) {
+    public function __construct(ProjectDao $dao)
+    {
         $this->dao = $dao;
     }
 
-    public function search(Search_SearchQuery $query, Search_SearchResults $search_results) {
+    public function search(Search_SearchQuery $query, Search_SearchResults $search_results)
+    {
         $user = UserManager::instance()->getCurrentUser();
         if ($user->isRestricted()) {
             $dao_results = $this->dao->searchGlobalPaginatedForRestrictedUsers($query->getWords(), $query->getOffset(), $query->getExact(), $user->getId(), $query->getNumberOfResults());
@@ -49,7 +52,8 @@ class Search_SearchProject {
         return $this->getSearchProjectResultPresenter($dao_results, $query->getWords(), $maybe_more_results);
     }
 
-    private function getSearchProjectResultPresenter(LegacyDataAccessResultInterface $results, $words, $maybe_more_results) {
+    private function getSearchProjectResultPresenter(LegacyDataAccessResultInterface $results, $words, $maybe_more_results)
+    {
         return new Search_SearchResultsPresenter(
             new Search_SearchResultsIntroPresenter($results, $words),
             $this->getResultsPresenters($results),
@@ -58,8 +62,9 @@ class Search_SearchProject {
         );
     }
 
-    private function getResultsPresenters(LegacyDataAccessResultInterface $results) {
-        $results_presenters = array();
+    private function getResultsPresenters(LegacyDataAccessResultInterface $results)
+    {
+        $results_presenters = [];
 
         foreach ($results as $result) {
             $results_presenters[] = new Search_SearchProjectResultPresenter($result);

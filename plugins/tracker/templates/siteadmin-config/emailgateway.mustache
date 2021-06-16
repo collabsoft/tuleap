@@ -12,7 +12,7 @@
         <section class="tlp-pane">
             <div class="tlp-pane-container">
                 <div class="tlp-pane-header">
-                    <h1 class="tlp-pane-title"><i class="fa fa-envelope-o tlp-pane-title-icon"></i> {{ email_gateway_pane_title }}</h1>
+                    <h1 class="tlp-pane-title"><i class="far fa-envelope tlp-pane-title-icon"></i> {{ email_gateway_pane_title }}</h1>
                 </div>
                 <section class="tlp-pane-section">
                     <p>{{ email_gateway_desc }}</p>
@@ -56,7 +56,10 @@
                         </div>
 
                         <div class="tlp-pane-section-submit">
-                            <button type="submit" class="tlp-button-primary"><i class="fa fa-save tlp-button-icon"></i> {{ save_conf }}</button>
+                            <button type="submit" class="tlp-button-primary">
+                                <i class="fa fa-save tlp-button-icon" aria-hidden="true"></i>
+                                {{# dgettext }}tuleap-tracker | Save configuration{{/ dgettext }}
+                            </button>
                         </div>
                     </form>
                 </section>

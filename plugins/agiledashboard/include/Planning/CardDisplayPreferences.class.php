@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Planning_CardDisplayPreferences implements Tracker_CardDisplayPreferences {
+class Planning_CardDisplayPreferences implements Tracker_CardDisplayPreferences
+{
 
-    public function shouldDisplayAvatars() {
+    public function shouldDisplayAvatars()
+    {
         // Returning True because it's always avatars which
         // are displayed in order to identify users when in
         // Backlog planning view.
         return true;
     }
 }
- ?>

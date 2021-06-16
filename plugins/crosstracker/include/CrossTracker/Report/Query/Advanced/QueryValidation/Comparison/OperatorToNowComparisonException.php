@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,7 +26,6 @@ use Tuleap\Tracker\Report\Query\Advanced\Grammar\Metadata;
 class OperatorToNowComparisonException extends InvalidQueryException
 {
     /**
-     * @param Metadata $metadata
      * @param string $operator
      */
     public function __construct(Metadata $metadata, $operator)

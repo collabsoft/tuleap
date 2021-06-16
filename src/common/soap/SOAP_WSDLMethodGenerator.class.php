@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,20 +20,21 @@
 /**
  * Parse a PHP Method and generate SOAP WSDL compatible method description.
  */
-class SOAP_WSDLMethodGenerator {
+class SOAP_WSDLMethodGenerator
+{
     /**
      * @var ReflectionMethod
      */
     private $method;
-    
+
     private $comment    = '';
-    private $parameters = array();
-    private $returnType = array();
-    
+    private $parameters = [];
+    private $returnType = [];
+
     /**
      * @var array map to know a soap type corresponding to a phpdoc type
      */
-    private $doc2soap_types = array(
+    private $doc2soap_types = [
         'string'                   => 'xsd:string',
         'integer'                  => 'xsd:int',
         'int'                      => 'xsd:int',
@@ -49,63 +50,70 @@ class SOAP_WSDLMethodGenerator {
         'arrayofdescfieldsvalues'  => 'tns:ArrayOfDescFieldsValues',
         'arrayofservicesvalues'    => 'tns:ArrayOfServicesValues',
         'userinfo'                 => 'tns:UserInfo',
-    );
-    
-    public function __construct(ReflectionMethod $method) {
+    ];
+
+    public function __construct(ReflectionMethod $method)
+    {
         $this->method = $method;
         $this->augmentDoc2SoapTypes();
         $this->parseDocComment();
     }
-    
-    private function augmentDoc2SoapTypes() {
+
+    private function augmentDoc2SoapTypes()
+    {
         EventManager::instance()->processEvent(
-            Event::WSDL_DOC2SOAP_TYPES, 
-            array(
+            Event::WSDL_DOC2SOAP_TYPES,
+            [
                 'doc2soap_types' => &$this->doc2soap_types
-            )
+            ]
         );
     }
-    
+
     /**
      * Return the textual comment of the method
-     * 
+     *
      * @return String
      */
-    public function getComment() {
+    public function getComment()
+    {
         return $this->comment;
     }
-    
+
     /**
      * Return a HTML formated version of the textual comment
-     * 
+     *
      * @return String
      */
-    public function getHTMLFormattedComment() {
+    public function getHTMLFormattedComment()
+    {
         return nl2br(trim($this->comment));
     }
-    
+
     /**
      * Return the parameters of the method ready (Nusoap SOAP compatible format)
-     * 
+     *
      * @return Array of String
      */
-    public function getParameters() {
+    public function getParameters()
+    {
         return $this->parameters;
     }
-    
+
     /**
      * Return the return type of the method (Nusoap SOAP compatible format)
-     * 
+     *
      * @return Array
      */
-    public function getReturnType() {
+    public function getReturnType()
+    {
         return $this->returnType;
     }
-    
+
     /**
      * Loop arround the method comment and parse it
      */
-    private function parseDocComment() {
+    private function parseDocComment()
+    {
         foreach ($this->getCommentLines() as $line) {
             $line = $this->removeCommentsBorders($line);
             $this->parseDescription($line);
@@ -113,110 +121,117 @@ class SOAP_WSDLMethodGenerator {
             $this->parseReturnType($line);
         }
     }
-    
+
     /**
      * Clean the line (remove "phpdoc borders")
-     * 
+     *
      * @param String $line
-     * 
+     *
      * @return String
      */
-    private function removeCommentsBorders($line) {
+    private function removeCommentsBorders($line)
+    {
         $line = trim($line);
         $line = preg_replace('%^/\*\*%', '', $line);
         $line = preg_replace('%^\*/%', '', $line);
         $line = preg_replace('%^\*%', '', $line);
         return $line;
     }
-    
+
     /**
      * Detect and store if the line belongs to description
-     * 
-     * @param String $line 
+     *
+     * @param String $line
      */
-    private function parseDescription($line) {
+    private function parseDescription($line)
+    {
         if ($this->lineDoesntContainPhpDoc($line)) {
-            $this->comment .= trim($line).PHP_EOL;
+            $this->comment .= trim($line) . PHP_EOL;
         }
     }
-    
+
     /**
      * Return true if the line doesn't contain a phpdoc tag
-     * 
+     *
      * @param String $line
-     * 
-     * @return Boolean
+     *
+     * @return bool
      */
-    private function lineDoesntContainPhpDoc($line) {
+    private function lineDoesntContainPhpDoc($line)
+    {
         return ($this->isNotPresentInLine($line, '@return') &&
                 $this->isNotPresentInLine($line, '@todo') &&
                 $this->isNotPresentInLine($line, '@see'));
     }
-    
+
     /**
      * Return True if the token doesn't appear in line
-     * 
+     *
      * @param String $line
      * @param String $token
-     * 
-     * @return Boolean
+     *
+     * @return bool
      */
-    private function isNotPresentInLine($line, $token) {
+    private function isNotPresentInLine($line, $token)
+    {
         return strpos($line, $token) === false;
     }
-    
+
     /**
      * Detect and store phpdoc parameters
-     * 
-     * @param String $line 
+     *
+     * @param String $line
      */
-    private function parseParameters($line) {
-        $matches = array();
+    private function parseParameters($line)
+    {
+        $matches = [];
         if (preg_match('%@param[ \t]+([^ \t]*)[ \t]+([^ \t]*)[ \t]+.*%', $line, $matches)) {
             $this->parameters[$this->docParamToSoap($matches[2])] = $this->docTypeToSoap($matches[1]);
         }
     }
-    
+
     /**
      * Detect and store return type
-     * 
-     * @param String $line 
+     *
+     * @param String $line
      */
-    private function parseReturnType($line) {
+    private function parseReturnType($line)
+    {
         if (preg_match('%@return[ \t]+([^ \t]*)%', $line, $matches)) {
-            $this->returnType = array($this->method->getName() => $this->docTypeToSoap($matches[1]));
+            $this->returnType = [$this->method->getName() => $this->docTypeToSoap($matches[1])];
         }
     }
-    
+
     /**
      * Split the text comment in lines
-     * 
+     *
      * @return Array of String
      */
-    private function getCommentLines() {
+    private function getCommentLines()
+    {
         return explode(PHP_EOL, $this->method->getDocComment());
     }
-    
+
     /**
      * Transform phpdoc param name to a soap name
      */
-    private function docParamToSoap($paramName) {
+    private function docParamToSoap($paramName)
+    {
         return substr($paramName, 1);
     }
-    
+
     /**
      * Convert phpdoc type to soap type
-     * 
+     *
      * @param String $docType
-     * 
+     *
      * @return String
      */
-    private function docTypeToSoap($docType) {
+    private function docTypeToSoap($docType)
+    {
         if (isset($this->doc2soap_types[strtolower($docType)])) {
             return $this->doc2soap_types[strtolower($docType)];
         }
         throw new Exception("Unknown type $docType");
     }
 }
-
-?>

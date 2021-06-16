@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,26 +18,28 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SystemEventQueue {
+class SystemEventQueue
+{
 
-    const NAME = 'default';
+    public const NAME = 'default';
 
-    public function getName() {
+    public function getName()
+    {
         return self::NAME;
     }
 
-    public function getLabel() {
+    public function getLabel()
+    {
         return $GLOBALS['Language']->getText('admin_system_events', 'default_queue');
     }
 
-    public function getOwner() {
+    public function getOwner()
+    {
         return SystemEvent::OWNER_APP;
     }
 
-    public function getLogger() {
-        return new TruncateLevelLogger(
-            new BackendLogger(ForgeConfig::get('codendi_log') .'/'. $this->getName() .'_syslog'),
-            ForgeConfig::get('sys_logger_level')
-        );
+    public function getLogger()
+    {
+        return BackendLogger::getDefaultLogger($this->getName() . '_syslog');
     }
 }

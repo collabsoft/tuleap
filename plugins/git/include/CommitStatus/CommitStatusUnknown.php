@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,11 +22,13 @@ namespace Tuleap\Git\CommitStatus;
 
 final class CommitStatusUnknown implements CommitStatus
 {
+    public const NAME = 'unknown';
+
     private $date;
 
     public function __construct()
     {
-        $this->date = new \DateTimeImmutable;
+        $this->date = new \DateTimeImmutable();
     }
 
     /**
@@ -34,7 +36,7 @@ final class CommitStatusUnknown implements CommitStatus
      */
     public function getStatusName()
     {
-        return 'unknown';
+        return self::NAME;
     }
 
     /**

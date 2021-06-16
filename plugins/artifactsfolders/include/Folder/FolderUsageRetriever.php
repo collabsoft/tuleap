@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -55,7 +55,7 @@ class FolderUsageRetriever
      */
     private function getProjectTrackerIds(array $project_tracker)
     {
-        $project_tracker_ids = array();
+        $project_tracker_ids = [];
         foreach ($project_tracker as $tracker) {
             $project_tracker_ids[] = $tracker->getId();
         }

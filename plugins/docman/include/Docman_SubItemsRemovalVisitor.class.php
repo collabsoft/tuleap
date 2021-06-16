@@ -3,7 +3,7 @@
  * Copyright (c) STMicroelectronics, 2006. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2006
- * 
+ *
  * This file is a part of Codendi.
  *
  * Codendi is free software; you can redistribute it and/or modify
@@ -19,29 +19,36 @@
  * You should have received a copy of the GNU General Public License
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
-class Docman_SubItemsRemovalVisitor /* implements Visitor */ {
-    
-    function visitFolder(&$item, $params = array()) {
+class Docman_SubItemsRemovalVisitor /* implements Visitor */
+{
+
+    public function visitFolder(&$item, $params = [])
+    {
         $item->removeAllItems();
     }
-    function visitDocument(&$item, $params = array()) {
+    public function visitDocument(&$item, $params = [])
+    {
         //Do nothing
     }
-    function visitWiki(&$item, $params = array()) {
+    public function visitWiki(&$item, $params = [])
+    {
         $this->visitDocument($item, $params);
     }
-    function visitLink(&$item, $params = array()) {
+    public function visitLink(&$item, $params = [])
+    {
         $this->visitDocument($item, $params);
     }
-    function visitFile(&$item, $params = array()) {
+    public function visitFile(&$item, $params = [])
+    {
         $this->visitDocument($item, $params);
     }
-    function visitEmbeddedFile(&$item, $params = array()) {
+    public function visitEmbeddedFile(&$item, $params = [])
+    {
         return $this->visitFile($item, $params);
     }
-    
-    function visitEmpty(&$item, $params = array()) {
+
+    public function visitEmpty(&$item, $params = [])
+    {
         $this->visitDocument($item, $params);
     }
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,24 +21,26 @@
 
 namespace Tuleap\ProFTPd\Directory;
 
-class DirectoryPathParser {
+class DirectoryPathParser
+{
 
-    const BASE_PATH = '';
+    public const BASE_PATH = '';
 
     /**
      * @param string $path
      * @return DirectoryPathCollection
      */
-    public function getPathParts($path) {
+    public function getPathParts($path)
+    {
         $parts = new DirectoryPathCollection();
 
         $path_to_part = '';
         foreach (array_filter(explode('/', $path)) as $part_name) {
             if ($path_to_part) {
-                $path_to_part.= '/';
+                $path_to_part .= '/';
             }
 
-            $path_to_part.= $part_name;
+            $path_to_part .= $part_name;
             $parts->add(new DirectoryPathPart($part_name, $path_to_part));
         }
 
@@ -49,7 +51,8 @@ class DirectoryPathParser {
      * @param string $path_from_request
      * @return string
      */
-    public function getCleanPath($path_from_request) {
+    public function getCleanPath($path_from_request)
+    {
         if (! $path_from_request) {
             return self::BASE_PATH;
         }
@@ -65,15 +68,18 @@ class DirectoryPathParser {
         return $this->getParentDirectory($safe_path);
     }
 
-    private function shouldGoToParentDirectory($path) {
+    private function shouldGoToParentDirectory($path)
+    {
         return strstr($path, '..');
     }
 
-    private function getSafeParentDirectoryPath($path) {
+    private function getSafeParentDirectoryPath($path)
+    {
         return strstr($path, '..', true);
     }
 
-    private function getParentDirectory($safe_path) {
+    private function getParentDirectory($safe_path)
+    {
         $clean_path = rtrim($safe_path, '/');
 
         $path_last_slash_position = strrpos($clean_path, '/');
@@ -84,4 +90,3 @@ class DirectoryPathParser {
         }
     }
 }
-?>

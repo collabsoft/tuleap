@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,29 +18,27 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
+
 /**
  * Represents the fields of a cardwall.
  */
-class Cardwall_CardFields {
+class Cardwall_CardFields
+{
 
-    /**
-     * @var UserManager
-     */
-    private $user_manager;
-
-    public function __construct(UserManager $user_manager, Tracker_FormElementFactory $factory) {
-        $this->user_manager         = $user_manager;
+    public function __construct(Tracker_FormElementFactory $factory)
+    {
         $this->form_element_factory = $factory;
     }
 
     /**
      *
-     * @param Tracker_Artifact $artifact
      *
      * @return Tracker_FormElement_Field[]
      */
-    public function getFields(Tracker_Artifact $artifact) {
-        $diplayed_fields = array();
+    public function getFields(Artifact $artifact)
+    {
+        $diplayed_fields = [];
         $tracker         = $artifact->getTracker();
 
         foreach ($this->getDisplayedFields($tracker) as $field) {
@@ -50,9 +48,9 @@ class Cardwall_CardFields {
         return $diplayed_fields;
     }
 
-    private function getDisplayedFields(Tracker $tracker) {
+    private function getDisplayedFields(Tracker $tracker)
+    {
         $semantic = Cardwall_Semantic_CardFields::load($tracker);
         return $semantic->getFields();
     }
 }
-?>

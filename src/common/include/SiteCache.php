@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015-2017. All rights reserved
+ * Copyright (c) Enalean, 2015-Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,20 +18,27 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SiteCache {
+use Tuleap\Plugin\PluginLoader;
+
+class SiteCache
+{
 
     private $logger;
 
-    public function __construct(Logger $logger = null) {
-        $this->logger = $logger ? $logger : new BackendLogger() ;
+    public function __construct(?\Psr\Log\LoggerInterface $logger = null)
+    {
+        $this->logger = $logger ? $logger : BackendLogger::getDefaultLogger();
     }
 
-    public function invalidatePluginBasedCaches() {
+    public function invalidatePluginBasedCaches()
+    {
         $this->invalidateTemplateEngine();
         $this->invalidateRestler();
+        $this->invalidateFrontRouter();
         $this->invalidateLanguage();
         $this->invalidateWSDL();
         $this->invalidatePlugin();
+        $this->invalidateCustomizedLogoCache();
     }
 
     private function invalidateTemplateEngine()
@@ -41,30 +48,41 @@ class SiteCache {
         $template_engine_cache->invalidate();
     }
 
-    private function invalidateRestler() {
+    private function invalidateRestler()
+    {
         $this->logger->info('Invalidate Restler cache');
         $restler = new RestlerCache();
         $restler->invalidateCache();
     }
 
-    private function invalidateLanguage() {
+    private function invalidateFrontRouter()
+    {
+        $this->logger->info('Invalidate FrontRouter cache');
+        \Tuleap\Request\FrontRouter::invalidateCache();
+    }
+
+    private function invalidateLanguage()
+    {
         $this->logger->info('Invalidate language cache');
         $GLOBALS['Language']->invalidateCache();
     }
 
-    private function invalidateWSDL() {
+    private function invalidateWSDL()
+    {
         $this->logger->info('Invalidate WSDL');
-        foreach (glob(ForgeConfig::get('codendi_cache_dir').'/php/wsdlcache/wsdl*') as $file) {
+        foreach (glob(ForgeConfig::get('codendi_cache_dir') . '/php/wsdlcache/wsdl*') as $file) {
             unlink($file);
         }
     }
 
-    private function invalidatePlugin() {
+    private function invalidatePlugin()
+    {
         $this->logger->info('Invalidate Plugin hooks');
-        PluginManager::instance()->invalidateCache();
+        PluginLoader::invalidateCache();
     }
 
-    public function restoreCacheDirectories() {
+    public function restoreCacheDirectories()
+    {
         $this->restoreRootCacheDirectory();
 
         $language_cache_directory = $GLOBALS['Language']->getCacheDirectory();
@@ -77,7 +95,8 @@ class SiteCache {
         $this->recreateDirectory($cache_directory);
     }
 
-    private function recreateDirectory($directory) {
+    private function recreateDirectory($directory)
+    {
         if (! is_dir(realpath($directory))) {
             $this->logger->info('Recreating ' . $directory);
             mkdir($directory, 0755, true);
@@ -87,7 +106,8 @@ class SiteCache {
     /**
      * Some files might have been generated as root but should be owned by codendiadm
      */
-    public function restoreOwnership() {
+    public function restoreOwnership()
+    {
         $backend = Backend::instance();
 
         $cache_directory = realpath(ForgeConfig::get('codendi_cache_dir'));
@@ -109,20 +129,17 @@ class SiteCache {
             $language_cache_directory,
             ForgeConfig::getApplicationUserLogin(),
             ForgeConfig::getApplicationUserLogin(),
-            array('php')
+            ['php']
         );
 
-        $plugin_manager    = PluginManager::instance();
-        $plugin_cache_file = $plugin_manager->getCacheFile();
-        if (! file_exists($plugin_cache_file)) {
-            touch($plugin_cache_file);
-        }
-        $this->logger->debug('Restore ownership to ' . $plugin_cache_file);
-        $backend->changeOwnerGroupMode(
-            $plugin_cache_file,
-            ForgeConfig::getApplicationUserLogin(),
-            ForgeConfig::getApplicationUserLogin(),
-            0600
-        );
+        \Tuleap\Request\FrontRouter::restoreOwnership($this->logger, $backend);
+
+        PluginLoader::restoreOwnershipOnCacheFile($this->logger, $backend);
+    }
+
+    private function invalidateCustomizedLogoCache(): void
+    {
+        $this->logger->info('Invalidate customized logo cache');
+        \Tuleap\Layout\Logo\CachedCustomizedLogoDetector::invalidateCache();
     }
 }

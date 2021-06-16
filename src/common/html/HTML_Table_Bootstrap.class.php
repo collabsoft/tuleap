@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2011, 2012, 2013. All rights reserved.
+ * Copyright Enalean (c) 2011, 2012, 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -24,13 +24,12 @@
 
 require_once 'HTML_Table.class.php';
 
-class HTML_Table_Bootstrap extends HTML_Table {
+class HTML_Table_Bootstrap extends HTML_Table
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
-        $this->setTableClasses(array('table'));
+        $this->setTableClasses(['table']);
     }
-
 }
-
-?>

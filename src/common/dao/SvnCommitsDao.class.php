@@ -22,17 +22,20 @@
 
 require_once('include/DataAccessObject.class.php');
 
-class SvnCommitsDao extends DataAccessObject {
-    
-    public function __construct() {
+class SvnCommitsDao extends DataAccessObject
+{
+
+    public function __construct()
+    {
         parent::__construct();
         $this->table_name = 'svn_commits';
     }
-    
-    public function statsByGroupId($group_id, $duration) {
+
+    public function statsByGroupId($group_id, $duration)
+    {
         $group_id = $this->da->escapeInt($group_id);
         $duration = $this->da->escapeInt($duration);
-        $sql = "SELECT whoid, 
+        $sql      = "SELECT whoid, 
                         TO_DAYS(FROM_UNIXTIME(date)) - TO_DAYS(FROM_UNIXTIME(0)) as day, 
                         WEEK(FROM_UNIXTIME(date), 3) as week,
                         count(id) AS nb_commits 
@@ -44,16 +47,14 @@ class SvnCommitsDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function updateCommitMessage($group_id, $revision, $description) {
+    public function updateCommitMessage($group_id, $revision, $description)
+    {
         $group_id    = $this->da->escapeInt($group_id);
         $revision    = $this->da->escapeInt($revision);
         $description = $this->da->quoteSmart($description);
-        $sql = "UPDATE svn_commits
+        $sql         = "UPDATE svn_commits
                 SET description = $description
                 WHERE group_id = $group_id AND revision=$revision";
         $this->update($sql);
     }
 }
-
-
-?>

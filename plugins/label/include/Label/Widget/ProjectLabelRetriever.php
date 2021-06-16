@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,7 +37,7 @@ class ProjectLabelRetriever
 
     public function getLabelsByProject(Project $project)
     {
-        $labels = array();
+        $labels = [];
         foreach ($this->dao->searchLabelsUsedByProject($project->getID()) as $label) {
             $labels[] = $label;
         }

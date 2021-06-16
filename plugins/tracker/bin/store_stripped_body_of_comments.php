@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 $logger   = new Log_ConsoleLogger();
 $purifier = Codendi_HTMLPurifier::instance();
@@ -33,8 +33,8 @@ $sql = "SELECT id, body, body_format
 $results = $dao->retrieve($sql);
 $nb      = count($results);
 $logger->info("Found $nb comments to store");
-$values  = array();
-$i = 1;
+$values = [];
+$i      = 1;
 foreach ($dao->retrieve($sql) as $row) {
     if ($row['body_format'] === Tracker_Artifact_Changeset_Comment::HTML_COMMENT) {
         $stripped_body = $purifier->purify($row['body'], CODENDI_PURIFIER_STRIP_HTML);

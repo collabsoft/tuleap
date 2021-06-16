@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,47 +18,20 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Log_ConsoleLogger implements Logger {
-    const BLACK   = "\033[30m";
-    const RED     = "\033[31m";
-    const GREEN   = "\033[32m";
-    const BLUE    = "\033[34m";
-    const YELLOW  = "\033[33m";
-    const BG_RED  = "\033[41m";
-    const NOCOLOR = "\033[0m";
+class Log_ConsoleLogger extends \Psr\Log\AbstractLogger implements \Psr\Log\LoggerInterface
+{
+    public const BLACK   = "\033[30m";
+    public const RED     = "\033[31m";
+    public const GREEN   = "\033[32m";
+    public const BLUE    = "\033[34m";
+    public const YELLOW  = "\033[33m";
+    public const BG_RED  = "\033[41m";
+    public const NOCOLOR = "\033[0m";
 
-    private $log = array();
-
-    public function debug($message) {
-        $this->log($message, Logger::DEBUG);
-    }
-
-    public function error($message, Exception $e = null) {
-        $this->log($this->generateLogWithException($message, $e), Logger::ERROR);
-    }
-
-    public function info($message) {
-        $this->log($message, Logger::INFO);
-    }
-
-    public function log($message, $level = null) {
-        fwrite(STDERR, $this->colorize($level, $level.' '.$message).PHP_EOL);
+    public function log($level, $message, array $context = [])
+    {
+        fwrite(STDERR, $this->colorize($level, $level . ' ' . $message) . PHP_EOL);
         fflush(STDERR);
-    }
-
-    public function warn($message, Exception $e = null) {
-        $this->log($this->generateLogWithException($message, $e), Logger::WARN);
-    }
-
-    private function generateLogWithException($message, Exception $e = null) {
-        $log_string = $message;
-        if (!empty($e)) {
-            $error_message  = $e->getMessage();
-            $stack_trace    = $e->getTraceAsString();
-            $log_string    .= ": $error_message:\n$stack_trace";
-        }
-        return $log_string;
-
     }
 
     /**
@@ -69,21 +42,26 @@ class Log_ConsoleLogger implements Logger {
      *
      * @return string
      */
-    private function colorize($level, $message) {
+    private function colorize($level, $message)
+    {
         $color = null;
         switch ($level) {
-            case Logger::INFO:
+            case \Psr\Log\LogLevel::INFO:
+            case \Psr\Log\LogLevel::NOTICE:
                 $color = self::GREEN;
                 break;
-            case Logger::WARN:
+            case \Psr\Log\LogLevel::WARNING:
                 $color = self::YELLOW;
                 break;
-            case Logger::ERROR:
+            case \Psr\Log\LogLevel::ERROR:
+            case \Psr\Log\LogLevel::EMERGENCY:
+            case \Psr\Log\LogLevel::ALERT:
+            case \Psr\Log\LogLevel::CRITICAL:
                 $color = self::RED;
                 break;
         }
         if ($color) {
-            $message = $color.$message.self::NOCOLOR;
+            $message = $color . $message . self::NOCOLOR;
         }
         return $message;
     }

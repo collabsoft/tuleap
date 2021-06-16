@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,9 +24,9 @@ use Tuleap\Event\Dispatchable;
 
 class GlyphLocationsCollector implements Dispatchable
 {
-    const NAME = 'collect_glyph_locations';
+    public const NAME = 'collect_glyph_locations';
 
-    private $glyph_locations = array();
+    private $glyph_locations = [];
 
     public function addLocation($namespace_name, GlyphLocation $glyph_location)
     {

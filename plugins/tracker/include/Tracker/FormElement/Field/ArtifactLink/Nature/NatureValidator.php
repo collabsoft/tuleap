@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,53 +21,59 @@
 
 namespace Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature;
 
-class NatureValidator {
+class NatureValidator
+{
 
-    const SHORTNAME_PATTERN = '[a-zA-Z][a-zA-Z_]*';
+    public const SHORTNAME_PATTERN = '[a-zA-Z][a-zA-Z_]*';
 
     /** @var NatureDao */
     private $dao;
 
-    public function __construct(NatureDao $dao) {
+    public function __construct(NatureDao $dao)
+    {
         $this->dao = $dao;
     }
 
     /** @throws InvalidNatureParameterException */
-    public function checkShortname($shortname) {
+    public function checkShortname($shortname)
+    {
         if (! $shortname) {
             throw new InvalidNatureParameterException(
-                $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', 'missing_shortname')
+                dgettext('tuleap-tracker', 'missing shortname')
             );
         }
-        if (! preg_match('/^'. self::SHORTNAME_PATTERN .'$/', $shortname)) {
+        if (! preg_match('/^' . self::SHORTNAME_PATTERN . '$/', $shortname)) {
             throw new InvalidNatureParameterException(
-                $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', 'shortname_help')
+                dgettext('tuleap-tracker', 'Only letters and underscore are allowed for shortname (must start with a letter though).')
             );
         }
     }
 
     /** @throws InvalidNatureParameterException */
-    public function checkForwardLabel($forward_label) {
+    public function checkForwardLabel($forward_label)
+    {
         if (! $forward_label) {
             throw new InvalidNatureParameterException(
-                $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', 'missing_forward_label')
+                dgettext('tuleap-tracker', 'missing forward label')
             );
         }
     }
 
     /** @throws InvalidNatureParameterException */
-    public function checkReverseLabel($reverse_label) {
+    public function checkReverseLabel($reverse_label)
+    {
         if (! $reverse_label) {
             throw new InvalidNatureParameterException(
-                $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', 'missing_reverse_label')
+                dgettext('tuleap-tracker', 'missing reverse label')
             );
         }
     }
 
-    public function checkIsNotOrHasNotBeenUsed($shortname) {
+    public function checkIsNotOrHasNotBeenUsed($shortname)
+    {
         if ($this->dao->isOrHasBeenUsed($shortname)) {
             throw new UnableToDeleteNatureException(
-                $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', 'cannot_delete')
+                dgettext('tuleap-tracker', 'type can\'t be deleted because it is or has been already used.')
             );
         }
     }

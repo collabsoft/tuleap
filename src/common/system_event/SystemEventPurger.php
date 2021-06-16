@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2015. All rights reserved.
+ * Copyright Enalean (c) 2015 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,13 +22,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SystemEventPurger {
+class SystemEventPurger
+{
 
-    public function __construct(SystemEventDao $dao) {
+    public function __construct(SystemEventDao $dao)
+    {
         $this->dao = $dao;
     }
 
-    public function purgeSystemEventsDataOlderThanOneYear() {
+    public function purgeSystemEventsDataOlderThanOneYear()
+    {
         return $this->dao->purgeDataOlderThanOneYear();
     }
 }

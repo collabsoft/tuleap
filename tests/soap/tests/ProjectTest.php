@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,6 @@
 
 namespace Tuleap\Tests\SOAP;
 
-require_once __DIR__.'/../lib/autoload.php';
-
 use SOAP_TestDataBuilder;
 use TestDataBuilder;
 use SOAPBase;
@@ -33,7 +31,7 @@ use SOAPBase;
 class ProjectTest extends SOAPBase
 {
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -42,7 +40,7 @@ class ProjectTest extends SOAPBase
         $_SERVER['SCRIPT_NAME'] = $this->base_wsdl;
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         unset($_SERVER['SERVER_NAME']);
         unset($_SERVER['SERVER_PORT']);
@@ -69,13 +67,14 @@ class ProjectTest extends SOAPBase
      */
     public function testAddUserToUserGroup()
     {
-        $session_hash = $this->getSessionHash();
+        $session_hash   = $this->getSessionHash();
+        $test_user_2_id = $this->getUserID(SOAP_TestDataBuilder::TEST_USER_2_NAME);
 
         $response = $this->soap_project->addUserToUGroup(
             $session_hash,
             SOAP_TestDataBuilder::PROJECT_PRIVATE_MEMBER_ID,
             TestDataBuilder::STATIC_UGROUP_1_ID,
-            TestDataBuilder::TEST_USER_2_ID
+            $test_user_2_id
         );
 
         $this->assertTrue($response);
@@ -95,5 +94,35 @@ class ProjectTest extends SOAPBase
         );
 
         $this->assertTrue($response);
+    }
+
+    public function testGetProjectGroupsAndUsers(): void
+    {
+        $ugroups = $this->soap_base->getProjectGroupsAndUsers(
+            $this->getSessionHash(),
+            SOAP_TestDataBuilder::PROJECT_PRIVATE_MEMBER_ID
+        );
+
+        $ugroups_by_name = [];
+        foreach ($ugroups as $ugroup) {
+            $ugroups_by_name[$ugroup->name] = $ugroup->members;
+        }
+
+        $this->assertEqualsCanonicalizing(
+            [
+                'project_members',
+                'project_admins',
+                SOAP_TestDataBuilder::STATIC_UGROUP_1_LABEL,
+                SOAP_TestDataBuilder::STATIC_UGROUP_2_LABEL
+            ],
+            array_keys($ugroups_by_name)
+        );
+
+        $project_member_usernames = [];
+        foreach ($ugroups_by_name['project_members'] as $project_member) {
+            $project_member_usernames[] = $project_member->user_name;
+        }
+
+        $this->assertContains(TestDataBuilder::TEST_USER_1_NAME, $project_member_usernames);
     }
 }

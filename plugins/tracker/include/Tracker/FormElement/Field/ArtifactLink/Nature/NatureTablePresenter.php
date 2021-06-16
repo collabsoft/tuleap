@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,8 @@ namespace Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature;
 
 use Tracker_FormElement_Field_ArtifactLink;
 
-class NatureTablePresenter {
+class NatureTablePresenter
+{
 
     public $table_id;
     public $nature;
@@ -40,7 +41,7 @@ class NatureTablePresenter {
     public $artifact_links;
     public $mass_unlink_title;
 
-    const TABLE_ID_PREFIX = "tracker_report_table_nature_";
+    public const TABLE_ID_PREFIX = "tracker_report_table_nature_";
 
     public function __construct(
         NaturePresenter $nature,
@@ -48,45 +49,46 @@ class NatureTablePresenter {
         $is_reverse_artifact_links,
         Tracker_FormElement_Field_ArtifactLink $field
     ) {
-        $this->table_id              = self::TABLE_ID_PREFIX . $nature->shortname;
-        $this->nature                = $nature->shortname;
-        $this->nature_label          = $this->fetchTabLabel($nature, $is_reverse_artifact_links);
-        $this->tracker_id            = $field->getTracker()->getId();
+        $this->table_id     = self::TABLE_ID_PREFIX . $nature->shortname;
+        $this->nature       = $nature->shortname;
+        $this->nature_label = $this->fetchTabLabel($nature, $is_reverse_artifact_links);
+        $this->tracker_id   = $field->getTracker()->getId();
 
         $language                 = $GLOBALS['Language'];
-        $this->id_label           = $language->getText('plugin_tracker_formelement_admin', 'artifactid_label');
-        $this->project_label      = $language->getText('plugin_tracker_include_artifact', 'project');
-        $this->tracker_label      = $language->getText('plugin_tracker_import_admin', 'tracker');
-        $this->summary_label      = $language->getText('plugin_tracker_include_artifact', 'summary');
-        $this->status_label       = $language->getText('plugin_tracker_admin_semantic', 'status_label');
-        $this->last_update_label  = $language->getText('plugin_tracker_formelement_admin', 'lastupdatedate_label');
-        $this->submitted_by_label = $language->getText('plugin_tracker_formelement_admin', 'submittedby_label');
-        $this->assigned_to_label  = $language->getText('plugin_tracker_formelement_admin', 'assignedto_label');
+        $this->id_label           = dgettext('tuleap-tracker', 'Artifact ID');
+        $this->project_label      = dgettext('tuleap-tracker', 'Project');
+        $this->tracker_label      = dgettext('tuleap-tracker', 'Tracker');
+        $this->summary_label      = dgettext('tuleap-tracker', 'Summary');
+        $this->status_label       = dgettext('tuleap-tracker', 'Status');
+        $this->last_update_label  = dgettext('tuleap-tracker', 'Last Update Date');
+        $this->submitted_by_label = dgettext('tuleap-tracker', 'Submitted By');
+        $this->assigned_to_label  = dgettext('tuleap-tracker', 'Assigned to');
 
-        $art_factory = \Tracker_ArtifactFactory::instance();
-        $this->artifact_links = array();
-        $html_classes = '';
-        foreach($artifact_links as $artifact_link) {
+        $art_factory          = \Tracker_ArtifactFactory::instance();
+        $this->artifact_links = [];
+        $html_classes         = '';
+        foreach ($artifact_links as $artifact_link) {
             $artifact               = $art_factory->getArtifactById($artifact_link->getArtifactId());
             $this->artifact_links[] = new ArtifactInNatureTablePresenter($artifact, $html_classes, $field);
         }
 
-        $this->mass_unlink_title = $GLOBALS['Language']->getText('plugin_tracker_artifactlink', 'mass_unlink_title');
+        $this->mass_unlink_title = dgettext('tuleap-tracker', 'Mark all links to be removed');
     }
 
     public static function buildForHeader(NaturePresenter $nature_presenter, Tracker_FormElement_Field_ArtifactLink $field)
     {
         return new NatureTablePresenter(
             $nature_presenter,
-            array(),
+            [],
             false,
             $field
         );
     }
 
-    private function fetchTabLabel($nature, $is_reverse_artifact_links) {
+    private function fetchTabLabel($nature, $is_reverse_artifact_links)
+    {
         $nature_label = '';
-        if($is_reverse_artifact_links) {
+        if ($is_reverse_artifact_links) {
             $nature_label = $nature->reverse_label;
         } else {
             $nature_label = $nature->forward_label;

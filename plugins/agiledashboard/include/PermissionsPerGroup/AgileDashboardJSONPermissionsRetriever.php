@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -40,12 +40,12 @@ class AgileDashboardJSONPermissionsRetriever
     {
         if (! $project->usesService(AgileDashboardPlugin::PLUGIN_SHORTNAME)) {
             $GLOBALS['Response']->send400JSONErrors(
-                array(
+                [
                     'error' => dgettext(
                         'tuleap-agiledashboard',
                         "Service Agiledashboard is disabled."
                     )
-                )
+                ]
             );
         }
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,16 +28,17 @@ use Tuleap\CLI\ConsoleLogger;
 
 class ClearCachesCommand extends Command
 {
-    const NAME = '-c, --clear-caches';
+    public const NAME = '-c, --clear-caches';
 
     protected function configure()
     {
         $this->setName(self::NAME)->setDescription('Clear caches');
     }
 
-    public function execute(InputInterface $input, OutputInterface $output)
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
         $site_cache = new SiteCache(new ConsoleLogger($output));
         $site_cache->invalidatePluginBasedCaches();
+        return 0;
     }
 }

@@ -1,26 +1,25 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'jpgraph.php';
-require_once($GLOBALS['jpgraph_dir'].'/jpgraph_gantt.php');
+use Tuleap\Chart\Chart;
 
 /**
 * PieChart
@@ -29,7 +28,8 @@ require_once($GLOBALS['jpgraph_dir'].'/jpgraph_gantt.php');
 *
 * @see jpgraph documentation for usage
 */
-class Chart_Gantt extends Chart{
+class Chart_Gantt extends Chart
+{
 
     /**
     * Constructor
@@ -42,7 +42,8 @@ class Chart_Gantt extends Chart{
     *
     * @return void
     */
-    public function __construct($aWidth = 0, $aHeight = 0, $aCachedName = "", $aTimeOut = 0, $aInline = true) {
+    public function __construct($aWidth = 0, $aHeight = 0, $aCachedName = "", $aTimeOut = 0, $aInline = true)
+    {
         parent::__construct($aWidth, $aHeight, $aCachedName, $aTimeOut, $aInline);
 
         $header_color = $this->colors_for_charts->getGanttHeaderColor();
@@ -69,13 +70,9 @@ class Chart_Gantt extends Chart{
         $this->scale->actinfo->vgrid->SetColor($header_color);
     }
 
-    /**
-     * Get the name of the jpgraph class to instantiate
-     *
-     * @return string
-     */
-    protected function getGraphClass() {
-        return 'GanttGraph';
+    protected function getGraphClass(): string
+    {
+        return \GanttGraph::class;
     }
 
     /**
@@ -84,7 +81,8 @@ class Chart_Gantt extends Chart{
      * @return string
      * @see Layout->getGanttLateBarColor
      */
-    public function getLateBarColor() {
+    public function getLateBarColor()
+    {
         return $this->colors_for_charts->getGanttLateBarColor();
     }
 
@@ -94,7 +92,8 @@ class Chart_Gantt extends Chart{
      * @return string
      * @see Layout->getGanttErrorBarColor
      */
-    public function getErrorBarColor() {
+    public function getErrorBarColor()
+    {
         return $this->colors_for_charts->getGanttErrorBarColor();
     }
 
@@ -104,7 +103,8 @@ class Chart_Gantt extends Chart{
      * @return string
      * @see Layout->getGanttGreenBarColor
      */
-    public function getGreenBarColor() {
+    public function getGreenBarColor()
+    {
         return $this->colors_for_charts->getGanttGreenBarColor();
     }
 
@@ -114,9 +114,8 @@ class Chart_Gantt extends Chart{
      * @return string
      * @see Layout->getGanttTodayLineColor
      */
-    public function getTodayLineColor() {
+    public function getTodayLineColor()
+    {
         return $this->colors_for_charts->getGanttTodayLineColor();
     }
-
 }
-?>

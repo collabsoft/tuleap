@@ -20,14 +20,17 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-abstract class Docman_ApprovalTableVersionned extends Docman_ApprovalTable {
-    var $versionNumber = null;
+abstract class Docman_ApprovalTableVersionned extends Docman_ApprovalTable
+{
+    public $versionNumber = null;
 
-    function setVersionNumber($v) {
+    public function setVersionNumber($v)
+    {
         $this->versionNumber = $v;
     }
 
-    function getVersionNumber() {
+    public function getVersionNumber()
+    {
         return $this->versionNumber;
     }
 }

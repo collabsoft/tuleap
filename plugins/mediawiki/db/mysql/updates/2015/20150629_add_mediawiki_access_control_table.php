@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS - 2015. All rights reserved
+ * Copyright (c) Enalean SAS - 2015 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,14 +16,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b20150629_add_mediawiki_access_control_table extends ForgeUpgrade_Bucket {
+class b20150629_add_mediawiki_access_control_table extends ForgeUpgrade_Bucket
+{
 
     /**
      * Description of the bucket
      *
      * @return String
      */
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Add plugin_mediawiki_access_control table
 EOT;
@@ -34,7 +36,8 @@ EOT;
      *
      * @return void
      */
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
@@ -43,7 +46,8 @@ EOT;
      *
      * @return void
      */
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE IF NOT EXISTS plugin_mediawiki_access_control (
                 id INT(11) AUTO_INCREMENT PRIMARY KEY,
                 project_id INT(11) NOT NULL,
@@ -55,10 +59,11 @@ EOT;
         $this->execDB($sql, 'An error occured while adding plugin_mediawiki_access_control table: ');
     }
 
-    private function execDB($sql, $message) {
+    private function execDB($sql, $message)
+    {
         $res = $this->db->dbh->exec($sql);
         if ($res === false) {
-            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete($message.implode(', ', $this->db->dbh->errorInfo()));
+            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete($message . implode(', ', $this->db->dbh->errorInfo()));
         }
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,7 @@ class b201705121719_update_table_project_dashboards extends ForgeUpgrade_Bucket
 {
     public function description()
     {
-    return 'Alter table project_dashboards';
+        return 'Alter table project_dashboards';
     }
 
     public function preUp()

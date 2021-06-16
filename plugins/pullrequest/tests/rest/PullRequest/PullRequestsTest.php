@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -23,75 +23,47 @@ namespace Tuleap\PullRequest;
 use REST_TestDataBuilder;
 use RestBase;
 
-require_once dirname(__FILE__).'/../bootstrap.php';
+require_once dirname(__FILE__) . '/../bootstrap.php';
 
 /**
  * @group PullRequest
  */
 class PullRequestsTest extends RestBase
 {
-    protected function getResponseForNonMember($request) {
+    protected function getResponseForNonMember($request)
+    {
         return $this->getResponse($request, REST_TestDataBuilder::TEST_USER_2_NAME);
     }
 
-    // some routes require a major refactoring of REST tests initialization
-    // and thus will be done in a following commit
-
-    //public function testGetPullRequest() {
-    //    $response  = $this->getResponse($this->client->get('pull_requests/1'));
-
-    //    $pull_request = $response->json();
-
-    //    $this->assertEquals(1, $pull_request['id']);
-    //    $this->assertEquals(102, $pull_request['user_id']);
-    //    $this->assertEquals(1, $pull_request['repository']['id']);
-    //    $this->assertEquals('dev', $pull_request['branch_src']);
-    //    $this->assertEquals('master', $pull_request['branch_dest']);
-    //}
-
-    public function testOPTIONS() {
+    public function testOPTIONS()
+    {
         $response = $this->getResponse($this->client->options('pull_requests/'));
 
-        $this->assertEquals(array('OPTIONS', 'GET', 'POST', 'PATCH'), $response->getHeader('Allow')->normalize()->toArray());
+        $this->assertEquals(['OPTIONS', 'GET', 'POST', 'PATCH'], $response->getHeader('Allow')->normalize()->toArray());
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
-    public function testGetPullRequestThrows403IfUserCantSeeGitRepository() {
+    public function testOPTIONSWithReadOnlyAdmin()
+    {
+        $response = $this->getResponse(
+            $this->client->options('pull_requests/'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(['OPTIONS', 'GET', 'POST', 'PATCH'], $response->getHeader('Allow')->normalize()->toArray());
+    }
+
+    public function testGetPullRequestThrows403IfUserCantSeeGitRepository()
+    {
         $response = $this->getResponseForNonMember($this->client->get('pull_requests/1'));
 
         $this->assertEquals($response->getStatusCode(), 403);
     }
 
-    // public function testPATCHPullRequestToAbandonAPullRequest() {
-    //     $data = json_encode(array(
-    //         'status' => 'abandon'
-    //     ));
-
-    //     $response = $this->getResponse($this->client->patch(
-    //         'pull_requests/1',
-    //         null,
-    //         $data
-    //     ));
-
-    //     $this->assertEquals($response->getStatusCode(), 200);
-
-    //     // some routes require a major refactoring of REST tests initialization
-    //     // and thus will be done in a following commit
-    //     $response_get = $this->getResponse($this->client->get('pull_requests/1'));
-    //     $pull_request = $response_get->json();
-
-    //     $this->assertEquals('abandon', $pull_request['status']);
-    // }
-
-     /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
-    public function testPATCHPullRequestThrow400IfStatusIsUnknown() {
-        $data = json_encode(array(
+    public function testPATCHPullRequestThrow400IfStatusIsUnknown()
+    {
+        $data = json_encode([
             'status' => 'whatever'
-        ));
+        ]);
 
         $response = $this->getResponse($this->client->patch(
             'pull_requests/1',
@@ -99,6 +71,6 @@ class PullRequestsTest extends RestBase
             $data
         ));
 
-        $this->assertEquals($response->getStatusCode(), 400);
+        $this->assertEquals(400, $response->getStatusCode());
     }
 }

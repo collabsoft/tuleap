@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, CodeX Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,29 +19,34 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ArtifactDao extends DataAccessObject {
-    public function __construct($da = null) {
+class ArtifactDao extends DataAccessObject
+{
+    public function __construct($da = null)
+    {
         parent::__construct($da);
         $this->table_name = 'artifact';
     }
 
-    public function searchArtifactId($artifact_id){
+    public function searchArtifactId($artifact_id)
+    {
         if (! $this->artifactTableExists()) {
             return false;
         }
-        $artifact_id= $this->da->quoteSmart($artifact_id);
-        $sql = "SELECT group_id 
+        $artifact_id = $this->da->quoteSmart($artifact_id);
+        $sql         = "SELECT group_id 
                 FROM $this->table_name, artifact_group_list
                 WHERE artifact.group_artifact_id=artifact_group_list.group_artifact_id 
                     AND artifact.artifact_id=$artifact_id";
         return $this->retrieve($sql);
     }
 
-    public function searchGlobal($words, $exact, $offset, $atid, array $user_ugroups) {
+    public function searchGlobal($words, $exact, $offset, $atid, array $user_ugroups)
+    {
         $this->searchGlobalPaginated($words, $exact, $offset, $atid, $user_ugroups, 25);
     }
 
-    public function searchGlobalPaginated($words, $exact, $offset, $atid, array $user_ugroups, $limit) {
+    public function searchGlobalPaginated($words, $exact, $offset, $atid, array $user_ugroups, $limit)
+    {
         if ($exact) {
             $details = $this->searchExactMatch($words);
             $summary = $this->searchExactMatch($words);
@@ -83,7 +88,8 @@ class ArtifactDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function artifactTableExists() {
+    public function artifactTableExists()
+    {
         $sql = "SHOW TABLES LIKE '{$this->table_name}'";
         $dar = $this->retrieve($sql);
         if (count($dar) == 1) {

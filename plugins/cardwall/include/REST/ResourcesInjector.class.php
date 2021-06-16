@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All rights reserved
+ * Copyright (c) Enalean, 2013 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class Cardwall_REST_ResourcesInjector {
+class Cardwall_REST_ResourcesInjector
+{
 
-     public function populate(Luracast\Restler\Restler $restler) {
+    public function populate(Luracast\Restler\Restler $restler)
+    {
         $restler->addAPIClass('\\Tuleap\\Cardwall\\REST\\v1\\CardsResource', AgileDashboard_CardRepresentation::ROUTE);
     }
 }

@@ -1,10 +1,15 @@
+DROP TABLE IF EXISTS plugin_docman_item_id;
+CREATE TABLE plugin_docman_item_id (
+  id INT(11) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT
+) ENGINE=InnoDB;
+
 DROP TABLE IF EXISTS plugin_docman_item;
 CREATE TABLE plugin_docman_item (
-  item_id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  item_id INT(11) UNSIGNED NOT NULL,
   parent_id INT(11) UNSIGNED NULL,
   group_id INT(11) UNSIGNED NULL,
-  title TEXT NULL,
-  description TEXT NULL,
+  title TEXT NOT NULL DEFAULT '',
+  description TEXT NOT NULL DEFAULT '',
   create_date INT(11) UNSIGNED NULL,
   update_date INT(11) UNSIGNED NULL,
   delete_date INT(11) UNSIGNED NULL,
@@ -26,7 +31,7 @@ CREATE TABLE plugin_docman_item (
   FULLTEXT fltxt_title (title),
   FULLTEXT fltxt_description (description),
   FULLTEXT fltxt (title, description)
-) ENGINE=MyISAM;
+);
 
 DROP TABLE IF EXISTS plugin_docman_item_deleted;
 CREATE TABLE plugin_docman_item_deleted (
@@ -66,7 +71,7 @@ CREATE TABLE plugin_docman_version (
   PRIMARY KEY(id),
   KEY item_id (item_id),
   FULLTEXT fltxt (label, changelog, filename)
-) ENGINE=MyISAM;
+);
 
 DROP TABLE IF EXISTS plugin_docman_link_version;
 CREATE TABLE plugin_docman_link_version (
@@ -205,7 +210,7 @@ CREATE TABLE plugin_docman_metadata_value (
   FULLTEXT fltxt (valueText, valueString),
   FULLTEXT fltxt_txt (valueText),
   FULLTEXT fltxt_str (valueString)
-) ENGINE=MyISAM;
+);
 
 --
 -- Table structure for table 'plugin_docman_metadata_love'
@@ -267,6 +272,7 @@ CREATE TABLE plugin_docman_metadata_love_md (
 -- item_id     Id of the item (FK plugin_docman_item (item_id))
 -- version_id  Id of the item version (FK plugin_docman_version (id))
 -- wiki_version_Id Id of the wiki page version (FK wiki_version(version))
+-- link_version_Id Id of the link version (FK plugin_docman_link_version(id))
 -- table_owner User who creates the table (FK user (user_id))
 -- date        Table creation date
 -- description A text that describe why the approval is required.
@@ -280,6 +286,7 @@ CREATE TABLE plugin_docman_approval (
   item_id INT(11) UNSIGNED NULL DEFAULT NULL,
   version_id INT(11) UNSIGNED NULL DEFAULT NULL,
   wiki_version_id INT(11) UNSIGNED NULL DEFAULT NULL,
+  link_version_id INT(11) UNSIGNED NULL DEFAULT NULL,
   table_owner INT(11) UNSIGNED NOT NULL,
   date INT(11) UNSIGNED NULL,
   description TEXT NULL,
@@ -287,8 +294,10 @@ CREATE TABLE plugin_docman_approval (
   notification TINYINT(4) DEFAULT 0 NOT NULL,
   notification_occurence INT(11) DEFAULT 0,
   auto_status TINYINT(4) DEFAULT 0 NOT NULL,
+  might_be_corrupted BOOL DEFAULT FALSE,
   PRIMARY KEY(table_id),
   UNIQUE KEY version_id (version_id),
+  UNIQUE KEY uniq_link_version_id (link_version_id),
   UNIQUE KEY item_id(item_id,wiki_version_id)
 );
 
@@ -402,6 +411,46 @@ CREATE TABLE plugin_docman_notification_ugroups (
     PRIMARY KEY (item_id, ugroup_id, type)
 );
 
+DROP TABLE IF EXISTS plugin_docman_new_document_upload;
+CREATE TABLE plugin_docman_new_document_upload (
+    item_id INT(11) UNSIGNED PRIMARY KEY REFERENCES plugin_docman_item_id(id),
+    expiration_date INT(11) UNSIGNED NOT NULL,
+    parent_id INT(11) UNSIGNED NOT NULL,
+    title TEXT NULL,
+    description TEXT NULL,
+    user_id INT(11) UNSIGNED NOT NULL,
+    filename TEXT NULL,
+    filesize INT(11) UNSIGNED NULL,
+    status TINYINT(4) DEFAULT 100 NOT NULL,
+    obsolescence_date int(11) DEFAULT 0 NOT NULL,
+    INDEX idx_parentid (parent_id),
+    INDEX idx_expiration_date (expiration_date)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_docman_new_version_upload;
+CREATE TABLE plugin_docman_new_version_upload(
+    id INT(11) UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    expiration_date INT(11) UNSIGNED NOT NULL,
+    item_id INT(11) UNSIGNED NOT NULL,
+    version_title TEXT NULL,
+    changelog TEXT NULL,
+    user_id INT(11) UNSIGNED NOT NULL,
+    filename TEXT NULL,
+    filesize INT(11) UNSIGNED NULL,
+    is_file_locked BOOL NOT NULL,
+    approval_table_action VARCHAR(6) NULL,
+    status TINYINT(4) DEFAULT 100 NOT NULL,
+    obsolescence_date INT(11) DEFAULT 0 NOT NULL,
+    title varchar(255) NULL,
+    description TEXT NULL,
+    INDEX idx_expiration_date (expiration_date),
+    INDEX idx_item_id (item_id)
+) ENGINE=InnoDB;
+
+INSERT INTO forgeconfig VALUES ('plugin_docman_max_number_of_files', 50);
+-- 67108864 = 64MB
+INSERT INTO forgeconfig VALUES ('plugin_docman_max_file_size', 67108864);
+
 -- Enable service for project 1 and 100
 INSERT INTO service(group_id, label, description, short_name, link, is_active, is_used, scope, rank) VALUES ( 100 , 'plugin_docman:service_lbl_key' , 'plugin_docman:service_desc_key' , 'docman', '/plugins/docman/?group_id=$group_id', 1 , 0 , 'system',  95 );
 
@@ -503,7 +552,9 @@ INSERT INTO permissions_values VALUES ('PLUGIN_DOCMAN_ADMIN', 4, 1);
 INSERT INTO plugin_docman_metadata_love(value_id, name, description, rank, status) VALUES (100, 'love_special_none_name_key', 'love_special_none_desc_key', 0, 'P');
 
 -- Instanciate docman in default template project
-INSERT INTO plugin_docman_item (parent_id, group_id, title, description, create_date, update_date, delete_date, user_id, status, obsolescence_date, rank, item_type, link_url, wiki_page, file_is_embedded) VALUES (0, 100, 'roottitle_lbl_key', '', UNIX_TIMESTAMP(NOW()), UNIX_TIMESTAMP(NOW()), NULL, 101, 0, 0, 0, 1, NULL, NULL, NULL);
+INSERT INTO plugin_docman_item_id VALUES (NULL);
+INSERT INTO plugin_docman_item (item_id, parent_id, group_id, title, description, create_date, update_date, delete_date, user_id, status, obsolescence_date, rank, item_type, link_url, wiki_page, file_is_embedded)
+VALUES (LAST_INSERT_ID(), 0, 100, 'roottitle_lbl_key', '', UNIX_TIMESTAMP(NOW()), UNIX_TIMESTAMP(NOW()), NULL, 101, 0, 0, 0, 1, NULL, NULL, NULL);
 
 INSERT INTO  plugin_docman_project_settings (group_id, view, use_obsolescence_date, use_status)
 VALUES (100, 'Tree', 0, 0);

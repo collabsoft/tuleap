@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,21 +18,25 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SystemCheckLogger extends WrapperLogger {
+class SystemCheckLogger extends WrapperLogger
+{
 
-    private $warning_messages = array();
+    private $warning_messages = [];
 
-    public function warn($message, Exception $e = null) {
+    public function warning($message, array $context = [])
+    {
         $this->warning_messages[] = $message;
 
-        parent::warn($message, $e);
+        parent::warning($message, $context);
     }
 
-    public function getAllWarnings() {
+    public function getAllWarnings()
+    {
         return implode(', ', $this->warning_messages);
     }
 
-    public function hasWarnings() {
+    public function hasWarnings()
+    {
         return count($this->warning_messages) > 0;
     }
 }

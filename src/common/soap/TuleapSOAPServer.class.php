@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,22 +18,22 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class TuleapSOAPServer extends SoapServer {
+class TuleapSOAPServer extends SoapServer
+{
 
-    public function __construct($wsdl, array $options = null)
+    public function __construct($wsdl, ?array $options = null)
     {
         if (ForgeConfig::get('sys_use_unsecure_ssl_certificate') === true) {
             $wsdl = $this->fetchUnsecureWsdl($wsdl);
         }
 
         if ($options === null) {
-            $options = array();
+            $options = [];
         }
         $options['soap_version'] = SOAP_1_2;
-        $xml_security = new XML_Security();
-        $xml_security->enableExternalLoadOfEntities();
-        parent::__construct($wsdl, $options);
-        $xml_security->disableExternalLoadOfEntities();
+        XML_Security::enableExternalLoadOfEntities(function () use ($options, $wsdl) {
+            parent::__construct($wsdl, $options);
+        });
     }
 
     /**
@@ -48,7 +48,7 @@ class TuleapSOAPServer extends SoapServer {
      */
     private function fetchUnsecureWsdl($wsdl_url)
     {
-        $context = stream_context_create([
+        $context      = stream_context_create([
             'ssl' => [
                 'verify_peer' => false,
                 'verify_peer_name' => false,
@@ -59,7 +59,7 @@ class TuleapSOAPServer extends SoapServer {
         if ($wsdl_content == "") {
             throw new SoapFault(255, "Unable to fetch WSDL");
         }
-        $wsdl_file_path = ForgeConfig::get('codendi_cache_dir').'/wsdl-'.md5($wsdl_url);
+        $wsdl_file_path = ForgeConfig::get('codendi_cache_dir') . '/wsdl-' . md5($wsdl_url);
         file_put_contents($wsdl_file_path, $wsdl_content);
         return $wsdl_file_path;
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ArtifactUserMultiListFieldXMLExporter extends ArtifactAlphaNumFieldXMLExporter {
-    const LABEL_VALUES_INDEX  = 'valueLabelList';
-    const TV3_TYPE            = 'MB_5';
-    const TV5_TYPE            = 'list';
-    const TV5_BIND            = 'users';
+class ArtifactUserMultiListFieldXMLExporter extends ArtifactAlphaNumFieldXMLExporter
+{
+    public const LABEL_VALUES_INDEX = 'valueLabelList';
+    public const TV3_TYPE           = 'MB_5';
+    public const TV5_TYPE           = 'list';
+    public const TV5_BIND           = 'users';
 
-    const SYS_VALUE_NONE_FR = 'Aucun';
-    const SYS_VALUE_NONE_EN = 'None';
+    public const SYS_VALUE_NONE_FR = 'Aucun';
+    public const SYS_VALUE_NONE_EN = 'None';
 
     /** @var ArtifactMultiListCurrentValueExporter */
     private $current_value_exporter;
@@ -38,7 +39,8 @@ class ArtifactUserMultiListFieldXMLExporter extends ArtifactAlphaNumFieldXMLExpo
         $this->current_value_exporter = $current_value_exporter;
     }
 
-    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row) {
+    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row)
+    {
         $values = explode(',', $row['new_value']);
 
         $field_node = $this->getNode(self::TV5_TYPE, $row);
@@ -52,7 +54,8 @@ class ArtifactUserMultiListFieldXMLExporter extends ArtifactAlphaNumFieldXMLExpo
         $changeset_node->appendChild($field_node);
     }
 
-    protected function getValueLabel($value) {
+    protected function getValueLabel($value)
+    {
         if ($this->valueIsSystemValueNone($value)) {
             return '';
         }
@@ -60,25 +63,29 @@ class ArtifactUserMultiListFieldXMLExporter extends ArtifactAlphaNumFieldXMLExpo
         return $value;
     }
 
-    public function getCurrentFieldValue(array $field_value_row, $tracker_id) {
+    public function getCurrentFieldValue(array $field_value_row, $tracker_id)
+    {
         return $this->current_value_exporter->getCurrentFieldValue($field_value_row, $tracker_id);
     }
 
-    private function valueIsSystemValueNone($value) {
-        return $value === self::SYS_VALUE_NONE_EN  ||
+    private function valueIsSystemValueNone($value)
+    {
+        return $value === self::SYS_VALUE_NONE_EN ||
                $value === self::SYS_VALUE_NONE_FR;
     }
 
-    public function getFieldValueIndex() {
+    public function getFieldValueIndex()
+    {
         return self::LABEL_VALUES_INDEX;
     }
 
-    public function isValueEqual($value1, $value2) {
-        $value1 = explode(',', $value1);
-        $value2 = explode(',', $value2);
+    public function isValueEqual($history_field_value, $field_value)
+    {
+        $value1 = explode(',', $history_field_value);
+        $value2 = explode(',', $field_value);
 
-        $value1 = array_map(array($this, 'getValueLabel'), $value1);
-        $value2 = array_map(array($this, 'getValueLabel'), $value2);
+        $value1 = array_map([$this, 'getValueLabel'], $value1);
+        $value2 = array_map([$this, 'getValueLabel'], $value2);
 
         sort($value1);
         sort($value2);

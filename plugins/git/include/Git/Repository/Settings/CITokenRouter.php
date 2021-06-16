@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,6 +41,9 @@ class CITokenRouter extends RouterLink
         switch ($request->get('action')) {
             case 'generate-ci-token':
                 $this->controller->generateToken($request);
+                break;
+            case 'set-build_status-permissions':
+                $this->controller->setBuildStatusChangePermission($request);
                 break;
             default:
                 parent::process($request);

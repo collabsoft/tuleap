@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,21 +21,9 @@
 namespace Tuleap\Cardwall\Semantic;
 
 use Cardwall_Semantic_CardFields;
-use Cardwall_UserPreferences_UserPreferencesDisplayUser;
 
 class SingleCardPreviewDetailsBuilder
 {
-    /**
-     * @var Cardwall_UserPreferences_UserPreferencesDisplayUser
-     */
-    private $card_preferences;
-
-    public function __construct(
-        Cardwall_UserPreferences_UserPreferencesDisplayUser $card_preferences
-    ) {
-        $this->card_preferences = $card_preferences;
-    }
-
     public function build(Cardwall_Semantic_CardFields $semantic_card, array $possible_background)
     {
         $card_preview = [];
@@ -43,7 +31,7 @@ class SingleCardPreviewDetailsBuilder
         $fields_details = $this->extractDetailsFields($semantic_card, $possible_background);
 
         $card_preview['card_preview_details'] = $fields_details;
-        $card_preview['tracker_color']        = $semantic_card->getTracker()->getNormalizedColor();
+        $card_preview['tracker_color']        = $semantic_card->getTracker()->getColor()->getName();
 
         return $card_preview;
     }

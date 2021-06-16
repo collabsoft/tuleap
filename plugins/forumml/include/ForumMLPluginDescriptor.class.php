@@ -18,13 +18,11 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('common/plugin/PluginDescriptor.class.php');
+class ForumMLPluginDescriptor extends PluginDescriptor
+{
 
-class ForumMLPluginDescriptor extends PluginDescriptor {
-    
-    function __construct() {
-        parent::__construct('ForumML', false, $GLOBALS['Language']->getText('plugin_forumml', 'descriptor_description'));
-        $this->setVersionFromFile(dirname(__FILE__).'/../VERSION');
+    public function __construct()
+    {
+        parent::__construct('ForumML', false, dgettext('tuleap-forumml', 'ForumML provide a nice view of GNU Mailman archives.'));
     }
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,10 +21,11 @@
 use Tuleap\Git\Gitolite\SSHKey\InvalidKeysCollector;
 use Tuleap\Git\Gitolite\SSHKey\MassDumper;
 
-class SystemEvent_GIT_DUMP_ALL_SSH_KEYS extends SystemEvent {
-    const NAME = 'GIT_DUMP_ALL_SSH_KEYS';
+class SystemEvent_GIT_DUMP_ALL_SSH_KEYS extends SystemEvent
+{
+    public const NAME = 'GIT_DUMP_ALL_SSH_KEYS';
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
     /** @var MassDumper */
@@ -32,10 +33,10 @@ class SystemEvent_GIT_DUMP_ALL_SSH_KEYS extends SystemEvent {
 
     public function injectDependencies(
         MassDumper $mass_dumper,
-        Logger $logger
+        \Psr\Log\LoggerInterface $logger
     ) {
-        $this->mass_dumper      = $mass_dumper;
-        $this->logger           = $logger;
+        $this->mass_dumper = $mass_dumper;
+        $this->logger      = $logger;
     }
 
     public function process()
@@ -50,7 +51,8 @@ class SystemEvent_GIT_DUMP_ALL_SSH_KEYS extends SystemEvent {
         $this->done();
     }
 
-    public function verbalizeParameters($with_link) {
-       return '';
+    public function verbalizeParameters($with_link)
+    {
+        return '';
     }
 }

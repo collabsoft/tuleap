@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,15 +19,15 @@
  *
  */
 
-require_once 'pre.php';
-require_once __DIR__.'/../lib/autoload.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 $data_builder = new REST_TestDataBuilder();
 $data_builder
     ->instanciateFactories()
     ->generateUsers()
-    ->delegatePermissionsToRetrieveMembership()
-    ->delegatePermissionsToManageUser()
-    ->generateCrossTracker()
+    ->delegateForgePermissions()
     ->deleteTracker()
-    ->activateDebug();
+    ->deleteProject()
+    ->suspendProject()
+    ->createProjectField();

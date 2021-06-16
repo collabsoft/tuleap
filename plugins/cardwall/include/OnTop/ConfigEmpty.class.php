@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,35 +18,42 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
 
 /**
  * Manage configuration of a cardwall on top of a tracker
  */
-class Cardwall_OnTop_ConfigEmpty implements Cardwall_OnTop_IConfig {
+class Cardwall_OnTop_ConfigEmpty implements Cardwall_OnTop_IConfig
+{
 
-    public function getTracker() {
+    public function getTracker()
+    {
         return null;
     }
 
-    public function isEnabled() {
+    public function isEnabled()
+    {
         return false;
     }
 
-    public function enable() {
+    public function enable()
+    {
         return false;
     }
 
-    public function disable() {
+    public function disable()
+    {
         return false;
     }
 
     /**
      * Get Frestyle columns for Cardwall_OnTop, or status columns if none
-     * 
+     *
      * @param Tracker $tracker
      * @return Cardwall_OnTop_Config_ColumnCollection
      */
-    public function getDashboardColumns() {
+    public function getDashboardColumns()
+    {
         return false;
     }
 
@@ -54,60 +61,59 @@ class Cardwall_OnTop_ConfigEmpty implements Cardwall_OnTop_IConfig {
      * Get Columns from the values of a $field
      * @return Cardwall_OnTop_Config_ColumnCollection
      */
-    public function getRendererColumns(Tracker_FormElement_Field_List $cardwall_field) {
-        return false;
-    }
-    
-    public function getMappings() {
+    public function getRendererColumns(Tracker_FormElement_Field_List $cardwall_field)
+    {
         return false;
     }
 
-    public function getTrackers() {
+    public function getFilteredRendererColumns(Tracker_FormElement_Field_List $cardwall_field, array $filter)
+    {
+        return;
+    }
+
+    public function getMappings()
+    {
         return false;
     }
-    
+
+    public function getTrackers()
+    {
+        return false;
+    }
+
     /**
-     * @param Tracker $mapping_tracker
-     * 
+     *
      * @return Cardwall_OnTop_Config_TrackerMapping
      */
-    public function getMappingFor(Tracker $mapping_tracker) {
+    public function getMappingFor(Tracker $mapping_tracker)
+    {
         return null;
     }
-    
-    private function isMappedTo($tracker, $artifact_status, Cardwall_Column $column) {
-        return false;
-    }
 
-    public function isInColumn(Tracker_Artifact                                     $artifact, 
-                               Cardwall_FieldProviders_IProvideFieldGivenAnArtifact $field_provider, 
-                               Cardwall_Column                                      $column) {
+    public function isInColumn(
+        Artifact $artifact,
+        Cardwall_FieldProviders_IProvideFieldGivenAnArtifact $field_provider,
+        Cardwall_Column $column
+    ) {
         return false;
     }
 
     /**
-     * Get the column/field/value mappings by duck typing the colums labels 
+     * Get the column/field/value mappings by duck typing the colums labels
      * with the values of the given fields
      *
      * @param array $fields array of Tracker_FormElement_Field_Selectbox
      *
      * @return Cardwall_MappingCollection
      */
-    public function getCardwallMappings(array $fields, Cardwall_OnTop_Config_ColumnCollection $cardwall_columns) {
-        return false;
-    }
-    
-    private function fillMappingsByDuckType(Cardwall_MappingCollection             $mappings, 
-                                            array                                  $fields, 
-                                            Cardwall_OnTop_Config_ColumnCollection $columns) {
+    public function getCardwallMappings(array $fields, Cardwall_OnTop_Config_ColumnCollection $cardwall_columns)
+    {
         return false;
     }
 
-    public function fillMappingsWithOnTopMappings(Cardwall_MappingCollection             $mappings, 
-                                                  Cardwall_OnTop_Config_ColumnCollection $columns) {
+    public function fillMappingsWithOnTopMappings(
+        Cardwall_MappingCollection $mappings,
+        Cardwall_OnTop_Config_ColumnCollection $columns
+    ) {
     }
-
-    
-
 }
-?>

@@ -1,9 +1,9 @@
 <?php
 /**
  * Copyright 1999-2000 (c) The SourceForge Crew
- * Copyright Enalean (c) 2015 - 2017. All rights reserved.
+ * Copyright Enalean (c) 2015 - Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -23,24 +23,26 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('pre.php');
-require_once('www/project/admin/project_admin_utils.php');
+require_once __DIR__ . '/../../include/pre.php';
+require_once __DIR__ . '/project_admin_utils.php';
 
 use Tuleap\Project\Admin\ProjectDetails\ProjectDetailsController;
 use Tuleap\Project\Admin\ProjectDetails\ProjectDetailsDAO;
 use Tuleap\Project\Admin\ProjectDetails\ProjectDetailsRouter;
 use Tuleap\Project\Admin\ProjectVisibilityPresenterBuilder;
 use Tuleap\Project\Admin\ProjectVisibilityUserConfigurationPermissions;
+use Tuleap\Project\Admin\RestrictedUsersProjectCounter;
 use Tuleap\Project\Admin\ServicesUsingTruncatedMailRetriever;
 use Tuleap\Project\DescriptionFieldsDao;
 use Tuleap\Project\DescriptionFieldsFactory;
+use Tuleap\Project\Registration\Template\TemplateFactory;
 use Tuleap\TroveCat\TroveCatLinkDao;
 
 $group_id = $request->get('group_id');
 
-session_require(array('group'=>$group_id,'admin_flags'=>'A'));
+session_require(['group' => $group_id, 'admin_flags' => 'A']);
 
-$currentproject                    = new project($group_id);
+$currentproject                    = new Project($group_id);
 $fields_factory                    = new DescriptionFieldsFactory(new DescriptionFieldsDao());
 $project_details_dao               = new ProjectDetailsDAO();
 $project_manager                   = ProjectManager::instance();
@@ -59,7 +61,9 @@ $ugroup_binding = new UGroupBinding(
 
 $project_visibility_presenter_builder = new ProjectVisibilityPresenterBuilder(
     $project_visibility_configuration,
-    $service_truncated_mails_retriever
+    $service_truncated_mails_retriever,
+    new RestrictedUsersProjectCounter(new UserDao()),
+    new \Tuleap\Project\Admin\ProjectVisibilityOptionsForPresenterGenerator()
 );
 
 $csrf_token = new CSRFSynchronizerToken($request->getFromServer('REQUEST_URI'));
@@ -73,10 +77,10 @@ $project_details_controller = new ProjectDetailsController(
     $project_history_dao,
     $project_visibility_presenter_builder,
     $project_visibility_configuration,
-    $service_truncated_mails_retriever,
     $ugroup_binding,
     $trove_cat_link_dao,
-    $csrf_token
+    $csrf_token,
+    TemplateFactory::build(),
 );
 
 $project_details_router = new ProjectDetailsRouter(
@@ -85,4 +89,4 @@ $project_details_router = new ProjectDetailsRouter(
 
 $project_details_router->route($request);
 
-project_admin_footer(array());
+project_admin_footer([]);

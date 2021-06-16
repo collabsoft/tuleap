@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -25,7 +25,6 @@
 namespace Tuleap\Tracker\FormElement;
 
 use PFUser;
-use Tracker_Artifact;
 use Tuleap\Tracker\REST\Artifact\BurndownRepresentation;
 
 class BurndownFieldPresenter
@@ -40,7 +39,7 @@ class BurndownFieldPresenter
         PFUser $current_user,
         $css_url,
         $warning,
-        BurndownRepresentation $burndown_representation = null
+        ?BurndownRepresentation $burndown_representation = null
     ) {
         $this->data_burndown = json_encode($burndown_representation);
         $this->locale        = $current_user->getLocale();

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,7 +31,7 @@ use Project;
 class TemplatePermissionsUpdater
 {
 
-    const REQUEST_KEY = 'default_access_rights';
+    public const REQUEST_KEY = 'default_access_rights';
 
     /**
      * @var PermissionChangesDetector
@@ -127,9 +127,9 @@ class TemplatePermissionsUpdater
         $csrf = new CSRFSynchronizerToken("/plugins/git/?group_id=$project_id&action=admin-default-access-rights");
         $csrf->check();
 
-        $read_ugroup_ids                 = array();
-        $write_ugroup_ids                = array();
-        $rewind_ugroup_ids               = array();
+        $read_ugroup_ids                 = [];
+        $write_ugroup_ids                = [];
+        $rewind_ugroup_ids               = [];
         $ugroup_ids                      = $request->get(self::REQUEST_KEY);
         $enable_fine_grained_permissions = $request->get('use-fine-grained-permissions');
         $enable_regexp                   = $request->get('use-regexp');
@@ -140,12 +140,13 @@ class TemplatePermissionsUpdater
             $rewind_ugroup_ids = $this->getUgroupIdsForPermission($ugroup_ids, Git::DEFAULT_PERM_WPLUS);
         }
 
-        if ($this->isDisablingFineGrainedPermissions($project, $enable_fine_grained_permissions)
+        if (
+            $this->isDisablingFineGrainedPermissions($project, $enable_fine_grained_permissions)
             && empty($write_ugroup_ids)
         ) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_git', 'template_access_control_missing')
+                dgettext('tuleap-git', 'Please define Write permissions.')
             );
             return false;
         }
@@ -165,13 +166,13 @@ class TemplatePermissionsUpdater
                 Git::DEFAULT_GIT_PERMS_GRANTED_FOR_PROJECT,
                 $this->history_value_formatter->formatValueForProject($project),
                 $project_id,
-                array($project_id)
+                [$project_id]
             );
         }
 
         $GLOBALS['Response']->addFeedback(
             Feedback::INFO,
-            $GLOBALS['Language']->getText('plugin_git', 'template_access_control_saved')
+            dgettext('tuleap-git', 'Access control template successfully saved.')
         );
     }
 
@@ -187,17 +188,19 @@ class TemplatePermissionsUpdater
         $current_permissions = $this->default_fine_grained_factory->getBranchesFineGrainedPermissionsForProject($project)
             + $this->default_fine_grained_factory->getTagsFineGrainedPermissionsForProject($project);
 
-        $updated_permissions        = array();
-        $added_tags_permissions     = array();
-        $added_branches_permissions = array();
+        $updated_permissions        = [];
+        $added_tags_permissions     = [];
+        $added_branches_permissions = [];
 
-        if ($this->isEnablingFineGrainedPermissions($project, $enable_fine_grained_permissions) &&
+        if (
+            $this->isEnablingFineGrainedPermissions($project, $enable_fine_grained_permissions) &&
             count($current_permissions) === 0
         ) {
             $added_tags_permissions     = $this->default_fine_grained_factory->getDefaultTagsFineGrainedPermissionsForProject($project);
             $added_branches_permissions = $this->default_fine_grained_factory->getDefaultBranchesFineGrainedPermissionsForProject($project);
         } else {
-            if ($enable_fine_grained_permissions &&
+            if (
+                $enable_fine_grained_permissions &&
                 ! $this->isEnablingFineGrainedPermissions($project, $enable_fine_grained_permissions)
             ) {
                 $updated_permissions = $this->default_fine_grained_factory->getUpdatedPermissionsFromRequest(
@@ -261,11 +264,11 @@ class TemplatePermissionsUpdater
         $regexp_activation = '';
         if ($enable_regexp && $this->regexp_retriever->areRegexpActivatedForDefault($project) === false) {
             $this->regexp_enabler->enableForTemplate($project);
-            $regexp_activation = $GLOBALS['Language']->getText('plugin_git', 'enabled');
-        } else if (! $enable_regexp && $this->regexp_retriever->areRegexpActivatedForDefault($project) === true) {
+            $regexp_activation = dgettext('tuleap-git', 'enabled');
+        } elseif (! $enable_regexp && $this->regexp_retriever->areRegexpActivatedForDefault($project) === true) {
             $this->regexp_disabler->disableForTemplate($project);
             $this->permission_filter->filterNonRegexpPermissionsForDefault($project);
-            $regexp_activation = $GLOBALS['Language']->getText('plugin_git', 'disabled');
+            $regexp_activation = dgettext('tuleap-git', 'disabled');
         }
 
         foreach ($added_branches_permissions as $added_branch_permission) {
@@ -283,9 +286,9 @@ class TemplatePermissionsUpdater
         if ($regexp_activation !== '') {
             $this->history_dao->groupAddHistory(
                 'regexp_activated_for_git_template',
-                $GLOBALS['Language']->getText('plugin_git', 'history_regexp_template', array($regexp_activation, $project->getPublicName())),
+                sprintf(dgettext('tuleap-git', 'Regular expression %1$s for project %2$s.'), $regexp_activation, $project->getPublicName()),
                 $project->getID(),
-                array($regexp_activation, $project->getUnixNameMixedCase())
+                [$regexp_activation, $project->getUnixNameMixedCase()]
             );
         }
 
@@ -305,7 +308,7 @@ class TemplatePermissionsUpdater
      */
     private function getUgroupIdsForPermission(array $ugroup_ids, $permission)
     {
-        $ugroup_ids_for_permission = array();
+        $ugroup_ids_for_permission = [];
 
         if (isset($ugroup_ids[$permission]) && is_array($ugroup_ids[$permission])) {
             $ugroup_ids_for_permission = $ugroup_ids[$permission];

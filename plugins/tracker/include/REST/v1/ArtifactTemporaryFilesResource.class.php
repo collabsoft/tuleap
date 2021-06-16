@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 — 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 — Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,72 +20,53 @@
 
 namespace Tuleap\Tracker\REST\v1;
 
-use Tuleap\REST\ProjectAuthorization;
-use Luracast\Restler\RestException;
-use Tracker_Artifact_Attachment_TemporaryFile                    as TemporaryFile;
-use Tracker_Artifact_Attachment_TemporaryFileManager             as FileManager;
-use Tracker_Artifact_Attachment_TemporaryFileManagerDao          as FileManagerDao;
-use Tuleap\Tracker\REST\Artifact\FileInfoRepresentation          as FileInfoRepresentation;
-use Tuleap\Tracker\REST\Artifact\FileDataRepresentation          as FileDataRepresentation;
-use Tracker_Artifact_Attachment_CannotCreateException            as CannotCreateException;
-use Tracker_Artifact_Attachment_ChunkTooBigException             as ChunkTooBigException;
-use Tracker_Artifact_Attachment_InvalidPathException             as InvalidPathException;
-use Tracker_Artifact_Attachment_FileNotFoundException            as FileNotFoundException;
-use Tracker_Artifact_Attachment_InvalidOffsetException           as InvalidOffsetException;
-use Tracker_FileInfo_InvalidFileInfoException                    as InvalidFileInfoException;
-use Tracker_FileInfo_UnauthorisedException                       as UnauthorisedException;
-use Tuleap\Tracker\Artifact\Attachment\QuotaExceededException;
-use Tuleap\REST\Exceptions\LimitOutOfBoundsException;
-use Tuleap\REST\Header;
-use UserManager;
-use PFUser;
-use Tracker_ArtifactFactory;
-use Tracker_FormElementFactory;
-use Tracker_FileInfoFactory;
-use Tracker_FileInfoDao;
-use Tracker_URLVerification;
-use System_Command;
 use ForgeConfig;
+use Luracast\Restler\RestException;
+use PFUser;
+use System_Command;
+use Tracker_Artifact_Attachment_CannotCreateException as CannotCreateException;
+use Tracker_Artifact_Attachment_ChunkTooBigException as ChunkTooBigException;
+use Tracker_Artifact_Attachment_FileNotFoundException as FileNotFoundException;
+use Tracker_Artifact_Attachment_InvalidOffsetException as InvalidOffsetException;
+use Tracker_Artifact_Attachment_InvalidPathException as InvalidPathException;
+use Tracker_Artifact_Attachment_TemporaryFile as TemporaryFile;
+use Tracker_Artifact_Attachment_TemporaryFileManager as FileManager;
+use Tracker_Artifact_Attachment_TemporaryFileManagerDao as FileManagerDao;
+use Tracker_Exception;
+use Tracker_FileInfo_InvalidFileInfoException as InvalidFileInfoException;
+use Tracker_FormElement_InvalidFieldException;
+use Tracker_NoChangeException;
+use Tuleap\REST\Header;
+use Tuleap\Tracker\Artifact\Attachment\QuotaExceededException;
+use Tuleap\Tracker\REST\Artifact\FileDataRepresentation;
+use Tuleap\Tracker\REST\Artifact\FileInfoRepresentation;
+use UserManager;
 
-class ArtifactTemporaryFilesResource {
+class ArtifactTemporaryFilesResource
+{
 
-    const PAGINATION_MAX_LIMIT      = 50;
-    const PAGINATION_DEFAULT_LIMIT  = 10;
-    const PAGINATION_DEFAULT_OFFSET = 0;
+    public const PAGINATION_MAX_LIMIT      = 50;
+    public const PAGINATION_DEFAULT_LIMIT  = 10;
+    public const PAGINATION_DEFAULT_OFFSET = 0;
 
-    const DEFAULT_LIMIT = 1048576; // 1Mo
+    public const DEFAULT_LIMIT = 1048576; // 1Mo
 
     /** @var PFUser */
     private $user;
 
-    /** @var Tracker_Artifact_Attachment_TemporaryFileManager */
+    /** @var \Tracker_Artifact_Attachment_TemporaryFileManager */
     private $file_manager;
 
-    /** @var Tracker_ArtifactFactory */
-    private $artifact_factory;
+    public function __construct()
+    {
+        $this->user = UserManager::instance()->getCurrentUser();
 
-    /** @var Tracker_FormElementFactory */
-    private $formelement_factory;
-
-    /** @var Tracker_FileInfoFactory */
-    private $fileinfo_factory;
-
-
-    public function __construct() {
-        $this->user                = UserManager::instance()->getCurrentUser();
-        $this->artifact_factory    = Tracker_ArtifactFactory::instance();
-        $this->formelement_factory = Tracker_FormElementFactory::instance();
-        $this->fileinfo_factory    = new Tracker_FileInfoFactory(
-            new Tracker_FileInfoDao(),
-            $this->formelement_factory,
-            $this->artifact_factory
-        );
         $this->file_manager = new FileManager(
             UserManager::instance(),
             new FileManagerDao(),
-            $this->fileinfo_factory,
             new System_Command(),
-            ForgeConfig::get('sys_file_deletion_delay')
+            ForgeConfig::get('sys_file_deletion_delay'),
+            new \Tuleap\DB\DBTransactionExecutorWithConnection(\Tuleap\DB\DBFactory::getMainTuleapDBConnection())
         );
     }
 
@@ -95,20 +76,22 @@ class ArtifactTemporaryFilesResource {
      * For now, only temporary files created by the user can be retrieved
      *
      * @url GET
+     * @oauth2-scope read:tracker
      *
-     * @return Array {@type \Tuleap\Tracker\REST\Artifact\FileInfoRepresentation}
+     * @return array {@type \Tuleap\Tracker\REST\Artifact\FileInfoRepresentation}
      * @param int    $limit  Number of elements displayed per page {@from path}{@min 1}
      * @param int    $offset Position of the first element to display {@from path}{@min 0}
      *
-     * @throws 400
+     * @throws RestException 400
      */
-    protected function get($limit  = self::PAGINATION_DEFAULT_LIMIT, $offset = self::PAGINATION_DEFAULT_OFFSET) {
+    protected function get($limit = self::PAGINATION_DEFAULT_LIMIT, $offset = self::PAGINATION_DEFAULT_OFFSET)
+    {
         if ($limit > self::PAGINATION_MAX_LIMIT) {
             throw new RestException(400);
         }
 
-        $paginated_files = $this->file_manager->getPaginatedUserTemporaryFiles($this->user, $offset, $limit);
-        $files_representations = array();
+        $paginated_files       = $this->file_manager->getPaginatedUserTemporaryFiles($this->user, $offset, $limit);
+        $files_representations = [];
 
         foreach ($paginated_files->getFiles() as $file) {
             $files_representations[] = $this->buildFileRepresentation($file);
@@ -126,48 +109,46 @@ class ArtifactTemporaryFilesResource {
      * A user can only access their own temporary files
      *
      * @url GET {id}
+     * @oauth2-scope read:tracker
      * @param int $id     Id of the file
-     * @param int $offset Where to start to read the file
-     * @param int $limit  How much to read the file
+     * @param int $offset Where to start to read the file {@min 0}
+     * @param int $limit  How much to read the file {@min 0} {@max 1048576}
      *
-     * @return \Tuleap\Tracker\REST\Artifact\FileDataRepresentation
+     * @return FileDataRepresentation
      *
-     * @throws 404
-     * @throws 406
+     * @throws RestException 404
      */
-    protected function getId($id, $offset = 0, $limit = self::DEFAULT_LIMIT) {
-        $this->checkLimitValue($limit);
-
+    protected function getId($id, $offset = 0, $limit = self::DEFAULT_LIMIT)
+    {
         $chunk = $this->getTemporaryFileContent($id, $offset, $limit);
         $size  = $this->getTemporaryFileSize($id);
 
         $this->sendAllowHeadersForArtifactFilesId();
         $this->sendPaginationHeaders($limit, $offset, $size);
 
-        $file_data_representation = new FileDataRepresentation();
-
-        return $file_data_representation->build($chunk);
+        return new FileDataRepresentation($chunk);
     }
 
     /**
-     * @throws 401
-     * @throws 404
+     * @throws RestException 401
+     * @throws RestException 404
      */
-    private function getTemporaryFileContent($id, $offset, $limit) {
+    private function getTemporaryFileContent($id, $offset, $limit)
+    {
         $file = $this->getFile($id);
 
         try {
             return $this->file_manager->getTemporaryFileChunk($file, $offset, $limit);
-
         } catch (FileNotFoundException $e) {
             throw new RestException(404);
         }
     }
 
     /**
-     * @throws 404
+     * @throws RestException 404
      */
-    private function getTemporaryFileSize($id) {
+    private function getTemporaryFileSize($id)
+    {
         return $this->getFile($id)->getSize();
     }
 
@@ -191,9 +172,11 @@ class ArtifactTemporaryFilesResource {
      * @param string $description   Description of the file {@from body}
      *
      * @return \Tuleap\Tracker\REST\Artifact\FileInfoRepresentation
-     * @throws 500 406 403
+     * @throws RestException 500
+     * @throws RestException 403
      */
-    protected function post($name, $mimetype, $content, $description = null) {
+    protected function post($name, $mimetype, $content, $description = null)
+    {
         try {
             $this->file_manager->validateChunkSize($this->user, $content);
 
@@ -203,11 +186,11 @@ class ArtifactTemporaryFilesResource {
         } catch (CannotCreateException $e) {
             $this->raiseError(500);
         } catch (ChunkTooBigException $e) {
-            $this->raiseError(406, 'Uploaded content exceeds maximum size of ' . $this->file_manager->getMaximumChunkSize());
+            $this->raiseError(400, 'Uploaded content exceeds maximum size of ' . $this->file_manager->getMaximumChunkSize());
         } catch (InvalidPathException $e) {
             $this->raiseError(500, $e->getMessage());
         } catch (QuotaExceededException $e) {
-            $this->raiseError(406, 'You exceeded your quota. Please remove existing temporary files before continuing.');
+            $this->raiseError(400, 'You exceeded your quota. Please remove existing temporary files before continuing.');
         }
 
         if (! $append) {
@@ -240,9 +223,9 @@ class ArtifactTemporaryFilesResource {
      * @param int    $offset  Used to check that the chunk uploaded is the next one (minimum value is 2) {@from body}
      *
      * @return \Tuleap\Tracker\REST\Artifact\FileInfoRepresentation
-     * @throws 406
      */
-    protected function putId($id, $content, $offset) {
+    protected function putId($id, $content, $offset)
+    {
         $this->checkFileIsTemporary($id);
 
         $file = $this->getFile($id);
@@ -250,13 +233,12 @@ class ArtifactTemporaryFilesResource {
         try {
             $this->file_manager->validateChunkSize($this->user, $content);
             $this->file_manager->appendChunk($content, $file, $offset);
-
         } catch (ChunkTooBigException $e) {
-            $this->raiseError(406, 'Uploaded content exceeds maximum size of ' . $this->file_manager->getMaximumChunkSize());
+            $this->raiseError(400, 'Uploaded content exceeds maximum size of ' . $this->file_manager->getMaximumChunkSize());
         } catch (InvalidOffsetException $e) {
-            $this->raiseError(406, 'Invalid offset received. Expected: '. ($file->getCurrentChunkOffset() +1));
+            $this->raiseError(400, 'Invalid offset received. Expected: ' . ($file->getCurrentChunkOffset() + 1));
         } catch (QuotaExceededException $e) {
-            $this->raiseError(406, 'You exceeded your quota. Please remove existing temporary files before continuing.');
+            $this->raiseError(400, 'You exceeded your quota. Please remove existing temporary files before continuing.');
         }
 
         $this->sendAllowHeadersForArtifactFilesId();
@@ -267,28 +249,29 @@ class ArtifactTemporaryFilesResource {
     /**
      * @url OPTIONS
      */
-    public function options() {
+    public function options()
+    {
         $this->sendAllowHeadersForArtifactFiles();
     }
 
     /**
      * @url OPTIONS {id}
      *
-     * @throws 401
-     * @throws 404
+     * @throws RestException 401
+     * @throws RestException 404
      */
-    public function optionsId($id) {
+    public function optionsId($id)
+    {
         $this->sendAllowHeadersForArtifactFilesId();
     }
 
     /**
      *
-     * @param TemporaryFile $file
      * @return FileInfoRepresentation
      */
-    private function buildFileRepresentation(TemporaryFile $file) {
-        $reference = new FileInfoRepresentation();
-        return $reference->build(
+    private function buildFileRepresentation(TemporaryFile $file)
+    {
+        return new FileInfoRepresentation(
             $file->getId(),
             $file->getCreatorId(),
             $file->getDescription(),
@@ -305,10 +288,10 @@ class ArtifactTemporaryFilesResource {
      * @return TemporaryFile
      * @throws RestException
      */
-    private function getFile($id) {
+    private function getFile($id)
+    {
         try {
             $file = $this->file_manager->getFile($id);
-
         } catch (FileNotFoundException $e) {
             $this->raiseError(404);
         }
@@ -319,9 +302,10 @@ class ArtifactTemporaryFilesResource {
     }
 
     /**
-     * @throws 401
+     * @throws RestException 401
      */
-    private function checkTemporaryFileBelongsToCurrentUser(TemporaryFile $file) {
+    private function checkTemporaryFileBelongsToCurrentUser(TemporaryFile $file)
+    {
         $creator_id = $file->getCreatorId();
 
         if ($creator_id != $this->user->getId()) {
@@ -336,17 +320,18 @@ class ArtifactTemporaryFilesResource {
      *
      * @url DELETE {id}
      *
-     * @throws 500, 400
+     * @throws RestException 500
+     * @throws RestException 400
      *
      * @param string $id Id of the file
      */
-    protected function deleteId($id) {
+    protected function deleteId($id)
+    {
         $this->checkFileIsTemporary($id);
         $this->sendAllowHeadersForArtifactFilesId();
 
         try {
             $this->removeTemporaryFile($id);
-
         } catch (Tracker_FormElement_InvalidFieldException $exception) {
             $this->raiseError(400, $exception->getMessage());
         } catch (InvalidFileInfoException $exception) {
@@ -363,67 +348,48 @@ class ArtifactTemporaryFilesResource {
         $this->sendAllowHeadersForArtifactFiles();
     }
 
-    private function sendAllowHeadersForArtifactFiles() {
+    private function sendAllowHeadersForArtifactFiles()
+    {
         Header::allowOptionsGetPost();
         $this->sendSizeHeaders();
     }
 
-    private function sendAllowHeadersForArtifactFilesId() {
+    private function sendAllowHeadersForArtifactFilesId()
+    {
         Header::allowOptionsGetPutDelete();
         $this->sendSizeHeaders();
     }
 
-    private function sendSizeHeaders() {
+    private function sendSizeHeaders()
+    {
         Header::sendQuotaHeader($this->file_manager->getQuota());
         Header::sendDiskUsage($this->file_manager->getDiskUsage($this->user));
         Header::sendMaxFileChunkSizeHeaders($this->file_manager->getMaximumChunkSize());
     }
 
-    private function sendPaginationHeaders($limit, $offset, $size) {
+    private function sendPaginationHeaders($limit, $offset, $size)
+    {
         Header::sendPaginationHeaders($limit, $offset, $size, $this->file_manager->getMaximumChunkSize());
     }
 
-    /**
-     * @param int $fileinfo_id
-     *
-     * @return Tracker_Artifact
-     */
-    private function getArtifactByFileInfoId($fileinfo_id) {
-        try {
-            $artifact = $this->fileinfo_factory->getArtifactByFileInfoIdInLastChangeset($this->user, $fileinfo_id);
-        } catch (InvalidFileInfoException $e) {
-            $this->raiseError(404, $e->getMessage());
-        } catch (UnauthorisedException $e) {
-            $this->raiseError(403, $e->getMessage());
-        }
-
-        if ($artifact) {
-            ProjectAuthorization::userCanAccessProject($this->user, $artifact->getTracker()->getProject(), new Tracker_URLVerification());
-            return $artifact;
-        }
-    }
-
-    private function removeTemporaryFile($id) {
+    private function removeTemporaryFile($id)
+    {
         $file = $this->getFile($id);
         $this->file_manager->removeTemporaryFile($file);
     }
 
-    private function checkFileIsTemporary($id) {
+    private function checkFileIsTemporary($id)
+    {
         if (! $this->file_manager->isFileIdTemporary($id)) {
             $this->raiseError(404);
         }
     }
 
     /**
-     * @throws 406
+     * @psalm-return never-return
      */
-    private function checkLimitValue($limit) {
-        if ($limit > self::DEFAULT_LIMIT) {
-            throw new LimitOutOfBoundsException(self::DEFAULT_LIMIT);
-        }
-    }
-
-    private function raiseError($status_code, $message = null) {
+    private function raiseError($status_code, $message = null): void
+    {
         $this->sendAllowHeadersForArtifactFiles();
 
         throw new RestException($status_code, $message);

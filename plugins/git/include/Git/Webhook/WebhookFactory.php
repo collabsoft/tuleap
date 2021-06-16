@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -42,7 +42,7 @@ class WebhookFactory
     {
         $repository_id = $repository->getId();
 
-        $web_hooks = array();
+        $web_hooks = [];
         foreach ($this->dao->searchWebhooksForRepository($repository_id) as $web_hook_row) {
             $web_hooks[] = new Webhook($web_hook_row['id'], $web_hook_row['repository_id'], $web_hook_row['url']);
         }

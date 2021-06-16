@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,61 +22,57 @@
 /**
  * Manage values in changeset for integer fields
  */
-class Tracker_Artifact_ChangesetValue_Integer extends Tracker_Artifact_ChangesetValue_Numeric {
+class Tracker_Artifact_ChangesetValue_Integer extends Tracker_Artifact_ChangesetValue_Numeric
+{
 
     /**
      * @return mixed
      */
-    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor) {
+    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor)
+    {
         return $visitor->visitInteger($this);
     }
 
     /**
      * Returns the integer value
      *
-     * @return integer the integer value
+     * @return int the integer value
      */
-    public function getInteger() {
+    public function getInteger()
+    {
         if ($this->numeric !== null) {
-            $this->numeric = (int)$this->numeric;
+            $this->numeric = (int) $this->numeric;
         }
         return $this->numeric;
     }
-    
+
     /**
      * Returns the integer value
      *
-     * @return integer the integer value
+     * @return int the integer value
      */
-    public function getNumeric() {
+    public function getNumeric()
+    {
         return $this->getInteger();
     }
-    
+
     /**
      * Returns the value of this changeset value (integer)
      *
      * @return int The value of this artifact changeset value
      */
-    public function getValue() {
+    public function getValue()
+    {
          return $this->getInteger();
     }
-    
-    /**
-     * Returns the soap value of this changeset value
-     *
-     * @param PFUser $user
-     *
-     * @return string the soap value of this changeset value
-     */
-    public function getSoapValue(PFUser $user) {
-        return $this->encapsulateRawSoapValue($this->getInteger());
-    }
 
-    public function getRESTValue(PFUser $user) {
+    public function getRESTValue(PFUser $user)
+    {
         return $this->getRESTRepresentation($this->getInteger());
     }
 
-    public function getFullRESTValue(PFUser $user) {
+    public function getFullRESTValue(PFUser $user)
+    {
         return $this->getFullRESTRepresentation($this->getInteger());
     }
 }

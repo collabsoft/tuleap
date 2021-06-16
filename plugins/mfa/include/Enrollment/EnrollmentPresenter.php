@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,6 +21,7 @@
 namespace Tuleap\MFA\Enrollment;
 
 use ParagonIE\ConstantTime\Base32;
+use Tuleap\Cryptography\ConcealedString;
 
 class EnrollmentPresenter
 {
@@ -32,10 +33,15 @@ class EnrollmentPresenter
      * @var string
      */
     public $secret;
+    /**
+     * @var bool
+     */
+    public $is_user_already_registered;
 
-    public function __construct(\CSRFSynchronizerToken $csrf_token)
+    public function __construct(\CSRFSynchronizerToken $csrf_token, ConcealedString $secret, $is_user_already_registered)
     {
-        $this->csrf_token = $csrf_token;
-        $this->secret     = Base32::encode(random_bytes(32));
+        $this->csrf_token                 = $csrf_token;
+        $this->secret                     = Base32::encode($secret);
+        $this->is_user_already_registered = $is_user_already_registered;
     }
 }

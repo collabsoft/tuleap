@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessInterface;
 
 class TroveCatLinkDao extends \DataAccessObject
 {
-    public function __construct(LegacyDataAccessInterface $da = null)
+    public function __construct(?LegacyDataAccessInterface $da = null)
     {
         parent::__construct($da);
         $this->enableExceptionsOnError();

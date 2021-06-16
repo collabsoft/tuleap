@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,38 +17,39 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class Tracker_Report_REST extends Tracker_Report {
+class Tracker_Report_REST extends Tracker_Report
+{
 
-    const OPERATOR_PROPERTY_NAME = 'operator';
-    const VALUE_PROPERTY_NAME    = 'value';
-    const DEFAULT_OPERATOR       = 'contains';
-    const OPERATOR_CONTAINS      = 'contains';
-    const OPERATOR_EQUALS        = '=';
-    const OPERATOR_BETWEEN       = 'between';
-    const OPERATOR_GREATER_THAN  = '>';
-    const OPERATOR_LESS_THAN     = '<';
+    public const OPERATOR_PROPERTY_NAME = 'operator';
+    public const VALUE_PROPERTY_NAME    = 'value';
+    public const DEFAULT_OPERATOR       = 'contains';
+    public const OPERATOR_CONTAINS      = 'contains';
+    public const OPERATOR_EQUALS        = '=';
+    public const OPERATOR_BETWEEN       = 'between';
+    public const OPERATOR_GREATER_THAN  = '>';
+    public const OPERATOR_LESS_THAN     = '<';
 
     /**
      * @var Tracker_FormElementFactory
      */
     private $formelement_factory;
 
-    private $allowed_operators = array(
+    private $allowed_operators = [
         self::DEFAULT_OPERATOR,
         self::OPERATOR_EQUALS,
         self::OPERATOR_BETWEEN,
         self::OPERATOR_GREATER_THAN,
         self::OPERATOR_LESS_THAN,
-    );
+    ];
 
-    protected $rest_criteria = array();
+    protected $rest_criteria = [];
 
     public function __construct(
-            PFUser $current_user,
-            Tracker $tracker,
-            PermissionsManager $permissions_manager,
-            Tracker_ReportDao $dao,
-            Tracker_FormElementFactory $formelement_factory
+        PFUser $current_user,
+        Tracker $tracker,
+        PermissionsManager $permissions_manager,
+        Tracker_ReportDao $dao,
+        Tracker_FormElementFactory $formelement_factory
     ) {
         $id = $name = $description = $current_renderer_id = $parent_report_id = $user_id = $is_default = $tracker_id = $is_query_displayed = $is_in_expert_mode = $expert_query = $updated_by = $updated_at = 0;
         parent::__construct(
@@ -72,14 +73,15 @@ class Tracker_Report_REST extends Tracker_Report {
         $this->permissions_manager = $permissions_manager;
         $this->dao                 = $dao;
         $this->formelement_factory = $formelement_factory;
-        $this->criteria            = array();
+        $this->criteria            = [];
     }
 
     /**
      * @param sting $criteria
      * @throws Tracker_Report_InvalidRESTCriterionException
      */
-    public function setRESTCriteria($criteria) {
+    public function setRESTCriteria($criteria)
+    {
         $criteria = json_decode(stripslashes($criteria), true);
         $this->checkForJsonErrors();
         $this->harmoniseCriteria($criteria);
@@ -87,23 +89,24 @@ class Tracker_Report_REST extends Tracker_Report {
         $this->rest_criteria = $criteria;
     }
 
-    private function checkForJsonErrors() {
+    private function checkForJsonErrors()
+    {
         $error = '';
         switch (json_last_error()) {
-            case JSON_ERROR_NONE :
+            case JSON_ERROR_NONE:
                 return;
-            case JSON_ERROR_DEPTH :
-            case JSON_ERROR_STATE_MISMATCH :
-            case JSON_ERROR_CTRL_CHAR :
+            case JSON_ERROR_DEPTH:
+            case JSON_ERROR_STATE_MISMATCH:
+            case JSON_ERROR_CTRL_CHAR:
             case JSON_ERROR_SYNTAX:
                 $error = 'Criteria syntax error, invalid JSON';
-            break;
+                break;
             case JSON_ERROR_UTF8:
                 $error = 'Malformed UTF-8 characters, possibly incorrectly encoded criteria';
-            break;
+                break;
             default:
                 $error = 'Unknown JSON criteria error';
-            break;
+                break;
         }
 
         throw new Tracker_Report_InvalidRESTCriterionException($error);
@@ -114,21 +117,22 @@ class Tracker_Report_REST extends Tracker_Report {
      *
      * @throws Tracker_Report_InvalidRESTCriterionException
      */
-    private function harmoniseCriteria(&$criteria) {
+    private function harmoniseCriteria(&$criteria)
+    {
         if (! is_array($criteria)) {
-            $criteria = array();
+            $criteria = [];
         }
- 
+
         foreach ($criteria as $field => $criterion) {
             if ($this->isCriterionBasic($criterion)) {
-                $criterion = $criteria[$field] = array(
+                $criterion = $criteria[$field] = [
                     self::OPERATOR_PROPERTY_NAME => self::DEFAULT_OPERATOR,
                     self::VALUE_PROPERTY_NAME    => $criterion
-                );
+                ];
             }
 
             if (! is_array($criterion)) {
-                throw new Tracker_Report_InvalidRESTCriterionException('Criterion for field '. $field . ' is malformed');
+                throw new Tracker_Report_InvalidRESTCriterionException('Criterion for field ' . $field . ' is malformed');
             }
 
             $this->checkCriterionProperties($criterion, $field);
@@ -141,9 +145,10 @@ class Tracker_Report_REST extends Tracker_Report {
      *     "operator" => "contains",
      *     "value"    => [string, array]
      *  )
-     * @return boolean
+     * @return bool
      */
-    private function isCriterionBasic($criterion) {
+    private function isCriterionBasic($criterion)
+    {
         if (is_array($criterion)) {
             if (isset($criterion[self::OPERATOR_PROPERTY_NAME]) || isset($criterion[self::VALUE_PROPERTY_NAME])) {
                 return false;
@@ -153,16 +158,18 @@ class Tracker_Report_REST extends Tracker_Report {
         return true;
     }
 
-    private function checkCriterionProperties($criterion, $field) {
+    private function checkCriterionProperties($criterion, $field)
+    {
         if (! isset($criterion[self::OPERATOR_PROPERTY_NAME]) || ! isset($criterion[self::VALUE_PROPERTY_NAME])) {
-            throw new Tracker_Report_InvalidRESTCriterionException('Criterion for field '. $field . ' is malformed');
+            throw new Tracker_Report_InvalidRESTCriterionException('Criterion for field ' . $field . ' is malformed');
         }
         if (! in_array($criterion[self::OPERATOR_PROPERTY_NAME], $this->allowed_operators)) {
-            throw new Tracker_Report_InvalidRESTCriterionException('Invalid operator for field '. $field);
+            throw new Tracker_Report_InvalidRESTCriterionException('Invalid operator for field ' . $field);
         }
     }
 
-    public function getCriteria() {
+    public function getCriteria()
+    {
         $rank       = 0;
         $tracker_id = $this->getTracker()->getId();
 
@@ -182,7 +189,8 @@ class Tracker_Report_REST extends Tracker_Report {
         return $this->criteria;
     }
 
-    private function addCriterionToFormElement($formelement, $criterion, $rank) {
+    private function addCriterionToFormElement($formelement, $criterion, $rank)
+    {
         $is_advanced = false;
 
         $criteria = new Tracker_Report_Criteria(
@@ -199,5 +207,3 @@ class Tracker_Report_REST extends Tracker_Report {
         }
     }
 }
-
-?>

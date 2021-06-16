@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,8 @@
 namespace Tuleap\Tracker\Artifact\ActionButtons;
 
 use PFUser;
-use Tracker_Artifact;
 use Tracker_ArtifactDao;
+use Tuleap\Tracker\Artifact\Artifact;
 use Tuleap\Tracker\Notifications\UnsubscribersNotificationDAO;
 
 class ArtifactNotificationActionButtonPresenterBuilder
@@ -44,28 +44,33 @@ class ArtifactNotificationActionButtonPresenterBuilder
         $this->tracker_artifact_dao = $tracker_artifact_dao;
     }
 
-    public function getNotificationButton(PFUser $user, Tracker_Artifact $artifact)
+    public function getNotificationButton(PFUser $user, Artifact $artifact)
     {
+        if ($user->isAnonymous()) {
+            return;
+        }
+
         if ($this->unsubscribers_DAO->doesUserIDHaveUnsubscribedFromTrackerNotifications($user->getId(), $artifact->getTrackerId())) {
             return;
         }
 
         return new ArtifactNotificationsButtonPresenter(
             $this->getUnsubscribeButtonLabel($user, $artifact),
-            $this->getUnsubscribeButtonAlternateText($user, $artifact)
+            $this->getUnsubscribeButtonAlternateText($user, $artifact),
+            $this->getUnsubscribeButtonIcon($user, $artifact)
         );
     }
 
-    private function getUnsubscribeButtonLabel(PFUser $user, Tracker_Artifact $artifact)
+    private function getUnsubscribeButtonLabel(PFUser $user, Artifact $artifact)
     {
         if ($this->doesUserHaveUnsubscribedFromArtifactNotification($user, $artifact)) {
-            return $GLOBALS['Language']->getText('plugin_tracker', 'enable_notifications');
+            return dgettext('tuleap-tracker', 'Enable notifications');
         }
 
-        return $GLOBALS['Language']->getText('plugin_tracker', 'disable_notifications');
+        return dgettext('tuleap-tracker', 'Disable notifications');
     }
 
-    private function doesUserHaveUnsubscribedFromArtifactNotification(PFUser $user, Tracker_Artifact $artifact)
+    private function doesUserHaveUnsubscribedFromArtifactNotification(PFUser $user, Artifact $artifact)
     {
         return $this->tracker_artifact_dao->doesUserHaveUnsubscribedFromArtifactNotifications(
             $artifact->getId(),
@@ -73,12 +78,21 @@ class ArtifactNotificationActionButtonPresenterBuilder
         );
     }
 
-    private function getUnsubscribeButtonAlternateText(PFUser $user, Tracker_Artifact $artifact)
+    private function getUnsubscribeButtonAlternateText(PFUser $user, Artifact $artifact)
     {
         if ($this->doesUserHaveUnsubscribedFromArtifactNotification($user, $artifact)) {
-            return $GLOBALS['Language']->getText('plugin_tracker', 'enable_notifications_alternate_text');
+            return dgettext('tuleap-tracker', 'Receive notifications for this artifact');
         }
 
-        return $GLOBALS['Language']->getText('plugin_tracker', 'disable_notifications_alternate_text');
+        return dgettext('tuleap-tracker', 'Stop receiving notifications for this artifact');
+    }
+
+    private function getUnsubscribeButtonIcon(PFUser $user, Artifact $artifact)
+    {
+        if ($this->doesUserHaveUnsubscribedFromArtifactNotification($user, $artifact)) {
+            return 'fa-bell-o';
+        }
+
+        return 'fa-bell-slash-o';
     }
 }

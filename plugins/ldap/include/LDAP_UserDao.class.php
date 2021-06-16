@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2008. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2008
@@ -26,102 +26,122 @@
  * Interact with plugin_ldap_user table in database
  *
  */
-class LDAP_UserDao extends DataAccessObject {
+class LDAP_UserDao extends DataAccessObject
+{
 
     /**
      *
-     * @param $userIds
+     * @param int[] $user_ids
      *
      * @return DataAccessResult
+     * @throws DataAccessQueryException
      */
-    function searchLdapLoginFromUserIds(array $userIds) {
-        $sql = 'SELECT ldap_uid'.
-               ' FROM plugin_ldap_user '.
-               ' WHERE user_id IN ('.implode(',', $userIds).')';
+    public function searchLdapLoginFromUserIds(array $user_ids)
+    {
+        $user_ids = $this->da->escapeIntImplode($user_ids);
+
+        $sql = "SELECT ldap_uid, user.status
+                FROM plugin_ldap_user
+                    INNER JOIN user USING (user_id)
+                WHERE user_id IN ($user_ids)";
+
         return $this->retrieve($sql);
     }
 
     /**
      * Check if user has already logged in on Web platform
      *
-     * @param Integer $userId Id of the user
-     * 
-     * @return Boolean
+     * @param int $userId Id of the user
+     *
+     * @return bool
      */
-    function alreadyLoggedInOnce($userId) 
+    public function alreadyLoggedInOnce($userId)
     {
-        $sql = 'SELECT NULL'.
-            ' FROM plugin_ldap_user ldap_u'.
-            '   INNER JOIN user u USING (user_id)'.
-            ' WHERE u.user_id = '.$this->da->escapeInt($userId).
-            ' AND u.ldap_id != ""'.
-            ' AND u.ldap_id IS NOT NULL'.
+        $sql = 'SELECT NULL' .
+            ' FROM plugin_ldap_user ldap_u' .
+            '   INNER JOIN user u USING (user_id)' .
+            ' WHERE u.user_id = ' . $this->da->escapeInt($userId) .
+            ' AND u.ldap_id != ""' .
+            ' AND u.ldap_id IS NOT NULL' .
             ' AND login_confirmation_date = 0';
-        
+
         $dar = $this->retrieve($sql);
-        if ($dar && !$dar->isError() && $dar->rowCount() == 1) {
+        if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
             return false;
         } else {
             return true;
         }
     }
-    
+
+    public function hasLoginConfirmationDate(LDAP_User $user): bool
+    {
+        $sql = sprintf(
+            'SELECT NULL FROM plugin_ldap_user WHERE user_id = %d AND login_confirmation_date != 0',
+            $this->da->escapeInt($user->getId())
+        );
+        $dar = $this->retrieve($sql);
+        if ($dar && ! $dar->isError()) {
+            return count($dar) !== 0;
+        }
+        return false;
+    }
+
     /**
      * Create new entry for LDAP user.
      *
-     * @param Integer $userId Id of the user
-     * @param Integer $date   Date of creation (timestamp)
-     * 
-     * @return Boolean
+     * @param int $userId Id of the user
+     * @param int $date Date of creation (timestamp)
+     *
+     * @return bool
      */
-    function createLdapUser($userId, $date=0, $ldap_uid="") 
+    public function createLdapUser($userId, $date = 0, $ldap_uid = "")
     {
-        $sql = 'INSERT INTO plugin_ldap_user'.
-            '(user_id, login_confirmation_date, ldap_uid)'.
-            ' VALUES '.
-            '('.db_ei($userId).','.db_ei($date).',"'.db_es($ldap_uid).'")';
+        $sql = 'INSERT INTO plugin_ldap_user' .
+            '(user_id, login_confirmation_date, ldap_uid)' .
+            ' VALUES ' .
+            '(' . db_ei($userId) . ',' . db_ei($date) . ',"' . db_es($ldap_uid) . '")';
         return $this->update($sql);
     }
-    
+
     /**
      * Record when user log on Codendi
      *
-     * @param Integer $userId Id of the user
-     * @param Integer $date   Date of login (timestamp)
-     * 
-     * @return Boolean
+     * @param int $userId Id of the user
+     * @param int $date Date of login (timestamp)
+     *
+     * @return bool
      */
-    function setLoginDate($userId, $date)
+    public function setLoginDate($userId, $date)
     {
-        $sql = 'UPDATE plugin_ldap_user'.
-            ' SET login_confirmation_date = '.db_ei($date).
-            ' WHERE user_id = '.db_ei($userId);
+        $sql     = 'UPDATE plugin_ldap_user' .
+            ' SET login_confirmation_date = ' . db_ei($date) .
+            ' WHERE user_id = ' . db_ei($userId);
         $updated = $this->update($sql);
-        if (!$updated) {
+        if (! $updated) {
             // Try to insert
             $updated = $this->createLdapUser($userId, $date);
         }
         return $updated;
     }
-    
+
     /**
      * Check if a given name is not already a user name or a project name
-     * 
+     *
      * This should be in UserManager
-     * 
+     *
      * @param String $name Name to test
-     * 
-     * @return Boolean
+     *
+     * @return bool
      */
-    function userNameIsAvailable($name) 
+    public function userNameIsAvailable($name)
     {
-        $sql = 'SELECT user_name'.
-            ' FROM user'.
-            ' WHERE user_name LIKE '.$this->da->quoteSmart($name, array('force_string'));
+        $sql = 'SELECT user_name' .
+            ' FROM user' .
+            ' WHERE user_name LIKE ' . $this->da->quoteSmart($name, ['force_string']);
         if ($this->retrieve($sql)->rowCount() === 0) {
-            $sql = 'SELECT group_id'.
-                ' FROM groups'.
-                ' WHERE unix_group_name LIKE '.$this->da->quoteSmart($name, array('force_string'));
+            $sql = 'SELECT group_id' .
+                ' FROM groups' .
+                ' WHERE unix_group_name LIKE ' . $this->da->quoteSmart($name, ['force_string']);
             if ($this->retrieve($sql)->rowCount() === 0) {
                 return true;
             }
@@ -131,16 +151,16 @@ class LDAP_UserDao extends DataAccessObject {
 
     /**
      * Update LDAP login of given user
-     * 
-     * @param Integer $userId  User ID to update
-     * @param Integer $ldapUid LDAP login of the user
-     * 
-     * @return Boolean
+     *
+     * @param int $userId User ID to update
+     * @param int $ldapUid LDAP login of the user
+     *
+     * @return bool
      */
-    function updateLdapUid($userId, $ldapUid)
+    public function updateLdapUid($userId, $ldapUid)
     {
         $user_id  = $this->da->quoteSmart($userId);
-        $ldap_uid = $this->da->quoteSmart($ldapUid, array('force_string'));
+        $ldap_uid = $this->da->quoteSmart($ldapUid, ['force_string']);
 
         $sql = "INSERT INTO plugin_ldap_user(user_id, ldap_uid) VALUES ($user_id, $ldap_uid)
                 ON DUPLICATE KEY UPDATE ldap_uid = $ldap_uid";
@@ -149,11 +169,9 @@ class LDAP_UserDao extends DataAccessObject {
 
     /**
      * Return number of active users
-     *
-     * @return int
-     *
      */
-    public function getNbrActiveUsers() {
+    public function getNbrActiveUsers()
+    {
         $sql = 'SELECT count(u.user_id) as count
         FROM user u
          JOIN plugin_ldap_user ldap_user ON (ldap_user.user_id = u.user_id)
@@ -164,13 +182,8 @@ class LDAP_UserDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    /**
-     * Return all active users
-     *
-     * @return DataAccessResult
-     *
-     */
-    public function getActiveUsers() {
+    public function getActiveUsers()
+    {
         $sql = 'SELECT u.user_id, user_name, email, ldap_id, status, realname, ldap_uid
         FROM user u
          JOIN plugin_ldap_user ldap_user ON (ldap_user.user_id = u.user_id)
@@ -181,7 +194,8 @@ class LDAP_UserDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function searchNonUniqueLdapUid() {
+    public function searchNonUniqueLdapUid()
+    {
         $sql = "SELECT ldap_uid
                 FROM user
                     JOIN plugin_ldap_user ON (plugin_ldap_user.user_id=user.user_id)

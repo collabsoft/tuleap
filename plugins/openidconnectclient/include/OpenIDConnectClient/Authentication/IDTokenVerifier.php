@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,93 +18,138 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\OpenIDConnectClient\Authentication;
 
-use Firebase\JWT\JWT;
+use Lcobucci\Clock\FrozenClock;
+use Lcobucci\JWT\Token\Parser;
+use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Signer\Rsa\Sha256;
+use Lcobucci\JWT\Token;
+use Lcobucci\JWT\UnencryptedToken;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
+use Lcobucci\JWT\Validation\Constraint\ValidAt;
+use Lcobucci\JWT\Validation\Validator;
 use Tuleap\OpenIDConnectClient\Provider\Provider;
 
+/**
+ * @psalm-type AcceptableIssuerClaimValidator = AzureProviderIssuerClaimValidator|GenericProviderIssuerClaimValidator
+ */
 class IDTokenVerifier
 {
+    private const LEEWAY_DATE_INTERVAL = 'PT10S';
+
     /**
-     * @return array
-     * @throws MalformedIDTokenException
+     * @var Parser
      */
-    public function validate(Provider $provider, $nonce, $encoded_id_token)
-    {
-        $id_token = $this->getJWTPayload($encoded_id_token);
+    private $parser;
+    /**
+     * @var IssuerClaimValidator
+     */
+    private $issuer_claim_validator;
+    /**
+     * @var JWKSKeyFetcher
+     */
+    private $jwks_key_fetcher;
+    /**
+     * @var Sha256
+     */
+    private $signer;
+    /**
+     * @var Validator
+     */
+    private $jwt_validator;
 
-        if (! $this->isSubjectIdentifierClaimPresent($id_token) ||
-            ! $this->isIssuerClaimValid($provider->getAuthorizationEndpoint(), $id_token) ||
-            ! $this->isAudienceClaimValid($provider->getClientId(), $id_token) ||
-            ! $this->isNonceValid($nonce, $id_token)
-        ) {
-            throw new MalformedIDTokenException('ID token claims are not valid');
-        }
-
-        return $id_token;
+    /**
+     * @param AcceptableIssuerClaimValidator $issuer_claim_validator
+     */
+    public function __construct(
+        Parser $parser,
+        IssuerClaimValidator $issuer_claim_validator,
+        JWKSKeyFetcher $jwks_key_fetcher,
+        Sha256 $signer,
+        Validator $jwt_validator
+    ) {
+        $this->parser                 = $parser;
+        $this->issuer_claim_validator = $issuer_claim_validator;
+        $this->jwks_key_fetcher       = $jwks_key_fetcher;
+        $this->signer                 = $signer;
+        $this->jwt_validator          = $jwt_validator;
     }
 
     /**
-     * @return array
      * @throws MalformedIDTokenException
      */
-    private function getJWTPayload($encoded_id_token)
+    public function validate(Provider $provider, string $nonce, string $encoded_id_token): string
     {
-        $jwt_parts = explode('.', $encoded_id_token);
-        if (count($jwt_parts) !== 3) {
-            throw new MalformedIDTokenException('ID token must composed of 3 parts');
-        }
-
-        $encoded_payload = $jwt_parts[1];
-
         try {
-            $payload = JWT::jsonDecode(JWT::urlsafeB64Decode($encoded_payload));
-        } catch (\DomainException $ex) {
-            throw new MalformedIDTokenException('ID token parts must be an URL safe base64 encoded JSON');
+            $id_token = $this->parser->parse($encoded_id_token);
+            assert($id_token instanceof UnencryptedToken);
+        } catch (\InvalidArgumentException | \RuntimeException $exception) {
+            throw new MalformedIDTokenException($exception->getMessage(), 0, $exception);
         }
 
-        return (array) $payload;
-    }
-
-    private function isSubjectIdentifierClaimPresent(array $id_token)
-    {
-        return isset($id_token['sub']);
-    }
-
-    private function isIssuerClaimValid($provider_authorization_endpoint, array $id_token)
-    {
-        if (! isset($id_token['iss'])) {
-            return false;
+        $sub_claim = $id_token->claims()->get('sub');
+        if (! is_string($sub_claim)) {
+            throw new MalformedIDTokenException(sprintf('sub claim is not present or malformed (got %s)', gettype($sub_claim)));
         }
-        /*
-         * OpenID Connect Core Standard said the issuer identifier must exactly match
-         * the iss claim. However, since we do not implement OpenID Connect Discovery
-         * the issuer identifier is not obtained so we do the next best things we can
-         * do for now: we check if the iss claim is present in the authorization endpoint
-         */
-        return strpos($provider_authorization_endpoint, $id_token['iss']) !== false;
+
+        if (! $this->jwt_validator->validate($id_token, new ValidAt(new FrozenClock(new \DateTimeImmutable()), new \DateInterval(self::LEEWAY_DATE_INTERVAL)))) {
+            self::throwsInvalidIDTokenClaims(sprintf('the token is outside its validity period, including a leeway of %s', self::LEEWAY_DATE_INTERVAL));
+        }
+
+        if (! $this->isNonceValid($nonce, $id_token)) {
+            self::throwsInvalidIDTokenClaims('nonce is not valid');
+        }
+
+        if (! $this->isAudienceClaimValid($provider->getClientId(), $id_token)) {
+            self::throwsInvalidIDTokenClaims('audience claim is not valid');
+        }
+
+        if (! $this->issuer_claim_validator->isIssuerClaimValid($provider, $id_token->claims()->get('iss', '') ?? '')) {
+            self::throwsInvalidIDTokenClaims('issuer claim is not valid');
+        }
+
+        if (! $this->verifySignature($provider, $id_token)) {
+            throw new MalformedIDTokenException('ID token signature is not valid');
+        }
+
+        return $sub_claim;
+    }
+
+    private function isAudienceClaimValid(string $provider_client_id, Token $id_token): bool
+    {
+        return $id_token->isPermittedFor($provider_client_id);
+    }
+
+    private function isNonceValid(string $nonce, UnencryptedToken $id_token): bool
+    {
+        return hash_equals($nonce, $id_token->claims()->get('nonce', '') ?? '');
+    }
+
+    private function verifySignature(Provider $provider, Token $id_token): bool
+    {
+        $keys_pem_format = $this->jwks_key_fetcher->fetchKey($provider);
+
+        if ($keys_pem_format === null) {
+            return true;
+        }
+
+        foreach ($keys_pem_format as $key_pem_format) {
+            if ($this->jwt_validator->validate($id_token, new SignedWith($this->signer, InMemory::plainText($key_pem_format)))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
-     * @return bool
+     * @throws MalformedIDTokenException
      */
-    private function isAudienceClaimValid($provider_client_id, array $id_token)
+    private static function throwsInvalidIDTokenClaims(string $reason): void
     {
-        if (! isset($id_token['aud'])) {
-            return false;
-        }
-        return $id_token['aud'] === $provider_client_id ||
-            (is_array($id_token['aud']) && in_array($provider_client_id, $id_token['aud']));
-    }
-
-    /**
-     * @return bool
-     */
-    private function isNonceValid($nonce, array $id_token)
-    {
-        if (! isset($id_token['nonce'])) {
-            return false;
-        }
-        return hash_equals($nonce, $id_token['nonce']);
+        throw new MalformedIDTokenException(sprintf('ID token claims are not valid (%s)', $reason));
     }
 }

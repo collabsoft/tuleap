@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -46,15 +46,19 @@ class TroveCatListPresenter
     public $alert_description_delete_modal;
     public $alert_description_delete_modal_next;
     public $navbar;
+    /**
+     * @var bool
+     */
+    public $is_quota_of_project_flags_reached;
 
 
     public function __construct($navbar, array $trovecats, CSRFSynchronizerToken $csrf_token)
     {
-        $this->title                    = $GLOBALS['Language']->getText('admin_trove_cat_list', 'title');
-        $this->header_name              = $GLOBALS['Language']->getText('admin_trove_cat_list', 'header_name');
-        $this->header_description       = $GLOBALS['Language']->getText('admin_trove_cat_list', 'header_description');
-        $this->edit_button              = $GLOBALS['Language']->getText('admin_trove_cat_list', 'edit');
-        $this->delete_button            = $GLOBALS['Language']->getText('admin_trove_cat_list', 'delete');
+        $this->title              = $GLOBALS['Language']->getText('admin_trove_cat_list', 'title');
+        $this->header_name        = $GLOBALS['Language']->getText('admin_trove_cat_list', 'header_name');
+        $this->header_description = $GLOBALS['Language']->getText('admin_trove_cat_list', 'header_description');
+        $this->edit_button        = $GLOBALS['Language']->getText('admin_trove_cat_list', 'edit');
+        $this->delete_button      = $GLOBALS['Language']->getText('admin_trove_cat_list', 'delete');
 
         $this->edit_trove_cat        = $GLOBALS['Language']->getText('admin_trove_cat_edit', 'header');
         $this->edit                  = $GLOBALS['Language']->getText('admin_trove_cat_edit', 'edit');
@@ -83,6 +87,14 @@ class TroveCatListPresenter
 
         $this->trovecats  = $trovecats;
         $this->csrf_token = $csrf_token;
-        $this->navbar = $navbar;
+        $this->navbar     = $navbar;
+
+        $nb_categories_flagged_as_project_flag = 0;
+        foreach ($trovecats as $trovecat) {
+            if ($trovecat['is_top_level_id'] && $trovecat['is_project_flag']) {
+                $nb_categories_flagged_as_project_flag++;
+            }
+        }
+        $this->is_quota_of_project_flags_reached = $nb_categories_flagged_as_project_flag >= 2;
     }
 }

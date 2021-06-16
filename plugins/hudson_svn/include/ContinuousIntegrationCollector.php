@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,14 +20,16 @@
 
 namespace Tuleap\HudsonSvn;
 
-use Tuleap\Svn\Repository\RepositoryManager;
-use Tuleap\Svn\Repository\Repository;
+use Tuleap\HudsonSvn\Job\Job;
+use Tuleap\SVN\Repository\RepositoryManager;
+use Tuleap\SVN\Repository\Repository;
 use Tuleap\HudsonSvn\Job\Dao;
 use Tuleap\HudsonSvn\Job\Factory;
 use TemplateRenderer;
 use Project;
 
-class ContinuousIntegrationCollector {
+class ContinuousIntegrationCollector
+{
 
     /**
      * @var Factory
@@ -61,7 +63,8 @@ class ContinuousIntegrationCollector {
         $this->factory            = $factory;
     }
 
-    public function collect(Project $project, $job_id) {
+    public function collect(Project $project, ?int $job_id)
+    {
         $job_ids      = $this->getJobIdsThatTriggerCommit($project);
         $job          = $this->getJob($job_id);
         $repositories = $this->getRepositories($project, $job);
@@ -76,17 +79,18 @@ class ContinuousIntegrationCollector {
                 )
             );
 
-            return array(
+            return [
                 'service'   => "",
-                'title'     => $GLOBALS['Language']->getText('plugin_hudson_svn', 'ci_trigger'),
+                'title'     => dgettext('tuleap-hudson_svn', 'Subversion multi repositories trigger'),
                 'used'      => $job_ids,
                 'add_form'  => $html_form,
                 'edit_form' => $html_form
-            );
+            ];
         }
     }
 
-    private function getPath($job) {
+    private function getPath($job)
+    {
         if ($job !== null) {
             return $job->getPath();
         }
@@ -94,7 +98,8 @@ class ContinuousIntegrationCollector {
         return '';
     }
 
-    private function getJob($job_id) {
+    private function getJob(?int $job_id): ?Job
+    {
         if ($job_id !== null) {
             return $this->factory->getJobById($job_id);
         }
@@ -102,35 +107,39 @@ class ContinuousIntegrationCollector {
         return null;
     }
 
-    private function doesJobTriggerCommit(array $job_ids, $job_id) {
+    private function doesJobTriggerCommit(array $job_ids, $job_id)
+    {
         return $job_id !== null && array_key_exists($job_id, $job_ids);
     }
 
-    private function getJobIdsThatTriggerCommit(Project $project) {
-        $used = array();
+    private function getJobIdsThatTriggerCommit(Project $project)
+    {
+        $used = [];
 
-        foreach ($this->getJobIds($project) as $job_id) {
-            $used[$job_id] = true;
+        foreach ($this->getJobIds($project) as $row) {
+            $used[$row["id"]] = true;
         }
 
         return $used;
     }
 
-    private function getRepositories(Project $project, $job) {
-        $repositories_presenter = array();
+    private function getRepositories(Project $project, $job)
+    {
+        $repositories_presenter = [];
 
         foreach ($this->repository_manager->getRepositoriesInProject($project) as $repository) {
-            $repositories_presenter[] = array(
+            $repositories_presenter[] = [
                 'id'          => $repository->getId(),
                 'name'        => $repository->getName(),
                 'is_selected' => $this->isRepositorySelected($repository, $job)
-            );
+            ];
         }
 
         return $repositories_presenter;
     }
 
-    private function isRepositorySelected(Repository $repository, $job) {
+    private function isRepositorySelected(Repository $repository, $job)
+    {
         if ($job === null) {
             return false;
         }
@@ -138,7 +147,8 @@ class ContinuousIntegrationCollector {
         return $job->getRepositoryId() === $repository->getId();
     }
 
-    private function getJobIds(Project $project) {
+    private function getJobIds(Project $project)
+    {
         return $this->dao->getJobIds($project);
     }
 }

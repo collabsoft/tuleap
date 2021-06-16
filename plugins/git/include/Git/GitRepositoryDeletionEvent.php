@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,16 +25,13 @@ use Tuleap\Event\Dispatchable;
 
 class GitRepositoryDeletionEvent implements Dispatchable
 {
-    const NAME = 'gitRepositoryDeletion';
+    public const NAME = 'gitRepositoryDeletion';
 
     /**
      * @var GitRepository
      */
     private $repository;
 
-    /**
-     * @param GitRepository $repository
-     */
     public function __construct(GitRepository $repository)
     {
         $this->repository = $repository;

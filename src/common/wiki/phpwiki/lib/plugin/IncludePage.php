@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: IncludePage.php,v 1.27 2004/11/17 20:07:18 rurban Exp $');
 /*
  Copyright 1999, 2000, 2001, 2002 $ThePhpWikiProgrammingTeam
@@ -27,82 +28,99 @@ rcs_id('$Id: IncludePage.php,v 1.27 2004/11/17 20:07:18 rurban Exp $');
  * author:  Joe Edelman <joe@orbis-tertius.net>
  */
 
-class WikiPlugin_IncludePage
-extends WikiPlugin
+class WikiPlugin_IncludePage extends WikiPlugin
 {
-    function getName() {
+    public function getName()
+    {
         return _("IncludePage");
     }
 
-    function getDescription() {
+    public function getDescription()
+    {
         return _("Include text from another wiki page.");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.27 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.27 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array( 'page'    => false, // the page to include
+    public function getDefaultArguments()
+    {
+        return [ 'page'    => false, // the page to include
                       'rev'     => false, // the revision (defaults to most recent)
                       'quiet'   => false, // if set, inclusion appears as normal content
                       'words'   => false, // maximum number of words to include
                       'lines'   => false, // maximum number of lines to include
                       'section' => false, // include a named section
                       'sectionhead' => false // when including a named section show the heading
-                      );
+                      ];
     }
 
-    function getWikiPageLinks($argstr, $basepage) {
+    public function getWikiPageLinks($argstr, $basepage)
+    {
         extract($this->getArgs($argstr));
 
         if (isset($page) && $page) {
             // Expand relative page names.
             $page = new WikiPageName($page, $basepage);
         }
-        if (!isset($page) or !$page or !$page->name)
+        if (! isset($page) or ! $page or ! $page->name) {
             return false;
-        return array($page->name);
+        }
+        return [$page->name];
     }
-                
-    function run($dbi, $argstr, &$request, $basepage) {
+
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         extract($this->getArgs($argstr, $request));
         if ($page) {
             // Expand relative page names.
             $page = new WikiPageName($page, $basepage);
             $page = $page->name;
         }
-        if (!$page) {
+        if (! $page) {
             return $this->error(_("no page specified"));
         }
 
         // A page can include itself once (this is needed, e.g.,  when editing
         // TextFormattingRules).
-        static $included_pages = array();
+        static $included_pages = [];
         if (in_array($page, $included_pages)) {
-            return $this->error(sprintf(_("recursive inclusion of page %s"),
-                                        $page));
+            return $this->error(sprintf(
+                _("recursive inclusion of page %s"),
+                $page
+            ));
         }
 
         $p = $dbi->getPage($page);
         if ($rev) {
             $r = $p->getRevision($rev);
-            if (!$r) {
-                return $this->error(sprintf(_("%s(%d): no such revision"),
-                                            $page, $rev));
+            if (! $r) {
+                return $this->error(sprintf(
+                    _("%s(%d): no such revision"),
+                    $page,
+                    $rev
+                ));
             }
         } else {
             $r = $p->getCurrentRevision();
         }
         $c = $r->getContent();
 
-        if ($section)
+        if ($section) {
             $c = extractSection($section, $c, $page, $quiet, $sectionhead);
-        if ($lines)
+        }
+        if ($lines) {
             $c = array_slice($c, 0, $lines);
-        if ($words)
+        }
+        if ($words) {
             $c = firstNWordsOfContent($words, $c);
+        }
 
         array_push($included_pages, $page);
 
@@ -111,28 +129,42 @@ extends WikiPlugin
 
         array_pop($included_pages);
 
-        if ($quiet)
+        if ($quiet) {
             return $content;
+        }
 
-        return HTML(HTML::p(array('class' => 'transclusion-title'),
-                            fmt("Included from %s", WikiLink($page))),
-
-                    HTML::div(array('class' => 'transclusion'),
-                              false, $content));
+        return HTML(
+            HTML::p(
+                ['class' => 'transclusion-title'],
+                fmt("Included from %s", WikiLink($page))
+            ),
+            HTML::div(
+                ['class' => 'transclusion'],
+                false,
+                $content
+            )
+        );
     }
-	
-    /** 
+
+    /**
      * handles the arguments: section, sectionhead, lines, words, bytes,
      * for UnfoldSubpages, IncludePage, ...
      */
-    function extractParts ($c, $pagename, $args) {
+    public function extractParts($c, $pagename, $args)
+    {
         extract($args);
 
-        if ($section)
-            $c = extractSection($section, $c, $pagename, $quiet,
-                                $sectionhead);
+        if ($section) {
+            $c = extractSection(
+                $section,
+                $c,
+                $pagename,
+                $quiet,
+                $sectionhead
+            );
+        }
         if ($lines) {
-            $c = array_slice($c, 0, $lines);
+            $c   = array_slice($c, 0, $lines);
             $c[] = sprintf(_(" ... first %d lines"), $bytes);
         }
         if ($words) {
@@ -142,13 +174,13 @@ extends WikiPlugin
             $ct = implode("\n", $c); // one string
             if (strlen($ct) > $bytes) {
                 $ct = substr($c, 0, $bytes);
-                $c = array($ct, sprintf(_(" ... first %d bytes"), $bytes));
+                $c  = [$ct, sprintf(_(" ... first %d bytes"), $bytes)];
             }
         }
         $ct = implode("\n", $c); // one string
         return $ct;
     }
-};
+}
 
 // This is an excerpt from the css file I use:
 //
@@ -203,8 +235,6 @@ extends WikiPlugin
 // Code cleanup:
 // Reformatting & tabs to spaces;
 // Added copyleft, getVersion, getDescription, rcs_id.
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -213,4 +243,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

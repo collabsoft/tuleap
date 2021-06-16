@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201308071113_add_missing_git_references extends ForgeUpgrade_Bucket {
+class b201308071113_add_missing_git_references extends ForgeUpgrade_Bucket
+{
 
     /**
      * Description of the bucket
      *
      * @return String
      */
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Add the missing git references in projects
 EOT;
@@ -36,7 +38,8 @@ EOT;
      *
      * @return void
      */
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
@@ -45,8 +48,9 @@ EOT;
      *
      * @return void
      */
-    public function up() {
-        $sql    = "INSERT INTO reference_group (reference_id, group_id, is_active)
+    public function up()
+    {
+        $sql = "INSERT INTO reference_group (reference_id, group_id, is_active)
                    SELECT 30, service.group_id, 1
                    FROM service
                    LEFT JOIN reference_group
@@ -63,4 +67,3 @@ EOT;
         }
     }
 }
-?>

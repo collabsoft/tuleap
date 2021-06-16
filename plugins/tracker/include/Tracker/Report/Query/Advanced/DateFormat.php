@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,6 @@ namespace Tuleap\Tracker\Report\Query\Advanced;
 
 class DateFormat
 {
-    const DATE     = "Y-m-d";
-    const DATETIME = "Y-m-d H:i";
+    public const DATE     = "Y-m-d";
+    public const DATETIME = "Y-m-d H:i";
 }

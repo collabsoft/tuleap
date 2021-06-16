@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2014. All rights reserved
+  * Copyright (c) Enalean, 2014 - Present. All rights reserved
   *
   * This file is a part of Tuleap.
   *
@@ -18,5 +18,6 @@
   * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 
-class User_UserGroupNameInvalidException extends Exception {}
-?>
+class User_UserGroupNameInvalidException extends Exception
+{
+}

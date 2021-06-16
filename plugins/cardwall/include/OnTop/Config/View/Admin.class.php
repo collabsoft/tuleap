@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,21 +22,24 @@
 /**
  * Display the admin of the Cardwall
  */
-class Cardwall_OnTop_Config_View_Admin {
+class Cardwall_OnTop_Config_View_Admin
+{
 
-    public function displayAdminOnTop(Cardwall_OnTop_Config $config) {
+    public function displayAdminOnTop(Cardwall_OnTop_Config $config)
+    {
         return $this->generateAdminForm($config);
     }
 
-    private function generateAdminForm($config) {
+    private function generateAdminForm($config)
+    {
         $column_definition_view = new Cardwall_OnTop_Config_View_ColumnDefinition($config);
         $checked                = $config->isEnabled() ? 'checked="checked"' : '';
 
         $html  = '<p>';
         $html .= '<input type="hidden" name="cardwall_on_top" value="0" />';
         $html .= '<label class="checkbox">';
-        $html .= '<input type="checkbox" name="cardwall_on_top" value="1" id="cardwall_on_top" '. $checked .'/> ';
-        $html .= $this->translate('plugin_cardwall', 'on_top_label');
+        $html .= '<input type="checkbox" name="cardwall_on_top" value="1" id="cardwall_on_top" ' . $checked . '/> ';
+        $html .= dgettext('tuleap-cardwall', 'Enable cardwall on top of this planning');
         $html .= '</label>';
         $html .= '</p>';
         $html .= '<input type="hidden" name="update_cardwall" value="1" />';
@@ -51,15 +53,8 @@ class Cardwall_OnTop_Config_View_Admin {
         return $html;
     }
 
-     /**
-     * @return string
-     */
-    private function translate($page, $category, $args = "") {
-        return $GLOBALS['Language']->getText($page, $category, $args);
-    }
-
-    public function visitColumnFreestyleCollection($collection, Cardwall_OnTop_Config $config) {
+    public function visitColumnFreestyleCollection($collection, Cardwall_OnTop_Config $config)
+    {
         return new Cardwall_OnTop_Config_View_ColumnDefinition($config);
     }
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean 2016. All rights reserved
+ * Copyright (c) Enalean 2016 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201602091428_create_plugin_svn_notification extends ForgeUpgrade_Bucket {
+class b201602091428_create_plugin_svn_notification extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'Create table plugin_svn_notification for SVN plugin';
     }
 
-   public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE plugin_svn_notification (
                   repository_id INT(11) UNSIGNED NOT NULL,
                   mailing_list text,

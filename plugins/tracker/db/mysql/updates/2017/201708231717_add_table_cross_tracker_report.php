@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -54,7 +54,8 @@ class b201708231717_add_table_cross_tracker_report extends ForgeUpgrade_Bucket
 
     public function postUp()
     {
-        if (! $this->db->tableNameExists('plugin_tracker_cross_tracker_report')
+        if (
+            ! $this->db->tableNameExists('plugin_tracker_cross_tracker_report')
             || ! $this->db->tableNameExists('plugin_tracker_cross_tracker_report_tracker')
         ) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('a table is missing');

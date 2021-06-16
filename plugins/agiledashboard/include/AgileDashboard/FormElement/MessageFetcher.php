@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use AgileDashboard_Semantic_InitialEffortFactory;
 use Codendi_HTMLPurifier;
 use PlanningFactory;
 use Tracker;
-use Tuleap\AgileDashboard\Semantic\SemanticDoneFactory;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDoneFactory;
 
 class MessageFetcher
 {
@@ -59,7 +59,7 @@ class MessageFetcher
     public function getWarningsRelatedToPlanningConfiguration(Tracker $tracker)
     {
         $purifier = Codendi_HTMLPurifier::instance();
-        $warnings = array();
+        $warnings = [];
         $planning = $this->planning_factory->getPlanningByPlanningTracker($tracker);
 
         if (! $planning) {

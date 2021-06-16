@@ -1,32 +1,35 @@
 <?php
-/*
+/**
+ * Copyright (c) Enalean, 2019 - present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2006. All Rights Reserved.
  *
- * Originally written by Manuel Vacelet, 2006
- * 
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+use Tuleap\Docman\REST\v1\DocmanItemsEventAdder;
+use Tuleap\Docman\Version\Version;
 
 /**
  * Version is a transport object (aka container) used to share data between
  * Model/Controler and View layer of the application
  */
-class Docman_Version {
-    
-    function __construct($data = null) {
+class Docman_Version implements Version
+{
+    public function __construct($data = null)
+    {
         $this->id        = null;
         $this->authorId  = null;
         $this->itemId    = null;
@@ -35,7 +38,7 @@ class Docman_Version {
         $this->changeLog = null;
         $this->date      = null;
         $this->filename  = null;
-        $this->filesize  = null;
+        $this->filesize  = 0;
         $this->filetype  = null;
         $this->path      = null;
         $this->_content  = null;
@@ -44,117 +47,191 @@ class Docman_Version {
         }
     }
 
-    var $id;
-    function getId() { 
-        return $this->id; 
+    public $id;
+    public function getId()
+    {
+        return $this->id;
     }
-    function setId($id) { 
+    public function setId($id)
+    {
         $this->id = $id;
     }
-    
-    var $authorId;
-    function getAuthorId() { 
-        return $this->authorId; 
+
+    public $authorId;
+    public function getAuthorId()
+    {
+        return $this->authorId;
     }
-    function setAuthorId($authorId) { 
+    public function setAuthorId($authorId)
+    {
         $this->authorId = $authorId;
     }
-    
-    var $itemId;
-    function getItemId() { 
-        return $this->itemId; 
+
+    public $itemId;
+    public function getItemId()
+    {
+        return $this->itemId;
     }
-    function setItemId($itemId) { 
+    public function setItemId($itemId)
+    {
         $this->itemId = $itemId;
     }
-    
-    var $number;
-    function getNumber() { 
-        return $this->number; 
+
+    public $number;
+    public function getNumber()
+    {
+        return $this->number;
     }
-    function setNumber($number) { 
+    public function setNumber($number)
+    {
         $this->number = $number;
     }
-    
-    var $label;
-    function getLabel() { 
-        return $this->label; 
+
+    public $label;
+    public function getLabel()
+    {
+        return $this->label;
     }
-    function setLabel($label) { 
+    public function setLabel($label)
+    {
         $this->label = $label;
     }
-    
-    var $changelog;
-    function getChangelog() { 
-        return $this->changelog; 
+
+    public $changelog;
+    public function getChangelog()
+    {
+        return $this->changelog;
     }
-    function setChangelog($changelog) { 
+    public function setChangelog($changelog)
+    {
         $this->changelog = $changelog;
     }
-    
-    var $date;
-    function getDate() { 
-        return $this->date; 
+
+    public $date;
+    public function getDate()
+    {
+        return $this->date;
     }
-    function setDate($date) { 
+    public function setDate($date)
+    {
         $this->date = $date;
     }
-    
-    var $filename;
-    function getFilename() { 
-        return $this->filename; 
+
+    /**
+     * @var null|string
+     */
+    public $filename;
+    /**
+     * @return string
+     */
+    public function getFilename()
+    {
+        return $this->filename ?? '';
     }
-    function setFilename($filename) { 
+
+    public function setFilename(?string $filename)
+    {
         $this->filename = $filename;
     }
-    
-    var $filesize;
-    function getFilesize() { 
-        return $this->filesize; 
+
+    /**
+     * @var int
+     */
+    public $filesize;
+    public function getFilesize(): int
+    {
+        return $this->filesize;
     }
-    function setFilesize($filesize) { 
+    public function setFilesize(int $filesize)
+    {
         $this->filesize = $filesize;
     }
-    
-    var $filetype;
-    function getFiletype() { 
-        return $this->filetype; 
+
+    /**
+     * @var null|string
+     */
+    public $filetype;
+
+    /**
+     * @return string
+     * @psalm-mutation-free
+     */
+    public function getFiletype()
+    {
+        return $this->filetype ?? 'application/octet-stream';
     }
-    function setFiletype($filetype) { 
+
+    public function setFiletype(?string $filetype)
+    {
         $this->filetype = $filetype;
     }
-    
-    var $path;
-    function getPath() { 
-        return $this->path; 
+
+    /**
+     * @var string|null
+     */
+    public $path;
+
+    /**
+     * @return string
+     */
+    public function getPath()
+    {
+        return $this->path ?? '';
     }
-    function setPath($path) { 
+
+    public function setPath(?string $path)
+    {
         $this->path = $path;
     }
 
     protected $_content;
-    public function getContent() {
+    public function getContent()
+    {
         if ($this->_content === null && is_file($this->getPath())) {
             $this->_content = file_get_contents($this->getPath());
         }
         return $this->_content;
     }
-    public function setContent($content) {
+    public function setContent($content)
+    {
         $this->_content = $content;
     }
 
-    function initFromRow($row) {
-        if (isset($row['id'])) $this->setId($row['id']);
-        if (isset($row['user_id']))$this->setAuthorId($row['user_id']);
-        if (isset($row['item_id']))$this->setItemId($row['item_id']);
-        if (isset($row['number']))$this->setNumber($row['number']);
-        if (isset($row['label']))$this->setLabel($row['label']);
-        if (isset($row['changelog']))$this->setChangelog($row['changelog']);
-        if (isset($row['date']))$this->setDate($row['date']);
-        if (isset($row['filename']))$this->setFilename($row['filename']);
-        if (isset($row['filesize']))$this->setFilesize($row['filesize']);
-        if (isset($row['filetype']))$this->setFiletype($row['filetype']);
-        if (isset($row['path']))$this->setPath($row['path']);
+    public function initFromRow($row)
+    {
+        if (isset($row['id'])) {
+            $this->setId($row['id']);
+        }
+        if (isset($row['user_id'])) {
+            $this->setAuthorId($row['user_id']);
+        }
+        if (isset($row['item_id'])) {
+            $this->setItemId($row['item_id']);
+        }
+        if (isset($row['number'])) {
+            $this->setNumber($row['number']);
+        }
+        if (isset($row['label'])) {
+            $this->setLabel($row['label']);
+        }
+        if (isset($row['changelog'])) {
+            $this->setChangelog($row['changelog']);
+        }
+        if (isset($row['date'])) {
+            $this->setDate($row['date']);
+        }
+        if (isset($row['filename'])) {
+            $this->setFilename($row['filename']);
+        }
+        if (isset($row['filesize'])) {
+            $this->setFilesize($row['filesize']);
+        }
+        if (isset($row['filetype'])) {
+            $this->setFiletype($row['filetype']);
+        }
+        if (isset($row['path'])) {
+            $this->setPath($row['path']);
+        }
     }
 
     /**
@@ -166,15 +243,18 @@ class Docman_Version {
      *
      * @return void
      */
-    function preDownload($item, $user) {
-        $em = EventManager::instance();
-        $em->processEvent('plugin_docman_event_access', array(
+    public function preDownload($item, $user)
+    {
+        $event_manager = EventManager::instance();
+        $event_adder   = new DocmanItemsEventAdder($event_manager);
+        $event_adder->addLogEvents();
+
+        $event_manager->processEvent('plugin_docman_event_access', [
                     'group_id' => $item->getGroupId(),
                     'item'     => $item,
                     'version'  => $this->getNumber(),
                     'user'     => $user
-                )
-        );
+                ]);
     }
 
     /**
@@ -185,17 +265,16 @@ class Docman_Version {
      *
      * @return void
      */
-    function fireDeleteEvent($item, $user) {
+    public function fireDeleteEvent($item, $user)
+    {
         $value = $this->getNumber();
         if ($this->getLabel() != '') {
-            $value .= ' ('.$this->getLabel().')';
+            $value .= ' (' . $this->getLabel() . ')';
         }
-        $params = array('group_id'   => $item->getGroupId(),
+        $params = ['group_id'   => $item->getGroupId(),
                         'item'       => $item,
                         'old_value'  => $value,
-                        'user'       => $user);
+                        'user'       => $user];
         EventManager::instance()->processEvent('plugin_docman_event_del_version', $params);
     }
 }
-
-?>

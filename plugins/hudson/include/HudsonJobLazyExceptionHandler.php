@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,14 +31,14 @@ class HudsonJobLazyExceptionHandler
      */
     private $exception;
 
-    public function __construct(\HudsonJob $hudson_job = null, \Exception $exception = null)
+    public function __construct(?\HudsonJob $hudson_job = null, ?\Exception $exception = null)
     {
         $this->hudson_job = $hudson_job;
         $this->exception  = $exception;
     }
 
     /**
-     * @return \HudsonJob|null
+     * @return \HudsonJob
      * @throws \Exception
      */
     public function getHudsonJob()

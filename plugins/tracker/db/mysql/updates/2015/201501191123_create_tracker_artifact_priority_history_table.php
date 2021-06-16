@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2015. All rights reserved
+ * Copyright (c) Enalean SAS 2015 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201501191123_create_tracker_artifact_priority_history_table extends ForgeUpgrade_Bucket {
+class b201501191123_create_tracker_artifact_priority_history_table extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'Add tracker_artifact_priority_history table';
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE tracker_artifact_priority_history(
                     id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                     artifact_id_higher INT(11) NULL,
@@ -38,8 +42,9 @@ class b201501191123_create_tracker_artifact_priority_history_table extends Forge
         $this->db->createTable('tracker_artifact_priority_history', $sql);
     }
 
-    public function postUp() {
-        if (!$this->db->tableNameExists('tracker_artifact_priority_history')) {
+    public function postUp()
+    {
+        if (! $this->db->tableNameExists('tracker_artifact_priority_history')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('table tracker_artifact_priority_history not created');
         }
     }

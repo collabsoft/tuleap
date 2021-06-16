@@ -1,4 +1,23 @@
 <?php
+/**
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
+ * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
@@ -7,10 +26,6 @@ namespace Tuleap\Git\GitPHP;
  *
  * Diff executable class
  *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Git
  */
 
 /**
@@ -28,7 +43,7 @@ class DiffExe
      *
      * @access protected
      */
-    protected $binary;
+    protected $binary = '/usr/bin/diff';
 
     /**
      * unified
@@ -47,23 +62,6 @@ class DiffExe
      * @access protected
      */
     protected $showFunction = true;
-
-    /**
-     * __construct
-     *
-     * Constructor
-     *
-     * @access public
-     */
-    public function __construct()
-    {
-        $binary = Config::GetInstance()->GetValue('diffbin');
-        if (empty($binary)) {
-            $this->binary = DiffExe::DefaultBinary();
-        } else {
-            $this->binary = $binary;
-        }
-    }
 
     /**
      * GetBinary
@@ -110,7 +108,7 @@ class DiffExe
      * Gets whether this diff is showing the function
      *
      * @access public
-     * @return boolean true if showing function
+     * @return bool true if showing function
      */
     public function GetShowFunction() // @codingStandardsIgnoreLine
     {
@@ -123,7 +121,7 @@ class DiffExe
      * Sets whether this diff is showing the function
      *
      * @access public
-     * @param boolean $show true to show
+     * @param bool $show true to show
      */
     public function SetShowFunction($show) // @codingStandardsIgnoreLine
     {
@@ -156,27 +154,27 @@ class DiffExe
             $toFile = '/dev/null';
         }
 
-        $args = array();
+        $args = [];
         if ($this->unified) {
             if (is_numeric($this->unified)) {
                 $args[] = '-U';
-                $args[] = $this->unified;
+                $args[] = escapeshellarg((string) $this->unified);
             } else {
                 $args[] = '-u';
             }
 
             $args[] = '-L';
             if (empty($fromName)) {
-                $args[] = '"' . $fromFile . '"';
+                $args[] = escapeshellarg($fromFile);
             } else {
-                $args[] = '"' . $fromName . '"';
+                $args[] = escapeshellarg($fromName);
             }
 
             $args[] = '-L';
             if (empty($toName)) {
-                $args[] = '"' . $toFile . '"';
+                $args[] = escapeshellarg($toFile);
             } else {
-                $args[] = '"' . $toName . '"';
+                $args[] = escapeshellarg($toName);
             }
         }
         if ($this->showFunction) {
@@ -187,26 +185,6 @@ class DiffExe
         $args[] = $toFile;
 
         return shell_exec($this->binary . ' ' . implode(' ', $args));
-    }
-
-    /**
-     * Valid
-     *
-     * Tests if this executable is valid
-     *
-     * @access public
-     * @return boolean true if valid
-     */
-    public function Valid() // @codingStandardsIgnoreLine
-    {
-        if (empty($this->binary)) {
-            return false;
-        }
-
-        $code = 0;
-        $out = exec($this->binary . ' --version', $tmp, $code);
-
-        return $code == 0;
     }
 
     /**
@@ -229,19 +207,5 @@ class DiffExe
         $ret = $obj->Execute($fromFile, $fromName, $toFile, $toName);
         unset($obj);
         return $ret;
-    }
-
-    /**
-     * DefaultBinary
-     *
-     * Gets the default binary for the platform
-     *
-     * @access public
-     * @static
-     * @return string binary
-     */
-    public static function DefaultBinary() // @codingStandardsIgnoreLine
-    {
-        return 'diff';
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,24 +19,27 @@
 
 namespace Tuleap\AgileDashboard\REST\v1\Kanban;
 
-use Tuleap\REST\JsonCast;
 use AgileDashboard_KanbanItemDao;
-use Tracker_Artifact;
+use Tuleap\REST\JsonCast;
+use Tuleap\Tracker\Artifact\Artifact;
 
-class TimeInfoFactory {
+class TimeInfoFactory
+{
 
     /**
      * @var AgileDashboard_KanbanItemDao
      */
     private $dao;
 
-    public function __construct(AgileDashboard_KanbanItemDao $dao) {
+    public function __construct(AgileDashboard_KanbanItemDao $dao)
+    {
         $this->dao = $dao;
     }
 
     /** @return array */
-    public function getTimeInfo(Tracker_Artifact $artifact) {
-        $timeinfo = array();
+    public function getTimeInfo(Artifact $artifact)
+    {
+        $timeinfo = [];
         foreach ($this->dao->searchTimeInfoForItem($artifact->getTrackerId(), $artifact->getId()) as $row) {
             $timeinfo[$row['column_id']] = JsonCast::toDate($row['submitted_on']);
         }

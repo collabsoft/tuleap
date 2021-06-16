@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2017. All rights reserved.
+ * Copyright Enalean (c) 2017 - Present. All rights reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,7 +27,7 @@ class GlobalNotificationsAddressesBuilder
     public function removeAddressFromString($addresses, PFUser $user)
     {
         $addresses = $this->transformNotificationAddressesStringAsArray($addresses);
-        $addresses = array_diff($addresses, array($user->getEmail(), $user->getUserName()));
+        $addresses = array_diff($addresses, [$user->getEmail(), $user->getUserName()]);
 
         return implode(",", $addresses);
     }

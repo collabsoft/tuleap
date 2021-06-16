@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,7 +27,8 @@ if ($request->isPost() && $request->existAndNonEmpty('post_changes')) {
     $vImmutableTagsWhitelist = new Valid_Text('immutable-tags-whitelist');
     $vImmutableTagsPath      = new Valid_Text('immutable-tags-path');
 
-    if ($request->valid($vImmutableTagsWhitelist) &&
+    if (
+        $request->valid($vImmutableTagsWhitelist) &&
         $request->valid($vImmutableTagsPath)
     ) {
         $immutable_tags_whitelist = trim($request->get('immutable-tags-whitelist'));
@@ -35,19 +36,19 @@ if ($request->isPost() && $request->existAndNonEmpty('post_changes')) {
 
         $immutable_tags_handler->saveImmutableTagsForProject($group_id, $immutable_tags_whitelist, $immutable_tags_path);
     } else {
-        $GLOBALS['Response']->addFeedback('error', $Language->getText('svn_admin_general_settings','upd_fail'));
+        $GLOBALS['Response']->addFeedback('error', $Language->getText('svn_admin_general_settings', 'upd_fail'));
     }
-    $GLOBALS['Response']->redirect('/svn/admin/?func=immutable_tags&group_id='.$group_id);
+    $GLOBALS['Response']->redirect('/svn/admin/?func=immutable_tags&group_id=' . $group_id);
 }
 
 // Display the form
-svn_header_admin(array ('title'=>$Language->getText('svn_admin_immutable_tags','title'),
-                        'help' => 'svn.html#subversion-administration-interface'));
+svn_header_admin(['title' => $Language->getText('svn_admin_immutable_tags', 'title'),
+                        'help' => 'svn.html#subversion-administration-interface']);
 
-$pm = ProjectManager::instance();
+$pm      = ProjectManager::instance();
 $project = $pm->getProject($group_id);
 
-$template_dir = ForgeConfig::get('codendi_dir') .'/src/templates/svn/';
+$template_dir = ForgeConfig::get('codendi_dir') . '/src/templates/svn/';
 $renderer     = TemplateRendererFactory::build()->getRenderer($template_dir);
 $svnlook      = new SVN_Svnlook();
 try {
@@ -68,4 +69,4 @@ $renderer->renderToPage(
     $presenter
 );
 
-svn_footer(array());
+svn_footer([]);

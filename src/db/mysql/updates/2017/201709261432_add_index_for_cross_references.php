@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -48,7 +48,7 @@ class b201709261432_add_index_for_cross_references extends ForgeUpgrade_Bucket
 
     private function removeExistingIndexes($index_name)
     {
-        $sql = "SHOW INDEX FROM cross_references WHERE key_name = '$index_name'";
+        $sql    = "SHOW INDEX FROM cross_references WHERE key_name = '$index_name'";
         $result = $this->db->dbh->query($sql);
         if ($result->fetch() === false) {
             return;

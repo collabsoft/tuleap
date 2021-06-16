@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,8 +20,8 @@
 
 namespace Tuleap\OpenIDConnectClient\Administration;
 
-
-class ColorPresenter {
+class ColorPresenter
+{
 
     /**
      * @var string
@@ -34,9 +34,9 @@ class ColorPresenter {
     public $is_selected;
 
 
-    public function __construct($color, $is_selected) {
+    public function __construct($color, $is_selected)
+    {
         $this->color       = $color;
         $this->is_selected = $is_selected;
     }
-
 }

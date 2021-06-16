@@ -2,7 +2,7 @@
 #  *
 #  * Tracker scripts message catalog (English)
 #  * Tuleap
-#  * Copyright (c) Enalean SAS, Tuleap Team, 2011-2012.All rights reserved
+#  * Copyright (c) Enalean SAS, Tuleap Team, 2011 - Present.All rights reserved
 #  * Codendi
 #  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
 #  *
@@ -13,19 +13,11 @@
 widget	close_title	Remove
 widget	maximize_title	Maximize
 widget	minimize_title	Minimize
-widget	rss_title	RSS
 widget	preferences_title	Preferences
 
 widget_add	already_used	Already used
 
 widget_imageviewer	invalid_url	Only http:// and https:// URLs are accepted.
-
-widget_categ_label	forums	Forums
-widget_categ_label	frs	Files
-widget_categ_label	general	General
-widget_categ_label	trackers	Trackers
-widget_categ_label	scm	Source Code Management
-widget_categ_label	wiki	Wiki
 
 widget_dashboard	updated	Your <a href="$1">dashboard</a> has been updated.
 
@@ -43,7 +35,6 @@ widget_description_project_latest_file_releases	description	Lists the most recen
 widget_description_project_classification	description	Lists the categories of the project.
 widget_description_project_description	description	Allows you to view the project description.
 widget_description_project_latest_news	description	Lists the last 10 pieces of news posted by the project members.
-widget_description_project_members	description	Lists the project members.
 widget_description_project_public_areas	description	Lists all available services for this project along with some information next to it. Click on any of this item to access a service. <br>The role of this area is pretty much equivalent to the Project Main Menu at the top of the screen except that it shows additional information about each of the service (e.g. total number of open bugs, tasks, ...)
 widget_description_project_latest_cvs_commits	description	Lists the latest CVS commits of the project.
 widget_description_project_latest_svn_commits	description	Lists the latest SVN commits of the project.

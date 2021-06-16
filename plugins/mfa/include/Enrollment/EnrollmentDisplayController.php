@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,9 @@ namespace Tuleap\MFA\Enrollment;
 
 use HTTPRequest;
 use Tuleap\Layout\BaseLayout;
+use Tuleap\MFA\Enrollment\TOTP\TOTPEnroller;
 use Tuleap\Request\DispatchableWithRequestNoAuthz;
+use Tuleap\Request\ForbiddenException;
 
 class EnrollmentDisplayController implements DispatchableWithRequestNoAuthz
 {
@@ -30,25 +32,32 @@ class EnrollmentDisplayController implements DispatchableWithRequestNoAuthz
      * @var \TemplateRenderer
      */
     private $template_renderer;
+    /**
+     * @var TOTPEnroller
+     */
+    private $totp_enroller;
 
-    public function __construct(\TemplateRenderer $template_renderer)
+    public function __construct(\TemplateRenderer $template_renderer, TOTPEnroller $totp_enroller)
     {
         $this->template_renderer = $template_renderer;
+        $this->totp_enroller     = $totp_enroller;
     }
 
     public function process(HTTPRequest $request, BaseLayout $layout, array $variables)
     {
+        if (! $request->getCurrentUser()->isLoggedIn()) {
+            throw new ForbiddenException();
+        }
+
         $csrf_token = new \CSRFSynchronizerToken($request->getFromServer('REQUEST_URI'));
+
+        $is_user_already_registered = $this->totp_enroller->isUserEnrolled($request->getCurrentUser());
+        $secret                     = $this->totp_enroller->prepareSessionForEnrollment($_SESSION);
 
         $layout->header(['title' => dgettext('tuleap-mfa', 'Enable two-factor authentication')]);
         $this->template_renderer->renderToPage(
             'enrollment',
-            new EnrollmentPresenter($csrf_token)
+            new EnrollmentPresenter($csrf_token, $secret, $is_user_already_registered)
         );
-    }
-
-    public function userCanAccess(\URLVerification $url_verification, \HTTPRequest $request, array $variables)
-    {
-        return $request->getCurrentUser()->isLoggedIn();
     }
 }

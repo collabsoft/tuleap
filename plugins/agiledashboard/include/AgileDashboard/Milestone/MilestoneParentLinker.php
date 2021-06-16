@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class MilestoneParentLinker {
+use Tuleap\Tracker\Artifact\Artifact;
+
+class MilestoneParentLinker
+{
 
     /**
      * @var AgileDashboard_Milestone_Backlog_BacklogFactory
@@ -38,7 +41,8 @@ class MilestoneParentLinker {
         $this->backlog_factory   = $backlog_factory;
     }
 
-    public function linkToMilestoneParent(Planning_Milestone $milestone, PFUser $user, Tracker_Artifact $artifact_added) {
+    public function linkToMilestoneParent(Planning_Milestone $milestone, PFUser $user, Artifact $artifact_added)
+    {
         $this->milestone_factory->addMilestoneAncestors($user, $milestone);
 
         $parent_milestone = $milestone->getParent();
@@ -53,26 +57,29 @@ class MilestoneParentLinker {
             return;
         }
 
-        if (! $this->isParentLinkedToParentMilestone(
+        if (
+            ! $this->isParentLinkedToParentMilestone(
                 $artifact_added,
                 $parent_milestone_artifact,
-                $user)
+                $user
+            )
         ) {
             $parent_milestone_artifact->linkArtifact($artifact_added->getId(), $user);
             $this->linkToMilestoneParent($parent_milestone, $user, $artifact_added);
         }
     }
 
-    private function getBacklogTrackers(Planning_Milestone $milestone) {
+    private function getBacklogTrackers(Planning_Milestone $milestone)
+    {
         return $this->backlog_factory->getBacklog($milestone)->getDescendantTrackers();
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     private function parentMilestoneHasItemTrackerInItsBacklogTracker(
         Planning_Milestone $parent_milestone,
-        Tracker_Artifact $artifact_added
+        Artifact $artifact_added
     ) {
         $backlog_trackers = $this->getBacklogTrackers($parent_milestone);
 
@@ -86,11 +93,10 @@ class MilestoneParentLinker {
     }
 
     private function isParentLinkedToParentMilestone(
-        Tracker_Artifact $artifact_added,
-        Tracker_Artifact $parent_milestone_artifact,
+        Artifact $artifact_added,
+        Artifact $parent_milestone_artifact,
         PFUser $user
     ) {
-
         $parent = $artifact_added->getParent($user);
 
         if (! $parent) {

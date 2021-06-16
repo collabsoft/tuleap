@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,7 +23,7 @@ namespace Tuleap\PullRequest\MergeSetting;
 final class MergeSettingDefault implements MergeSetting
 {
     /**
-     * @return boolean
+     * @return bool
      */
     public function isMergeCommitAllowed()
     {

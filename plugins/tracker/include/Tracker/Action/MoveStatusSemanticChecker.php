@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ use Tracker_FormElementFactory;
 
 class MoveStatusSemanticChecker extends MoveSemanticChecker
 {
-    const STATUS_SEMANTIC_LABEL = 'status';
+    public const STATUS_SEMANTIC_LABEL = 'status';
 
     public function __construct(Tracker_FormElementFactory $form_element_factory)
     {

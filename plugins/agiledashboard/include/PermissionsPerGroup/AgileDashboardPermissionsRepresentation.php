@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,7 +28,7 @@ class AgileDashboardPermissionsRepresentation
     public $plannings_permissions;
 
     /**
-     * AgileDashboardPermissionRepresentation constructor.
+     *
      *
      * @param PlanningPermissionRepresentation[] $permissions
      */

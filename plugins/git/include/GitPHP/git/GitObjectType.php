@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,12 +23,22 @@ namespace Tuleap\Git\GitPHP;
 interface GitObjectType
 {
     /**
-     * @return boolean
+     * @return bool
      */
     public function isTree();
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isBlob();
+
+    /**
+     * @return bool
+     */
+    public function isSubmodule();
+
+    /**
+     * @return string
+     */
+    public function GetName(); // phpcs:ignore
 }

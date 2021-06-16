@@ -2,7 +2,7 @@
 # -*-python-*-
 #
 # Copyright (C) 1999-2006 The ViewCVS Group. All Rights Reserved.
-# Copyright (c) Enalean, 2016-2018. All rights reserved
+# Copyright (c) Enalean, 2016 - Present. All rights reserved
 #
 # By using this file, you agree to the terms and conditions set forth in
 # the LICENSE.html file which can be found at the top level of the ViewVC
@@ -37,7 +37,7 @@ import session
 username = os.getenv('REMOTE_USER', '')
 project_name = os.getenv('TULEAP_PROJECT_NAME', '')
 repo_name = os.getenv('TULEAP_REPO_NAME', '')
-full_repo_name = project_name + '/' + repo_name
+full_repo_name = os.getenv('TULEAP_FULL_REPO_NAME', '')
 repo_path = os.getenv('TULEAP_REPO_PATH', '')
 path_info = os.getenv('PATH_INFO', '/')
 # Remove potential / duplicates

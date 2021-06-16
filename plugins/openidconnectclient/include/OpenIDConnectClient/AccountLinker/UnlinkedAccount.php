@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,28 +31,32 @@ namespace Tuleap\OpenIDConnectClient\AccountLinker;
  * If no, check if the user has control of a Tuleap account ->
  * Create a link between the account and the OpenID Connect provider for this user
  */
-class UnlinkedAccount {
+class UnlinkedAccount
+{
 
     private $id;
     private $provider_id;
     private $user_identifier;
 
-    public function __construct($id, $provider_id, $user_identifier) {
+    public function __construct($id, $provider_id, $user_identifier)
+    {
         $this->id              = $id;
         $this->provider_id     = $provider_id;
         $this->user_identifier = $user_identifier;
     }
 
-    public function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
-    public function getProviderId() {
+    public function getProviderId()
+    {
         return $this->provider_id;
     }
 
-    public function getUserIdentifier() {
+    public function getUserIdentifier()
+    {
         return $this->user_identifier;
     }
-
 }

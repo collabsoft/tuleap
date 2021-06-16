@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2014. All rights reserved.
+ * Copyright Enalean (c) 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,12 +22,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/svn/SVN_Hooks.class.php';
-
 /**
  * Base class for a svn hook object
  */
-abstract class SVN_Hook {
+abstract class SVN_Hook
+{
 
     /** @var SVN_Hooks */
     private $svn_hooks;
@@ -48,7 +47,8 @@ abstract class SVN_Hook {
      *
      * @return Project
      */
-    protected function getProjectFromRepositoryPath($repository) {
+    protected function getProjectFromRepositoryPath($repository)
+    {
         return $this->svn_hooks->getProjectFromRepositoryPath($repository);
     }
 }

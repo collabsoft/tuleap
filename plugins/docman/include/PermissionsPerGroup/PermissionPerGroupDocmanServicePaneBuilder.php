@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -106,7 +106,7 @@ class PermissionPerGroupDocmanServicePaneBuilder
 
     private function addProjectAdministrators(Project $project, DocmanGlobalAdminPermissionCollection $permissions)
     {
-        $user_group = $this->ugroup_manager->getUGroup($project, ProjectUGroup::PROJECT_ADMIN);
+        $user_group = $this->ugroup_manager->getProjectAdminsUGroup($project);
         $permissions->addPermission(
             ProjectUGroup::PROJECT_ADMIN,
             $this->formatter->formatGroup($user_group)
@@ -121,7 +121,8 @@ class PermissionPerGroupDocmanServicePaneBuilder
             Docman_PermissionsManager::PLUGIN_DOCMAN_ADMIN
         );
 
-        if (in_array($event->getSelectedUGroupId(), $all_ugroups) ||
+        if (
+            in_array($event->getSelectedUGroupId(), $all_ugroups) ||
             ((int) $event->getSelectedUGroupId() === ProjectUGroup::PROJECT_ADMIN)
         ) {
             return $all_ugroups;
@@ -132,7 +133,7 @@ class PermissionPerGroupDocmanServicePaneBuilder
 
     private function getGlobalAdminLink(PermissionPerGroupPaneCollector $event)
     {
-        return DOCMAN_BASE_URL . "?" . http_build_query(
+        return DOCMAN_BASE_URL . "/?" . http_build_query(
             [
                 "group_id" => $event->getProject()->getID(),
                 "action"   => "admin_permissions"

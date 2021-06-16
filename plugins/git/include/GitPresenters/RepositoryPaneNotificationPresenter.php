@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,14 +21,20 @@
 namespace Tuleap\Git\GitPresenters;
 
 use GitRepository;
+use Tuleap\CSRFSynchronizerTokenPresenter;
 
 class RepositoryPaneNotificationPresenter
 {
     public $identifier;
     public $users_to_be_notified;
     public $groups_to_be_notified;
+    /**
+     * @psalm-readonly
+     */
+    public CSRFSynchronizerTokenPresenter $csrf_token;
 
     public function __construct(
+        CSRFSynchronizerTokenPresenter $csrf_token,
         GitRepository $repository,
         $identifier,
         array $users_to_be_notified,
@@ -46,23 +52,24 @@ class RepositoryPaneNotificationPresenter
         $this->repository_id         = $repository->getId();
         $this->mail_prefix           = $repository->getMailPrefix();
 
-        $this->title                = $GLOBALS['Language']->getText('plugin_git', 'admin_mail');
-        $this->mail_prefix_label    = $GLOBALS['Language']->getText('plugin_git', 'mail_prefix_label');
-        $this->notified_mails_title = $GLOBALS['Language']->getText('plugin_git', 'notified_mails_title');
+        $this->title                = dgettext('tuleap-git', 'Notifications');
+        $this->mail_prefix_label    = dgettext('tuleap-git', 'Notification Prefix');
+        $this->notified_mails_title = dgettext('tuleap-git', 'List of notified mails');
         $this->btn_submit           = $GLOBALS['Language']->getText('global', 'btn_submit');
         $this->notified_people      = dgettext('tuleap-git', 'Notified people');
         $this->empty_notification   = dgettext('tuleap-git', 'No notifications set');
         $this->placeholder          = dgettext('tuleap-git', 'User, group, email');
+        $this->csrf_token           = $csrf_token;
     }
 
     private function buildListOfMailsPresenter(GitRepository $repository)
     {
-        $list_of_mails = array();
+        $list_of_mails = [];
 
         foreach ($repository->getNotifiedMails() as $mail) {
-            $list_of_mails[] = array(
+            $list_of_mails[] = [
                 'mail' => $mail
-            );
+            ];
         }
 
         return $list_of_mails;

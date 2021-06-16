@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: PageInfo.php,v 1.5 2004/02/17 12:11:36 rurban Exp $');
 /**
  Copyright 1999, 2000, 2001, 2002 $ThePhpWikiProgrammingTeam
@@ -25,53 +26,68 @@ rcs_id('$Id: PageInfo.php,v 1.5 2004/02/17 12:11:36 rurban Exp $');
  * This plugin just passes a page revision handle to the Template
  * 'info.tmpl', which does all the real work.
  */
-class WikiPlugin_PageInfo
-extends WikiPlugin
+class WikiPlugin_PageInfo extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return _("PageInfo");
     }
 
-    function getDescription () {
-        return sprintf(_("Show extra page Info and statistics for %s."),
-                       '[pagename]');
+    public function getDescription()
+    {
+        return sprintf(
+            _("Show extra page Info and statistics for %s."),
+            '[pagename]'
+        );
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.5 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.5 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array('page' => '[pagename]',
-                     'version' => '[version]');
+    public function getDefaultArguments()
+    {
+        return ['page' => '[pagename]',
+                     'version' => '[version]'];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         $args = $this->getArgs($argstr, $request);
         extract($args);
 
         $pagename = $page;
-        $page = $request->getPage();
-        $current = $page->getCurrentRevision();
-        
-        if ($current->getVersion() < 1)
-            return fmt("I'm sorry, there is no such page as %s.",
-                       WikiLink($pagename, 'unknown'));
+        $page     = $request->getPage();
+        $current  = $page->getCurrentRevision();
 
-        if (!empty($version)) {
-            if (!($revision = $page->getRevision($version)))
-                NoSuchRevision($request, $page, $version);
+        if ($current->getVersion() < 1) {
+            return fmt(
+                "I'm sorry, there is no such page as %s.",
+                WikiLink($pagename, 'unknown')
+            );
         }
-        else {
+
+        if (! empty($version)) {
+            if (! ($revision = $page->getRevision($version))) {
+                NoSuchRevision($request, $page, $version);
+            }
+        } else {
             $revision = $current;
         }
 
-        $template = new Template('info', $request,
-                                 array('revision' => $revision));
+        $template = new Template(
+            'info',
+            $request,
+            ['revision' => $revision]
+        );
         return $template;
     }
-};
+}
 
 // $Log: PageInfo.php,v $
 // Revision 1.5  2004/02/17 12:11:36  rurban
@@ -91,8 +107,6 @@ extends WikiPlugin
 // Revision 1.2  2003/01/04 23:27:39  carstenklapp
 // New: Gracefully handle non-existant pages. Added copyleft;
 // getVersion() for PluginManager.
-//
-
 // (c-file-style: "gnu")
 // Local Variables:
 // mode: php
@@ -101,4 +115,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

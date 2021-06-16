@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -78,7 +78,8 @@ class Router
                 $widget = $this->getWidgetFromUrl($request);
 
                 $param       = $request->get('name');
-                $name        = array_pop(array_keys($param));
+                $param_keys  = array_keys($param);
+                $name        = array_pop($param_keys);
                 $instance_id = (int) $param[$name];
 
                 if ($widget->isAjax()) {
@@ -97,8 +98,9 @@ class Router
 
     private function getWidgetFromUrl(HTTPRequest $request)
     {
-        $param = $request->get('name');
-        $name  = array_pop(array_keys($param));
+        $param      = $request->get('name');
+        $param_keys = array_keys($param);
+        $name       = array_pop($param_keys);
 
         return $this->widget_factory->getInstanceByWidgetName($name);
     }

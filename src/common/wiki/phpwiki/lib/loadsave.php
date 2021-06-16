@@ -1,6 +1,4 @@
-<?php //-*-php-*-
-rcs_id('$Id: loadsave.php,v 1.137 2005/01/30 23:14:38 rurban Exp $');
-
+<?php
 /*
  Copyright 1999,2000,2001,2002,2004,2005 $ThePhpWikiProgrammingTeam
 
@@ -21,13 +19,16 @@ rcs_id('$Id: loadsave.php,v 1.137 2005/01/30 23:14:38 rurban Exp $');
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+use Tuleap\PHPWiki\WikiPage;
+
 require_once("lib/ziplib.php");
 require_once("lib/Template.php");
 
 /**
  * ignore fatal errors during dump
  */
-function _dump_error_handler(&$error) {
+function _dump_error_handler(&$error)
+{
     if ($error->isFatal()) {
         $error->errno = E_USER_WARNING;
         return true;
@@ -38,75 +39,105 @@ function _dump_error_handler(&$error) {
         return true;
     */
     // let the message come through: call the remaining handlers:
-    // return false; 
+    // return false;
 }
 
 function StartLoadDump(&$request, $title, $html = '')
 {
     // MockRequest is from the unit testsuite, a faked request. (may be cmd-line)
     // We are silent on unittests.
-    if (isa($request,'MockRequest'))
+    if (isa($request, 'MockRequest')) {
         return;
+    }
     // FIXME: This is a hack. This really is the worst overall hack in phpwiki.
-    if ($html)
+    if ($html) {
         $html->pushContent('%BODY%');
-    $tmpl = Template('html', array('TITLE' => $title,
+    }
+    $tmpl = Template('html', ['TITLE' => $title,
                                    'HEADER' => $title,
-                                   'CONTENT' => $html ? $html : '%BODY%'));
+                                   'CONTENT' => $html ? $html : '%BODY%']);
     echo preg_replace('/%BODY%.*/D', '', $tmpl->getExpansion($html));
     $request->chunkOutput();
-    
+
     // set marker for sendPageChangeNotification()
-    $request->_deferredPageChangeNotification = array();
+    $request->_deferredPageChangeNotification = [];
 }
 
 function EndLoadDump(&$request)
 {
-    if (isa($request,'MockRequest'))
+    if (isa($request, 'MockRequest')) {
         return;
-    $action = $request->getArg('action');
-    $label = '';
-    switch ($action) {
-    case 'zip':        $label = _("ZIP files of database"); break;
-    case 'upload':     $label = _("Upload File"); break;
-    case 'loadfile':   $label = _("Load File"); break;
-    case 'upgrade':    $label = _("Upgrade"); break;
-    case 'ziphtml':    $label = _("Dump pages as XHTML"); break;
     }
-    if ($label) $label = str_replace(" ","_",$label);
-    if ($action == 'browse') // loading virgin 
+    $action = $request->getArg('action');
+    $label  = '';
+    switch ($action) {
+        case 'zip':
+            $label = _("ZIP files of database");
+            break;
+        case 'upload':
+            $label = _("Upload File");
+            break;
+        case 'loadfile':
+            $label = _("Load File");
+            break;
+        case 'upgrade':
+            $label = _("Upgrade");
+            break;
+        case 'ziphtml':
+            $label = _("Dump pages as XHTML");
+            break;
+    }
+    if ($label) {
+        $label = str_replace(" ", "_", $label);
+    }
+    if ($action == 'browse') { // loading virgin
         $pagelink = WikiLink(HOME_PAGE);
-    else
-        $pagelink = WikiLink(new WikiPageName(_("PhpWikiAdministration"),false,$label));
+    } else {
+        $pagelink = WikiLink(new WikiPageName(_("PhpWikiAdministration"), false, $label));
+    }
 
     // do deferred sendPageChangeNotification()
-    if (!empty($request->_deferredPageChangeNotification)) {
-        $pages = $all_emails = $all_users = array();
+    if (! empty($request->_deferredPageChangeNotification)) {
+        $pages = $all_emails = $all_users = [];
         foreach ($request->_deferredPageChangeNotification as $p) {
             list($pagename, $emails, $userids) = $p;
-            $pages[] = $pagename;
-            $all_emails = array_unique(array_merge($all_emails, $emails));
-            $all_users = array_unique(array_merge($all_users, $userids));
+            $pages[]                           = $pagename;
+            $all_emails                        = array_unique(array_merge($all_emails, $emails));
+            $all_users                         = array_unique(array_merge($all_users, $userids));
         }
         $editedby = sprintf(_("Edited by: %s"), $request->_user->getId());
-        $content = "Loaded the following pages:\n" . join("\n", $pages);
-        if (mail(join(',',$all_emails),"[".WIKI_NAME."] "._("LoadDump"), 
-                 _("LoadDump")."\n".
-                 $editedby."\n\n".
-                 $content))
-            trigger_error(sprintf(_("PageChange Notification of %s sent to %s"),
-                                  join("\n",$pages), join(',',$all_users)), E_USER_NOTICE);
-        else
-            trigger_error(sprintf(_("PageChange Notification Error: Couldn't send %s to %s"),
-                                  join("\n",$pages), join(',',$all_users)), E_USER_WARNING);
+        $content  = "Loaded the following pages:\n" . join("\n", $pages);
+        if (
+            mail(
+                join(',', $all_emails),
+                "[" . WIKI_NAME . "] " . _("LoadDump"),
+                _("LoadDump") . "\n" .
+                 $editedby . "\n\n" .
+                $content
+            )
+        ) {
+            trigger_error(sprintf(
+                _("PageChange Notification of %s sent to %s"),
+                join("\n", $pages),
+                join(',', $all_users)
+            ), E_USER_NOTICE);
+        } else {
+            trigger_error(sprintf(
+                _("PageChange Notification Error: Couldn't send %s to %s"),
+                join("\n", $pages),
+                join(',', $all_users)
+            ), E_USER_WARNING);
+        }
         unset($pages);
         unset($all_emails);
         unset($all_users);
     }
     unset($request->_deferredPageChangeNotification);
 
-    PrintXML(HTML::p(HTML::strong(_("Complete."))),
-             HTML::p(fmt("Return to %s", $pagelink)));
+    PrintXML(
+        HTML::p(HTML::strong(_("Complete."))),
+        HTML::p(fmt("Return to %s", $pagelink))
+    );
     echo "</body></html>\n";
 }
 
@@ -125,10 +156,10 @@ function EndLoadDump(&$request)
  *
  * Also see http://www.faqs.org/rfcs/rfc2822.html
  */
-function MailifyPage ($page, $nversions = 1)
+function MailifyPage($page, $nversions = 1)
 {
     $current = $page->getCurrentRevision();
-    $head = '';
+    $head    = '';
 
     if (STRICT_MAILABLE_PAGEDUMPS) {
         $from = defined('SERVER_ADMIN') ? SERVER_ADMIN : 'foo@bar';
@@ -142,23 +173,27 @@ function MailifyPage ($page, $nversions = 1)
         $head .= "To: $from (PhpWiki)\r\n";
     }
     $head .= "Date: " . Rfc2822DateTime($current->get('mtime')) . "\r\n";
-    $head .= sprintf("Mime-Version: 1.0 (Produced by PhpWiki %s)\r\n",
-                     PHPWIKI_VERSION);
+    $head .= sprintf(
+        "Mime-Version: 1.0 (Produced by PhpWiki %s)\r\n",
+        PHPWIKI_VERSION
+    );
 
     // This should just be entered by hand (or by script?)
     // in the actual pgsrc files, since only they should have
     // RCS ids.
     //$head .= "X-Rcs-Id: \$Id\$\r\n";
 
-    $iter = $page->getAllRevisions();
-    $parts = array();
+    $iter  = $page->getAllRevisions();
+    $parts = [];
     while ($revision = $iter->next()) {
         $parts[] = MimeifyPageRevision($page, $revision);
-        if ($nversions > 0 && count($parts) >= $nversions)
+        if ($nversions > 0 && count($parts) >= $nversions) {
             break;
+        }
     }
-    if (count($parts) > 1)
+    if (count($parts) > 1) {
         return $head . MimeMultipart($parts);
+    }
     assert($parts);
     return $head . $parts[0];
 }
@@ -176,7 +211,7 @@ function MailifyPage ($page, $nversions = 1)
  * @param $pagename string Pagename.
  * @return string Filename for page.
  */
-function FilenameForPage ($pagename)
+function FilenameForPage($pagename)
 {
     $enc = rawurlencode($pagename);
     return preg_replace('/^\./', '%2e', $enc);
@@ -189,83 +224,89 @@ function FilenameForPage ($pagename)
  * is included in the zip file; otherwise all archived versions are
  * included as well.
  */
-function MakeWikiZip (&$request)
+function MakeWikiZip(&$request)
 {
     if ($request->getArg('include') == 'all') {
         $zipname         = WIKI_NAME . _("FullDump") . date('Ymd-Hi') . '.zip';
         $include_archive = true;
-    }
-    else {
+    } else {
         $zipname         = WIKI_NAME . _("LatestSnapshot") . date('Ymd-Hi') . '.zip';
         $include_archive = false;
     }
 
-
     $zip = new ZipWriter("Created by PhpWiki " . PHPWIKI_VERSION, $zipname);
 
     /* ignore fatals in plugins */
-    if (check_php_version(4,1)) {
-        global $ErrorManager;
-        $ErrorManager->pushErrorHandler(new WikiFunctionCb('_dump_error_handler'));
-    }
+    global $ErrorManager;
+    $ErrorManager->pushErrorHandler(new WikiFunctionCb('_dump_error_handler'));
 
-    $dbi =& $request->_dbi;
+    $dbi      = $request->_dbi;
     $thispage = $request->getArg('pagename'); // for "Return to ..."
     if ($exclude = $request->getArg('exclude')) {   // exclude which pagenames
-        $excludeList = explodePageList($exclude); 
+        $excludeList = explodePageList($exclude);
     } else {
-        $excludeList = array();
+        $excludeList = [];
     }
     if ($pages = $request->getArg('pages')) {  // which pagenames
-        if ($pages == '[]') // current page
+        if ($pages == '[]') { // current page
             $pages = $thispage;
+        }
         $page_iter = new WikiDB_Array_PageIterator(explodePageList($pages));
     } else {
-        $page_iter = $dbi->getAllPages(false,false,false,$excludeList);
+        $page_iter = $dbi->getAllPages(false, false, false, $excludeList);
     }
     $request_args = $request->args;
-    $timeout = (! $request->getArg('start_debug')) ? 30 : 240;
-    
+    $timeout      = (! $request->getArg('start_debug')) ? 30 : 240;
+
     while ($page = $page_iter->next()) {
-	$request->args = $request_args; // some plugins might change them (esp. on POST)
-        longer_timeout($timeout); 	// Reset watchdog
+        $request->args = $request_args; // some plugins might change them (esp. on POST)
+        longer_timeout($timeout);     // Reset watchdog
 
         $current = $page->getCurrentRevision();
-        if ($current->getVersion() == 0)
+        if ($current->getVersion() == 0) {
             continue;
+        }
 
         $pagename = $page->getName();
-        $wpn = new WikiPageName($pagename);
-        if (!$wpn->isValid())
+        $wpn      = new WikiPageName($pagename);
+        if (! $wpn->isValid()) {
             continue;
+        }
         if (in_array($page->getName(), $excludeList)) {
             continue;
         }
 
-        $attrib = array('mtime'    => $current->get('mtime'),
-                        'is_ascii' => 1);
-        if ($page->get('locked'))
+        $attrib = ['mtime'    => $current->get('mtime'),
+                        'is_ascii' => 1];
+        if ($page->get('locked')) {
             $attrib['write_protected'] = 1;
+        }
 
-        if ($include_archive)
+        if ($include_archive) {
             $content = MailifyPage($page, 0);
-        else
+        } else {
             $content = MailifyPage($page);
+        }
 
-        $zip->addRegularFile( FilenameForPage($pagename),
-                              $content, $attrib);
+        $zip->addRegularFile(
+            FilenameForPage($pagename),
+            $content,
+            $attrib
+        );
     }
     $zip->finish();
-    if (check_php_version(4,1)) {
-        global $ErrorManager;
-        $ErrorManager->popErrorHandler();
-    }
+    global $ErrorManager;
+    $ErrorManager->popErrorHandler();
 }
 
-function _copyMsg($page, $smallmsg) {
-    if (!isa($GLOBALS['request'], 'MockRequest')) {
-        if ($page) $msg = HTML(HTML::br(), HTML($page), HTML::small($smallmsg));
-        else $msg = HTML::small($smallmsg);
+function _copyMsg($page, $smallmsg)
+{
+    if (! isa($GLOBALS['request'], 'MockRequest')) {
+        if ($page) {
+            $msg = HTML(HTML::br(), HTML($page), HTML::small($smallmsg));
+        } else {
+            $msg = HTML::small($smallmsg);
+        }
         PrintXML($msg);
         flush();
     }
@@ -281,80 +322,85 @@ function _copyMsg($page, $smallmsg) {
  *
  * However, the actual wiki page data should be unaffected.
  */
-function MakeWikiZipHtml (&$request)
+function MakeWikiZipHtml(&$request)
 {
-    $request->_TemplatesProcessed = array();
-    $zipname = "wikihtml.zip";
-    $zip = new ZipWriter("Created by PhpWiki " . PHPWIKI_VERSION, $zipname);
-    $dbi =& $request->_dbi;
-    $thispage = $request->getArg('pagename'); // for "Return to ..."
+    $request->_TemplatesProcessed = [];
+    $zipname                      = "wikihtml.zip";
+    $zip                          = new ZipWriter("Created by PhpWiki " . PHPWIKI_VERSION, $zipname);
+    $dbi                          = $request->_dbi;
+    $thispage                     = $request->getArg('pagename'); // for "Return to ..."
     if ($exclude = $request->getArg('exclude')) {   // exclude which pagenames
-        $excludeList = explodePageList($exclude); 
+        $excludeList = explodePageList($exclude);
     } else {
-        $excludeList = array();
+        $excludeList = [];
     }
     if ($pages = $request->getArg('pages')) {  // which pagenames
-        if ($pages == '[]') // current page
+        if ($pages == '[]') { // current page
             $pages = $thispage;
+        }
         $page_iter = new WikiDB_Array_PageIterator(explodePageList($pages));
     } else {
-        $page_iter = $dbi->getAllPages(false,false,false,$excludeList);
+        $page_iter = $dbi->getAllPages(false, false, false, $excludeList);
     }
 
     global $WikiTheme;
-    if (defined('HTML_DUMP_SUFFIX'))
+    if (defined('HTML_DUMP_SUFFIX')) {
         $WikiTheme->HTML_DUMP_SUFFIX = HTML_DUMP_SUFFIX;
+    }
     $WikiTheme->DUMP_MODE = 'ZIPHTML';
-    $_bodyAttr = @$WikiTheme->_MoreAttr['body'];
+    $_bodyAttr            = @$WikiTheme->_MoreAttr['body'];
     unset($WikiTheme->_MoreAttr['body']);
 
     /* ignore fatals in plugins */
-    if (check_php_version(4,1)) {
-        global $ErrorManager;
-        $ErrorManager->pushErrorHandler(new WikiFunctionCb('_dump_error_handler'));
-    }
+    global $ErrorManager;
+    $ErrorManager->pushErrorHandler(new WikiFunctionCb('_dump_error_handler'));
 
     $request_args = $request->args;
-    $timeout = (! $request->getArg('start_debug')) ? 20 : 240;
-    
+    $timeout      = (! $request->getArg('start_debug')) ? 20 : 240;
+
     while ($page = $page_iter->next()) {
-	$request->args = $request_args; // some plugins might change them (esp. on POST)
-        longer_timeout($timeout); 	// Reset watchdog
+        $request->args = $request_args; // some plugins might change them (esp. on POST)
+        longer_timeout($timeout);     // Reset watchdog
 
         $current = $page->getCurrentRevision();
-        if ($current->getVersion() == 0)
+        if ($current->getVersion() == 0) {
             continue;
+        }
         $pagename = $page->getName();
         if (in_array($pagename, $excludeList)) {
             continue;
         }
 
-        $attrib = array('mtime'    => $current->get('mtime'),
-                        'is_ascii' => 1);
-        if ($page->get('locked'))
+        $attrib = ['mtime'    => $current->get('mtime'),
+                        'is_ascii' => 1];
+        if ($page->get('locked')) {
             $attrib['write_protected'] = 1;
+        }
 
-        $request->setArg('pagename',$pagename); // Template::_basepage fix
+        $request->setArg('pagename', $pagename); // Template::_basepage fix
         $filename = FilenameForPage($pagename) . $WikiTheme->HTML_DUMP_SUFFIX;
         $revision = $page->getCurrentRevision();
 
         $transformedContent = $revision->getTransformedContent();
 
-        $template = new Template('browse', $request,
-                                 array('revision' => $revision,
-                                       'CONTENT' => $transformedContent));
+        $template = new Template(
+            'browse',
+            $request,
+            ['revision' => $revision,
+            'CONTENT' => $transformedContent]
+        );
 
         $data = GeneratePageasXML($template, $pagename);
 
-        $zip->addRegularFile( $filename, $data, $attrib );
-        
+        $zip->addRegularFile($filename, $data, $attrib);
+
         if (USECACHE) {
             $request->_dbi->_cache->invalidate_cache($pagename);
-            unset ($request->_dbi->_cache->_pagedata_cache);
-            unset ($request->_dbi->_cache->_versiondata_cache);
-            unset ($request->_dbi->_cache->_glv_cache);
+            unset($request->_dbi->_cache->_pagedata_cache);
+            unset($request->_dbi->_cache->_versiondata_cache);
+            unset($request->_dbi->_cache->_glv_cache);
         }
-        unset ($request->_dbi->_cache->_backend->_page_data);
+        unset($request->_dbi->_cache->_backend->_page_data);
 
         unset($revision->_transformedContent);
         unset($revision);
@@ -366,50 +412,39 @@ function MakeWikiZipHtml (&$request)
 
     $attrib = false;
     // Deal with css and images here.
-    if (!empty($WikiTheme->dumped_images) and is_array($WikiTheme->dumped_images)) {
-    	// dirs are created automatically
+    if (! empty($WikiTheme->dumped_images) and is_array($WikiTheme->dumped_images)) {
+        // dirs are created automatically
         //if ($WikiTheme->dumped_images) $zip->addRegularFile("images", "", $attrib);
         foreach ($WikiTheme->dumped_images as $img_file) {
             if (($from = $WikiTheme->_findFile($img_file, true)) and basename($from)) {
-                $target = "images/".basename($img_file);
-                if (check_php_version(4,3))
-                    $zip->addRegularFile($target, file_get_contents($WikiTheme->_path . $from), $attrib);
-                else
-                    $zip->addRegularFile($target, join('', file($WikiTheme->_path . $from)), $attrib);
+                $target = "images/" . basename($img_file);
+                $zip->addRegularFile($target, file_get_contents($WikiTheme->_path . $from), $attrib);
             }
         }
     }
-    if (!empty($WikiTheme->dumped_buttons) and is_array($WikiTheme->dumped_buttons)) {
+    if (! empty($WikiTheme->dumped_buttons) and is_array($WikiTheme->dumped_buttons)) {
         //if ($WikiTheme->dumped_buttons) $zip->addRegularFile("images/buttons", "", $attrib);
         foreach ($WikiTheme->dumped_buttons as $text => $img_file) {
             if (($from = $WikiTheme->_findFile($img_file, true)) and basename($from)) {
-                $target = "images/buttons/".basename($img_file);
-                if (check_php_version(4,3))
-                    $zip->addRegularFile($target, file_get_contents($WikiTheme->_path . $from), $attrib);
-                else
-                    $zip->addRegularFile($target, join('', file($WikiTheme->_path . $from)), $attrib);
+                $target = "images/buttons/" . basename($img_file);
+                $zip->addRegularFile($target, file_get_contents($WikiTheme->_path . $from), $attrib);
             }
         }
     }
-    if (!empty($WikiTheme->dumped_css) and is_array($WikiTheme->dumped_css)) {
+    if (! empty($WikiTheme->dumped_css) and is_array($WikiTheme->dumped_css)) {
         foreach ($WikiTheme->dumped_css as $css_file) {
             if (($from = $WikiTheme->_findFile(basename($css_file), true)) and basename($from)) {
                 $target = basename($css_file);
-                if (check_php_version(4,3))
-                    $zip->addRegularFile($target, file_get_contents($WikiTheme->_path . $from), $attrib);
-                else
-                    $zip->addRegularFile($target, join('', file($WikiTheme->_path . $from)), $attrib);
+                $zip->addRegularFile($target, file_get_contents($WikiTheme->_path . $from), $attrib);
             }
         }
     }
 
     $zip->finish();
-    if (check_php_version(4,1)) {
-        global $ErrorManager;
-        $ErrorManager->popErrorHandler();
-    }
-    $WikiTheme->HTML_DUMP_SUFFIX = '';
-    $WikiTheme->DUMP_MODE = false;
+    global $ErrorManager;
+    $ErrorManager->popErrorHandler();
+    $WikiTheme->HTML_DUMP_SUFFIX  = '';
+    $WikiTheme->DUMP_MODE         = false;
     $WikiTheme->_MoreAttr['body'] = $_bodyAttr;
 }
 
@@ -420,27 +455,29 @@ function MakeWikiZipHtml (&$request)
 //
 ////////////////////////////////////////////////////////////////
 
-function SavePage (&$request, &$pageinfo, $source, $filename)
+function SavePage(&$request, &$pageinfo, $source, $filename)
 {
     static $overwite_all = false;
-    $pagedata    = $pageinfo['pagedata'];    // Page level meta-data.
-    $versiondata = $pageinfo['versiondata']; // Revision level meta-data.
+    $pagedata            = $pageinfo['pagedata'];    // Page level meta-data.
+    $versiondata         = $pageinfo['versiondata']; // Revision level meta-data.
 
     if (empty($pageinfo['pagename'])) {
         PrintXML(HTML::dt(HTML::strong(_("Empty pagename!"))));
         return;
     }
 
-    if (empty($versiondata['author_id']))
+    if (empty($versiondata['author_id'])) {
         $versiondata['author_id'] = $versiondata['author'];
+    }
 
     $pagename = $pageinfo['pagename'];
     $content  = $pageinfo['content'];
 
-    if ($pagename ==_("InterWikiMap"))
+    if ($pagename == _("InterWikiMap")) {
         $content = _tryinsertInterWikiMap($content);
+    }
 
-    $dbi =& $request->_dbi;
+    $dbi  = $request->_dbi;
     $page = $dbi->getPage($pagename);
 
     // Try to merge if updated pgsrc contents are different. This
@@ -450,90 +487,102 @@ function SavePage (&$request, &$pageinfo, $source, $filename)
     // if (current contents = default contents && pgsrc_version >=
     // pgsrc_version) then just upgrade this pgsrc
     $needs_merge = false;
-    $merging = false;
-    $overwrite = false;
+    $merging     = false;
+    $overwrite   = false;
 
     if ($request->getArg('merge')) {
         $merging = true;
-    }
-    else if ($request->getArg('overwrite')) {
+    } elseif ($request->getArg('overwrite')) {
         $overwrite = true;
     }
 
     $current = $page->getCurrentRevision();
-    if ( $current and (! $current->hasDefaultContents())
+    if (
+        $current and (! $current->hasDefaultContents())
          && ($current->getPackedContent() != $content)
-         && ($merging == true) ) {
+         && ($merging == true)
+    ) {
         include_once('lib/editpage.php');
         $request->setArg('pagename', $pagename);
         $r = $current->getVersion();
         $request->setArg('revision', $current->getVersion());
-        $p = new LoadFileConflictPageEditor($request);
-        $p->_content = $content;
+        $p                  = new LoadFileConflictPageEditor($request);
+        $p->_content        = $content;
         $p->_currentVersion = $r - 1;
         $p->editPage($saveFailed = true);
         return; //early return
     }
 
     foreach ($pagedata as $key => $value) {
-        if (!empty($value))
+        if (! empty($value)) {
             $page->set($key, $value);
+        }
     }
 
     $mesg = HTML::dd();
     $skip = false;
-    if ($source)
+    if ($source) {
         $mesg->pushContent(' ', fmt("from %s", $source));
+    }
 
-
-    if (!$current) {
-    	//FIXME: This should not happen! (empty vdata, corrupt cache or db)
-    	$current = $page->getCurrentRevision();
+    if (! $current) {
+        //FIXME: This should not happen! (empty vdata, corrupt cache or db)
+        $current = $page->getCurrentRevision();
     }
     if ($current->getVersion() == 0) {
         $mesg->pushContent(' - ', _("New page"));
         $isnew = true;
-    }
-    else {
-        if ( (! $current->hasDefaultContents())
-             && ($current->getPackedContent() != $content) ) {
+    } else {
+        if (
+            (! $current->hasDefaultContents())
+             && ($current->getPackedContent() != $content)
+        ) {
             if ($overwrite) {
-                $mesg->pushContent(' ',
-                                   fmt("has edit conflicts - overwriting anyway"));
+                $mesg->pushContent(
+                    ' ',
+                    fmt("has edit conflicts - overwriting anyway")
+                );
                 $skip = false;
                 if (substr_count($source, 'pgsrc')) {
                     $versiondata['author'] = _("The PhpWiki programming team");
                     // but leave authorid as userid who loaded the file
                 }
-            }
-            else {
+            } else {
                 $mesg->pushContent(' ', fmt("has edit conflicts - skipped"));
                 $needs_merge = true; // hackish
-                $skip = true;
+                $skip        = true;
             }
-        }
-        else if ($current->getPackedContent() == $content
-                 && $current->get('author') == $versiondata['author']) {
+        } elseif (
+            $current->getPackedContent() == $content
+                 && $current->get('author') == $versiondata['author']
+        ) {
             // The page metadata is already changed, we don't need a new revision.
             // This was called previously "is identical to current version %d - skipped"
             // which is wrong, since the pagedata was stored, not skipped.
-            $mesg->pushContent(' ',
-                               fmt("content is identical to current version %d - no new revision created",
-                                   $current->getVersion()));
+            $mesg->pushContent(
+                ' ',
+                fmt(
+                    "content is identical to current version %d - no new revision created",
+                    $current->getVersion()
+                )
+            );
             $skip = true;
         }
         $isnew = false;
     }
 
-    if (! $skip ) {
-    	// in case of failures print the culprit:
-        if (!isa($request,'MockRequest')) {
-    	    PrintXML(HTML::dt(WikiLink($pagename))); flush();
+    if (! $skip) {
+        // in case of failures print the culprit:
+        if (! isa($request, 'MockRequest')) {
+            PrintXML(HTML::dt(WikiLink($pagename)));
+            flush();
         }
         $new = $page->save($content, WIKIDB_FORCE_CREATE, $versiondata);
         $dbi->touch();
-        $mesg->pushContent(' ', fmt("- saved to database as version %d",
-                                    $new->getVersion()));
+        $mesg->pushContent(' ', fmt(
+            "- saved to database as version %d",
+            $new->getVersion()
+        ));
     }
     if ($needs_merge) {
         $f = $source;
@@ -544,27 +593,33 @@ function SavePage (&$request, &$pageinfo, $source, $filename)
         //check if uploaded file? they pass just the content, but the file is gone
         if (@stat($f)) {
             global $WikiTheme;
-            $meb = Button(array('action' => 'loadfile',
-                                'merge'=> true,
-                                'source'=> $f),
-                          _("Merge Edit"),
-                          _("PhpWikiAdministration"),
-                          'wikiadmin');
-            $owb = Button(array('action' => 'loadfile',
-                                'overwrite'=> true,
-                                'source'=> $f),
-                          _("Restore Anyway"),
-                          _("PhpWikiAdministration"),
-                          'wikiunsafe');
+            $meb = Button(
+                ['action' => 'loadfile',
+                                'merge' => true,
+                                'source' => $f],
+                _("Merge Edit"),
+                _("PhpWikiAdministration"),
+                'wikiadmin'
+            );
+            $owb = Button(
+                ['action' => 'loadfile',
+                                'overwrite' => true,
+                                'source' => $f],
+                _("Restore Anyway"),
+                _("PhpWikiAdministration"),
+                'wikiunsafe'
+            );
             $mesg->pushContent(' ', $meb, " ", $owb);
-            if (!$overwite_all) {
-                $args = $request->getArgs();
+            if (! $overwite_all) {
+                $args              = $request->getArgs();
                 $args['overwrite'] = 1;
-                $owb = Button($args,
-                              _("Overwrite All"),
-                              _("PhpWikiAdministration"),
-                              'wikiunsafe');
-                $mesg->pushContent(HTML::div(array('class' => 'hint'), $owb));
+                $owb               = Button(
+                    $args,
+                    _("Overwrite All"),
+                    _("PhpWikiAdministration"),
+                    'wikiunsafe'
+                );
+                $mesg->pushContent(HTML::div(['class' => 'hint'], $owb));
                 $overwite_all = true;
             }
         } else {
@@ -572,89 +627,104 @@ function SavePage (&$request, &$pageinfo, $source, $filename)
         }
     }
 
-    if (!isa($request,'MockRequest')) {
-      if ($skip)
-        PrintXML(HTML::dt(HTML::em(WikiLink($pagename))), $mesg);
-      else
-        PrintXML($mesg);
-      flush();
+    if (! isa($request, 'MockRequest')) {
+        if ($skip) {
+            PrintXML(HTML::dt(HTML::em(WikiLink($pagename))), $mesg);
+        } else {
+            PrintXML($mesg);
+        }
+        flush();
     }
 }
 
 // action=revert (by diff)
-function RevertPage (&$request)
+function RevertPage(&$request)
 {
-    $mesg = HTML::dd();
+    $mesg     = HTML::dd();
     $pagename = $request->getArg('pagename');
-    $version = $request->getArg('version');
-    if (!$version) {
-        PrintXML(HTML::dt(fmt("Revert")," ",WikiLink($pagename)),
-                 HTML::dd(_("missing required version argument")));
+    $version  = $request->getArg('version');
+    if (! $version) {
+        PrintXML(
+            HTML::dt(fmt("Revert"), " ", WikiLink($pagename)),
+            HTML::dd(_("missing required version argument"))
+        );
         return;
     }
-    $dbi =& $request->_dbi;
-    $page = $dbi->getPage($pagename);
+    $dbi     = $request->_dbi;
+    $page    = $dbi->getPage($pagename);
     $current = $page->getCurrentRevision();
     if ($current->getVersion() == 0) {
         $mesg->pushContent(' ', _("no page content"));
-        PrintXML(HTML::dt(fmt("Revert")," ",WikiLink($pagename)),
-                 $mesg);
+        PrintXML(
+            HTML::dt(fmt("Revert"), " ", WikiLink($pagename)),
+            $mesg
+        );
         return;
     }
     if ($current->getVersion() == $version) {
         $mesg->pushContent(' ', _("same version page"));
         return;
     }
-    $rev = $page->getRevision($version);
-    $content = $rev->getPackedContent();
-    $versiondata = $rev->_data;
+    $rev                    = $page->getRevision($version);
+    $content                = $rev->getPackedContent();
+    $versiondata            = $rev->_data;
     $versiondata['summary'] = sprintf(_("revert to version %d"), $version);
-    $new = $page->save($content, $current->getVersion() + 1, $versiondata);
+    $new                    = $page->save($content, $current->getVersion() + 1, $versiondata);
     $dbi->touch();
-    $mesg->pushContent(' ', fmt("- version %d saved to database as version %d",
-                                $version, $new->getVersion()));
-    PrintXML(HTML::dt(fmt("Revert")," ",WikiLink($pagename)),
-             $mesg);
+    $mesg->pushContent(' ', fmt(
+        "- version %d saved to database as version %d",
+        $version,
+        $new->getVersion()
+    ));
+    PrintXML(
+        HTML::dt(fmt("Revert"), " ", WikiLink($pagename)),
+        $mesg
+    );
     flush();
 }
 
-function _tryinsertInterWikiMap($content) {
+function _tryinsertInterWikiMap($content)
+{
     $goback = false;
     if (strpos($content, "<verbatim>")) {
         //$error_html = " The newly loaded pgsrc already contains a verbatim block.";
         $goback = true;
     }
-    if (!$goback && !defined('INTERWIKI_MAP_FILE')) {
-        $error_html = sprintf(" "._("%s: not defined"), "INTERWIKI_MAP_FILE");
-        $goback = true;
+    if (! $goback && ! defined('INTERWIKI_MAP_FILE')) {
+        $error_html = sprintf(" " . _("%s: not defined"), "INTERWIKI_MAP_FILE");
+        $goback     = true;
     }
-    $mapfile = FindFile(INTERWIKI_MAP_FILE,1);
-    if (!$goback && !file_exists($mapfile)) {
-        $error_html = sprintf(" "._("%s: file not found"), INTERWIKI_MAP_FILE);
-        $goback = true;
+    $mapfile = FindFile(INTERWIKI_MAP_FILE, 1);
+    if (! $goback && ! file_exists($mapfile)) {
+        $error_html = sprintf(" " . _("%s: file not found"), INTERWIKI_MAP_FILE);
+        $goback     = true;
     }
 
-    if (!empty($error_html))
+    if (! empty($error_html)) {
         trigger_error(_("Default InterWiki map file not loaded.")
                       . $error_html, E_USER_NOTICE);
-    if ($goback)
+    }
+    if ($goback) {
         return $content;
+    }
 
     // if loading from virgin setup do echo, otherwise trigger_error E_USER_NOTICE
-    if (!isa($GLOBALS['request'], 'MockRequest'))
+    if (! isa($GLOBALS['request'], 'MockRequest')) {
         echo sprintf(_("Loading InterWikiMap from external file %s."), $mapfile),"<br />";
+    }
 
-    $fd = fopen ($mapfile, "rb");
-    $data = fread ($fd, filesize($mapfile));
-    fclose ($fd);
+    $fd   = fopen($mapfile, "rb");
+    $data = fread($fd, filesize($mapfile));
+    fclose($fd);
     $content = $content . "\n<verbatim>\n$data</verbatim>\n";
     return $content;
 }
 
 function ParseSerializedPage($text, $default_pagename, $user)
 {
-    if (!preg_match('/^a:\d+:{[si]:\d+/', $text))
+    if (! preg_match('/^a:\d+:{[si]:\d+/', $text)) {
         return false;
+    }
 
     $pagehash = unserialize($text);
 
@@ -664,23 +734,25 @@ function ParseSerializedPage($text, $default_pagename, $user)
     //   page-level meta-data
     //   revision-level meta-data
 
-    if (!defined('FLAG_PAGE_LOCKED'))
+    if (! defined('FLAG_PAGE_LOCKED')) {
         define('FLAG_PAGE_LOCKED', 1);
-    $pageinfo = array('pagedata'    => array(),
-                      'versiondata' => array());
+    }
+    $pageinfo = ['pagedata'    => [],
+                      'versiondata' => []];
 
-    $pagedata = &$pageinfo['pagedata'];
+    $pagedata    = &$pageinfo['pagedata'];
     $versiondata = &$pageinfo['versiondata'];
 
     // Fill in defaults.
-    if (empty($pagehash['pagename']))
+    if (empty($pagehash['pagename'])) {
         $pagehash['pagename'] = $default_pagename;
+    }
     if (empty($pagehash['author'])) {
         $pagehash['author'] = $user->getId();
     }
 
     foreach ($pagehash as $key => $value) {
-        switch($key) {
+        switch ($key) {
             case 'pagename':
             case 'version':
             case 'hits':
@@ -690,8 +762,9 @@ function ParseSerializedPage($text, $default_pagename, $user)
                 $pageinfo[$key] = join("\n", $value);
                 break;
             case 'flags':
-                if (($value & FLAG_PAGE_LOCKED) != 0)
+                if (($value & FLAG_PAGE_LOCKED) != 0) {
                     $pagedata['locked'] = 'yes';
+                }
                 break;
             case 'owner':
             case 'created':
@@ -714,7 +787,8 @@ function ParseSerializedPage($text, $default_pagename, $user)
     return $pageinfo;
 }
 
-function SortByPageVersion ($a, $b) {
+function SortByPageVersion($a, $b)
+{
     return $a['version'] - $b['version'];
 }
 
@@ -723,68 +797,89 @@ function SortByPageVersion ($a, $b) {
  * because the sql passwords are in plaintext there. And the webserver must be able to read it.
  * Detected by Santtu Jarvi.
  */
-function LoadFile (&$request, $filename, $text = false, $mtime = false)
+function LoadFile(&$request, $filename, $text = false, $mtime = false)
 {
-    if (preg_match("/config$/", dirname($filename))             // our or other config
-        and preg_match("/config.*\.ini/", basename($filename))) // backups and other versions also
-    {
+    if (
+        preg_match("/config$/", dirname($filename))             // our or other config
+        and preg_match("/config.*\.ini/", basename($filename))
+    ) { // backups and other versions also
         trigger_error(sprintf("Refused to load %s", $filename), E_USER_WARNING);
         return;
     }
-    if (!is_string($text)) {
+    if (! is_string($text)) {
         // Read the file.
         $stat  = stat($filename);
         $mtime = $stat[9];
         $text  = implode("", file($filename));
     }
 
-    if (! $request->getArg('start_debug')) @set_time_limit(30); // Reset watchdog
-    else @set_time_limit(240);
+    if (! $request->getArg('start_debug')) {
+        @set_time_limit(30); // Reset watchdog
+    } else {
+        @set_time_limit(240);
+    }
 
     // FIXME: basename("filewithnoslashes") seems to return garbage sometimes.
     $basename = basename("/dummy/" . $filename);
 
-    if (!$mtime)
+    if (! $mtime) {
         $mtime = time();    // Last resort.
+    }
 
     $default_pagename = rawurldecode($basename);
-    if ( ($parts = ParseMimeifiedPages($text)) ) {
+    if (($parts = ParseMimeifiedPages($text))) {
         usort($parts, 'SortByPageVersion');
         foreach ($parts as $pageinfo) {
             $pageinfo['pagename'] = $default_pagename;
-            SavePage($request, $pageinfo, sprintf(_("MIME file %s"),
-                                                  $filename), $basename);
+            SavePage($request, $pageinfo, sprintf(
+                _("MIME file %s"),
+                $filename
+            ), $basename);
         }
-    }
-    else if ( ($pageinfo = ParseSerializedPage($text, $default_pagename,
-                                               $request->getUser())) ) {
-        SavePage($request, $pageinfo, sprintf(_("Serialized file %s"),
-                                              $filename), $basename);
-    }
-    else {
+    } elseif (
+        ($pageinfo = ParseSerializedPage(
+            $text,
+            $default_pagename,
+            $request->getUser()
+        ))
+    ) {
+        SavePage($request, $pageinfo, sprintf(
+            _("Serialized file %s"),
+            $filename
+        ), $basename);
+    } else {
         $user = $request->getUser();
 
         // Assume plain text file.
-        $pageinfo = array('pagename' => $default_pagename,
-                          'pagedata' => array(),
+        $pageinfo = ['pagename' => $default_pagename,
+                          'pagedata' => [],
                           'versiondata'
-                          => array('author' => $user->getId()),
-                          'content'  => preg_replace('/[ \t\r]*\n/', "\n",
-                                                     chop($text))
-                          );
-        SavePage($request, $pageinfo, sprintf(_("plain file %s"), $filename),
-                 $basename);
+                          => ['author' => $user->getId()],
+                          'content'  => preg_replace(
+                              '/[ \t\r]*\n/',
+                              "\n",
+                              chop($text)
+                          )
+                          ];
+        SavePage(
+            $request,
+            $pageinfo,
+            sprintf(_("plain file %s"), $filename),
+            $basename
+        );
     }
 }
 
-function LoadDir (&$request, $dirname, $files = false, $exclude = false) {
+function LoadDir(&$request, $dirname, $files = false, $exclude = false)
+{
     $fileset = new LimitedFileSet($dirname, $files, $exclude);
 
-    if (!$files and ($skiplist = $fileset->getSkippedFiles())) {
+    if (! $files and ($skiplist = $fileset->getSkippedFiles())) {
         PrintXML(HTML::dt(HTML::strong(_("Skipping"))));
         $list = HTML::ul();
-        foreach ($skiplist as $file)
+        foreach ($skiplist as $file) {
             $list->pushContent(HTML::li(WikiLink($file)));
+        }
         PrintXML(HTML::dd($list));
     }
 
@@ -792,50 +887,61 @@ function LoadDir (&$request, $dirname, $files = false, $exclude = false) {
     // the pages can still be loaded again.
     $files = $fileset->getFiles();
     if (in_array(HOME_PAGE, $files)) {
-        $files = array_diff($files, array(HOME_PAGE));
+        $files   = array_diff($files, [HOME_PAGE]);
         $files[] = HOME_PAGE;
     }
     $timeout = (! $request->getArg('start_debug')) ? 20 : 120;
     foreach ($files as $file) {
-        longer_timeout($timeout); 	// longer timeout per page
-        if (substr($file,-1,1) != '~')  // refuse to load backup files
+        longer_timeout($timeout);     // longer timeout per page
+        if (substr($file, -1, 1) != '~') {  // refuse to load backup files
             LoadFile($request, "$dirname/$file");
+        }
     }
 }
 
-function LoadZip (&$request, $zipfile, $files = false, $exclude = false) {
-    $zip = new ZipReader($zipfile);
+function LoadZip(&$request, $zipfile, $files = false, $exclude = false)
+{
+    $zip     = new ZipReader($zipfile);
     $timeout = (! $request->getArg('start_debug')) ? 20 : 120;
     while (list ($fn, $data, $attrib) = $zip->readFile()) {
         // FIXME: basename("filewithnoslashes") seems to return
         // garbage sometimes.
         $fn = basename("/dummy/" . $fn);
-        if ( ($files && !in_array($fn, $files))
-             || ($exclude && in_array($fn, $exclude)) ) {
-            PrintXML(HTML::dt(WikiLink($fn)),
-                     HTML::dd(_("Skipping")));
+        if (
+            ($files && ! in_array($fn, $files))
+             || ($exclude && in_array($fn, $exclude))
+        ) {
+            PrintXML(
+                HTML::dt(WikiLink($fn)),
+                HTML::dd(_("Skipping"))
+            );
             flush();
             continue;
         }
-        longer_timeout($timeout); 	// longer timeout per page
+        longer_timeout($timeout);     // longer timeout per page
         LoadFile($request, $fn, $data, $attrib['mtime']);
     }
 }
 
-class LimitedFileSet extends FileSet {
-    function __construct($dirname, $_include, $exclude) {
+class LimitedFileSet extends fileSet
+{
+    public function __construct($dirname, $_include, $exclude)
+    {
         $this->_includefiles = $_include;
-        $this->_exclude = $exclude;
-        $this->_skiplist = array();
+        $this->_exclude      = $exclude;
+        $this->_skiplist     = [];
         parent::__construct($dirname);
     }
 
-    function _filenameSelector($fn) {
+    public function _filenameSelector($fn)
+    {
         $incl = &$this->_includefiles;
         $excl = &$this->_exclude;
 
-        if ( ($incl && !in_array($fn, $incl))
-             || ($excl && in_array($fn, $excl)) ) {
+        if (
+            ($incl && ! in_array($fn, $incl))
+             || ($excl && in_array($fn, $excl))
+        ) {
             $this->_skiplist[] = $fn;
             return false;
         } else {
@@ -843,23 +949,21 @@ class LimitedFileSet extends FileSet {
         }
     }
 
-    function getSkippedFiles () {
+    public function getSkippedFiles()
+    {
         return $this->_skiplist;
     }
 }
 
 
-function IsZipFile ($filename_or_fd)
+function IsZipFile($filename_or_fd)
 {
     // See if it looks like zip file
-    if (is_string($filename_or_fd))
-    {
+    if (is_string($filename_or_fd)) {
         $fd    = fopen($filename_or_fd, "rb");
         $magic = fread($fd, 4);
         fclose($fd);
-    }
-    else
-    {
+    } else {
         $fpos  = ftell($filename_or_fd);
         $magic = fread($filename_or_fd, 4);
         fseek($filename_or_fd, $fpos);
@@ -869,19 +973,20 @@ function IsZipFile ($filename_or_fd)
 }
 
 
-function LoadAny (&$request, $file_or_dir, $files = false, $exclude = false)
+function LoadAny(&$request, $file_or_dir, $files = false, $exclude = false)
 {
     // Try urlencoded filename for accented characters.
-    if (!file_exists($file_or_dir)) {
+    if (! file_exists($file_or_dir)) {
         // Make sure there are slashes first to avoid confusing phps
         // with broken dirname or basename functions.
         // FIXME: windows uses \ and :
         if (is_integer(strpos($file_or_dir, "/"))) {
             $file_or_dir = FindFile($file_or_dir);
             // Panic
-            if (!file_exists($file_or_dir))
+            if (! file_exists($file_or_dir)) {
                 $file_or_dir = dirname($file_or_dir) . "/"
                     . urlencode(basename($file_or_dir));
+            }
         } else {
             // This is probably just a file.
             $file_or_dir = urlencode($file_or_dir);
@@ -893,42 +998,42 @@ function LoadAny (&$request, $file_or_dir, $files = false, $exclude = false)
         // For symbolic links, use stat() to determine
         // the type of the underlying file.
         list(,,$mode) = stat($file_or_dir);
-        $type = ($mode >> 12) & 017;
-        if ($type == 010)
+        $type         = ($mode >> 12) & 017;
+        if ($type == 010) {
             $type = 'file';
-        elseif ($type == 004)
+        } elseif ($type == 004) {
             $type = 'dir';
+        }
     }
 
     if (! $type) {
         $request->finish(fmt("Unable to load: %s", $file_or_dir));
-    }
-    else if ($type == 'dir') {
+    } elseif ($type == 'dir') {
         LoadDir($request, $file_or_dir, $files, $exclude);
-    }
-    else if ($type != 'file' && !preg_match('/^(http|ftp):/', $file_or_dir))
-    {
+    } elseif ($type != 'file' && ! preg_match('/^(http|ftp):/', $file_or_dir)) {
         $request->finish(fmt("Bad file type: %s", $type));
-    }
-    else if (IsZipFile($file_or_dir)) {
+    } elseif (IsZipFile($file_or_dir)) {
         LoadZip($request, $file_or_dir, $files, $exclude);
-    }
-    else /* if (!$files || in_array(basename($file_or_dir), $files)) */
+    } else /* if (!$files || in_array(basename($file_or_dir), $files)) */
     {
         LoadFile($request, $file_or_dir);
     }
 }
 
-function RakeSandboxAtUserRequest (&$request)
+function RakeSandboxAtUserRequest(&$request)
 {
     $source = $request->getArg('source');
-    $finder = new FileFinder;
+    $finder = new FileFinder();
     $source = $finder->slashifyPath($source);
-    $page = rawurldecode(basename($source));
-    StartLoadDump($request, fmt("Loading '%s'",
-    	HTML(dirname($source),
-             dirname($source) ? "/" : "",
-             WikiLink($page,'auto'))));
+    $page   = rawurldecode(basename($source));
+    StartLoadDump($request, fmt(
+        "Loading '%s'",
+        HTML(
+            dirname($source),
+            dirname($source) ? "/" : "",
+            WikiLink($page, 'auto')
+        )
+    ));
     if ($source !== 'pgsrc/SandBox') {
         trigger_error($GLOBALS['Language']->getText('wiki_action_denied', 'import_page'), E_USER_ERROR);
     }
@@ -943,10 +1048,10 @@ function RakeSandboxAtUserRequest (&$request)
  * - import all pgsrc pages.
  * - Todo: installer interface to edit config/config.ini settings
  * - Todo: ask for existing old index.php to convert to config/config.ini
- * - Todo: theme-specific pages: 
+ * - Todo: theme-specific pages:
  *   blog - HomePage, ADMIN_USER/Blogs
  */
-function SetupWiki (&$request)
+function SetupWiki(&$request)
 {
     global $GenericPages, $LANG;
 
@@ -959,19 +1064,22 @@ function SetupWiki (&$request)
     // This really needs to be cleaned up...
     // (I'm working on it.)
     $real_user = $request->_user;
-    if (ENABLE_USER_NEW)
+    if (ENABLE_USER_NEW) {
         $request->_user = new _BogoUser(_("The PhpWiki programming team"));
-
-    else
-        $request->_user = new WikiUser($request, _("The PhpWiki programming team"),
-                                       WIKIAUTH_BOGO);
+    } else {
+        $request->_user = new WikiUser(
+            $request,
+            _("The PhpWiki programming team"),
+            WIKIAUTH_BOGO
+        );
+    }
     // Get the localised wiki loading message
     $message = _("Loading up virgin wiki. Please wait until the end of the process, this will take few minutes.");
-    
+
     StartLoadDump($request, $message);
     echo "<dl>\n";
 
-    $pgsrc = FindLocalizedFile(WIKI_PGSRC);
+    $pgsrc         = FindLocalizedFile(WIKI_PGSRC);
     $default_pgsrc = FindFile(DEFAULT_WIKI_PGSRC);
 
     $request->setArg('overwrite', true);
@@ -983,18 +1091,21 @@ function SetupWiki (&$request)
     // "...pagename has edit conflicts - skipped  (Merge Edit ) (Restore Anyway)"
     //$request->setArg('overwrite', false);
     LoadAny($request, $pgsrc);
-    $dbi =& $request->_dbi;
+    $dbi = $request->_dbi;
 
     // Ensure that all mandatory pages are loaded
-    $finder = new FileFinder;
-    foreach (array_merge(explode(':','OldTextFormattingRules:TextFormattingRules:PhpWikiAdministration'),
-                         $GLOBALS['AllActionPages'],
-                         array(constant('HOME_PAGE'))) as $f) 
-    {
-        $page = gettext($f);
+    $finder = new FileFinder();
+    foreach (
+        array_merge(
+            explode(':', 'OldTextFormattingRules:TextFormattingRules:PhpWikiAdministration'),
+            $GLOBALS['AllActionPages'],
+            [constant('HOME_PAGE')]
+        ) as $f
+    ) {
+        $page  = gettext($f);
         $epage = urlencode($page);
-        
-        if (! $dbi->isWikiPage($page) ) {
+
+        if (! $dbi->isWikiPage($page)) {
             // translated version provided?
             if ($lf = FindLocalizedFile($pgsrc . $finder->_pathsep . $epage, 1)) {
                 LoadAny($request, $lf);
@@ -1004,51 +1115,51 @@ function SetupWiki (&$request)
             }
         }
         if (! $dbi->isWikiPage($page)) {
-            trigger_error(sprintf("Mandatory file %s couldn't be loaded!", $page),
-                          E_USER_WARNING);
+            trigger_error(
+                sprintf("Mandatory file %s couldn't be loaded!", $page),
+                E_USER_WARNING
+            );
         }
- 
-           
+
        //WARNING  CODENDI CODE : give permissions to the administration pages of the wiki
-        $pages = array("AdministrationDePhpWiki", "AdministrationDePhpWiki/Supprimer", "AdministrationDePhpWiki/Remplacer", 
+        $pages = ["AdministrationDePhpWiki", "AdministrationDePhpWiki/Supprimer", "AdministrationDePhpWiki/Remplacer",
            "AdministrationDePhpWiki/Renommer", "PhpWikiAdministration", "PhpWikiAdministration/Replace",
-           "PhpWikiAdministration/Remove", "PhpWikiAdministration/Rename");
-        
+           "PhpWikiAdministration/Remove", "PhpWikiAdministration/Rename"];
+
         if (in_array($page, $pages)) {
-            
-            $group_id = $request->getArg ('group_id');
-            
+            $group_id = $request->getArg('group_id');
+
             $wikiPage = new WikiPage($group_id, $page);
-            $id = $wikiPage->getId();
-            
+            $id       = $wikiPage->getId();
+
             $pm = PermissionsManager::instance();
             $pm->addPermission('WIKIPAGE_READ', $id, $GLOBALS['UGROUP_PROJECT_ADMIN']);
             $pm->addPermission('WIKIPAGE_READ', $id, $GLOBALS['UGROUP_WIKI_ADMIN']);
         }
         //END WARNING
-        
     }
 
     echo "</dl>\n";
-    
+
     EndLoadDump($request);
 }
 
-function LoadPostFile (&$request)
+function LoadPostFile(&$request)
 {
     $upload = $request->getUploadedFile('file');
 
-    if (!$upload)
+    if (! $upload) {
         $request->finish(_("No uploaded file to upload?")); // FIXME: more concise message
-
+    }
 
     // Dump http headers.
     StartLoadDump($request, sprintf(_("Uploading %s"), $upload->getName()));
     echo "<dl>\n";
 
     $fd = $upload->open();
-    if (IsZipFile($fd))
-        LoadZip($request, $fd, false, array(_("RecentChanges")));
+    if (IsZipFile($fd)) {
+        LoadZip($request, $fd, false, [_("RecentChanges")]);
+    }
 
     echo "</dl>\n";
     EndLoadDump($request);
@@ -1360,4 +1471,3 @@ function LoadPostFile (&$request)
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

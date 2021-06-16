@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -40,9 +40,7 @@ class EqualComparisonFromWhereBuilder implements FromWhereBuilder
     private $alias_field;
 
     /**
-     * EqualComparisonFromWhereBuilder constructor.
-     * @param ListValueExtractor $extractor
-     * @param UserManager $user_manager
+     *
      * @param string $alias_field
      */
     public function __construct(
@@ -52,12 +50,10 @@ class EqualComparisonFromWhereBuilder implements FromWhereBuilder
     ) {
         $this->extractor    = $extractor;
         $this->user_manager = $user_manager;
-        $this->alias_field = $alias_field;
+        $this->alias_field  = $alias_field;
     }
 
     /**
-     * @param Metadata $metadata
-     * @param Comparison $comparison
      * @param Tracker[] $trackers
      * @return IProvideParametrizedFromAndWhereSQLFragments
      */

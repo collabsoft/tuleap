@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,26 +18,26 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/include/Codendi_Request.class.php';
-
 /**
  * Handle requests to update config of cardwalls on top of trackers
  */
-class Cardwall_OnTop_Config_Updater {
+class Cardwall_OnTop_Config_Updater
+{
 
     /**
      * @var array of Cardwall_OnTop_Config_Command
      */
-    private $commands = array();
+    private $commands = [];
 
-    public function addCommand(Cardwall_OnTop_Config_Command $command) {
+    public function addCommand(Cardwall_OnTop_Config_Command $command)
+    {
         $this->commands[] = $command;
     }
 
-    public function process(Codendi_Request $request) {
+    public function process(Codendi_Request $request)
+    {
         foreach ($this->commands as $command) {
             $command->execute($request);
         }
     }
 }
-?>

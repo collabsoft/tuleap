@@ -24,24 +24,29 @@
 require_once(__DIR__ . '/../../include/Docman_ItemFactory.class.php');
 require 'Docman_XMLExportVisitor.class.php';
 
-class Docman_XMLExport {
+class Docman_XMLExport
+{
     protected $groupId;
     protected $dataPath;
     protected $logger;
 
-    public function __construct(Logger $logger) {
+    public function __construct(\Psr\Log\LoggerInterface $logger)
+    {
         $this->logger = $logger;
     }
 
-    public function setGroupId($groupId) {
+    public function setGroupId($groupId)
+    {
         $this->groupId = $groupId;
     }
 
-    public function setDataPath($path) {
+    public function setDataPath($path)
+    {
         $this->dataPath = $path;
     }
 
-    public function getXML($doc) {
+    public function getXML($doc)
+    {
         $docman = $doc->createElement('docman');
         $docman->appendChild($this->getMetadataDef($doc));
         //$docman->appendChild($this->getGroupsDef($doc));
@@ -51,16 +56,16 @@ class Docman_XMLExport {
 
     /**
      * Should be transfered in Docman_Metadata
-     * @param DOMDocument $doc
      * @return DOMNode
      */
-    public function getMetadataDef(DOMDocument $doc) {
-        $propdefs = $doc->createElement('propdefs');
+    public function getMetadataDef(DOMDocument $doc)
+    {
+        $propdefs  = $doc->createElement('propdefs');
         $mdFactory = new Docman_MetadataFactory($this->groupId);
-        foreach($mdFactory->getRealMetadataList() as $metadata) {
+        foreach ($mdFactory->getRealMetadataList() as $metadata) {
             $propdef = $doc->createElement('propdef');
             $propdef->setAttribute('name', $metadata->getName());
-            switch($metadata->getType()) {
+            switch ($metadata->getType()) {
                 case PLUGIN_DOCMAN_METADATA_TYPE_TEXT:
                     $type = 'text';
                     break;
@@ -77,10 +82,10 @@ class Docman_XMLExport {
             $propdef->setAttribute('type', $type);
             $propdef->setAttribute('multivalue', $metadata->getIsMultipleValuesAllowed() ? 'true' : 'false');
             $propdef->setAttribute('empty', $metadata->getIsEmptyAllowed() ? 'true' : 'false');
-            if($metadata->getType() == PLUGIN_DOCMAN_METADATA_TYPE_LIST) {
+            if ($metadata->getType() == PLUGIN_DOCMAN_METADATA_TYPE_LIST) {
                 $loveFactory = new Docman_MetadataListOfValuesElementFactory($metadata->getId());
-                foreach($loveFactory->getListByFieldId($metadata->getId(), $metadata->getLabel(), true) as $love) {
-                    if($love->getId() != 100) {
+                foreach ($loveFactory->getListByFieldId($metadata->getId(), $metadata->getLabel(), true) as $love) {
+                    if ($love->getId() != 100) {
                         $value = $doc->createElement('value');
                         $value->appendChild($doc->createTextNode($love->getName()));
                         $propdef->appendChild($value);
@@ -92,18 +97,18 @@ class Docman_XMLExport {
         return $propdefs;
     }
 
-    public function getTree(DOMDocument $doc) {
+    public function getTree(DOMDocument $doc)
+    {
         // Get root item
         $itemFactory = new Docman_ItemFactory($this->groupId);
-        $user = UserManager::instance()->getCurrentUser();
+        $user        = UserManager::instance()->getCurrentUser();
 
         $rootItem = $itemFactory->getRoot($this->groupId);
-        $tree = $itemFactory->getItemSubTree($rootItem, $user, true, true);
+        $tree     = $itemFactory->getItemSubTree($rootItem, $user, true, true);
 
         $xmlExport = new Docman_XMLExportVisitor($doc, $this->logger);
         $xmlExport->setDataPath($this->dataPath);
-        
+
         return $xmlExport->getXML($tree);
     }
 }
-?>

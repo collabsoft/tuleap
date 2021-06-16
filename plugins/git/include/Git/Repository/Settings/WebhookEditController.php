@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -52,12 +52,12 @@ class WebhookEditController extends WebhookController
         if ($this->dao->edit($repository->getId(), $webhook_id, $webhook_url)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_edit_success')
+                dgettext('tuleap-git', 'Webhook saved')
             );
         } else {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_edit_error')
+                dgettext('tuleap-git', 'Error while saving the webhook :(')
             );
         }
 
@@ -71,7 +71,7 @@ class WebhookEditController extends WebhookController
         if (! $request->valid($valid_id)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_git', 'actions_params_error')
+                dgettext('tuleap-git', 'Empty required parameter(s)')
             );
             $GLOBALS['Response']->redirect($redirect_url);
         }

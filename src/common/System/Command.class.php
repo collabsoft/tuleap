@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,11 +18,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class System_Command {
+class System_Command
+{
 
-    public function exec($cmd) {
+    /**
+     * @throws System_Command_CommandException
+     * @param string $cmd
+     * @return array
+     */
+    public function exec($cmd)
+    {
         $return_value = 1;
-        $output       = array();
+        $output       = [];
         exec("$cmd 2>&1", $output, $return_value);
         if ($return_value == 0) {
             return $output;

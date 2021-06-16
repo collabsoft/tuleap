@@ -1,6 +1,6 @@
 <?php
-/*
- * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
+/**
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  * Copyright 2005, 2006, STMicroelectronics
  *
  * Originally written by Manuel Vacelet
@@ -21,7 +21,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Http\BinaryFileResponse;
+use GuzzleHttp\Psr7\ServerRequest;
+use Tuleap\Http\HTTPFactoryBuilder;
+use Tuleap\Http\Response\BinaryFileResponseBuilder;
+use Laminas\HttpHandlerRunner\Emitter\SapiStreamEmitter;
 
 /**
  *
@@ -38,120 +41,140 @@ use Tuleap\Http\BinaryFileResponse;
  *
  *
  * @see       WikiAttachment
- * @package   WikiService
- * @copyright STMicroelectronics, 2005
- * @author    Manuel Vacelet <manuel.vacelet-abecedaire@st.com>
- * @license   http://opensource.org/licenses/gpl-license.php GPL
  */
-class WikiAttachmentRevision {
-    var $id;
-    var $attachmentId;
-    var $owner_id;
+class WikiAttachmentRevision
+{
+    public $id;
+    public $attachmentId;
+    public $owner_id;
 
-    var $date;
-    var $revision;
-    var $mimeType;
-    var $size;
-
-
-    var $file;
-    var $gid;
-    var $basedir;
+    public $date;
+    public $revision;
+    public $mimeType;
+    public $size;
 
 
+    public $file;
+    public $gid;
+    public $basedir;
     /**
-     *
+     * @var string
      */
-    function __construct($gid=null) {
-        if(is_numeric($gid)) {
-            $this->gid = (int) $gid;
-            $this->basedir = $GLOBALS['sys_wiki_attachment_data_dir'].'/'.$this->gid;
+    private $displayFilename;
+
+
+    public function __construct($gid = null)
+    {
+        if (is_numeric($gid)) {
+            $this->gid     = (int) $gid;
+            $this->basedir = ForgeConfig::get('sys_wiki_attachment_data_dir') . '/' . $this->gid;
         }
     }
 
-    function &getDao() {        
+    public function &getDao()
+    {
         static $_codendi_wikiattachmentrevisiondao_instance;
-        
-        if(!$_codendi_wikiattachmentrevisiondao_instance) {
+
+        if (! $_codendi_wikiattachmentrevisiondao_instance) {
             $_codendi_wikiattachmentrevisiondao_instance = new WikiAttachmentRevisionDao(CodendiDataAccess::instance());
         }
 
         return $_codendi_wikiattachmentrevisiondao_instance;
     }
 
-    function dbFetch() {
-        $dao =& $this->getDao();
-        $dar =& $dao->getRevision($this->attachmentId, $this->revision);
+    public function dbFetch()
+    {
+        $dao = $this->getDao();
+        $dar = $dao->getRevision($this->attachmentId, $this->revision);
 
-        if($dar->rowCount() > 1) {
-            trigger_error($GLOBALS['Language']->getText('wiki_lib_attachment_rev', 
-                                                        'err_multi_id',
-                                                        array($GLOBALS['sys_email_admin'],
+        if ($dar->rowCount() > 1) {
+            trigger_error(
+                $GLOBALS['Language']->getText(
+                    'wiki_lib_attachment_rev',
+                    'err_multi_id',
+                    [ForgeConfig::get('sys_email_admin'),
                                                               $this->attachmentId,
                                                               $this->revision,
-                                                              $GLOBALS['sys_fullname']))
-                          ,E_USER_ERROR);
+                          ForgeConfig::get('sys_fullname')]
+                ),
+                E_USER_ERROR
+            );
             return false;
-        }
-        else {
-            $this->setFromRow($dar->getRow());    
+        } else {
+            $this->setFromRow($dar->getRow());
         }
     }
-  
-    function create($userfile_tmpname) {
+
+    public function create($userfile_tmpname)
+    {
         $this->getFilename();
-        $file_dir = $this->basedir.'/'.$this->filename;
-    
+        $file_dir = $this->basedir . '/' . $this->filename;
+
         /** @todo: add lock */
 
-        $waIter =& $this->getRevisionIterator();
+        $waIter         = $this->getRevisionIterator();
         $this->revision = $waIter->count();
 
-        if(!move_uploaded_file($userfile_tmpname, $file_dir.'/'.$this->revision)) {	
-            trigger_error($GLOBALS['Language']->getText('wiki_lib_attachment_rev',
-                                                        'err_upl_mv',
-                                                        array($this->filename)),
-                          E_USER_ERROR);
+        if (! move_uploaded_file($userfile_tmpname, $file_dir . '/' . $this->revision)) {
+            trigger_error(
+                $GLOBALS['Language']->getText(
+                    'wiki_lib_attachment_rev',
+                    'err_upl_mv',
+                    [$this->filename]
+                ),
+                E_USER_ERROR
+            );
             return false;
         }
 
-        chmod($file_dir.'/'.$this->revision, 0600);
+        chmod($file_dir . '/' . $this->revision, 0600);
 
         $ret = $this->dbadd();
 
         /** @todo: add unlock */
-    
+
         return $ret;
     }
-  
-    function dbadd() {
-        $dao =& $this->getDao();
-        $res = $dao->create($this->attachmentId, 
-                            $this->owner_id, 
-                            $this->date, 
-                            $this->revision, 
-                            $this->mimeType, 
-                            $this->size);
-        
-        if($res === false) {
-            trigger_error($GLOBALS['Language']->getText('wiki_lib_attachment_rev',
-                                                        'err_create'),
-                          E_USER_ERROR);
+
+    public function dbadd()
+    {
+        $dao = $this->getDao();
+        $res = $dao->create(
+            $this->attachmentId,
+            $this->owner_id,
+            $this->date,
+            $this->revision,
+            $this->mimeType,
+            $this->size
+        );
+
+        if ($res === false) {
+            trigger_error(
+                $GLOBALS['Language']->getText(
+                    'wiki_lib_attachment_rev',
+                    'err_create'
+                ),
+                E_USER_ERROR
+            );
             return false;
-        }
-        else {
+        } else {
             return true;
         }
     }
 
 
-    /**
-     *
-     */
-    function htmlDump() {
-        if($this->exist()){
-            $binary_reponse = new BinaryFileResponse($this->getFilePath(), $this->displayFilename, $this->getMimeType());
-            $binary_reponse->send();
+    public function htmlDump()
+    {
+        if ($this->exist()) {
+            $response_builder = new BinaryFileResponseBuilder(HTTPFactoryBuilder::responseFactory(), HTTPFactoryBuilder::streamFactory());
+            $response         = $response_builder->fromFilePath(
+                ServerRequest::fromGlobals(),
+                $this->getFilePath(),
+                $this->getDisplayFilename(),
+                $this->getMimeType()
+            );
+            (new SapiStreamEmitter())->emit($response);
+            exit();
         }
     }
 
@@ -162,62 +185,68 @@ class WikiAttachmentRevision {
     {
         $this->getFilename();
 
-        return $this->basedir.'/'.$this->filename.'/'.$this->revision;
+        return $this->basedir . '/' . $this->filename . '/' . $this->revision;
     }
 
 
-    function exist() {
+    public function exist()
+    {
         $this->getFilename();
 
-        return is_file($this->basedir.'/'.$this->filename.'/'.$this->revision);
+        return is_file($this->basedir . '/' . $this->filename . '/' . $this->revision);
     }
 
 
-    function log($userId) {
-        $dao =& $this->getDao();
-        $dao->log($this->attachmentId, 
-                  $this->id, 
-                  $this->gid, 
-                  $userId, 
-                  time());        
+    public function log($userId)
+    {
+        $dao = $this->getDao();
+        $dao->log(
+            $this->attachmentId,
+            $this->id,
+            $this->gid,
+            $userId,
+            time()
+        );
     }
 
 
-    function setFromRow($row) {
-        $this->id           = $row['id'];      
-        $this->attachmentId = $row['attachment_id'];      
-        $this->owner_id     = $row['user_id'];	
-        $this->date         = $row['date'];      
-        $this->revision     = $row['revision'];      
-        $this->mimeType     = $row['mimetype'];      
+    public function setFromRow($row)
+    {
+        $this->id           = $row['id'];
+        $this->attachmentId = $row['attachment_id'];
+        $this->owner_id     = $row['user_id'];
+        $this->date         = $row['date'];
+        $this->revision     = $row['revision'];
+        $this->mimeType     = $row['mimetype'];
         $this->size         = $row['size'];
     }
 
-    /**
-     *
-     */
-    function setFilename($name="") {   
+    public function setFilename($name = "")
+    {
         $this->filename = $name;
         return true;
     }
 
-	function setGid($gid) {
-		 if(is_numeric($gid)) {
-            $this->gid = (int) $gid;
-            $this->basedir = $GLOBALS['sys_wiki_attachment_data_dir'].'/'.$this->gid;
+    public function setGid($gid)
+    {
+        if (is_numeric($gid)) {
+            $this->gid     = (int) $gid;
+            $this->basedir = ForgeConfig::get('sys_wiki_attachment_data_dir') . '/' . $this->gid;
         }
-	}
+    }
 
-    /**
-     *
-     */
-    function setSize($s) {
-        global $sys_max_size_upload;
+    public function setSize($s)
+    {
+        $sys_max_size_upload = (int) ForgeConfig::get('sys_max_size_upload');
 
-        if ($s> $sys_max_size_upload) {
-            trigger_error($GLOBALS['Language']->getText('wiki_lib_attachment_rev',
-                                                        'err_too_big'),
-                          E_USER_ERROR);
+        if ($s > $sys_max_size_upload) {
+            trigger_error(
+                $GLOBALS['Language']->getText(
+                    'wiki_lib_attachment_rev',
+                    'err_too_big'
+                ),
+                E_USER_ERROR
+            );
             return false;
         }
 
@@ -226,113 +255,108 @@ class WikiAttachmentRevision {
     }
 
 
-    /**
-     *
-     */
-    function setMimeType($m) {
+    public function setMimeType($m)
+    {
         $this->mimeType =  $m;
         return true;
     }
-  
-    function setOwnerId($uid) {
+
+    public function setOwnerId($uid)
+    {
         $this->owner_id = (int) $uid;
         return true;
     }
 
-    function setAttachmentId($aid) {
+    public function setAttachmentId($aid)
+    {
         $this->attachmentId = (int) $aid;
         return true;
     }
 
-    function setDate($date) {
+    public function setDate($date)
+    {
         $this->date = (int) $date;
         return true;
     }
 
-    function setRevision($rev) {
+    public function setRevision($rev)
+    {
         $this->revision = (int) $rev;
         return true;
     }
 
-    /**
-     *
-     */
-    function getRevision() {    
+    public function getRevision()
+    {
         return $this->revision;
     }
 
-    /**
-     * 
-     */
-    function getFilename() {
-        if(empty($this->filename)) {
+    public function getFilename()
+    {
+        if (empty($this->filename)) {
             $wa = new WikiAttachment();
             // @todo: catch error when wiki no attachementId is set.
             $wa->initWithId($this->attachmentId);
             // @todo: catch error when given attchId do not exist
             $this->displayFilename = $wa->getFilename();
-            $this->filename       = $wa->getFilesystemName();
+            $this->filename        = $wa->getFilesystemName();
         }
         return $this->filename;
     }
 
+    private function getDisplayFilename(): string
+    {
+        $this->getFilename();
+        return $this->displayFilename;
+    }
 
-    function getOwnerId() {
+
+    public function getOwnerId()
+    {
         return $this->owner_id;
     }
 
 
-    /**
-     *
-     */
-    function getSize() {    
+    public function getSize()
+    {
         return $this->size;
     }
 
 
-    /**
-     *
-     */
-    function getMimeType() {
+    public function getMimeType()
+    {
         return trim($this->mimeType, "'");
     }
 
 
-    /**
-     *
-     */
-    function getDate() {
+    public function getDate()
+    {
         return $this->date;
     }
 
     /**
      * @access public static
-     * @param  Iterator
      */
-    function &getRevisionIterator($gid=null, $id=null) {
-        $warArray = array();
-        if($id !== null) {
+    public function getRevisionIterator($gid = null, $id = null)
+    {
+        $warArray = [];
+        if ($id !== null) {
             $id  = (int) $id;
-            $gid = (int) $gid;            
-        }
-        else {
+            $gid = (int) $gid;
+        } else {
             $gid = $this->gid;
             $id  = $this->attachmentId;
         }
 
-        $dao =& WikiAttachmentRevision::getDao();
-        $dar = $dao->getAllRevisions($id);        
-        while($row =& $dar->getRow()) {
+        $dao = self::getDao();
+        $dar = $dao->getAllRevisions($id);
+        while ($row = $dar->getRow()) {
             $war = new WikiAttachmentRevision($gid);
             $war->setFromRow($row);
-            $warArray[] =& $war;
+            $warArray[] = $war;
             unset($war);
         }
 
         $ai = new ArrayIterator($warArray);
         return $ai;
     }
-
 }
-
-?>

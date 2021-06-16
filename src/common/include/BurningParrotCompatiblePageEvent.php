@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use Tuleap\Event\Dispatchable;
 
 class BurningParrotCompatiblePageEvent implements Dispatchable
 {
-    const NAME = 'burning_parrot_compatible_page';
+    public const NAME = 'burning_parrot_compatible_page';
 
     private $is_in_burning_parrot_compatible_page = false;
 

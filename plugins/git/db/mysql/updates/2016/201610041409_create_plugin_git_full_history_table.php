@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean 2016. All rights reserved
+ * Copyright (c) Enalean 2016 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201610041409_create_plugin_git_full_history_table extends ForgeUpgrade_Bucket {
+class b201610041409_create_plugin_git_full_history_table extends ForgeUpgrade_Bucket
+{
 
     public function description()
     {

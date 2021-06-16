@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2011, 2012, 2013, 2016. All rights reserved.
+ * Copyright Enalean (c) 2011 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -25,7 +25,8 @@
 use Tuleap\Svn\ApacheConfGenerator;
 use Tuleap\Svn\SvnrootUpdater;
 
-class SystemEventProcessor_Root extends SystemEventProcessor {
+class SystemEventProcessor_Root extends SystemEventProcessor
+{
 
     /**
      * @var SiteCache
@@ -56,29 +57,36 @@ class SystemEventProcessor_Root extends SystemEventProcessor {
      * @var ApacheConfGenerator
      */
     protected $generator;
+    /**
+     * @var \Tuleap\DB\DBConnection
+     */
+    private $db_connection;
 
     public function __construct(
-        SystemEventProcess  $process,
-        SystemEventManager  $system_event_manager,
-        SystemEventDao      $dao,
-        Logger              $logger,
-        BackendAliases      $backend_aliases,
-        BackendCVS          $backend_cvs,
-        BackendSVN          $backend_svn,
-        BackendSystem       $backend_system,
-        SiteCache           $site_cache,
-        ApacheConfGenerator $generator
+        SystemEventProcess $process,
+        SystemEventManager $system_event_manager,
+        SystemEventDao $dao,
+        \Psr\Log\LoggerInterface $logger,
+        BackendAliases $backend_aliases,
+        BackendCVS $backend_cvs,
+        BackendSVN $backend_svn,
+        BackendSystem $backend_system,
+        SiteCache $site_cache,
+        ApacheConfGenerator $generator,
+        \Tuleap\DB\DBConnection $db_connection
     ) {
         parent::__construct($process, $system_event_manager, $dao, $logger);
-        $this->backend_aliases      = $backend_aliases;
-        $this->backend_cvs          = $backend_cvs;
-        $this->backend_svn          = $backend_svn;
-        $this->backend_system       = $backend_system;
-        $this->site_cache           = $site_cache;
-        $this->generator            = $generator;
+        $this->backend_aliases = $backend_aliases;
+        $this->backend_cvs     = $backend_cvs;
+        $this->backend_svn     = $backend_svn;
+        $this->backend_system  = $backend_system;
+        $this->site_cache      = $site_cache;
+        $this->generator       = $generator;
+        $this->db_connection   = $db_connection;
     }
 
-    public function getOwner() {
+    public function getOwner()
+    {
         return SystemEvent::OWNER_ROOT;
     }
 
@@ -99,7 +107,7 @@ class SystemEventProcessor_Root extends SystemEventProcessor {
         // Update SVN root definition for Apache once everything else is processed
         if ($this->backend_svn->getSVNApacheConfNeedUpdate()) {
             $this->generator->generate();
-            $updater = new SvnrootUpdater($this->logger);
+            $updater = new SvnrootUpdater($this->logger, $this->db_connection);
             $updater->push();
         }
 
@@ -113,26 +121,32 @@ class SystemEventProcessor_Root extends SystemEventProcessor {
         $this->triggerApplicationOwnerEventsProcessing();
     }
 
-    protected function triggerApplicationOwnerEventsProcessing() {
-        $app = new SystemEventProcessor_ApplicationOwner(new SystemEventProcessApplicationOwnerDefaultQueue(), $this->system_event_manager, $this->dao, $this->logger);
-        $command   = ForgeConfig::get('codendi_dir').'/src/utils/php-launcher.sh '.ForgeConfig::get('codendi_dir').'/src/utils/process_system_events.php '.SystemEvent::OWNER_APP;
+    protected function triggerApplicationOwnerEventsProcessing()
+    {
+        $app     = new SystemEventProcessor_ApplicationOwner(new SystemEventProcessApplicationOwnerDefaultQueue(), $this->system_event_manager, $this->dao, $this->logger);
+        $command = sprintf('/usr/bin/tuleap %s %s', \Tuleap\CLI\Command\ProcessSystemEventsCommand::NAME, SystemEvent::OWNER_APP);
         $this->launchAs($app->getProcessOwner(), $command);
     }
 
-    protected function launchAs($user, $command) {
-        $return_val = 0;
-        $output = array();
-        $cmd    = 'su -l '.$user.' -c "'.$command.' 2>&1"';
-        exec($cmd, $output, $return_val);
-        if ($return_val == 0) {
-            return true;
-        } else {
-            throw new Exception('Unable to run command "'.$command.'" (error code: '.$return_val.'): '.implode("\n", $output));
-            return false;
+    protected function launchAs(string $user, string $command): void
+    {
+        $cmd     = 'sudo -E -u ' . $user . ' -- ' . $command;
+        $process = Symfony\Component\Process\Process::fromShellCommandline($cmd);
+        $process->start();
+
+        $output = '';
+
+        foreach ($process as $type => $data) {
+            $output .= $data;
+        }
+
+        if (! $process->isSuccessful()) {
+            throw new Exception('Unable to run command "' . $command . '" (error code: ' . $process->getExitCode() . '): ' . $output);
         }
     }
 
-    public function getProcessOwner() {
+    public function getProcessOwner()
+    {
         return 'root';
     }
 }

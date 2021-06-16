@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS, 2015. All Rights Reserved.
+ * Copyright (c) Enalean SAS, 2015 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2010. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -19,107 +19,96 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Cryptography\ConcealedString;
+use Tuleap\User\AccessKey\HTTPBasicAuth\HTTPBasicAuthUserAccessKeyAuthenticator;
+use Tuleap\User\AccessKey\HTTPBasicAuth\HTTPBasicAuthUserAccessKeyMisusageException;
+use Tuleap\Webdav\Authentication\HeadersSender;
+
 /**
  * Class of authentication
  */
-class WebDAVAuthentication {
+class WebDAVAuthentication
+{
+    /**
+     * @var UserManager
+     */
+    private $user_manager;
+    /**
+     * @var HeadersSender
+     */
+    private $headers_sender;
+    /**
+     * @var HTTPBasicAuthUserAccessKeyAuthenticator
+     */
+    private $access_key_authenticator;
+
+    public function __construct(
+        UserManager $user_manager,
+        HeadersSender $headers_sender,
+        HTTPBasicAuthUserAccessKeyAuthenticator $access_key_authenticator
+    ) {
+        $this->user_manager             = $user_manager;
+        $this->headers_sender           = $headers_sender;
+        $this->access_key_authenticator = $access_key_authenticator;
+    }
 
     /**
      * Authentication method
      *
      * Returns the authenticated user
-     *
-     * @return PFUser
      */
-    function authenticate() {
-
-        // test if username field is empty
-        if (!$this->issetUsername()) {
+    public function authenticate(): PFUser
+    {
+        $username = $this->getUsername();
+        $password = $this->getPassword();
+        $user     = $this->getUser($username, $password);
+        if ($user->isAnonymous()) {
             $this->setHeader();
         } else {
-            $username = $this->getUsername();
-            $password = $this->getPassword();
-            $user = $this->getUser($username, $password);
-            // Ask again for authentication if the user entered a wrong username or password
-            // if fields are left blank the user is considered as anonymous unless Tuleap don't accept anonymous access
-            if ($user->isAnonymous() && ($username || $password || ! ForgeConfig::areAnonymousAllowed())) {
-                $this->setHeader();
-            } else {
-                return $user;
-            }
+            return $user;
         }
-    }
-
-    /**
-     * Returns whether the username field is empty or not
-     *
-     * @return Boolean
-     */
-    function issetUsername() {
-
-        return isset($_SERVER['PHP_AUTH_USER']);
-
     }
 
     /**
      * Sets the authentication header
      *
-     * @return void
+     * @psalm-return never-return
      */
-    function setHeader() {
-
-        header('WWW-Authenticate: Basic realm="'.$GLOBALS['sys_name'].' WebDAV Authentication"');
-        header('HTTP/1.0 401 Unauthorized');
-
-        // text returned when user hit cancel
-        echo $GLOBALS['Language']->getText('plugin_webdav_common', 'authentication_required');
-
-        // The HTTP_BasicAuth (and digest) will return a 401 statuscode.
-        // If there is no die() after that, the server will just do it's thing as usual
-        // and override it with it's own statuscode (200, 404, 207, 201, or whatever was appropriate).
-        // So the die() actually makes sure that the php script doesn't continue if the client
-        // has an incorrect or no username and password.
-        die();
-
+    public function setHeader(): void
+    {
+        $this->headers_sender->sendHeaders();
     }
 
     /**
      * Returns the content of username field
-     *
-     * @return String
      */
-    function getUsername() {
-
-        return $_SERVER['PHP_AUTH_USER'];
-
+    private function getUsername(): string
+    {
+        return $_SERVER['PHP_AUTH_USER'] ?? '';
     }
 
     /**
      * Returns the content of password field
      *
-     * @return String
      */
-    function getPassword() {
-
-        return $_SERVER['PHP_AUTH_PW'];
-
+    private function getPassword(): ConcealedString
+    {
+        if (! isset($_SERVER['PHP_AUTH_PW'])) {
+            return new ConcealedString('');
+        }
+        return new ConcealedString($_SERVER['PHP_AUTH_PW']);
     }
 
     /**
      * Returns the authenticated user or anonymous user
-     *
-     * @param String $username
-     *
-     * @param String $password
-     *
-     * @return PFUser
      */
-    function getUser($username, $password) {
-
-        return UserManager::instance()->login($username, $password);
-
+    public function getUser(string $username, ConcealedString $password): PFUser
+    {
+        try {
+            $user = $this->access_key_authenticator->getUser($username, $password, \HTTPRequest::instance()->getIPAddress());
+        } catch (HTTPBasicAuthUserAccessKeyMisusageException $exception) {
+            $this->setHeader();
+        }
+        return $user ?? $this->user_manager->login($username, $password);
     }
-
 }
-
-?>

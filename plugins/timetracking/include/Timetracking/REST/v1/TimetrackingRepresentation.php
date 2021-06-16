@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018-Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -29,9 +29,12 @@ use Tuleap\Project\REST\MinimalProjectRepresentation;
 use Tuleap\REST\JsonCast;
 use Tuleap\Timetracking\Time\Time;
 
-class TimetrackingRepresentation
+/**
+ * @psalm-immutable
+ */
+final class TimetrackingRepresentation
 {
-    const NAME = "timetracking";
+    public const NAME = 'timetracking';
 
     /**
      * @var MinimalArtifactRepresentation
@@ -63,33 +66,37 @@ class TimetrackingRepresentation
      */
     public $step;
 
-    public function build(Time $time)
-    {
-        $this->artifact = $this->getArtifactRepresentation($time);
-        $this->project  = $this->getProjectRepresentation($time);
-        $this->id       = JsonCast::toInt($time->getId());
-        $this->minutes  = JsonCast::toInt($time->getMinutes());
-        $this->date     = $time->getDay();
-        $this->step     = $time->getStep();
+    private function __construct(
+        int $id,
+        int $minutes,
+        string $date,
+        string $step,
+        MinimalArtifactRepresentation $artifact,
+        MinimalProjectRepresentation $project
+    ) {
+        $this->id       = $id;
+        $this->minutes  = $minutes;
+        $this->date     = $date;
+        $this->step     = $step;
+        $this->artifact = $artifact;
+        $this->project  = $project;
     }
 
-    private function getArtifactRepresentation(Time $time)
+    public static function fromTime(Time $time): self
     {
-        $artifact       = Tracker_ArtifactFactory::instance()->getArtifactById($time->getArtifactId());
-        $representation = new MinimalArtifactRepresentation();
-        $representation->build($artifact);
+        $artifact_id = $time->getArtifactId();
+        $artifact    = Tracker_ArtifactFactory::instance()->getArtifactById($artifact_id);
+        if ($artifact === null) {
+            throw new \RuntimeException(sprintf('Cannot find artifact #%d of time #%d', $artifact_id, $time->getId()));
+        }
 
-        return $representation;
-    }
-
-    private function getProjectRepresentation(Time $time)
-    {
-        $artifact       = Tracker_ArtifactFactory::instance()->getArtifactById($time->getArtifactId());
-        $project        = $artifact->getTracker()->getProject();
-        $representation = new MinimalProjectRepresentation();
-
-        $representation->buildMinimal($project);
-
-        return $representation;
+        return new self(
+            JsonCast::toInt($time->getId()),
+            JsonCast::toInt($time->getMinutes()),
+            $time->getDay(),
+            $time->getStep(),
+            MinimalArtifactRepresentation::build($artifact),
+            new MinimalProjectRepresentation($artifact->getTracker()->getProject()),
+        );
     }
 }

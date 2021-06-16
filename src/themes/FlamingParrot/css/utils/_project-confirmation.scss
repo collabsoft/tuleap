@@ -1,0 +1,17 @@
+#project-confirmation-content {
+    p > i {
+        color: var(--tlp-theme-color);
+    }
+}
+
+#project-confirmation-redirect {
+    a {
+        border-radius: 4px;
+        border-color: var(--tlp-theme-color) var(--tlp-theme-color) #002a80;
+        background-color: var(--tlp-theme-color);
+        background-image: linear-gradient(to bottom, var(--tlp-theme-color), var(--tlp-theme-color));
+        background-repeat: repeat-x;
+        font-weight: 400;
+        letter-spacing: 0.03em;
+    }
+}

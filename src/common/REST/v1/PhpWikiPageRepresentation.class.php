@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,11 +21,15 @@
 
 namespace Tuleap\REST\v1;
 
-use WikiPage;
+use Tuleap\PHPWiki\WikiPage;
 
-class PhpWikiPageRepresentation {
+/**
+ * @psalm-immutable
+ */
+class PhpWikiPageRepresentation
+{
 
-    const ROUTE = 'phpwiki';
+    public const ROUTE = 'phpwiki';
 
     /**
      * @var int {@type int}
@@ -42,9 +46,15 @@ class PhpWikiPageRepresentation {
      */
     public $name;
 
-    public function build(WikiPage $page) {
-        $this->id   = (int) $page->getId();
-        $this->uri  = self::ROUTE .'/'. $this->id;
-        $this->name = $page->getPagename();
+    protected function __construct(int $id, string $name)
+    {
+        $this->id   = $id;
+        $this->uri  = self::ROUTE . '/' . $id;
+        $this->name = $name;
+    }
+
+    public static function build(WikiPage $page): PhpWikiPageRepresentation
+    {
+        return new self((int) $page->getId(), $page->getPagename());
     }
 }

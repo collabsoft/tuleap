@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,121 +18,38 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\REST\JsonCast;
+use Tuleap\Tracker\REST\FormElement\PermissionsForGroupsRepresentation;
 
-class Tracker_REST_FieldOpenListRepresentation {
-
-    const BIND_TYPE  = 'type';
-    const BIND_LIST  = 'list';
-
-    const BIND_ID    = 'id';
-    const BIND_LABEL = 'label';
-
-    const PERM_READ   = 'read';
-    const PERM_UPDATE = 'update';
-    const PERM_CREATE = 'create';
-
-    /**
-     * @var int
-     */
-    public $field_id;
-
-    /**
-     * @var string
-     */
-    public $label;
-
-    /**
-     * @var string
-     */
-    public $name;
-
-    /**
-     * @var string (string|text|sb|msb|cb|date|file|int|float|tbl|art_link|perm|shared|aid|atid|lud|subby|subon|cross|burndown|computed|fieldset|column|linebreak|separator|staticrichtext)
-     */
-    public $type;
-
-    /**
-     * @var array {@type Tuleap\Tracker\REST\FieldValueRepresentation }
-     */
-    public $values = array();
-
-    /**
-     *
-     * @var boolean
-     */
-    public $required;
-
-    /**
-     *
-     * @var boolean
-     */
-    public $collapsed;
-
-    /**
-     * @var array
-     */
-    public $bindings = array();
-
-    /**
-     * @var array {@type string} One of (read, update, submit)
-     */
-    public $permissions = array();
-
+/**
+ * @psalm-immutable
+ */
+class Tracker_REST_FormElement_FieldOpenListRepresentation extends Tracker_REST_FormElementRepresentation
+{
     /**
      * @var string
      */
     public $hint;
 
-    public function build(Tracker_FormElement_Field_OpenList $field, $type, array $permissions) {
-        $this->field_id = JsonCast::toInt($field->getId());
-        $this->name     = $field->getName();
-        $this->label    = $field->getLabel();
-        $this->hint     = $field->getProperty('hint');
-
-        if ($field instanceof Tracker_FormElement_Field) {
-            $this->required      = JsonCast::toBoolean($field->isRequired());
-            $this->collapsed     = false;
-
-        } else {
-            $this->required      = false;
-            $this->collapsed     = (bool) $field->isCollapsed();
+    private function __construct(Tracker_REST_FormElementRepresentation $representation, string $hint)
+    {
+        foreach (get_object_vars($representation) as $name => $value) {
+            $this->$name = $value;
         }
 
-        $this->default_value = $field->getDefaultRESTValue();
-        $this->type   = $type;
+        $this->hint = $hint;
+    }
 
-        $this->values = null;
-        if ($field->getRESTAvailableValues()) {
-            $this->values = $field->getRESTAvailableValues();
+    public static function build(
+        Tracker_FormElement $form_element,
+        string $type,
+        array $permissions,
+        ?PermissionsForGroupsRepresentation $permissions_for_groups
+    ): Tracker_REST_FormElementRepresentation {
+        $representation = parent::build($form_element, $type, $permissions, $permissions_for_groups);
+        if (! $form_element instanceof Tracker_FormElement_Field_OpenList) {
+            return $representation;
         }
 
-        $bindings = $field->getSoapBindingProperties();
-        $this->bindings = array(
-            self::BIND_TYPE => $bindings[Tracker_FormElement_Field_List_Bind::SOAP_TYPE_KEY],
-            self::BIND_LIST => array_map(
-                function ($binding) {
-                    return array(
-                        Tracker_REST_FieldRepresentation::BIND_ID   => $binding[Tracker_FormElement_Field_List_Bind_Users::SOAP_BINDING_LIST_ID],
-                        Tracker_REST_FieldRepresentation::BIND_LABEL=> $binding[Tracker_FormElement_Field_List_Bind_Users::SOAP_BINDING_LIST_LABEL]
-                    );
-                },
-                $bindings[Tracker_FormElement_Field_List_Bind::SOAP_LIST_KEY]
-            )
-        );
-
-        $this->permissions = array_map(
-            function ($permission) {
-                switch ($permission) {
-                    case Tracker_FormElement::SOAP_PERMISSION_READ:
-                        return Tracker_REST_FieldRepresentation::PERM_READ;
-                    case Tracker_FormElement::SOAP_PERMISSION_UPDATE:
-                        return Tracker_REST_FieldRepresentation::PERM_UPDATE;
-                    case Tracker_FormElement::SOAP_PERMISSION_SUBMIT:
-                        return Tracker_REST_FieldRepresentation::PERM_CREATE;
-                }
-            },
-            $permissions
-        );
+        return new self($representation, $form_element->getProperty('hint'));
     }
 }

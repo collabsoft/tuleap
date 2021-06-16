@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,17 +19,14 @@
  */
 
 
-require_once('common/plugin/PluginDescriptor.class.php');
-
-
 /**
  * CardwallPluginDescriptor
  */
-class CardwallPluginDescriptor extends PluginDescriptor {
-    
-    function __construct() {
-        parent::__construct($GLOBALS['Language']->getText('plugin_cardwall', 'descriptor_name'), false, $GLOBALS['Language']->getText('plugin_cardwall', 'descriptor_description'));
-        $this->setVersionFromFile(dirname(__FILE__).'/../VERSION');
+class CardwallPluginDescriptor extends PluginDescriptor
+{
+
+    public function __construct()
+    {
+        parent::__construct(dgettext('tuleap-cardwall', 'Card Wall'), false, dgettext('tuleap-cardwall', 'Electronic card wall for trackers for scrum, kanban, ...'));
     }
 }
-?>

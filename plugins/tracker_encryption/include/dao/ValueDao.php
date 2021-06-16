@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,9 +20,9 @@
 
 namespace Tuleap\TrackerEncryption\Dao;
 
-use Tracker_FormElement_Field_ValueDao;
+use Tuleap\Tracker\FormElement\Field\FieldValueDao;
 
-class ValueDao extends Tracker_FormElement_Field_ValueDao
+class ValueDao extends FieldValueDao
 {
     public function __construct()
     {
@@ -49,7 +49,7 @@ class ValueDao extends Tracker_FormElement_Field_ValueDao
         }
 
         $changeset_value_ids = $this->da->escapeIntImplode($changeset_value_ids);
-        $sql = " INSERT INTO tracker_changeset_value_encrypted (changeset_value_id, value)
+        $sql                 = " INSERT INTO tracker_changeset_value_encrypted (changeset_value_id, value)
                  VALUES ( '$changeset_value_ids', '')";
 
         return $this->update($sql);
@@ -58,7 +58,7 @@ class ValueDao extends Tracker_FormElement_Field_ValueDao
     public function resetEncryptedFieldValues($tracker_id)
     {
         $tracker_id = $this->da->escapeInt($tracker_id);
-        $sql = "UPDATE tracker_changeset_value_encrypted
+        $sql        = "UPDATE tracker_changeset_value_encrypted
                  SET value = ''
                  WHERE changeset_value_id IN (
                       SELECT tracker_changeset_value.id
@@ -74,7 +74,7 @@ class ValueDao extends Tracker_FormElement_Field_ValueDao
     {
         $from = $this->da->escapeInt($from);
         $to   = $this->da->escapeInt($to);
-        $sql = "INSERT INTO tracker_changeset_value_encrypted(changeset_value_id, value)
+        $sql  = "INSERT INTO tracker_changeset_value_encrypted(changeset_value_id, value)
                 SELECT $to, value
                 FROM tracker_changeset_value_encrypted
                 WHERE changeset_value_id = $from";

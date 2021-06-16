@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,17 +19,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\REST\Artifact\ArtifactFieldValueFileFullRepresentation;
+
 /**
  * Manage values in changeset for files fields
  */
-class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetValue implements Countable, ArrayAccess, Iterator {
-    
+class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetValue implements Countable, ArrayAccess, Iterator
+{
+
     /**
      * @var array of Tracker_FileInfo
      */
     protected $files;
-    
-    public function __construct($id, Tracker_Artifact_Changeset $changeset, $field, $has_changed, $files) {
+
+    public function __construct($id, Tracker_Artifact_Changeset $changeset, $field, $has_changed, $files)
+    {
         parent::__construct($id, $changeset, $field, $has_changed);
         $this->files = $files;
     }
@@ -37,30 +41,33 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
     /**
      * @return mixed
      */
-    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor) {
+    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor)
+    {
         return $visitor->visitFile($this);
     }
-    
+
     /**
      * spl\Countable
      *
      * @return int the number of files
      */
-    public function count() {
+    public function count()
+    {
         return count($this->files);
     }
-    
+
     /**
      * spl\ArrayAccess
      *
-     * @param int $offset to retrieve
+     * @param int|string $offset to retrieve
      *
      * @return mixed value at given offset
      */
-    public function offsetGet($offset) {
+    public function offsetGet($offset)
+    {
         return $this->files[$offset];
     }
-    
+
     /**
      * spl\ArrayAccess
      *
@@ -69,21 +76,23 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
      *
      * @return void
      */
-    public function offsetSet($offset, $value) {
+    public function offsetSet($offset, $value)
+    {
         $this->files[$offset] = $value;
     }
-    
+
     /**
      * spl\ArrayAccess
      *
      * @param int $offset to check
      *
-     * @return boolean wether the offset exists
+     * @return bool wether the offset exists
      */
-    public function offsetExists($offset) {
+    public function offsetExists($offset)
+    {
         return isset($this->files[$offset]);
     }
-    
+
     /**
      * spl\ArrayAccess
      *
@@ -91,103 +100,95 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
      *
      * @return void
      */
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset)
+    {
         unset($this->files[$offset]);
     }
-    
+
     /**
      * spl\Iterator
      *
      * The internal pointer to traverse the collection
-     * @var integer
+     * @var int
      */
     protected $index;
-    
+
     /**
      * spl\Iterator
-     * 
+     *
      * @return Tracker_FileInfo the current one
      */
-    public function current() {
+    public function current()
+    {
         return $this->files[$this->index];
     }
-    
+
     /**
      * spl\Iterator
-     * 
+     *
      * @return int the current index
      */
-    public function key() {
+    public function key()
+    {
         return $this->index;
     }
-    
+
     /**
      * spl\Iterator
-     * 
+     *
      * Jump to the next Tracker_FileInfo
      *
      * @return void
      */
-    public function next() {
+    public function next()
+    {
         $this->index++;
     }
-    
+
     /**
      * spl\Iterator
      *
      * Reset the pointer to the start of the collection
-     * 
+     *
      * @return Tracker_FileInfo the current one
      */
-    public function rewind() {
+    public function rewind()
+    {
         $this->index = 0;
     }
-    
+
     /**
      * spl\Iterator
-     * 
-     * @return boolean true if the current pointer is valid
+     *
+     * @return bool true if the current pointer is valid
      */
-    public function valid() {
+    public function valid()
+    {
         return isset($this->files[$this->index]);
     }
-    
+
     /**
      * Get the files infos
      *
      * @return Tracker_FileInfo[]
      */
-    public function getFiles() {
+    public function getFiles()
+    {
         return $this->files;
     }
-    
-    /**
-     * Return a string that will be use in SOAP API
-     * as the value of this ChangesetValue_File
-     *
-     * @param PFUser $user
-     *
-     * @return Array The value of this artifact changeset value for Soap API
-     */
-    public function getSoapValue(PFUser $user) {
-        $soap_array = array();
-        foreach ($this->getFiles() as $file_info) {
-            $soap_array[] = $file_info->getSoapValue();
-        }
-        return array('file_info' => $soap_array);
-    }
 
-    public function getRESTValue(PFUser $user) {
+    public function getRESTValue(PFUser $user)
+    {
         return $this->getFullRESTValue($user);
     }
 
-    public function getFullRESTValue(PFUser $user) {
-        $values = array();
+    public function getFullRESTValue(PFUser $user)
+    {
+        $values = [];
         foreach ($this->getFiles() as $file_info) {
             $values[] = $file_info->getRESTValue();
         }
-        $classname_with_namespace = 'Tuleap\Tracker\REST\Artifact\ArtifactFieldValueFileFullRepresentation';
-        $field_value_file_representation = new $classname_with_namespace;
+        $field_value_file_representation = new ArtifactFieldValueFileFullRepresentation();
         $field_value_file_representation->build(
             $this->field->getId(),
             Tracker_FormElementFactory::instance()->getType($this->field),
@@ -202,18 +203,22 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
      *
      * @return mixed The value of this artifact changeset value
      */
-    public function getValue() {
+    public function getValue()
+    {
         // TODO : implement
         return false;
     }
 
+    /**
+     * @return false|string
+     */
     public function mailDiff(
         $changeset_value,
         $artifact_id,
         $changeset_id,
         $ignore_perms,
         $format = 'html',
-        PFUser $user = null
+        ?PFUser $user = null
     ) {
         return $this->formatDiff($changeset_value, $format, true);
     }
@@ -221,9 +226,9 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
     /**
      * Returns a diff between this changeset value and the one passed in param
      *
-     * @return string The difference between another $changeset_value, false if no differneces
+     * @return string|false The difference between another $changeset_value, false if no differneces
      */
-    public function diff($changeset_value, $format = 'html', PFUser $user = null, $ignore_perms = false)
+    public function diff($changeset_value, $format = 'html', ?PFUser $user = null, $ignore_perms = false)
     {
         return $this->formatDiff($changeset_value, $format, false);
     }
@@ -231,13 +236,13 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
     private function formatDiff($changeset_value, $format, $is_for_mail)
     {
         if ($this->files !== $changeset_value->getFiles()) {
-            $result = '';
-            $removed = array();
+            $result  = '';
+            $removed = [];
             foreach (array_diff($changeset_value->getFiles(), $this->files) as $fi) {
                 $removed[] = $fi->getFilename();
             }
             if ($removed = implode(', ', $removed)) {
-                $result .= $removed .' '.$GLOBALS['Language']->getText('plugin_tracker_artifact','removed');
+                $result .= $removed . ' ' . dgettext('tuleap-tracker', 'removed');
             }
 
             $added = $this->fetchAddedFiles(array_diff($this->files, $changeset_value->getFiles()), $format, $is_for_mail);
@@ -250,7 +255,7 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
         }
         return false;
     }
-    
+
      /**
      * Returns the "set to" for field added later
      *
@@ -269,7 +274,7 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
     {
         $artifact = $this->changeset->getArtifact();
 
-        $still_existing_files_ids = array();
+        $still_existing_files_ids = [];
 
         if ($artifact->getLastChangeset()->getValue($this->field)) {
             foreach ($artifact->getLastChangeset()->getValue($this->field)->getFiles() as $file) {
@@ -277,21 +282,21 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
             }
         }
 
-        $added    = array();
-        $previews = array();
+        $added    = [];
+        $previews = [];
         $this->extractAddedAndPreviewsFromFiles($files, $format, $still_existing_files_ids, $added, $previews);
 
-        $result   = '';
+        $result = '';
         if ($added) {
-            $result .= implode(', ', $added) .' '.$GLOBALS['Language']->getText('plugin_tracker_artifact','added');
+            $result .= implode(', ', $added) . ' ' . dgettext('tuleap-tracker', 'added');
         }
 
         if ($previews && ! $is_for_mail) {
-            $result .= '<div>'. $this->field->fetchAllAttachment(
+            $result .= '<div>' . $this->field->fetchAllAttachment(
                 $artifact->getId(),
                 $previews,
                 true,
-                array(),
+                [],
                 true,
                 $this->changeset->getId()
             ) . '</div>';
@@ -307,8 +312,8 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
         &$added,
         &$previews
     ) {
-        /** @var Tracker_FileInfo $file */
         foreach ($files as $file) {
+            \assert($file instanceof Tracker_FileInfo);
             if ($format === 'html') {
                 $this->addFileForHTMLFormat($still_existing_files_ids, $added, $previews, $file);
             } else {
@@ -330,7 +335,7 @@ class Tracker_Artifact_ChangesetValue_File extends Tracker_Artifact_ChangesetVal
                 $previews[] = $file;
             }
         } else {
-            $reason  = $GLOBALS['Language']->getText('plugin_tracker', 'file_has_been_removed_meantime');
+            $reason  = dgettext('tuleap-tracker', 'This file has been removed meantime.');
             $added[] = '<s title="' . $purifier->purify($reason) . '">' .
                 $purifier->purify($file->getFilename())
                 . '</s>';

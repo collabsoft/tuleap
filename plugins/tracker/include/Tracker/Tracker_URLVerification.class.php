@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,50 +18,34 @@
  * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
-require_once 'common/include/URLVerification.class.php';
 
-class Tracker_URLVerification extends URLVerification {
-    
-    function getUrl() {
+class Tracker_URLVerification extends URLVerification
+{
+
+    protected function getUrl()
+    {
         return new Tracker_URL();
     }
 
     /**
-     * Always permit requests for localhost, or for api or soap scripts and for system tracker templates
-     *
-     * @param Array $server
-     *
-     * @return Boolean
-     */
-    function isException($server) {
-        $userRequestsDefaultTemplates = $server['REQUEST_URI'] == TRACKER_BASE_URL .'/index.php?group_id=100' && HTTPRequest::instance()->isAjax();
-        $userRequestsDefaultTemplates |= $server['REQUEST_URI'] == TRACKER_BASE_URL .'/invert_comments_order.php';
-        $userRequestsDefaultTemplates |= $server['REQUEST_URI'] == TRACKER_BASE_URL .'/invert_display_changes.php';
-        $userRequestsDefaultTemplates |= $server['REQUEST_URI'] == TRACKER_BASE_URL .'/unsubscribe_notifications.php';
-        $userRequestsDefaultTemplates |= (strpos($server['REQUEST_URI'], TRACKER_BASE_URL .'/config.php') === 0);
-
-        return $userRequestsDefaultTemplates || parent::isException($server);
-    }
-    /**
      * Ensure given user can access given project
      *
-     * @param PFUser  $user
-     * @param Project $project
-     * @return boolean
+     * @return bool
      * @throws Project_AccessProjectNotFoundException
      * @throws Project_AccessDeletedException
      * @throws Project_AccessRestrictedException
      * @throws Project_AccessPrivateException
+     * @throws \Tuleap\Project\ProjectAccessSuspendedException
      */
-    public function userCanAccessProject(PFUser $user, Project $project) {
-        $tracker_manager = new TrackerManager();
-        if ($tracker_manager->userCanAdminAllProjectTrackers($user)) {
+    public function userCanAccessProject(PFUser $user, Project $project)
+    {
+        $permissions_checker = new \Tuleap\Tracker\Admin\GlobalAdmin\GlobalAdminPermissionsChecker(
+            new User_ForgeUserGroupPermissionsManager(new User_ForgeUserGroupPermissionsDao())
+        );
+        if ($permissions_checker->doesUserHaveTrackerGlobalAdminRightsOnProject($project, $user)) {
             return true;
         }
 
         return parent::userCanAccessProject($user, $project);
     }
-
 }
-?>

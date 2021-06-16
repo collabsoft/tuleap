@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2014. All rights reserved
+ * Copyright (c) Enalean SAS 2014 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201412041555_add_tracker_field_computed_cache_table extends ForgeUpgrade_Bucket {
+class b201412041555_add_tracker_field_computed_cache_table extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'Add table for caching computed values of computed fields';
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE tracker_field_computed_cache (
                 artifact_id INT(11) NOT NULL,
                 field_id    INT(11) NOT NULL,
@@ -37,8 +41,9 @@ class b201412041555_add_tracker_field_computed_cache_table extends ForgeUpgrade_
         $this->db->createTable('tracker_field_computed_cache', $sql);
     }
 
-    public function postUp() {
-        if (!$this->db->tableNameExists('tracker_field_computed_cache')) {
+    public function postUp()
+    {
+        if (! $this->db->tableNameExists('tracker_field_computed_cache')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('table tracker_field_computed_cache not created');
         }
     }

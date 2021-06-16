@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All rights reserved
+ * Copyright (c) Enalean, 2012 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -21,6 +20,9 @@
 
 namespace Tuleap\ProFTPd\Explorer;
 
+use GuzzleHttp\Psr7\ServerRequest;
+use Tuleap\Http\HTTPFactoryBuilder;
+use Tuleap\Http\Response\BinaryFileResponseBuilder;
 use Tuleap\ProFTPd\Directory\DirectoryParser;
 use Tuleap\ProFTPd\Directory\DirectoryPathParser;
 use Tuleap\ProFTPd\Presenter\ExplorerPresenter;
@@ -30,12 +32,12 @@ use Tuleap\ProFTPd\Xferlog\Dao;
 use HTTPRequest;
 use PFUser;
 use Project;
-use HTTP_Download;
-use PEAR;
+use Laminas\HttpHandlerRunner\Emitter\SapiStreamEmitter;
 
-class ExplorerController {
-    const NAME = 'explorer';
-    const TRANSFERT_BUFFER_SIZE = 8192;
+class ExplorerController
+{
+    public const NAME                  = 'explorer';
+    public const TRANSFERT_BUFFER_SIZE = 8192;
 
     /** @var DirectoryParser */
     private $parser;
@@ -46,17 +48,20 @@ class ExplorerController {
     /** @var Dao */
     private $xferlog_dao;
 
-    public function __construct(DirectoryParser $parser, PermissionsManager $permissions_manager, Dao $xferlog_dao) {
+    public function __construct(DirectoryParser $parser, PermissionsManager $permissions_manager, Dao $xferlog_dao)
+    {
         $this->parser              = $parser;
         $this->permissions_manager = $permissions_manager;
         $this->xferlog_dao         = $xferlog_dao;
     }
 
-    public function getName() {
+    public function getName()
+    {
         return self::NAME;
     }
 
-    public function index(ServiceProFTPd $service, HTTPRequest $request) {
+    public function index(ServiceProFTPd $service, HTTPRequest $request)
+    {
         if ($this->userHasPermissionToExploreSFTP($request->getCurrentUser(), $request->getProject())) {
             $this->renderIndex($service, $request);
         } else {
@@ -73,15 +78,16 @@ class ExplorerController {
         }
     }
 
-    private function renderIndex(ServiceProFTPd $service, HTTPRequest $request) {
+    private function renderIndex(ServiceProFTPd $service, HTTPRequest $request)
+    {
         $project = $request->getProject();
-        if (! $project ) {
+        if (! $project) {
             $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-proftpd', 'Cannot open project'));
             return;
         }
 
         $path_parser = new DirectoryPathParser();
-        $path = $path_parser->getCleanPath($request->get('path'));
+        $path        = $path_parser->getCleanPath($request->get('path'));
         if ($this->parser->isFile($project->getUnixName() . DIRECTORY_SEPARATOR . $path)) {
             $this->renderFileContent($request, $project, $project->getUnixName() . DIRECTORY_SEPARATOR . $path);
         } else {
@@ -89,26 +95,30 @@ class ExplorerController {
         }
     }
 
-    private function renderFileContent(HTTPRequest $request, Project $project, $project_path) {
-        include_once 'HTTP/Download.php';
+    private function renderFileContent(HTTPRequest $request, Project $project, $project_path)
+    {
         $full_path = $this->parser->getFullPath($project_path);
-        $this->xferlog_dao->storeWebDownload($request->getCurrentUser()->getId(), $project->getID(), $_SERVER['REQUEST_TIME'], $project_path);
-        return ! PEAR::isError(HTTP_Download::staticSend(array(
-            'file'               => $full_path,
-            'cache'              => false,
-            'contentdisposition' => array(HTTP_DOWNLOAD_ATTACHMENT, basename($full_path)),
-            'buffersize'         => self::TRANSFERT_BUFFER_SIZE,
-            )
-        ));
+        $this->xferlog_dao->storeWebDownload(
+            $request->getCurrentUser()->getId(),
+            $project->getID(),
+            $_SERVER['REQUEST_TIME'],
+            $project_path
+        );
+
+        $response_builder = new BinaryFileResponseBuilder(HTTPFactoryBuilder::responseFactory(), HTTPFactoryBuilder::streamFactory());
+        $response         = $response_builder->fromFilePath(ServerRequest::fromGlobals(), $full_path, basename($full_path));
+        (new SapiStreamEmitter())->emit($response);
+        exit();
     }
 
-    private function renderDirectoryContent(ServiceProFTPd $service, HTTPRequest $request, DirectoryPathParser $path_parser, Project $project, $path) {
+    private function renderDirectoryContent(ServiceProFTPd $service, HTTPRequest $request, DirectoryPathParser $path_parser, Project $project, $path)
+    {
         $remove_parent_directory_listing = ($path == '') ? true : false;
-        $items = $this->parser->parseDirectory($project->getUnixName() . DIRECTORY_SEPARATOR . $path, $remove_parent_directory_listing);
+        $items                           = $this->parser->parseDirectory($project->getUnixName() . DIRECTORY_SEPARATOR . $path, $remove_parent_directory_listing);
 
         $service->renderInPage(
             $request,
-            $project->getPublicName().' / '.$path,
+            $project->getPublicName() . ' / ' . $path,
             'index',
             new ExplorerPresenter(
                 $path_parser->getPathParts($path),
@@ -119,8 +129,8 @@ class ExplorerController {
         );
     }
 
-    private function userHasPermissionToExploreSFTP(PFUser $user, Project $project) {
+    private function userHasPermissionToExploreSFTP(PFUser $user, Project $project)
+    {
         return $this->permissions_manager->userCanBrowseSFTP($user, $project);
     }
-
 }

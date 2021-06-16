@@ -1,20 +1,15 @@
 {
     "name": "pullrequest",
-    "themes": {
-        "default": {
-            "files": [
-                "www/themes/default/css/style.scss"
-            ],
-            "target_dir": "www/themes/default/css"
-        },
-        "FlamingParrot": {
-            "files": [
-                "www/themes/FlamingParrot/css/style.scss"
-            ],
-            "includes": [
-                "../../src/www/themes/FlamingParrot/css/utils"
-            ],
-            "target_dir": "www/themes/FlamingParrot/css"
+    "gettext-vue": {
+        "create-pullrequest-button": {
+            "src": "scripts/create-pullrequest-button",
+            "po": "scripts/create-pullrequest-button/po"
+        }
+    },
+    "gettext-angularjs": {
+        "pullrequest": {
+            "src": "scripts/src/app",
+            "po": "scripts/po"
         }
     }
 }

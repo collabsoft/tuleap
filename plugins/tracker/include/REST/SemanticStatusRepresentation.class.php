@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,8 @@ namespace Tuleap\Tracker\REST;
 
 use Tuleap\REST\JsonCast;
 
-class SemanticStatusRepresentation {
+class SemanticStatusRepresentation
+{
     /**
      * @var int
      */
@@ -31,9 +32,10 @@ class SemanticStatusRepresentation {
     /**
      * @var array {@type int}
      */
-    public $value_ids = array();
+    public $value_ids = [];
 
-    public function build($id, array $values) {
+    public function build($id, array $values)
+    {
         $this->field_id  = JsonCast::toInt($id);
         $this->value_ids = $values;
     }

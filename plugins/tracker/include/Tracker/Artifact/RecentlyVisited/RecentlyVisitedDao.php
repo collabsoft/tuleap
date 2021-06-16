@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Tuleap\Tracker\RecentlyVisited;
+namespace Tuleap\Tracker\Artifact\RecentlyVisited;
 
 use DataAccessObject;
 
@@ -39,17 +39,15 @@ class RecentlyVisitedDao extends DataAccessObject
         $artifact_id = $this->da->escapeInt($artifact_id);
         $created_on  = $this->da->escapeInt($created_on);
 
-        $this->startTransaction();
         $sql_update     = "INSERT INTO plugin_tracker_recently_visited(user_id, artifact_id, created_on)
                 VALUES ($user_id, $artifact_id, $created_on)
                 ON DUPLICATE KEY UPDATE created_on=$created_on";
         $has_been_saved = $this->update($sql_update);
         if (! $has_been_saved) {
-            $this->rollBack();
-            return false;
+            throw new \RuntimeException('Recently updated was to saved');
         }
 
-        $sql_clean_history     = "DELETE FROM plugin_tracker_recently_visited WHERE user_id = $user_id AND created_on <= (
+        $sql_clean_history        = "DELETE FROM plugin_tracker_recently_visited WHERE user_id = $user_id AND created_on <= (
                                     SELECT created_on FROM (
                                       SELECT created_on FROM plugin_tracker_recently_visited WHERE user_id = $user_id ORDER BY created_on DESC LIMIT 1 OFFSET 30
                                     ) oldest_entry_to_keep
@@ -57,11 +55,9 @@ class RecentlyVisitedDao extends DataAccessObject
         $has_history_been_cleaned = $this->update($sql_clean_history);
 
         if (! $has_history_been_cleaned) {
-            $this->rollBack();
-            return false;
+            throw new \RuntimeException('Recently updated was not cleaned');
         }
 
-        $this->commit();
         return true;
     }
 

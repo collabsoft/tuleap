@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -22,4 +22,7 @@ namespace Tuleap\Git\Exceptions;
 
 use Exception;
 
-class DeletePluginNotInstalledException extends Exception {}
+class DeletePluginNotInstalledException extends Exception
+{
+
+}

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2009. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -18,12 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/backend/BackendSVN.class.php';
-require_once 'LDAP_ProjectManager.class.php';
-require_once 'LDAP.class.php';
-require_once 'LDAP_UserManager.class.php';
-
-class LDAP_BackendSVN extends BackendSVN {
+class LDAP_BackendSVN extends BackendSVN
+{
     private $ldap;
     private $ldapProjectManager = null;
     private $ldapUserManager    = null;
@@ -33,33 +29,46 @@ class LDAP_BackendSVN extends BackendSVN {
      *
      * @param LDAP $ldap The ldap connexion
      */
-    public function setUp(LDAP $ldap) {
+    public function setUp(LDAP $ldap)
+    {
         $this->ldap = $ldap;
     }
 
     /**
      * Return a SVNAccessFile group definition based on given userids
      *
-     * @param String $groupName
-     * @param Array  $userIds
+     * @param string   $group_name
+     * @param PFUser[] $users
      *
      * @return String
      */
-    function getSVNGroupDef($groupName, $userIds) {
-        $ldapUserManager = $this->getLDAPUserManager();
-        $dar             = $ldapUserManager->getLdapLoginFromUserIds($userIds);
-        $members         = $groupName.' = ';
-        $first           = true;
-        foreach($dar as $row) {
-            if ($first) {
-                $first = false;
-            } else {
-                $members .= ', ';
+    private function getSVNGroupDef(Project $project, $group_name, $users)
+    {
+        $user_ids = [];
+        foreach ($users as $user) {
+            try {
+                $this->getProjectAccessChecker()->checkUserCanAccessProject($user, $project);
+                $user_ids[] = $user->getId();
+            } catch (Project_AccessException $exception) {
+                //do not add the user to svn group def
             }
-            $members .= strtolower($row['ldap_uid']);
         }
-        $members .= "\n";
-        return $members;
+        if (empty($user_ids)) {
+            return '';
+        }
+
+        $dar     = $this->getLDAPUserManager()->getLdapLoginFromUserIds($user_ids);
+        $members = [];
+        foreach ($dar as $row) {
+            $members[] = strtolower($row['ldap_uid']);
+        }
+        if (empty($members)) {
+            return '';
+        }
+
+        $comma_separated_members = \implode(', ', $members);
+
+        return "$group_name = $comma_separated_members\n";
     }
 
     /**
@@ -71,10 +80,14 @@ class LDAP_BackendSVN extends BackendSVN {
      *
      * @return String
      */
-    function getSVNAccessProjectMembers(Project $project) {
+    public function getSVNAccessProjectMembers($project)
+    {
+        if (! $project instanceof Project) {
+            throw new InvalidArgumentException('Expected Project, got ' . get_class($project));
+        }
         $ldapPrjMgr = $this->getLDAPProjectManager();
         if ($ldapPrjMgr->hasSVNLDAPAuth($project->getID())) {
-            return $this->getSVNGroupDef('members', $project->getMembersId());
+            return $this->getSVNGroupDef($project, 'members', $project->getMembers());
         } else {
             return parent::getSVNAccessProjectMembers($project);
         }
@@ -85,27 +98,29 @@ class LDAP_BackendSVN extends BackendSVN {
      *
      * @see src/common/backend/BackendSVN#getSVNAccessUserGroupMembers()
      *
-     * @param Project $project
      *
      * @return String
      */
-    function getSVNAccessUserGroupMembers(Project $project) {
+    public function getSVNAccessUserGroupMembers(Project $project)
+    {
         $ldapPrjMgr = $this->getLDAPProjectManager();
         if ($ldapPrjMgr->hasSVNLDAPAuth($project->getID())) {
-            $conf            = "";
-            $ugroup_dao      = $this->getUGroupDao();
-            $dar             = $ugroup_dao->searchByGroupId($project->getId());
-            $project_members = $project->getMembers();
+            $conf       = "";
+            $ugroup_dao = $this->getUGroupDao();
+            $dar        = $ugroup_dao->searchByGroupId($project->getId());
+
+            $project_members     = $project->getMembers();
+            $project_members_ids = array_map(
+                function (PFUser $member) {
+                    return (int) $member->getId();
+                },
+                $project_members
+            );
+
             foreach ($dar as $row) {
                 $ugroup = $this->getUGroupFromRow($row);
-                $members = array();
-                foreach ($ugroup->getMembers() as $user) {
-                    if ($project->isPublic() || in_array($user, $project_members)) {
-                        $members[] = $user->getId();
-                    }
-                }
-                if ($ugroup->getName() && count($members) > 0) {
-                    $conf .= $this->getSVNGroupDef($ugroup->getName(), $members);
+                if ($ugroup->getName()) {
+                    $conf .= $this->getSVNGroupDef($project, $ugroup->getName(), $ugroup->getMembers());
                 }
             }
             $conf .= "\n";
@@ -117,23 +132,24 @@ class LDAP_BackendSVN extends BackendSVN {
 
     /**
      * SVNAccessFile definition for repository root
-     * 
+     *
      * Block access to non project members if:
      * - project is private,
      * - or SVN is private
      * - or "restricted users" is enabled
-     * 
+     *
      * @see src/common/backend/BackendSVN#getSVNAccessRootPathDef($project)
-     * 
+     *
      * @param Project $project
-     * 
+     *
      * @return String
      */
-    function getSVNAccessRootPathDef($project) {
+    public function getSVNAccessRootPathDef($project)
+    {
         $ldapPrjMgr = $this->getLDAPProjectManager();
         if ($ldapPrjMgr->hasSVNLDAPAuth($project->getID())) {
             $conf = "[/]\n";
-            if (!$project->isPublic() || $project->isSVNPrivate() || ForgeConfig::areRestrictedUsersAllowed()) {
+            if (! $project->isPublic() || $project->isSVNPrivate() || ForgeConfig::areRestrictedUsersAllowed()) {
                 $conf .= "* = \n";
             } else {
                 $conf .= "* = r\n";
@@ -147,10 +163,11 @@ class LDAP_BackendSVN extends BackendSVN {
 
     /**
      * Wrapper for LDAP_ProjectManager
-     * 
+     *
      * @return LDAP_ProjectManager
      */
-    protected function getLDAPProjectManager() {
+    protected function getLDAPProjectManager()
+    {
         if ($this->ldapProjectManager === null) {
             $this->ldapProjectManager = new LDAP_ProjectManager();
         }
@@ -159,10 +176,11 @@ class LDAP_BackendSVN extends BackendSVN {
 
     /**
      * Wrapper for LDAP
-     * 
+     *
      * @return LDAP
      */
-    protected function getLDAP() {
+    protected function getLDAP()
+    {
         return $this->ldap;
     }
 
@@ -171,11 +189,11 @@ class LDAP_BackendSVN extends BackendSVN {
      *
      * @return LDAP_UserManager
      */
-    protected function getLDAPUserManager() {
+    protected function getLDAPUserManager()
+    {
         if ($this->ldapUserManager === null) {
             $this->ldapUserManager = new LDAP_UserManager($this->ldap, LDAP_UserSync::instance());
         }
         return $this->ldapUserManager;
     }
 }
-?>

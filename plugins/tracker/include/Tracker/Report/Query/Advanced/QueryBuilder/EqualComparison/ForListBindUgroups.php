@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -99,7 +99,7 @@ class ForListBindUgroups implements FieldFromWhereBuilder, ListBindUgroupsFromWh
     private function getFromWhereForEmptyCondition(QueryListFieldPresenter $parameter_collection)
     {
         $condition = "($parameter_collection->changeset_value_alias.changeset_id IS NULL OR $parameter_collection->changeset_value_list_alias.bindvalue_id =" .
-            $this->escapeInt(Tracker_FormElement_Field_List::NONE_VALUE).")";
+            $this->escapeInt(Tracker_FormElement_Field_List::NONE_VALUE) . ")";
 
         $parameter_collection->setCondition($condition);
 

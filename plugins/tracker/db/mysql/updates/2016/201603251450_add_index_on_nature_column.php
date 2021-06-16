@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,24 +18,28 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201603251450_add_index_on_nature_column extends ForgeUpgrade_Bucket {
+class b201603251450_add_index_on_nature_column extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'Add an index on nature column of the tracker_changeset_value_artifactlink table';
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "ALTER TABLE tracker_changeset_value_artifactlink ADD INDEX idx_nature (nature(10))";
 
         $res = $this->db->dbh->exec($sql);
 
         if ($res === false) {
             $info = $this->db->dbh->errorInfo();
-            $msg  = 'An error occured adding index idx_nature to tracker_changeset_value_artifactlink: '.$info[2].' ('.$info[1].' - '.$info[0].')';
+            $msg  = 'An error occured adding index idx_nature to tracker_changeset_value_artifactlink: ' . $info[2] . ' (' . $info[1] . ' - ' . $info[0] . ')';
             $this->log->error($msg);
             throw new ForgeUpgrade_Bucket_Db_Exception($msg);
         }

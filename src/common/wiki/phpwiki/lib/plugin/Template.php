@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: Template.php,v 1.4 2005/09/11 13:30:22 rurban Exp $');
 /*
  Copyright 2005 $ThePhpWikiProgrammingTeam
@@ -32,7 +33,7 @@ rcs_id('$Id: Template.php,v 1.4 2005/09/11 13:30:22 rurban Exp $');
  *
  * Parameter expansion:
  *   vars="var1=value1&var2=value2"
- * We only support named parameters, not numbered ones as in mediawiki, and 
+ * We only support named parameters, not numbered ones as in mediawiki, and
  * the placeholder is %%var%% and not {{{var}}} as in mediawiki.
  *
  * The following predefined variables are automatically expanded if existing:
@@ -40,7 +41,7 @@ rcs_id('$Id: Template.php,v 1.4 2005/09/11 13:30:22 rurban Exp $');
  *   mtime     - last modified date + time
  *   ctime     - creation date + time
  *   author    - last author
- *   owner     
+ *   owner
  *   creator   - first author
  *   SERVER_URL, DATA_PATH, SCRIPT_NAME, PHPWIKI_BASE_URL and BASE_URL
  *
@@ -48,124 +49,147 @@ rcs_id('$Id: Template.php,v 1.4 2005/09/11 13:30:22 rurban Exp $');
  *
  * In work:
  * - ENABLE_MARKUP_TEMPLATE = true: (lib/InlineParser.php)
- *   Support a mediawiki-style syntax extension which maps 
+ *   Support a mediawiki-style syntax extension which maps
  *     {{TemplateFilm|title=Some Good Film|year=1999}}
- *   to 
+ *   to
  *     <?plugin Template page=TemplateFilm vars="title=Some Good Film&year=1999" ?>
  */
 
-class WikiPlugin_Template
-extends WikiPlugin
+class WikiPlugin_Template extends WikiPlugin
 {
-    function getName() {
+    public function getName()
+    {
         return _("Template");
     }
 
-    function getDescription() {
+    public function getDescription()
+    {
         return _("Parametrized page inclusion.");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.4 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.4 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array( 
+    public function getDefaultArguments()
+    {
+        return [
                      'page'    => false, // the page to include
                      'vars'    => false,
                      'rev'     => false, // the revision (defaults to most recent)
                      'section' => false, // just include a named section
                      'sectionhead' => false // when including a named section show the heading
-                     );
+                     ];
     }
 
-    function getWikiPageLinks($argstr, $basepage) {
+    public function getWikiPageLinks($argstr, $basepage)
+    {
         extract($this->getArgs($argstr));
         if ($page) {
             // Expand relative page names.
             $page = new WikiPageName($page, $basepage);
         }
-        if (!$page or !$page->name)
+        if (! $page or ! $page->name) {
             return false;
-        return array($page->name);
+        }
+        return [$page->name];
     }
-                
-    function run($dbi, $argstr, &$request, $basepage) {
+
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         extract($this->getArgs($argstr, $request));
         if ($page) {
             // Expand relative page names.
             $page = new WikiPageName($page, $basepage);
             $page = $page->name;
         }
-        if (!$page) {
+        if (! $page) {
             return $this->error(_("no page specified"));
         }
 
         // Protect from recursive inclusion. A page can include itself once
-        static $included_pages = array();
+        static $included_pages = [];
         if (in_array($page, $included_pages)) {
-            return $this->error(sprintf(_("recursive inclusion of page %s"),
-                                        $page));
+            return $this->error(sprintf(
+                _("recursive inclusion of page %s"),
+                $page
+            ));
         }
 
         $p = $dbi->getPage($page);
         if ($rev) {
             $r = $p->getRevision($rev);
-            if (!$r) {
-                return $this->error(sprintf(_("%s(%d): no such revision"),
-                                            $page, $rev));
+            if (! $r) {
+                return $this->error(sprintf(
+                    _("%s(%d): no such revision"),
+                    $page,
+                    $rev
+                ));
             }
         } else {
             $r = $p->getCurrentRevision();
         }
         $initial_content = $r->getPackedContent();
-        $c = explode("\n", $initial_content);
+        $c               = explode("\n", $initial_content);
 
         if ($section) {
-            $c = extractSection($section, $c, $page, $quiet, $sectionhead);
+            $c               = extractSection($section, $c, $page, $quiet, $sectionhead);
             $initial_content = implode("\n", $c);
         }
 
         if (preg_match('/<noinclude>.+<\/noinclude>/s', $initial_content)) {
-            $initial_content = preg_replace("/<noinclude>.+?<\/noinclude>/s", "", 
-                                            $initial_content);
+            $initial_content = preg_replace(
+                "/<noinclude>.+?<\/noinclude>/s",
+                "",
+                $initial_content
+            );
         }
-        if (preg_match('/%%\w+%%/', $initial_content)) // need variable expansion
-        {
-            $var = array();
-            if (!empty($vars)) {
-                foreach (preg_split("/&/D",$vars) as $pair) {
-                    list($key,$val) = preg_split("/=/D",$pair);
-                    $var[$key] = $val;
+        if (preg_match('/%%\w+%%/', $initial_content)) { // need variable expansion
+            $var = [];
+            if (! empty($vars)) {
+                foreach (preg_split("/&/D", $vars) as $pair) {
+                    list($key,$val) = preg_split("/=/D", $pair);
+                    $var[$key]      = $val;
                 }
             }
             $thispage = $dbi->getPage($basepage);
             // pagename is not overridable
-            if (empty($var['pagename']))
+            if (empty($var['pagename'])) {
                 $var['pagename'] = $page;
+            }
             // those are overridable
             if (empty($var['mtime']) and preg_match('/%%mtime%%/', $initial_content)) {
-                $thisrev  = $thispage->getCurrentRevision(false);
+                $thisrev      = $thispage->getCurrentRevision(false);
                 $var['mtime'] = $GLOBALS['WikiTheme']->formatDateTime($thisrev->get('mtime'));
             }
             if (empty($var['ctime']) and preg_match('/%%ctime%%/', $initial_content)) {
-                if ($first = $thispage->getRevision(1,false))
+                if ($first = $thispage->getRevision(1, false)) {
                     $var['ctime'] = $GLOBALS['WikiTheme']->formatDateTime($first->get('mtime'));
+                }
             }
-            if (empty($var['author']) and preg_match('/%%author%%/', $initial_content))
+            if (empty($var['author']) and preg_match('/%%author%%/', $initial_content)) {
                 $var['author'] = $thispage->getAuthor();
-            if (empty($var['owner']) and preg_match('/%%owner%%/', $initial_content))
-                $var['owner'] = $thispage->getOwner();
-            if (empty($var['creator']) and preg_match('/%%creator%%/', $initial_content))
-                $var['creator'] = $thispage->getCreator();
-            foreach (array("SERVER_URL", "DATA_PATH", "SCRIPT_NAME", "PHPWIKI_BASE_URL") as $c) {
-                // constants are not overridable
-                if (preg_match('/%%'.$c.'%%/', $initial_content))
-                    $var[$c] = constant($c);
             }
-            if (preg_match('/%%BASE_URL%%/', $initial_content))
+            if (empty($var['owner']) and preg_match('/%%owner%%/', $initial_content)) {
+                $var['owner'] = $thispage->getOwner();
+            }
+            if (empty($var['creator']) and preg_match('/%%creator%%/', $initial_content)) {
+                $var['creator'] = $thispage->getCreator();
+            }
+            foreach (["SERVER_URL", "DATA_PATH", "SCRIPT_NAME", "PHPWIKI_BASE_URL"] as $c) {
+                // constants are not overridable
+                if (preg_match('/%%' . $c . '%%/', $initial_content)) {
+                    $var[$c] = constant($c);
+                }
+            }
+            if (preg_match('/%%BASE_URL%%/', $initial_content)) {
                 $var['BASE_URL'] = PHPWIKI_BASE_URL;
+            }
 
             foreach ($var as $key => $val) {
                 $initial_content = preg_replace('/%%' . preg_quote($key, '/') . '%%/', $val, $initial_content);
@@ -179,9 +203,9 @@ extends WikiPlugin
 
         array_pop($included_pages);
 
-        return HTML::div(array('class' => 'template'), $content);
+        return HTML::div(['class' => 'template'], $content);
     }
-};
+}
 
 // $Log: Template.php,v $
 // Revision 1.4  2005/09/11 13:30:22  rurban
@@ -195,8 +219,6 @@ extends WikiPlugin
 //
 // Revision 1.1  2005/09/10 19:59:38  rurban
 // Parametrized page inclusion ala mediawiki
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -205,4 +227,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

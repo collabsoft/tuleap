@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2013  - 2018. All rights reserved.
+ * Copyright Enalean (c) 2013-Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -22,10 +22,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class AgileDashboard_Semantic_InitialEffortFactory implements Tracker_Semantic_IRetrieveSemantic {
+use Tuleap\Tracker\Semantic\IDuplicateSemantic;
+use Tuleap\Tracker\Semantic\IBuildSemanticFromXML;
+
+class AgileDashboard_Semantic_InitialEffortFactory implements IBuildSemanticFromXML, IDuplicateSemantic
+{
 
     /**
      * Hold an instance of the class
+     *
+     * @var self
      */
     protected static $instance;
 
@@ -34,10 +40,11 @@ class AgileDashboard_Semantic_InitialEffortFactory implements Tracker_Semantic_I
      *
      * @return AgileDashboard_Semantic_InitialEffortFactory an instance of the factory
      */
-    public static function instance() {
-        if (!isset(self::$instance)) {
-            $class_name = __CLASS__;
-            self::$instance = new $class_name;
+    public static function instance()
+    {
+        if (! isset(self::$instance)) {
+            $class_name     = self::class;
+            self::$instance = new $class_name();
         }
         return self::$instance;
     }
@@ -50,20 +57,18 @@ class AgileDashboard_Semantic_InitialEffortFactory implements Tracker_Semantic_I
         return AgileDashBoard_Semantic_InitialEffort::load($tracker);
     }
 
-    /**
-     * Creates a AgileDashBoard_Semantic_InitialEffort Object
-     *
-     * @param SimpleXMLElement $xml         containing the structure of the imported semantic initial effort
-     * @param array            &$xmlMapping containig the newly created formElements idexed by their XML IDs
-     * @param Tracker          $tracker     to which the semantic is attached
-     *
-     * @return AgileDashBoard_Semantic_InitialEffort The semantic object
-     */
-    public function getInstanceFromXML($xml, &$xmlMapping, $tracker) {
-        $xml_field = $xml->field;
+    public function getInstanceFromXML(
+        SimpleXMLElement $current_semantic_xml,
+        SimpleXMLElement $all_semantics_xml,
+        array $xml_mapping,
+        Tracker $tracker
+    ): ?Tracker_Semantic {
+        $xml_field            = $current_semantic_xml->field;
         $xml_field_attributes = $xml_field->attributes();
-        $field = $xmlMapping[(string)$xml_field_attributes['REF']];
-
+        if (! isset($xml_mapping[(string) $xml_field_attributes['REF']])) {
+            return null;
+        }
+        $field = $xml_mapping[(string) $xml_field_attributes['REF']];
         return new AgileDashBoard_Semantic_InitialEffort($tracker, $field);
     }
 
@@ -72,24 +77,20 @@ class AgileDashboard_Semantic_InitialEffortFactory implements Tracker_Semantic_I
      *
      * @return AgileDashboard_Semantic_Dao_InitialEffort The dao
      */
-    public function getDao() {
+    public function getDao()
+    {
         return new AgileDashboard_Semantic_Dao_InitialEffort();
     }
 
     /**
      * Duplicate the semantic from tracker source to tracker target
-     *
-     * @param int   $from_tracker_id The Id of the tracker source
-     * @param int   $to_tracker_id   The Id of the tracker target
-     * @param array $field_mapping   The mapping of the fields of the tracker
-     *
-     * @return void
      */
-    public function duplicate($from_tracker_id, $to_tracker_id, $field_mapping) {
+    public function duplicate(int $from_tracker_id, int $to_tracker_id, array $field_mapping): void
+    {
         $row = $this->getDao()->searchByTrackerId($from_tracker_id)->getRow();
         if ($row) {
             $from_title_field_id = $row['field_id'];
-            $to_title_field_id = false;
+            $to_title_field_id   = false;
             foreach ($field_mapping as $mapping) {
                 if ($mapping['from'] == $from_title_field_id) {
                     $to_title_field_id = $mapping['to'];

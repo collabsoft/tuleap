@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -17,7 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
-class Tracker_Artifact_Presenter_ArtifactLinkPresenter {
+class Tracker_Artifact_Presenter_ArtifactLinkPresenter
+{
 
     public $tracker_name;
 
@@ -33,10 +34,9 @@ class Tracker_Artifact_Presenter_ArtifactLinkPresenter {
         $artifact_id,
         $title
     ) {
-        $this->tracker_name    = $tracker_name;
-        $this->group_id        = $group_id;
-        $this->artifact_id     = $artifact_id;
-        $this->title           = $title;
+        $this->tracker_name = $tracker_name;
+        $this->group_id     = $group_id;
+        $this->artifact_id  = $artifact_id;
+        $this->title        = $title;
     }
 }
-?>

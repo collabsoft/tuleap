@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# Copyright (c) Enalean, 2015 - 2017. All rights reserved
+# Copyright (c) Enalean, 2015-Present. All rights reserved
 #
 # This file is a part of Tuleap.
 #
@@ -18,6 +18,7 @@
 # along with Tuleap. If not, see <http://www.gnu.org/licenses/
 #
 
+curdir=$(dirname "$0")
 basedir=$1
 
 info() {
@@ -33,13 +34,11 @@ done
 while IFS= read -r -d '' path
 do
     translated_plugin=$(basename "$path")
-    if [ ! -f "$path/site-content/tuleap-$translated_plugin.pot" ]; then
-        continue
-    fi
-
-    info "[$translated_plugin] Generating .mo file"
     for f in $(find "$basedir/plugins/$translated_plugin/site-content" -name "tuleap-$translated_plugin.po"); do
         locale_dir=$(dirname "$f")
+        info "[$translated_plugin] Generating tuleap-$translated_plugin.mo file"
         msgfmt -o "$locale_dir/tuleap-$translated_plugin.mo" "$f"
     done
 done < <(find "$basedir/plugins/" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z)
+
+"$curdir/generate-smarty-mo.php" "$basedir"

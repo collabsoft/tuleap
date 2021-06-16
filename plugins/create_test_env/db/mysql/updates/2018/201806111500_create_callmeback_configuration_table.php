@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -70,7 +70,7 @@ class b201806111500_create_callmeback_configuration_table extends ForgeUpgrade_B
 
     private function insertCallMeBackMessagesDefaultValues()
     {
-        $sql = "INSERT INTO plugin_callmeback_messages VALUES
+        $sql    = "INSERT INTO plugin_callmeback_messages VALUES
           ('en_US', ''),
           ('fr_FR', '');";
         $result = $this->db->dbh->exec($sql);

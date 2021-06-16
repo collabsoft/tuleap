@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ArtifactFieldFactoryXMLExporter {
+class ArtifactFieldFactoryXMLExporter
+{
     /** @var Array */
-    private $fields = array();
+    private $fields = [];
 
-    public function __construct(ArtifactXMLExporterDao $dao, ArtifactXMLNodeHelper $node_helper) {
+    public function __construct(ArtifactXMLExporterDao $dao, ArtifactXMLNodeHelper $node_helper)
+    {
         $current_value_exporter = new ArtifactMultiListCurrentValueExporter($dao);
 
-        $this->fields = array(
+        $this->fields = [
             ArtifactAttachmentFieldXMLExporter::TV3_TYPE      => new ArtifactAttachmentFieldXMLExporter($node_helper, $dao),
             ArtifactCCFieldXMLExporter::TV3_TYPE              => new ArtifactCCFieldXMLExporter($node_helper),
             ArtifactStringFieldXMLExporter::TV3_TYPE          => new ArtifactStringFieldXMLExporter($node_helper),
@@ -37,14 +39,16 @@ class ArtifactFieldFactoryXMLExporter {
             ArtifactUserListFieldXMLExporter::TV3_TYPE        => new ArtifactUserListFieldXMLExporter($node_helper, $dao),
             ArtifactStaticMultiListFieldXMLExporter::TV3_TYPE => new ArtifactStaticMultiListFieldXMLExporter($node_helper, $dao, $current_value_exporter),
             ArtifactUserMultiListFieldXMLExporter::TV3_TYPE   => new ArtifactUserMultiListFieldXMLExporter($node_helper, $current_value_exporter),
-        );
+        ];
     }
 
-    public function appendValueByType(DOMElement $changeset_node, $tracker_id, $artifact_id, array $history_row) {
+    public function appendValueByType(DOMElement $changeset_node, $tracker_id, $artifact_id, array $history_row)
+    {
         $this->getFieldByHistoryRow($history_row)->appendNode($changeset_node, $tracker_id, $artifact_id, $history_row);
     }
 
-    private function getFieldByHistoryRow(array $history_row) {
+    private function getFieldByHistoryRow(array $history_row)
+    {
         return $this->getField($history_row['field_name'], $history_row['display_type'], $history_row['data_type'], $history_row['value_function']);
     }
 
@@ -59,7 +63,8 @@ class ArtifactFieldFactoryXMLExporter {
      *
      * @throws Exception_TV3XMLUnknownFieldTypeException
      */
-    public function getField($field_name, $display_type, $data_type, $value_function) {
+    public function getField($field_name, $display_type, $data_type, $value_function)
+    {
         $index = $this->getFieldType($field_name, $display_type, $data_type, $value_function);
         if (isset($this->fields[$index])) {
             return $this->fields[$index];
@@ -67,7 +72,8 @@ class ArtifactFieldFactoryXMLExporter {
         throw new Exception_TV3XMLUnknownFieldTypeException($field_name);
     }
 
-    private function getFieldType($field_name, $display_type, $data_type, $value_function) {
+    private function getFieldType($field_name, $display_type, $data_type, $value_function)
+    {
         if ($display_type != null && $data_type != null) {
             // Deal with some special cases first
             if ($this->isAMultiSelectBoxWhoseTypeChangedInThePast($display_type, $data_type, $value_function)) {
@@ -76,26 +82,30 @@ class ArtifactFieldFactoryXMLExporter {
             if ($this->isASelectBoxWhoseTypeChangedInThePast($display_type, $data_type, $value_function)) {
                 return ArtifactUserListFieldXMLExporter::TV3_TYPE;
             }
-            return $display_type.'_'.$data_type;
+            return $display_type . '_' . $data_type;
         } elseif (isset($this->fields[$field_name])) {
             return $field_name;
         }
         throw new Exception_TV3XMLUnknownFieldTypeException($field_name);
     }
 
-    private function isAMultiSelectBoxWhoseTypeChangedInThePast($display_type, $data_type, $value_function) {
+    private function isAMultiSelectBoxWhoseTypeChangedInThePast($display_type, $data_type, $value_function)
+    {
         return $value_function != null && $display_type === 'MB' && $data_type === '2';
     }
 
-    private function isASelectBoxWhoseTypeChangedInThePast($display_type, $data_type, $value_function) {
+    private function isASelectBoxWhoseTypeChangedInThePast($display_type, $data_type, $value_function)
+    {
         return $value_function != null && $display_type === 'SB' && $data_type === '2';
     }
 
-    public function getFieldValue(array $field_value_row) {
+    public function getFieldValue(array $field_value_row)
+    {
         return $field_value_row[$this->getFieldByHistoryRow($field_value_row)->getFieldValueIndex()];
     }
 
-    public function getCurrentFieldValue(array $field_value_row, $tracker_id) {
+    public function getCurrentFieldValue(array $field_value_row, $tracker_id)
+    {
         $field = $this->getField(
             $field_value_row['field_name'],
             $field_value_row['display_type'],

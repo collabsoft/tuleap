@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,9 +49,9 @@ class ForInteger implements FieldFromWhereBuilder
         $field_id         = (int) $field->getId();
 
         $changeset_value_int_alias = "CVInt_{$field_id}_{$suffix}";
-        $changeset_value_alias      = "CV_{$field_id}_{$suffix}";
+        $changeset_value_alias     = "CV_{$field_id}_{$suffix}";
 
-        $condition = "$changeset_value_int_alias.value <= ".$this->escapeInt($value);
+        $condition = "$changeset_value_int_alias.value <= " . $this->escapeInt($value);
 
         return $this->from_where_builder->getFromWhere(
             $field_id,

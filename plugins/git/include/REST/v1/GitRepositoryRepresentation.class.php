@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,26 +23,141 @@ namespace Tuleap\Git\REST\v1;
 
 use GitRepository;
 use Tuleap\REST\JsonCast;
-use Tuleap\REST\v1\GitRepositoryRepresentationBase;
 
-class GitRepositoryRepresentation extends GitRepositoryRepresentationBase
+/**
+ * @psalm-immutable
+ */
+class GitRepositoryRepresentation
 {
+    public const ROUTE = 'git';
+
+    public const FIELDS_BASIC = 'basic';
+    public const FIELDS_ALL   = 'all';
+
     /**
-     * @param GitRepository $repository
-     * @param $server_representation
-     * @param string $last_update_date
+     * @var int
      */
-    public function build(GitRepository $repository, $server_representation, $last_update_date, array $additional_information)
-    {
+    public $id;
+
+    /**
+     * @var string
+     */
+    public $uri;
+
+    /**
+     * @var string
+     */
+    public $name;
+
+    /**
+     * The last part of the repository's name
+     * For example:
+     * name = tuleap/rhel6/stable
+     * label = stable
+     * @var string
+     */
+    public $label;
+
+    /**
+     * @var string
+     */
+    public $path;
+
+    /**
+     * The repository's path without the project and without the .git suffix.
+     * Used for presentation purposes to highlight a repository's label.
+     * For example:
+     * name = tuleap/rhel6/stable
+     * path = myproject/tuleap/rhel6/stable.git
+     * path_without_project = tuleap/rhel6
+     *
+     * Presentation will be:
+     * tuleap/rhel6
+     * <h1>stable</h1>
+     *
+     * @var string
+     */
+    public $path_without_project;
+
+    /**
+     * @var string
+     */
+    public $description;
+
+    /**
+     * @var string
+     */
+    public $last_update_date;
+
+    /**
+     * @var \Tuleap\Git\REST\v1\GitRepositoryPermissionRepresentation | null
+     */
+    public $permissions = null;
+
+    /**
+     * @var \Tuleap\Git\REST\v1\GerritServerRepresentation | null
+     */
+    public $server = null;
+
+    /**
+     * @var string
+     */
+    public $html_url;
+
+    /**
+     * @psalm-readonly
+     */
+    public ?string $default_branch;
+
+    /**
+     * @var array
+     */
+    public $additional_information;
+
+    private function __construct(
+        GitRepository $repository,
+        string $repository_path,
+        string $html_url,
+        ?string $default_branch,
+        ?GerritServerRepresentation $server_representation,
+        string $last_update_date,
+        array $additional_information,
+        ?GitRepositoryPermissionRepresentation $permissions
+    ) {
         $this->id                     = JsonCast::toInt($repository->getId());
         $this->uri                    = self::ROUTE . '/' . $this->id;
         $this->name                   = $repository->getName();
-        $this->path                   = $repository->getPath();
+        $this->label                  = $repository->getLabel();
+        $this->path                   = $repository_path;
+        $this->path_without_project   = $repository->getPathWithoutProject();
         $this->description            = $repository->getDescription();
         $this->server                 = $server_representation;
-        $this->html_url               = GIT_BASE_URL . '/' . urlencode($repository->getProject()->getUnixNameLowerCase()) . "/"
-            . urlencode($repository->getName());
+        $this->html_url               = $html_url;
+        $this->default_branch         = $default_branch;
         $this->last_update_date       = JsonCast::toDate($last_update_date);
         $this->additional_information = $additional_information;
+        $this->permissions            = $permissions;
+    }
+
+    public static function build(
+        GitRepository $repository,
+        string $html_url,
+        ?GerritServerRepresentation $server_representation,
+        string $last_update_date,
+        array $additional_information,
+        ?GitRepositoryPermissionRepresentation $permissions
+    ): self {
+        $git_exec = \Git_Exec::buildFromRepository($repository);
+
+        return new self(
+            $repository,
+            $repository->getPath(),
+            $html_url,
+            $git_exec->getDefaultBranch(),
+            $server_representation,
+            $last_update_date,
+            $additional_information,
+            $permissions
+        );
     }
 }

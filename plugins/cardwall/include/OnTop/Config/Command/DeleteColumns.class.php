@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,8 @@
 /**
  * Delete a column for a cardwall on top of a tracker
  */
-class Cardwall_OnTop_Config_Command_DeleteColumns extends Cardwall_OnTop_Config_Command {
+class Cardwall_OnTop_Config_Command_DeleteColumns extends Cardwall_OnTop_Config_Command
+{
 
     /**
      * @var Cardwall_OnTop_ColumnDao
@@ -54,14 +55,15 @@ class Cardwall_OnTop_Config_Command_DeleteColumns extends Cardwall_OnTop_Config_
     /**
      * @see Cardwall_OnTop_Config_Command::execute()
      */
-    public function execute(Codendi_Request $request) {
+    public function execute(Codendi_Request $request)
+    {
         if ($request->get('column')) {
             $deleted_columns = 0;
             foreach ($request->get('column') as $id => $column_definition) {
                 if (empty($column_definition['label'])) {
                     $this->value_dao->deleteForColumn($this->tracker->getId(), $id);
                     $this->dao->delete($this->tracker->getId(), $id);
-                    $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_cardwall', 'on_top_column_removed'));
+                    $GLOBALS['Response']->addFeedback('info', dgettext('tuleap-cardwall', 'Column removed'));
                     $deleted_columns++;
                 }
             }
@@ -71,4 +73,3 @@ class Cardwall_OnTop_Config_Command_DeleteColumns extends Cardwall_OnTop_Config_
         }
     }
 }
-?>

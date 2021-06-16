@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,6 +20,7 @@
 
 namespace Git;
 
+use Guzzle\Http\Message\Response;
 use Tuleap\Git\REST\TestBase;
 
 require_once __DIR__ . '/../bootstrap.php';
@@ -30,7 +31,7 @@ require_once __DIR__ . '/../bootstrap.php';
 class ProjectTest extends TestBase
 {
 
-    public function testGetGitRepositories()
+    public function testGetGitRepositories(): void
     {
         $response = $this->getResponse(
             $this->client->get(
@@ -38,10 +39,16 @@ class ProjectTest extends TestBase
             )
         );
 
+        $this->assertGETGitRepositories($response);
+    }
+
+    private function assertGETGitRepositories(Response $response): void
+    {
         $repositories_response = $response->json();
         $repositories          = $repositories_response['repositories'];
 
         $this->assertCount(1, $repositories);
+        $this->assertEquals(1, (int) (string) $response->getHeader('X-Pagination-Size'));
 
         $repository = $repositories[0];
         $this->assertArrayHasKey('id', $repository);
@@ -49,7 +56,19 @@ class ProjectTest extends TestBase
         $this->assertEquals($repository['description'], 'Git repository');
     }
 
-    public function testScopeProject()
+    public function testGetGitRepositoriesWithReadOnlyAdmin(): void
+    {
+        $response = $this->getResponse(
+            $this->client->get(
+                'projects/' . $this->git_project_id . '/git'
+            ),
+            \REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertGETGitRepositories($response);
+    }
+
+    public function testScopeProject(): void
     {
         $query    = urlencode(json_encode(["scope" => "project"]));
         $response = $this->getResponse(
@@ -64,7 +83,7 @@ class ProjectTest extends TestBase
         $this->assertCount(1, $repositories);
     }
 
-    public function testScopeIndividual()
+    public function testScopeIndividual(): void
     {
         $query    = urlencode(json_encode(["scope" => "individual"]));
         $response = $this->getResponse(

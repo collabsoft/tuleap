@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,26 +18,22 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Tuleap\MediaWiki;
+namespace Tuleap\Mediawiki;
 
 use DirectoryIterator;
 use ForgeConfig;
-use Logger;
+use Psr\Log\LoggerInterface;
 use MediawikiLanguageManager;
 use MediawikiManager;
 use Project;
 use ProjectUGroup;
 use SimpleXMLElement;
-use System_Command;
 use Tuleap\Project\XML\Export\ArchiveInterface;
 use UGroupManager;
+use XML_SimpleXMLCDATAFactory;
 
 class XMLMediaWikiExporter
 {
-    /**
-     * @var System_Command
-     */
-    private $sys_command;
 
     /**
      * @var Project
@@ -54,7 +50,7 @@ class XMLMediaWikiExporter
      */
     private $ugroup_manager;
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
     /**
@@ -65,36 +61,47 @@ class XMLMediaWikiExporter
      * @var MediawikiLanguageManager
      */
     private $language_manager;
+    /**
+     * @var MediawikiDataDir
+     */
+    private $mediawiki_data_dir;
 
     public function __construct(
-        System_Command $command,
         Project $project,
         MediawikiManager $manager,
         UGroupManager $ugroup_manager,
-        Logger $logger,
+        LoggerInterface $logger,
         MediawikiMaintenanceWrapper $maintenance_wrapper,
-        MediawikiLanguageManager $language_manager
+        MediawikiLanguageManager $language_manager,
+        MediawikiDataDir $mediawiki_data_dir
     ) {
-        $this->sys_command         = $command;
         $this->project             = $project;
         $this->manager             = $manager;
         $this->ugroup_manager      = $ugroup_manager;
         $this->logger              = $logger;
         $this->maintenance_wrapper = $maintenance_wrapper;
         $this->language_manager    = $language_manager;
+        $this->mediawiki_data_dir  = $mediawiki_data_dir;
     }
 
     public function exportToXml(
         SimpleXMLElement $xml_content,
         ArchiveInterface $archive,
         $export_file,
-        $temporary_dump_path_on_filesystem,
-        $mediawiki_data_directory
+        $temporary_dump_path_on_filesystem
     ) {
+        $project_name_dir = $this->mediawiki_data_dir->getMediawikiDir($this->project);
+
+        if (! is_dir($project_name_dir)) {
+            $this->logger->info('Mediawiki not instantiated, skipping');
+
+            return;
+        }
+
         $this->logger->info('Export mediawiki');
         $root_node = $xml_content->addChild('mediawiki');
         $root_node->addAttribute('pages-backup', 'wiki_pages.xml');
-        $root_node->addAttribute('language', $this->language_manager->getUsedLanguageForProject($this->project));
+        $root_node->addAttribute('language', $this->language_manager->getUsedLanguageForProject($this->project) ?? '');
         $root_node->addAttribute('files-folder-backup', 'files');
 
         $this->logger->info('Export mediawiki permissions');
@@ -107,7 +114,7 @@ class XMLMediaWikiExporter
             $this->project,
             $archive,
             $temporary_dump_path_on_filesystem,
-            $mediawiki_data_directory
+            $project_name_dir
         );
 
         $this->addFilesIntoArchive($archive, $export_file);
@@ -130,6 +137,9 @@ class XMLMediaWikiExporter
     private function addPicturesIntoArchive(ArchiveInterface $archive, $temporary_dump_path_on_filesystem)
     {
         $files_folder = $temporary_dump_path_on_filesystem . "/files";
+        if (! is_dir($files_folder)) {
+            return;
+        }
         foreach (new DirectoryIterator($files_folder) as $picture) {
             if ($picture->isDot()) {
                 continue;
@@ -146,13 +156,14 @@ class XMLMediaWikiExporter
 
     private function exportMediawikiPermissions(SimpleXMLElement $xml_content)
     {
+        $cdata   = new XML_SimpleXMLCDATAFactory();
         $readers = $this->manager->getReadAccessControl($this->project);
         if ($readers) {
             $reader_node = $xml_content->addChild('read-access');
             foreach ($readers as $reader) {
                 $ugroup = $this->ugroup_manager->getUGroup($this->project, $reader);
                 if ($ugroup) {
-                    $reader_node->addChild('ugroup', $this->getLabelForUgroup($ugroup));
+                    $cdata->insert($reader_node, 'ugroup', $this->getLabelForUgroup($ugroup));
                 }
             }
         }
@@ -163,7 +174,7 @@ class XMLMediaWikiExporter
             foreach ($writers as $writer) {
                 $ugroup = $this->ugroup_manager->getUGroup($this->project, $writer);
                 if ($ugroup) {
-                    $writer_node->addChild('ugroup', $this->getLabelForUgroup($ugroup));
+                    $cdata->insert($writer_node, 'ugroup', $this->getLabelForUgroup($ugroup));
                 }
             }
         }
@@ -171,11 +182,11 @@ class XMLMediaWikiExporter
 
     private function getLabelForUgroup(ProjectUGroup $ugroup)
     {
-        if ((int) $ugroup->getId() === ProjectUGroup::PROJECT_MEMBERS) {
+        if ($ugroup->getId() === ProjectUGroup::PROJECT_MEMBERS) {
             return $GLOBALS['Language']->getText('project_ugroup', 'ugroup_project_members_name_key');
         }
 
-        if ((int) $ugroup->getId() === ProjectUGroup::PROJECT_ADMIN) {
+        if ($ugroup->getId() === ProjectUGroup::PROJECT_ADMIN) {
             return $GLOBALS['Language']->getText('project_ugroup', 'ugroup_project_admins_name_key');
         }
 

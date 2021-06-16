@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2010. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -21,7 +21,7 @@
 
 class Docman_View_PermissionDeniedError extends Docman_View_DocmanError
 {
-    function display($params = array())
+    public function display($params = [])
     {
         $sendMail = new Docman_Error_PermissionDenied();
         $sendMail->buildInterface($params['user'], ProjectManager::instance()->getProject($params['group_id']));

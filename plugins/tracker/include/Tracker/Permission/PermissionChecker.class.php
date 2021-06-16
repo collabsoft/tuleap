@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,44 +18,53 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Permission_PermissionChecker {
-    /** @var UserManager */
+use Tuleap\Project\ProjectAccessChecker;
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Tracker_Permission_PermissionChecker
+{
+    /**
+     * @var UserManager
+     */
     private $user_manager;
 
-    /** @var ProjectManager */
-    private $project_manager;
+    /**
+     * @var ProjectAccessChecker
+     */
+    private $project_access_checker;
 
-    public function __construct(UserManager $user_manager, ProjectManager $project_manager) {
-        $this->user_manager    = $user_manager;
-        $this->project_manager = $project_manager;
+    public function __construct(
+        UserManager $user_manager,
+        ProjectAccessChecker $project_access_checker
+    ) {
+        $this->user_manager           = $user_manager;
+        $this->project_access_checker = $project_access_checker;
     }
 
     /**
      * Check if a user can view a given artifact
      *
-     * @param PFUser $user
-     * @param Tracker_Artifact $artifact
-     * @return boolean
+     * @return bool
      */
-    public function userCanView(PFUser $user, Tracker_Artifact $artifact) {
-        if ($user->isSuperUser()) {
-            return true;
-        }
-
-        if ($user->isMember($artifact->getTracker()->getGroupId(), 'A')) {
-            return true;
-        }
-
-        if ($this->isTrackerAdmin($user, $artifact)) {
-            return true;
-        }
-
+    public function userCanView(PFUser $user, Artifact $artifact)
+    {
         $project = $artifact->getTracker()->getProject();
-
-        if ($this->userIsRestrictedAndNotMemberOfProject($user, $project)
-            || $this->userIsNotMemberOfPrivateProject($user, $project)
-        ) {
+        try {
+            $this->project_access_checker->checkUserCanAccessProject($user, $project);
+        } catch (Project_AccessException $e) {
             return false;
+        }
+
+        if ($artifact->getTracker()->isDeleted()) {
+            return false;
+        }
+
+        if ($user->isAdmin($project->getID())) {
+            return true;
+        }
+
+        if ($artifact->getTracker()->userIsAdmin($user)) {
+            return true;
         }
 
         if ($this->userCanViewArtifact($user, $artifact)) {
@@ -65,24 +74,10 @@ class Tracker_Permission_PermissionChecker {
         return false;
     }
 
-    private function userIsNotMemberOfPrivateProject(PFUser $user, Project $project) {
-        return (! $user->isMember($project->getID()) && ! $project->isPublic());
-    }
-
-    private function userIsRestrictedAndNotMemberOfProject(PFUser $user, Project $project) {
-        return ($user->isRestricted()
-                && ! $user->isMember($project->getID())
-                && $this->project_manager->checkRestrictedAccessForUser($project, $user)
-        );
-    }
-
-    private function isTrackerAdmin(PFUser $user, Tracker_Artifact $artifact) {
-        return $artifact->getTracker()->userIsAdmin($user);
-    }
-
-    private function userCanViewArtifact(PFUser $user, Tracker_Artifact $artifact) {
+    private function userCanViewArtifact(PFUser $user, Artifact $artifact)
+    {
         if ($artifact->useArtifactPermissions()) {
-            $rows = $artifact->permission_db_authorized_ugroups(Tracker_Artifact::PERMISSION_ACCESS);
+            $rows = $artifact->permission_db_authorized_ugroups(Artifact::PERMISSION_ACCESS);
 
             if ($rows !== false) {
                 foreach ($rows as $row) {
@@ -96,21 +91,21 @@ class Tracker_Permission_PermissionChecker {
         return true;
     }
 
-    public function userCanViewTracker(PFUser $user, Tracker $tracker) {
+    public function userCanViewTracker(PFUser $user, Tracker $tracker)
+    {
+        $project = $tracker->getProject();
+        try {
+            $this->project_access_checker->checkUserCanAccessProject($user, $project);
+        } catch (Project_AccessException $e) {
+            return false;
+        }
 
-        if ($user->isSuperUser()) {
-            return true;
+        if ($tracker->isDeleted()) {
+            return false;
         }
 
         if ($tracker->userIsAdmin($user)) {
             return true;
-        }
-
-        $project = $tracker->getProject();
-
-        if ($this->userIsRestrictedAndNotMemberOfProject($user, $project)
-            || $this->userIsNotMemberOfPrivateProject($user, $project)) {
-            return false;
         }
 
         foreach ($tracker->getPermissionsByUgroupId() as $ugroup_id => $permission_types) {
@@ -122,11 +117,12 @@ class Tracker_Permission_PermissionChecker {
         return false;
     }
 
-    private function userHavePermissionOnTracker(PFUser $user, Tracker_Artifact $artifact) {
+    private function userHavePermissionOnTracker(PFUser $user, Artifact $artifact)
+    {
         $permissions = $artifact->getTracker()->getAuthorizedUgroupsByPermissionType();
 
-        foreach ($permissions  as $permission_type => $ugroups) {
-            switch($permission_type) {
+        foreach ($permissions as $permission_type => $ugroups) {
+            switch ($permission_type) {
                 case Tracker::PERMISSION_FULL:
                     foreach ($ugroups as $ugroup) {
                         if ($this->userBelongsToGroup($user, $artifact, $ugroup)) {
@@ -145,7 +141,7 @@ class Tracker_Permission_PermissionChecker {
                             }
                         }
                     }
-                break;
+                    break;
 
                 case Tracker::PERMISSION_ASSIGNEE:
                     foreach ($ugroups as $ugroup) {
@@ -159,7 +155,7 @@ class Tracker_Permission_PermissionChecker {
                             }
                         }
                     }
-                break;
+                    break;
 
                 case Tracker::PERMISSION_SUBMITTER_ONLY:
                     foreach ($ugroups as $ugroup) {
@@ -175,7 +171,8 @@ class Tracker_Permission_PermissionChecker {
         return false;
     }
 
-    private function userBelongsToGroup(PFUser $user, Tracker_Artifact $artifact, $ugroup_id) {
+    private function userBelongsToGroup(PFUser $user, Artifact $artifact, $ugroup_id)
+    {
         return $user->isMemberOfUGroup($ugroup_id, $artifact->getTracker()->getGroupId());
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) Enalean, 2011 - 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,10 +29,11 @@
  * echo $t->fetch();
  * </pre>
  */
-class Tuleap_Template {
-    
+class Tuleap_Template
+{
+
     /**
-     * @var The variables to pass to the template
+     * @var array The variables to pass to the template
      */
     protected $vars;
 
@@ -46,35 +47,38 @@ class Tuleap_Template {
      *
      * @param $file string the file name you want to load
      */
-    public function __construct($file = null) {
+    public function __construct($file = null)
+    {
         $this->file = $file;
-        $this->vars = array();
+        $this->vars = [];
     }
 
     /**
      * Set a template variable.
      */
-    public function set($name, $value) {
+    public function set($name, $value)
+    {
         $this->vars[$name] = is_object($value) ? $value->fetch() : $value;
     }
 
     /**
      * Open, parse, and return the template file.
      *
-     * @param $file string the template file name, by default use the 
+     * @param $file string the template file name, by default use the
      *
      * @throws Exception if there is no file to load
      *
      * @return string
      */
-    public function fetch($file = null) {
-        if (!$file) {
+    public function fetch($file = null)
+    {
+        if (! $file) {
             $file = $this->file;
         }
-        if (!$file) {
+        if (! $file) {
             throw new Exception('A template file name is required');
         }
-            
+
         extract($this->vars);          // Extract the vars to local namespace
         ob_start();                    // Start output buffering
         include($file);                // Include the file

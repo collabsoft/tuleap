@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,12 +20,11 @@
 
 namespace Tuleap\Tracker\Artifact\Event;
 
-use Tracker_Artifact;
 use Tuleap\Event\Dispatchable;
 
 class ArtifactsReordered implements Dispatchable
 {
-    const NAME = 'trackerArtifactsReordered';
+    public const NAME = 'trackerArtifactsReordered';
     /**
      * @var array
      */

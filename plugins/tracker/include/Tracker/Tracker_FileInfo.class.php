@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,10 +19,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\REST\Artifact\FileInfoRepresentation;
 
-class Tracker_FileInfo {
-    const THUMBNAILS_MAX_WIDTH  = 150;
-    const THUMBNAILS_MAX_HEIGHT = 112;
+class Tracker_FileInfo
+{
+    public const THUMBNAILS_MAX_WIDTH  = 150;
+    public const THUMBNAILS_MAX_HEIGHT = 112;
 
     protected $id;
     protected $field;
@@ -32,18 +34,19 @@ class Tracker_FileInfo {
     protected $filesize;
     protected $filetype;
 
-    protected $supported_image_types = array('gif', 'png', 'jpeg', 'jpg');
+    protected $supported_image_types = ['gif', 'png', 'jpeg', 'jpg'];
 
     /**
-     * @param integer                   $id
+     * @param int $id
      * @param Tracker_FormElement_Field $field
-     * @param integer                   $submitted_by
+     * @param int $submitted_by
      * @param string                    $description
      * @param string                    $filename
-     * @param integer                   $filesize
+     * @param int $filesize
      * @param string                    $filetype
      */
-    public function __construct($id, $field, $submitted_by, $description, $filename, $filesize, $filetype) {
+    public function __construct($id, $field, $submitted_by, $description, $filename, $filesize, $filetype)
+    {
         $this->id           = $id;
         $this->field        = $field;
         $this->submitted_by = $submitted_by;
@@ -53,30 +56,9 @@ class Tracker_FileInfo {
         $this->filetype     = $filetype;
     }
 
-    /**
-     * Soap version of the object
-     *
-     * @return Array
-     */
-    public function getSoapValue() {
-        return array(
-            'id'           => $this->id,
-            'submitted_by' => $this->submitted_by,
-            'description'  => $this->description,
-            'filename'     => $this->filename,
-            'filesize'     => $this->filesize,
-            'filetype'     => $this->filetype,
-            'action'       => '',
-        );
-    }
-
-    /**
-     * @return Tuleap\Tracker\REST\Artifact\FileInfoRepresentation
-     */
-    public function getRESTValue() {
-        $classname_with_namespace = 'Tuleap\Tracker\REST\Artifact\FileInfoRepresentation';
-        $file_info_representation = new $classname_with_namespace;
-        $file_info_representation->build(
+    public function getRESTValue(): FileInfoRepresentation
+    {
+        return new FileInfoRepresentation(
             $this->id,
             $this->submitted_by,
             $this->description,
@@ -86,16 +68,11 @@ class Tracker_FileInfo {
             $this->field->getFileHTMLUrl($this),
             $this->field->getFileHTMLPreviewUrl($this)
         );
-        return $file_info_representation;
     }
 
-    /**
-     * @return Tuleap\Tracker\REST\Artifact\FileInfoFullRepresentation
-     */
-    public function getFullRESTValue() {
-        $classname_with_namespace = 'Tuleap\Tracker\REST\Artifact\FileInfoRepresentation';
-        $file_info_representation = new $classname_with_namespace;
-        $file_info_representation->build(
+    public function getFullRESTValue(): FileInfoRepresentation
+    {
+        return new FileInfoRepresentation(
             $this->id,
             $this->submitted_by,
             $this->description,
@@ -105,20 +82,20 @@ class Tracker_FileInfo {
             $this->field->getFileHTMLUrl($this),
             $this->field->getFileHTMLPreviewUrl($this)
         );
-        return $file_info_representation;
     }
 
     /**
      * Returns encoded content chunk of file
      *
-     * @param Integer $offset Where to start reading
-     * @param Integer $size   How much to read
+     * @param int $offset Where to start reading
+     * @param int $size   How much to read
      *
-     * @return String Base64 encoded content
+     * @return string|null Base64 encoded content
      */
-    public function getContent($offset, $size) {
+    public function getContent($offset, $size)
+    {
         if (file_exists($this->getPath())) {
-            return base64_encode(file_get_contents($this->getPath(), false, NULL, $offset, $size));
+            return base64_encode(file_get_contents($this->getPath(), false, null, $offset, $size));
         }
         return null;
     }
@@ -126,35 +103,40 @@ class Tracker_FileInfo {
     /**
      * @return Tracker_FormElement_Field_File
      */
-    public function getField() {
+    public function getField()
+    {
         return $this->field;
     }
 
     /**
      * @return string the description of the file
      */
-    public function getDescription() {
+    public function getDescription()
+    {
         return $this->description;
     }
 
     /**
      * @return int the id of the user whos submitted the file
      */
-    public function getSubmittedBy() {
+    public function getSubmittedBy()
+    {
         return $this->submitted_by;
     }
 
     /**
      * @return string the filename of the file
      */
-    public function getFilename() {
+    public function getFilename()
+    {
         return $this->filename;
     }
 
     /**
      * @return string the size of the file
      */
-    public function getFilesize() {
+    public function getFilesize()
+    {
         return $this->filesize;
     }
 
@@ -163,50 +145,59 @@ class Tracker_FileInfo {
      *
      * @return string
      */
-    public function getHumanReadableFilesize() {
-        $s = array('B', 'kB', 'MB', 'GB', 'TB', 'PB');
+    public function getHumanReadableFilesize()
+    {
+        $s = ['B', 'kB', 'MB', 'GB', 'TB', 'PB'];
         $e = 0;
         if ($this->getFilesize()) {
-            $e = floor(log($this->getFilesize()) / log(1024));
+            $e = (int) floor(log($this->getFilesize()) / log(1024));
+            if ($e > 5) {
+                $e = 5;
+            }
         }
-        return sprintf('%.0f '.$s[$e], ($this->getFilesize() / pow(1024, floor($e))));
+        return sprintf('%.0f ' . $s[$e], ($this->getFilesize() / pow(1024, floor($e))));
     }
 
     /**
      * @return string the type of the file
      */
-    public function getFiletype() {
+    public function getFiletype()
+    {
         return $this->filetype;
     }
 
     /**
      * @return int the id of the file
      */
-    public function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
     /**
      * @return true if the file is a supported image
      */
-    public function isImage() {
+    public function isImage()
+    {
         $parts = explode('/', $this->getFileType());
-        return $parts[0] == 'image' && in_array(strtolower($parts[1]), $this->supported_image_types) ;
+        return $parts[0] == 'image' && in_array(strtolower($parts[1]), $this->supported_image_types);
     }
 
     /**
      * @return string the filesystem path to the file
      */
-    public function getPath() {
-        return $this->getRootPath() .'/'. $this->id;
+    public function getPath()
+    {
+        return $this->getRootPath() . '/' . $this->id;
     }
 
     /**
      * @return string the filesystem path to the file
      */
-    public function getThumbnailPath() {
+    public function getThumbnailPath()
+    {
         if ($this->isImage()) {
-            return $this->getRootPath() .'/thumbnails/'. $this->id;
+            return $this->getRootPath() . '/thumbnails/' . $this->id;
         }
         return null;
     }
@@ -215,19 +206,23 @@ class Tracker_FileInfo {
      * Compute the root path of the filesystem
      * @return string
      */
-    protected function getRootPath() {
+    protected function getRootPath()
+    {
         return $this->field->getRootPath();
     }
 
-    public function __toString() {
-        return '#'. $this->getId() .' '. $this->getFilename();
+    public function __toString()
+    {
+        return '#' . $this->getId() . ' ' . $this->getFilename();
     }
 
-    public function fileExists() {
+    public function fileExists()
+    {
         return file_exists($this->getPath());
     }
 
-    public function postUploadActions() {
+    public function postUploadActions()
+    {
         if ($this->isImage()) {
             $this->createThumbnail();
         }
@@ -256,8 +251,9 @@ class Tracker_FileInfo {
      *
      * @return void
      */
-    private function createThumbnail() {
-        $size = getimagesize($this->getPath());
+    private function createThumbnail()
+    {
+        $size             = getimagesize($this->getPath());
         $thumbnail_width  = $size[0];
         $thumbnail_height = $size[1];
         if ($thumbnail_width > self::THUMBNAILS_MAX_WIDTH || $thumbnail_height > self::THUMBNAILS_MAX_HEIGHT) {
@@ -272,27 +268,27 @@ class Tracker_FileInfo {
             }
         }
         switch ($size[2]) {
-        case IMAGETYPE_GIF:
-            $source      = imagecreatefromgif($this->getPath());
-            $destination = imagecreate((int)$thumbnail_width, (int)$thumbnail_height);
-            imagepalettecopy($destination, $source);
-            $store       = 'imagegif';
-            break;
-        case IMAGETYPE_JPEG:
-            $source      = imagecreatefromjpeg($this->getPath());
-            $destination = imagecreatetruecolor((int)$thumbnail_width, (int)$thumbnail_height);
-            $store       = 'imagejpeg';
-            break;
-        case IMAGETYPE_PNG:
-            $source      = imagecreatefrompng($this->getPath());
-            $destination = imagecreatetruecolor((int)$thumbnail_width, (int)$thumbnail_height);
-            $store       = 'imagepng';
-            break;
-        default:
-            // Not an image, exit;
-            return false;
+            case IMAGETYPE_GIF:
+                $source      = imagecreatefromgif($this->getPath());
+                $destination = imagecreate((int) $thumbnail_width, (int) $thumbnail_height);
+                imagepalettecopy($destination, $source);
+                $store = 'imagegif';
+                break;
+            case IMAGETYPE_JPEG:
+                $source      = imagecreatefromjpeg($this->getPath());
+                $destination = imagecreatetruecolor((int) $thumbnail_width, (int) $thumbnail_height);
+                $store       = 'imagejpeg';
+                break;
+            case IMAGETYPE_PNG:
+                $source      = imagecreatefrompng($this->getPath());
+                $destination = imagecreatetruecolor((int) $thumbnail_width, (int) $thumbnail_height);
+                $store       = 'imagepng';
+                break;
+            default:
+                // Not an image, exit;
+                return false;
         }
-        imagecopyresized($destination, $source, 0, 0, 0, 0, (int)$thumbnail_width, (int)$thumbnail_height, $size[0], $size[1]);
+        imagecopyresized($destination, $source, 0, 0, 0, 0, (int) $thumbnail_width, (int) $thumbnail_height, $size[0], $size[1]);
         $store($destination, $this->getThumbnailPath());
         imagedestroy($source);
         imagedestroy($destination);
@@ -301,10 +297,11 @@ class Tracker_FileInfo {
     /**
      * Persist current object to the database
      *
-     * @return Boolean
+     * @return bool
      */
-    public function save() {
-        $dao = new Tracker_FileInfoDao();
+    public function save()
+    {
+        $dao      = new Tracker_FileInfoDao();
         $this->id = $dao->create($this->submitted_by, $this->description, $this->filename, $this->filesize, $this->filetype);
         if ($this->id) {
             return true;
@@ -315,16 +312,22 @@ class Tracker_FileInfo {
     /**
      * delete a file info
      *
-     * @return boolean true on success
+     * @return bool true on success
      */
-    public function delete() {
+    public function delete()
+    {
+        $this->deleteFiles();
+        $dao = new Tracker_FileInfoDao();
+        return $dao->delete($this->getId());
+    }
+
+    public function deleteFiles()
+    {
         if (file_exists($this->getPath())) {
             unlink($this->getPath());
         }
         if (file_exists($this->getThumbnailPath())) {
             unlink($this->getThumbnailPath());
         }
-        $dao = new Tracker_FileInfoDao();
-        return $dao->delete($this->getId());
     }
 }

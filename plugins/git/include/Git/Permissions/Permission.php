@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,12 +28,12 @@ interface Permission
     public function getPattern();
 
     /**
-     * @return []
+     * @return array
      */
     public function getWritersUgroup();
 
     /**
-     * @return []
+     * @return array
      */
     public function getRewindersUgroup();
 }

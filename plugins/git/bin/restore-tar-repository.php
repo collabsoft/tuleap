@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2015-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,8 +25,8 @@
  */
 
 
-$output    = array();
+$output    = [];
 $exit_code = null;
-exec('tar -xzpf '. escapeshellarg($argv[1]) . ' -C ' . escapeshellarg($argv[2]), $output, $exit_code);
+exec('tar -xzpf ' . escapeshellarg($argv[1]) . ' -C ' . escapeshellarg($argv[2]), $output, $exit_code);
 
 exit(intval($exit_code));

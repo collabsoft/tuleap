@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS, 2017. All rights reserved
+ * Copyright (c) Enalean SAS, 2017 - Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,15 +19,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_Changeset_CommentDao extends DataAccessObject {
-    public function __construct() {
+class Tracker_Artifact_Changeset_CommentDao extends DataAccessObject
+{
+    public function __construct()
+    {
         parent::__construct();
         $this->table_name = 'tracker_changeset_comment';
     }
 
-    public function searchLastVersion($changeset_id) {
+    public function searchLastVersion($changeset_id)
+    {
         $changeset_id = $this->da->escapeInt($changeset_id);
-        $sql = "SELECT * FROM $this->table_name
+        $sql          = "SELECT * FROM $this->table_name
                 WHERE changeset_id = $changeset_id
                 ORDER BY id DESC
                 LIMIT 1";
@@ -37,14 +40,14 @@ class Tracker_Artifact_Changeset_CommentDao extends DataAccessObject {
     public function searchLastVersionForArtifact($artifact_id)
     {
         $artifact_id = $this->da->escapeInt($artifact_id);
-        $sql = "SELECT comment_v1.*
+        $sql         = "SELECT comment_v1.*
                 FROM tracker_changeset AS changeset
                   LEFT JOIN tracker_changeset_comment AS comment_v1 ON (comment_v1.changeset_id = changeset.id)
                   LEFT JOIN tracker_changeset_comment AS comment_v2 ON (comment_v2.changeset_id = changeset.id AND comment_v1.id < comment_v2.id)
                 WHERE changeset.artifact_id = $artifact_id
                 AND comment_v2.id IS NULL
                 AND comment_v1.id IS NOT NULL";
-        $result = array();
+        $result      = [];
         foreach ($this->retrieve($sql) as $row) {
             $result[$row['changeset_id']] = $row;
         }
@@ -76,9 +79,10 @@ class Tracker_Artifact_Changeset_CommentDao extends DataAccessObject {
         return $id;
     }
 
-    public function delete($changeset_id) {
+    public function delete($changeset_id)
+    {
         $changeset_id = $this->da->escapeInt($changeset_id);
-        $sql = "DELETE
+        $sql          = "DELETE
                 FROM $this->table_name
                 WHERE changeset_id = $changeset_id";
         return $this->update($sql);

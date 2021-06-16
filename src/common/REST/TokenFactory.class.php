@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,36 +18,39 @@
  */
 
 /**
- * Class Rest_TokenFactory
+ *
  * I instantiate Rest_Token
  */
-class Rest_TokenFactory {
+class Rest_TokenFactory
+{
 
     private $token_dao;
 
-    public function __construct(Rest_TokenDao $token_dao) {
+    public function __construct(Rest_TokenDao $token_dao)
+    {
         $this->token_dao = $token_dao;
     }
 
-    public function getTokensForUser(PFUser $user) {
+    public function getTokensForUser(PFUser $user)
+    {
         $tokens_dar = $this->token_dao->getTokensForUserId($user->getId());
-        $tokens     = $tokens_dar->instanciateWith(array($this, 'instantiateFromRow'));
+        $tokens     = $tokens_dar->instanciateWith([$this, 'instantiateFromRow']);
 
         return $tokens;
     }
 
-    public function doesTokenExist($user_id, $token_value) {
+    public function doesTokenExist($user_id, $token_value)
+    {
         $token_dar = $this->token_dao->checkTokenExistenceForUserId($user_id, $token_value);
 
         return count($token_dar) > 0;
     }
 
-    public function instantiateFromRow(array $row) {
+    public function instantiateFromRow(array $row)
+    {
         return new Rest_Token(
             $row['user_id'],
             $row['token']
         );
     }
-
 }
-?>

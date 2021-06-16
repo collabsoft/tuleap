@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ namespace Tuleap\Tracker\Report\Query\Advanced\QueryBuilder\EqualComparison;
 
 use CodendiDataAccess;
 use Tracker_FormElement_Field;
-use Tuleap\Tracker\Report\Query\FromWhere;
 use Tuleap\Tracker\Report\Query\Advanced\FieldFromWhereBuilder;
 use Tuleap\Tracker\Report\Query\Advanced\Grammar\Comparison;
 use Tuleap\Tracker\Report\Query\Advanced\QueryBuilder\FromWhereComparisonFieldBuilder;
@@ -51,7 +50,7 @@ class ForText implements FieldFromWhereBuilder
         if ($value === '') {
             $matches_value = " = ''";
         } else {
-            $matches_value = " LIKE ". $this->quoteLikeValueSurround($value);
+            $matches_value = " LIKE " . $this->quoteLikeValueSurround($value);
         }
 
         $condition = "$changeset_value_text_alias.value $matches_value";

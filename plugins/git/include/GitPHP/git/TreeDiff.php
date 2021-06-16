@@ -1,26 +1,29 @@
 <?php
+/**
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
+ * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
-/**
- * GitPHP Tree Diff
- *
- * Represents differences between two commit trees
- *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Git
- */
-
-/**
- * TreeDiff class
- *
- * @package GitPHP
- * @subpackage Git
- */
-class TreeDiff implements \Iterator
+class TreeDiff implements \Iterator, \Countable
 {
+    public const EMPTY_TREE_HASH = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
     /**
      * fromHash
@@ -65,7 +68,7 @@ class TreeDiff implements \Iterator
      *
      * @access protected
      */
-    protected $fileDiffs = array();
+    protected $fileDiffs = [];
 
     /**
      * dataRead
@@ -85,15 +88,15 @@ class TreeDiff implements \Iterator
      * @param mixed $project project
      * @param string $toHash to commit hash
      * @param string $fromHash from commit hash
-     * @param boolean $renames whether to detect file renames
+     * @param bool $renames whether to detect file renames
      * @return mixed TreeDiff object
-     * @throws Exception exception on invalid parameters
+     * @throws \Exception exception on invalid parameters
      */
     public function __construct($project, $toHash, $fromHash = '', $renames = false)
     {
         $this->project = $project;
 
-        $toCommit = $this->project->GetCommit($toHash);
+        $toCommit     = $this->project->GetCommit($toHash);
         $this->toHash = $toHash;
 
         if (empty($fromHash)) {
@@ -102,7 +105,7 @@ class TreeDiff implements \Iterator
                 $this->fromHash = $parent->GetHash();
             }
         } else {
-            $fromCommit = $this->project->GetCommit($fromHash);
+            $fromCommit     = $this->project->GetCommit($fromHash);
             $this->fromHash = $fromHash;
         }
 
@@ -120,11 +123,11 @@ class TreeDiff implements \Iterator
     {
         $this->dataRead = true;
 
-        $this->fileDiffs = array();
+        $this->fileDiffs = [];
 
         $exe = new GitExe($this->project);
 
-        $args = array();
+        $args = [];
 
         $args[] = '-r';
         if ($this->renames) {
@@ -132,19 +135,23 @@ class TreeDiff implements \Iterator
         }
 
         if (empty($this->fromHash)) {
-            $args[] = '--root';
+            $args[] = escapeshellarg(self::EMPTY_TREE_HASH);
         } else {
             $args[] = escapeshellarg($this->fromHash);
         }
 
-        $args[] = escapeshellarg($this->toHash);
+        $stat_args = array_merge($args, ['--numstat']);
 
-        $diffTreeLines = explode("\n", $exe->Execute(GitExe::DIFF_TREE, $args));
+        $args[]      = escapeshellarg($this->toHash);
+        $stat_args[] = escapeshellarg($this->toHash);
+
+        $stats_indexed_by_filename = $this->getStatsIndexedByFilename($exe, $stat_args);
+        $diffTreeLines             = explode("\n", $exe->Execute(GitExe::DIFF_TREE, $args));
         foreach ($diffTreeLines as $line) {
             $trimmed = trim($line);
             if ((strlen($trimmed) > 0) && (substr_compare($trimmed, ':', 0, 1) === 0)) {
                 try {
-                    $this->fileDiffs[] = new FileDiff($this->project, $trimmed);
+                    $this->fileDiffs[] = new FileDiff($this->project, $trimmed, '', $stats_indexed_by_filename);
                 } catch (\Exception $e) {
                 }
             }
@@ -185,7 +192,7 @@ class TreeDiff implements \Iterator
      * Get whether this treediff is set to detect renames
      *
      * @access public
-     * @return boolean true if renames will be detected
+     * @return bool true if renames will be detected
      */
     public function GetRenames() // @codingStandardsIgnoreLine
     {
@@ -198,7 +205,7 @@ class TreeDiff implements \Iterator
      * Set whether this treediff is set to detect renames
      *
      * @access public
-     * @param boolean $renames whether to detect renames
+     * @param bool $renames whether to detect renames
      */
     public function SetRenames($renames) // @codingStandardsIgnoreLine
     {
@@ -206,7 +213,7 @@ class TreeDiff implements \Iterator
             return;
         }
 
-        $this->renames = $renames;
+        $this->renames  = $renames;
         $this->dataRead = false;
     }
 
@@ -217,11 +224,11 @@ class TreeDiff implements \Iterator
      */
     public function rewind()
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
-        return reset($this->fileDiffs);
+        reset($this->fileDiffs);
     }
 
     /**
@@ -231,7 +238,7 @@ class TreeDiff implements \Iterator
      */
     public function current()
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -245,7 +252,7 @@ class TreeDiff implements \Iterator
      */
     public function key()
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -259,11 +266,11 @@ class TreeDiff implements \Iterator
      */
     public function next()
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
-        return next($this->fileDiffs);
+        next($this->fileDiffs);
     }
 
     /**
@@ -273,7 +280,7 @@ class TreeDiff implements \Iterator
      */
     public function valid()
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -286,14 +293,37 @@ class TreeDiff implements \Iterator
      * Gets the number of file changes in this treediff
      *
      * @access public
-     * @return integer count of file changes
+     * @return int count of file changes
      */
     public function Count() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
         return count($this->fileDiffs);
+    }
+
+    /**
+     * @param array  $stat_args
+     *
+     * @return array
+     */
+    private function getStatsIndexedByFilename(GitExe $exe, array $stat_args)
+    {
+        $stats_indexed_by_filename = [];
+        $diff_stats                = explode("\n", $exe->Execute(GitExe::DIFF, $stat_args));
+        foreach ($diff_stats as $line) {
+            if (! trim($line)) {
+                continue;
+            }
+            list($added, $removed, $filename)     = explode("\t", $line);
+            $stats_indexed_by_filename[$filename] = [
+                'added'   => $added,
+                'removed' => $removed
+            ];
+        }
+
+        return $stats_indexed_by_filename;
     }
 }

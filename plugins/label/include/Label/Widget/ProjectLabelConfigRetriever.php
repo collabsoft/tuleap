@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -34,7 +34,7 @@ class ProjectLabelConfigRetriever
 
     public function getLabelsConfig($content_id)
     {
-        $labels = array();
+        $labels = [];
         foreach ($this->dao->searchByContentId($content_id) as $label) {
             $labels[] = $label;
         }

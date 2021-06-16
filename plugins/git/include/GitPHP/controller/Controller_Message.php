@@ -1,34 +1,32 @@
 <?php
-
+/**
+ * Copyright (c) Enalean, 2018 - present. All Rights Reserved.
+ * Copyright (C) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
 /**
- * GitPHP Controller Message
- *
- * Controller for displaying a message page
- *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Controller
- */
-/**
  * Message controller class
  *
- * @package GitPHP
- * @subpackage Controller
  */
 class Controller_Message extends ControllerBase // @codingStandardsIgnoreLine
 {
-    /**
-     * __construct
-     *
-     * Constructor
-     *
-     * @access public
-     * @return controller
-     */
     public function __construct()
     {
         try {
@@ -47,7 +45,7 @@ class Controller_Message extends ControllerBase // @codingStandardsIgnoreLine
      */
     protected function GetTemplate() // @codingStandardsIgnoreLine
     {
-        return 'message.tpl';
+        return 'tuleap/message.tpl';
     }
 
     /**
@@ -56,7 +54,7 @@ class Controller_Message extends ControllerBase // @codingStandardsIgnoreLine
      * Gets the name of this controller's action
      *
      * @access public
-     * @param boolean $local true if caller wants the localized action name
+     * @param bool $local true if caller wants the localized action name
      * @return string action name
      */
     public function GetName($local = false) // @codingStandardsIgnoreLine
@@ -85,9 +83,9 @@ class Controller_Message extends ControllerBase // @codingStandardsIgnoreLine
      */
     protected function LoadHeaders() // @codingStandardsIgnoreLine
     {
-        if (isset($this->params['statuscode']) && !empty($this->params['statuscode'])) {
+        if (isset($this->params['statuscode']) && ! empty($this->params['statuscode'])) {
             $partialHeader = $this->StatusCodeHeader($this->params['statuscode']);
-            if (!empty($partialHeader)) {
+            if (! empty($partialHeader)) {
                 if (substr(php_sapi_name(), 0, 8) == 'cgi-fcgi') {
                     /*
                      * FastCGI requires a different header
@@ -121,7 +119,7 @@ class Controller_Message extends ControllerBase // @codingStandardsIgnoreLine
      * Gets the header for an HTTP status code
      *
      * @access private
-     * @param integer $code status code
+     * @param int $code status code
      * @return string header
      */
     private function StatusCodeHeader($code) // @codingStandardsIgnoreLine

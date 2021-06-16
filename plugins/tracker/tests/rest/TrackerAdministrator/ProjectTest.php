@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All rights reserved
+ * Copyright (c) Enalean, 2018 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -31,7 +31,7 @@ class ProjectTest extends TrackerBase
     public function testItFiltersProjectsWithTrackerAdministrationPermission()
     {
         $url = 'projects?' . http_build_query([
-            'limit' => 50, 'offset' =>0
+            'limit' => 50, 'offset' => 0
         ]);
 
         $response      = $this->getResponse($this->client->get($url), DataBuilder::USER_TESTER_NAME);
@@ -56,9 +56,6 @@ class ProjectTest extends TrackerBase
         $this->assertEquals($this->tracker_administrator_project_id, $json_projects[0]['id']);
     }
 
-    /**
-     * @expectedException \Guzzle\Http\Exception\ClientErrorResponseException
-     */
     public function testItReturnsAnErrorIfTheTrackerAdministratorFilterIsSetToFalse()
     {
         $url = 'projects?' . http_build_query([

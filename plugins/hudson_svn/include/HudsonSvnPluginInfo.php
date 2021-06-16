@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,13 +20,14 @@
 
 namespace Tuleap\HudsonSvn\Plugin;
 
-use Tuleap\HudsonSvn\Plugin\HudsonSvnPluginDescriptor;
 use PluginInfo;
 use Plugin;
 
-class HudsonSvnPluginInfo extends PluginInfo {
+class HudsonSvnPluginInfo extends PluginInfo
+{
 
-    public function __construct(Plugin $plugin) {
+    public function __construct(Plugin $plugin)
+    {
         parent::__construct($plugin);
 
         $this->setPluginDescriptor(new HudsonSvnPluginDescriptor());

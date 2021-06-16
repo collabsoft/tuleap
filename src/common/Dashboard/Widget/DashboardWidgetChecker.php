@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -33,7 +33,6 @@ class DashboardWidgetChecker
     }
 
     /**
-     * @param DashboardWidgetColumn $column
      * @return bool
      */
     public function isEmptyColumn(DashboardWidgetColumn $column)
@@ -42,7 +41,6 @@ class DashboardWidgetChecker
     }
 
     /**
-     * @param DashboardWidgetColumn $column
      * @return bool
      */
     public function isEmptyLine(DashboardWidgetColumn $column)

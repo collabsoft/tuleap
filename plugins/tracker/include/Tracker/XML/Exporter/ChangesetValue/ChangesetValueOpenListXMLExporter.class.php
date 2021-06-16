@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,25 +18,30 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Exporter_ChangesetValue_ChangesetValueOpenListXMLExporter extends Tracker_XML_Exporter_ChangesetValue_ChangesetValueListXMLExporter {
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Tracker_XML_Exporter_ChangesetValue_ChangesetValueOpenListXMLExporter extends Tracker_XML_Exporter_ChangesetValue_ChangesetValueListXMLExporter
+{
 
     /**
      * @var UserXMLExporter
      */
     private $user_xml_exporter;
 
-    public function __construct(UserXMLExporter $user_xml_exporter) {
+    public function __construct(UserXMLExporter $user_xml_exporter)
+    {
         $this->user_xml_exporter = $user_xml_exporter;
     }
 
-    protected function getFieldChangeType() {
+    protected function getFieldChangeType()
+    {
         return 'open_list';
     }
 
     public function export(
         SimpleXMLElement $artifact_xml,
         SimpleXMLElement $changeset_xml,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Tracker_Artifact_ChangesetValue $changeset_value
     ) {
         $field_change = $this->createFieldChangeNodeInChangesetNode(
@@ -68,36 +73,41 @@ class Tracker_XML_Exporter_ChangesetValue_ChangesetValueOpenListXMLExporter exte
         }
     }
 
-    private function appendValue($value, SimpleXMLElement $field_xml, $bind_type) {
+    private function appendValue($value, SimpleXMLElement $field_xml, $bind_type)
+    {
         if ($bind_type === 'users') {
             $this->appendUserValueToFieldChangeNode($value, $field_xml);
         } else {
             $this->appendValueToFieldChangeNode($value, $field_xml);
         }
-
     }
 
-    private function appendUserValueToFieldChangeNode($value, SimpleXMLElement $field_xml) {
+    private function appendUserValueToFieldChangeNode($value, SimpleXMLElement $field_xml)
+    {
         $user_id = $this->getUserIdFromValue($value);
 
         $this->user_xml_exporter->exportUserByUserId($user_id, $field_xml, 'value');
     }
 
-    private function getUserIdFromValue($value) {
+    private function getUserIdFromValue($value)
+    {
         return (int) substr($value, 1);
     }
 
-    private function appendValueToFieldChangeNode($value, SimpleXMLElement $field_xml) {
-        $value_xml = $field_xml->addChild('value', $value);
-        $value_xml->addAttribute('format', 'id');
+    private function appendValueToFieldChangeNode($value, SimpleXMLElement $field_xml)
+    {
+        $cdata = new \XML_SimpleXMLCDATAFactory();
+        $cdata->insertWithAttributes($field_xml, 'value', $value, ['format' => 'id']);
     }
 
-    private function appendOpenValueLabelToFieldChangeNode($value, SimpleXMLElement $field_xml) {
-        $value_xml = $field_xml->addChild('value', $value);
-        $value_xml->addAttribute('format', 'label');
+    private function appendOpenValueLabelToFieldChangeNode($value, SimpleXMLElement $field_xml)
+    {
+        $cdata = new \XML_SimpleXMLCDATAFactory();
+        $cdata->insertWithAttributes($field_xml, 'value', $value, ['format' => 'label']);
     }
 
-    private function isValueAnOpenValue($value) {
+    private function isValueAnOpenValue($value)
+    {
         return substr($value, 0, 1) === Tracker_FormElement_Field_List_OpenValue::OPEN_PREFIX;
     }
 }

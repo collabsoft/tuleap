@@ -1,4 +1,23 @@
 <?php
+/**
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
+ * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
@@ -7,18 +26,12 @@ namespace Tuleap\Git\GitPHP;
  *
  * Base class for all hash objects in a git repository
  *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Git
  */
 
 /**
  * Git Object class
  *
  * @abstract
- * @package GitPHP
- * @subpackage Git
  */
 abstract class GitObject
 {
@@ -58,7 +71,7 @@ abstract class GitObject
      * @param mixed $project the project
      * @param string $hash object hash
      * @return mixed git object
-     * @throws Exception exception on invalid hash
+     * @throws \Exception exception on invalid hash
      */
     public function __construct($project, $hash)
     {
@@ -72,7 +85,7 @@ abstract class GitObject
      * Gets the project
      *
      * @access public
-     * @return mixed project
+     * @return Project
      */
     public function GetProject() // @codingStandardsIgnoreLine
     {
@@ -107,8 +120,8 @@ abstract class GitObject
      */
     protected function SetHash($hash) // @codingStandardsIgnoreLine
     {
-        if (!(preg_match('/[0-9a-f]{40}/i', $hash))) {
-            throw new \Exception(sprintf(__('Invalid hash %1$s'), $hash));
+        if (! (preg_match('/[0-9a-f]{40}/i', $hash))) {
+            throw new \Exception(sprintf(dgettext("gitphp", 'Invalid hash %1$s'), $hash));
         }
         $this->hash = $hash;
     }
@@ -140,7 +153,7 @@ abstract class GitObject
      */
     private function DereferenceProject() // @codingStandardsIgnoreLine
     {
-        if (!$this->projectReferenced) {
+        if (! $this->projectReferenced) {
             return;
         }
 

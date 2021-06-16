@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2015. All rights reserved
+ * Copyright (c) Enalean SAS 2015 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,21 +16,26 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201503061743_add_homepage_headline extends ForgeUpgrade_Bucket {
-    public function description() {
+class b201503061743_add_homepage_headline extends ForgeUpgrade_Bucket
+{
+    public function description()
+    {
         return "Add table to store homepage headline";
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $this->createTable();
         $this->populateTable();
     }
 
-    private function createTable() {
+    private function createTable()
+    {
         $sql = "CREATE TABLE homepage_headline (
             language_id VARCHAR(17) NOT NULL PRIMARY KEY,
             headline TEXT NOT NULL
@@ -41,7 +46,8 @@ class b201503061743_add_homepage_headline extends ForgeUpgrade_Bucket {
         }
     }
 
-    private function populateTable() {
+    private function populateTable()
+    {
         $sql = "INSERT INTO homepage_headline (language_id, headline) VALUES
             ('en_US', 'Tuleap helps teams to deliver awesome applications, better, faster and easier.
 It enables you to plan, track, code and collaborate on software projects. '),

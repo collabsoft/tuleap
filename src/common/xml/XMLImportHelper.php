@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,19 +18,22 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class XMLImportHelper implements User\XML\Import\IFindUserFromXMLReference {
+class XMLImportHelper implements User\XML\Import\IFindUserFromXMLReference
+{
 
     /** @var UserManager */
     private $user_manager;
 
-    public function __construct(UserManager $user_manager) {
+    public function __construct(UserManager $user_manager)
+    {
         $this->user_manager = $user_manager;
     }
 
-    public function getUserFormat(SimpleXMLElement $xml_element) {
+    public function getUserFormat(SimpleXMLElement $xml_element)
+    {
         $format       = (string) $xml_element['format'];
         $submitted_by = (string) $xml_element;
-        switch($format) {
+        switch ($format) {
             case 'id':
             case 'email':
                 return "$format:$submitted_by";
@@ -38,16 +41,13 @@ class XMLImportHelper implements User\XML\Import\IFindUserFromXMLReference {
             case 'ldap':
                 return "ldapId:$submitted_by";
 
-            default :
+            default:
                 return (string) $xml_element;
         }
     }
 
-    /**
-     * @param SimpleXMLElement $xml_element
-     * @return PFUser
-     */
-    public function getUser(SimpleXMLElement $xml_element) {
+    public function getUser(SimpleXMLElement $xml_element): PFUser
+    {
         $submitter = $this->user_manager->getUserByIdentifier($this->getUserFormat($xml_element));
         if (! $submitter) {
             $submitter = $this->user_manager->getUserAnonymous();

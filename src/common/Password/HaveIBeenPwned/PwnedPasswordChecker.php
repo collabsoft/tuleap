@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,8 +22,8 @@ namespace Tuleap\Password\HaveIBeenPwned;
 
 class PwnedPasswordChecker
 {
-    const PREFIX_SIZE                                  = 5;
-    const NUMBER_OF_OCCURRENCE_TO_CONSIDER_COMPROMISED = 10;
+    public const PREFIX_SIZE                                  = 5;
+    public const NUMBER_OF_OCCURRENCE_TO_CONSIDER_COMPROMISED = 10;
 
     /**
      * @var PwnedPasswordRangeRetriever
@@ -43,8 +43,6 @@ class PwnedPasswordChecker
         $sha1_password        = strtoupper(sha1($password));
         $sha1_password_prefix = substr($sha1_password, 0, self::PREFIX_SIZE);
         $sha1_password_suffix = substr($sha1_password, self::PREFIX_SIZE);
-
-
 
         $hash_suffixes = $this->pwned_password_range_retriever->getHashSuffixesMatchingPrefix($sha1_password_prefix);
         $has_match     = preg_match('/^' . preg_quote($sha1_password_suffix, '/') . '\:(\d+)/m', $hash_suffixes, $matches);

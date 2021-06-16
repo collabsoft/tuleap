@@ -1,10 +1,30 @@
-<?php rcs_id('$Id: ErrorManager.php,v 1.43 2005/04/11 19:41:23 rurban Exp $');
+<?php
+/**
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
-if (isset($GLOBALS['ErrorManager'])) return;
+if (isset($GLOBALS['ErrorManager'])) {
+    return;
+}
 
 // php5: ignore E_STRICT (var warnings)
 /*
-if (defined('E_STRICT') 
+if (defined('E_STRICT')
     and (E_ALL & E_STRICT)
     and (error_reporting() & E_STRICT)) {
     echo " errormgr: error_reporting=", error_reporting();
@@ -12,27 +32,32 @@ if (defined('E_STRICT')
     error_reporting(E_ALL & ~E_STRICT);
 }
 */
-define ('EM_FATAL_ERRORS', E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | ~2048);
-define ('EM_WARNING_ERRORS',
-	E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING);
-if (defined('E_DEPRECATED'))
-  define ('EM_NOTICE_ERRORS', E_NOTICE | E_USER_NOTICE | E_DEPRECATED);
-else
-  define ('EM_NOTICE_ERRORS', E_NOTICE | E_USER_NOTICE);
+define('EM_FATAL_ERRORS', E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | ~2048);
+define(
+    'EM_WARNING_ERRORS',
+    E_WARNING | E_CORE_WARNING | E_COMPILE_WARNING | E_USER_WARNING
+);
+if (defined('E_DEPRECATED')) {
+    define('EM_NOTICE_ERRORS', E_NOTICE | E_USER_NOTICE | E_DEPRECATED);
+} else {
+    define('EM_NOTICE_ERRORS', E_NOTICE | E_USER_NOTICE);
+}
 
-/* It is recommended to leave assertions on. 
+/* It is recommended to leave assertions on.
    You can simply comment the two lines below to leave them on.
-   Only where absolute speed is necessary you might want to turn 
+   Only where absolute speed is necessary you might want to turn
    them off.
 */
-if (1 or (defined('DEBUG') and DEBUG))
-    assert_options (ASSERT_ACTIVE, 1);
-else
-    assert_options (ASSERT_ACTIVE, 0);
-assert_options (ASSERT_CALLBACK, 'wiki_assert_handler');
+if (1 or (defined('DEBUG') and DEBUG)) {
+    assert_options(ASSERT_ACTIVE, 1);
+} else {
+    assert_options(ASSERT_ACTIVE, 0);
+}
+assert_options(ASSERT_CALLBACK, 'wiki_assert_handler');
 
-function wiki_assert_handler ($file, $line, $code) {
-    ErrorManager_errorHandler( $code, sprintf("<br />%s:%s: %s: Assertion failed <br />", $file, $line, $code), $file, $line);
+function wiki_assert_handler($file, $line, $code)
+{
+    ErrorManager_errorHandler($code, sprintf("<br />%s:%s: %s: Assertion failed <br />", $file, $line, $code), $file, $line);
 }
 
 /**
@@ -42,20 +67,21 @@ function wiki_assert_handler ($file, $line, $code) {
  * of it --- you can access the one instance via $GLOBALS['ErrorManager'].
  *
  * FIXME: more docs.
- */ 
-class ErrorManager 
+ */
+class ErrorManager
 {
     /**
-     * Constructor.
+     *
      *
      * As this is a singleton class, you should never call this.
      * @access private
      */
-    function __construct() {
-        $this->_handlers = array();
-        $this->_fatal_handler = false;
-        $this->_postpone_mask = 0;
-        $this->_postponed_errors = array();
+    public function __construct()
+    {
+        $this->_handlers         = [];
+        $this->_fatal_handler    = false;
+        $this->_postpone_mask    = 0;
+        $this->_postponed_errors = [];
 
         set_error_handler('ErrorManager_errorHandler');
     }
@@ -65,7 +91,8 @@ class ErrorManager
      * @access public
      * @return int The current postponed error mask.
      */
-    function getPostponedErrorMask() {
+    public function getPostponedErrorMask()
+    {
         return $this->_postpone_mask;
     }
 
@@ -80,24 +107,27 @@ class ErrorManager
      * @access public
      * @param $newmask int The new value for the mask.
      */
-    function setPostponedErrorMask($newmask) {
+    public function setPostponedErrorMask($newmask)
+    {
         $this->_postpone_mask = $newmask;
-        if (function_exists('PrintXML'))
+        if (function_exists('PrintXML')) {
             PrintXML($this->_flush_errors($newmask));
-        else
+        } else {
             echo($this->_flush_errors($newmask));
-
+        }
     }
 
     /**
      * Report any queued error messages.
      * @access public
      */
-    function flushPostponedErrors() {
-        if (function_exists('PrintXML'))
+    public function flushPostponedErrors()
+    {
+        if (function_exists('PrintXML')) {
             PrintXML($this->_flush_errors());
-        else
+        } else {
             echo $this->_flush_errors();
+        }
     }
 
     /**
@@ -105,14 +135,17 @@ class ErrorManager
      *
      * This also flushes the postponed error queue.
      *
-     * @return object HTML describing any queued errors (or false, if none). 
+     * @return object HTML describing any queued errors (or false, if none).
      */
-    function getPostponedErrorsAsHTML() {
+    public function getPostponedErrorsAsHTML()
+    {
         $flushed = $this->_flush_errors();
-        if (!$flushed)
+        if (! $flushed) {
             return false;
-        if ($flushed->isEmpty())
+        }
+        if ($flushed->isEmpty()) {
             return false;
+        }
         // format it with the worst class (error, warning, notice)
         $worst_err = $flushed->_content[0];
         foreach ($flushed->_content as $err) {
@@ -120,16 +153,21 @@ class ErrorManager
                 $worst_err = $err;
             }
         }
-        if ($worst_err->isNotice())
+        if ($worst_err->isNotice()) {
             return $flushed;
-        $class = $worst_err->getHtmlClass(); 
-        $html = HTML::div(array('style' => 'border: none', 'class' => $class),
-                          HTML::h4(array('class' => 'errors'), 
-                                   "PHP " . $worst_err->getDescription()));
+        }
+        $class = $worst_err->getHtmlClass();
+        $html  = HTML::div(
+            ['style' => 'border: none', 'class' => $class],
+            HTML::h4(
+                ['class' => 'errors'],
+                "PHP " . $worst_err->getDescription()
+            )
+        );
         $html->pushContent($flushed);
         return $html;
     }
-    
+
     /**
      * Push a custom error handler on the handler stack.
      *
@@ -170,7 +208,8 @@ class ErrorManager
      * @access public
      * @param $handler WikiCallback  Handler to call.
      */
-    function pushErrorHandler($handler) {
+    public function pushErrorHandler($handler)
+    {
         array_unshift($this->_handlers, $handler);
     }
 
@@ -178,7 +217,8 @@ class ErrorManager
      * Pop an error handler off the handler stack.
      * @access public
      */
-    function popErrorHandler() {
+    public function popErrorHandler()
+    {
         return array_shift($this->_handlers);
     }
 
@@ -192,7 +232,8 @@ class ErrorManager
      * @access public
      * @param $handler WikiCallback  Callback to call on fatal errors.
      */
-    function setFatalHandler($handler) {
+    public function setFatalHandler($handler)
+    {
         $this->_fatal_handler = $handler;
     }
 
@@ -205,32 +246,36 @@ class ErrorManager
      * @access public
      * @param $error object A PhpError object.
      */
-    function handleError($error) {
+    public function handleError($error)
+    {
         static $in_handler;
 
-        if (!empty($in_handler)) {
+        if (! empty($in_handler)) {
             $msg = $error->_getDetail();
-            $msg->unshiftContent(HTML::h2(fmt("%s: error while handling error:",
-                                              "ErrorManager")));
+            $msg->unshiftContent(HTML::h2(fmt(
+                "%s: error while handling error:",
+                "ErrorManager"
+            )));
             $msg->printXML();
             return;
         }
 
         // template which flushed the pending errors already handled,
         // so display now all errors directly.
-        if (!empty($GLOBALS['request']->_finishing)) {
+        if (! empty($GLOBALS['request']->_finishing)) {
             $this->_postpone_mask = 0;
-	}
-        
+        }
+
         $in_handler = true;
 
         foreach ($this->_handlers as $handler) {
-            if (!$handler) continue;
-            $result = $handler->call($error);
-            if (!$result) {
-                continue;       // Handler did not handle error.
+            if (! $handler) {
+                continue;
             }
-            elseif (is_object($result)) {
+            $result = $handler->call($error);
+            if (! $result) {
+                continue;       // Handler did not handle error.
+            } elseif (is_object($result)) {
                 // handler filtered the result. Still should pass to
                 // the rest of the chain.
                 if ($error->isFatal()) {
@@ -238,10 +283,9 @@ class ErrorManager
                     $result->errno = $error->errno;
                 }
                 $error = $result;
-            }
-            else {
+            } else {
                 // Handler handled error.
-                if (!$error->isFatal()) {
+                if (! $error->isFatal()) {
                     $in_handler = false;
                     return;
                 }
@@ -255,32 +299,14 @@ class ErrorManager
         // Handle it ourself.
         if ($error->isFatal()) {
             echo "<html><body><div style=\"font-weight:bold; color:red\">Fatal Error:</div>\n";
-            if (defined('DEBUG') and (DEBUG & _DEBUG_TRACE)) {
-                echo "error_reporting=",error_reporting(),"\n<br>";
-                if (function_exists("debug_backtrace")) // >= 4.3.0
-                    $error->printSimpleTrace(debug_backtrace());
-            }
             $this->_die($error);
-        }
-        else if (($error->errno & error_reporting()) != 0) {
-            if  (($error->errno & $this->_postpone_mask) != 0) {
-                //echo "postponed errors: ";
-                if (defined('DEBUG') and (DEBUG & _DEBUG_TRACE)) {
-                    echo "error_reporting=",error_reporting(),"\n";
-                    if (function_exists("debug_backtrace")) // >= 4.3.0
-                        $error->printSimpleTrace(debug_backtrace());
-                    $error->printXML();
-                }
-            } else {
-                if ((function_exists('isa') and isa($error, 'PhpErrorOnce'))
-                    or (!function_exists('isa') and
-                    (
-                     // stdlib independent isa()
-                     (strtolower(get_class($error)) == 'phperroronce')
-                     or (is_subclass_of($error, 'PhpErrorOnce'))))) {
+        } elseif (($error->errno & error_reporting()) != 0) {
+            if (($error->errno & $this->_postpone_mask) == 0) {
+                if ($error instanceof PhpErrorOnce) {
                     $error->removeDoublettes($this->_postponed_errors);
-                    if ( $error->_count < 2 )
+                    if ($error->_count < 2) {
                         $this->_postponed_errors[] = $error;
+                    }
                 } else {
                     $this->_postponed_errors[] = $error;
                 }
@@ -289,56 +315,66 @@ class ErrorManager
         $in_handler = false;
     }
 
-    function warning($msg, $errno = E_USER_NOTICE) {
+    public function warning($msg, $errno = E_USER_NOTICE)
+    {
         $this->handleError(new PhpWikiError($errno, $msg));
-    }
-    
-    /**
-     * @access private
-     */
-    function _die($error) {
-        //echo "\n\n<html><body>";
-        $error->printXML();
-        PrintXML($this->_flush_errors());
-        if ($this->_fatal_handler)
-            $this->_fatal_handler->call($error);
-        exit -1;
     }
 
     /**
      * @access private
      */
-    function _flush_errors($keep_mask = 0) {
+    public function _die($error)
+    {
+        //echo "\n\n<html><body>";
+        $error->printXML();
+        PrintXML($this->_flush_errors());
+        if ($this->_fatal_handler) {
+            $this->_fatal_handler->call($error);
+        }
+        exit - 1;
+    }
+
+    /**
+     * @access private
+     */
+    public function _flush_errors($keep_mask = 0)
+    {
         $errors = &$this->_postponed_errors;
-        if (empty($errors)) return '';
+        if (empty($errors)) {
+            return '';
+        }
         $flushed = HTML();
-        for ($i=0; $i<count($errors); $i++) {
-            $error =& $errors[$i];
-            if (!is_object($error)) {
+        for ($i = 0; $i < count($errors); $i++) {
+            $error = $errors[$i];
+            if (! is_object($error)) {
                 continue;
             }
-            if (($error->errno & $keep_mask) != 0)
+            if (($error->errno & $keep_mask) != 0) {
                 continue;
+            }
             unset($errors[$i]);
             $flushed->pushContent($error);
         }
         return $flushed;
     }
 
-    function _noCacheHeaders() {
+    public function _noCacheHeaders()
+    {
         global $request;
         static $already = false;
 
         if (isset($request) and isset($request->_validators)) {
-            $request->_validators->_tag = false;
+            $request->_validators->_tag   = false;
             $request->_validators->_mtime = false;
         }
-        if ($already) return;
-        
+        if ($already) {
+            return;
+        }
+
         // FIXME: Howto announce that to Request->cacheControl()?
-        if (!headers_sent()) {
-            header( "Cache-control: no-cache" );
-            header( "Pragma: nocache" );
+        if (! headers_sent()) {
+            header("Cache-control: no-cache");
+            header("Pragma: nocache");
         }
         $already = true;
     }
@@ -349,15 +385,15 @@ class ErrorManager
  *
  * This is necessary since PHP's set_error_handler() does not allow
  * one to set an object method as a handler.
- * 
+ *
  * @access private
  */
-function ErrorManager_errorHandler($errno, $errstr, $errfile, $errline) 
+function ErrorManager_errorHandler($errno, $errstr, $errfile, $errline)
 {
-    if (!isset($GLOBALS['ErrorManager'])) {
-      $GLOBALS['ErrorManager'] = new ErrorManager;
+    if (! isset($GLOBALS['ErrorManager'])) {
+        $GLOBALS['ErrorManager'] = new ErrorManager();
     }
-	
+
     $error = new PhpErrorOnce($errno, $errstr, $errfile, $errline);
     $GLOBALS['ErrorManager']->handleError($error);
 }
@@ -369,7 +405,8 @@ function ErrorManager_errorHandler($errno, $errstr, $errfile, $errline)
  * @see The PHP documentation for set_error_handler at
  *      http://php.net/manual/en/function.set-error-handler.php .
  */
-class PhpError {
+class PhpError
+{
     /**
      * The PHP errno
      */
@@ -397,7 +434,8 @@ class PhpError {
      * @param $errfile string
      * @param $errline int
      */
-    function __construct($errno, $errstr, $errfile, $errline) {
+    public function __construct($errno, $errstr, $errfile, $errline)
+    {
         $this->errno   = $errno;
         $this->errstr  = $errstr;
         $this->errfile = $errfile;
@@ -406,28 +444,32 @@ class PhpError {
 
     /**
      * Determine whether this is a fatal error.
-     * @return boolean True if this is a fatal error.
+     * @return bool True if this is a fatal error.
      */
-    function isFatal() {
-        return ($this->errno & (2048|EM_WARNING_ERRORS|EM_NOTICE_ERRORS)) == 0;
+    public function isFatal()
+    {
+        return ($this->errno & (2048 | EM_WARNING_ERRORS | EM_NOTICE_ERRORS)) == 0;
     }
 
     /**
      * Determine whether this is a warning level error.
-     * @return boolean
+     * @return bool
      */
-    function isWarning() {
+    public function isWarning()
+    {
         return ($this->errno & EM_WARNING_ERRORS) != 0;
     }
 
     /**
      * Determine whether this is a notice level error.
-     * @return boolean
+     * @return bool
      */
-    function isNotice() {
+    public function isNotice()
+    {
         return ($this->errno & EM_NOTICE_ERRORS) != 0;
     }
-    function getHtmlClass() {
+    public function getHtmlClass()
+    {
         if ($this->isNotice()) {
             return 'hint';
         } elseif ($this->isWarning()) {
@@ -436,8 +478,9 @@ class PhpError {
             return 'errors';
         }
     }
-    
-    function getDescription() {
+
+    public function getDescription()
+    {
         if ($this->isNotice()) {
             return 'Notice';
         } elseif ($this->isWarning()) {
@@ -451,38 +494,48 @@ class PhpError {
      * Get a printable, HTML, message detailing this error.
      * @return object The detailed error message.
      */
-    function _getDetail() {
-        $dir = defined('PHPWIKI_DIR') ? PHPWIKI_DIR : substr(dirname(__FILE__),0,-4);
-        if (substr(PHP_OS,0,3) == 'WIN') {
-           $dir = str_replace('/','\\',$dir);
-           $this->errfile = str_replace('/','\\',$this->errfile);
-           $dir .= "\\";
-        } else 
-           $dir .= '/';
-        $errfile = preg_replace('|^' . preg_quote($dir, '|') . '|', '', $this->errfile);
-        $lines = explode("\n", $this->errstr);
-        if (DEBUG & _DEBUG_VERBOSE) {
-          $msg = sprintf("%s:%d: %s[%d]: %s",
-                         $errfile, $this->errline,
-                         $this->getDescription(), $this->errno,
-                         array_shift($lines));
+    public function _getDetail()
+    {
+        $dir = defined('PHPWIKI_DIR') ? PHPWIKI_DIR : substr(dirname(__FILE__), 0, -4);
+        if (substr(PHP_OS, 0, 3) == 'WIN') {
+            $dir           = str_replace('/', '\\', $dir);
+            $this->errfile = str_replace('/', '\\', $this->errfile);
+            $dir          .= "\\";
         } else {
-          $msg = sprintf("%s:%d: %s: \"%s\"",
-                         $errfile, $this->errline,
-                         $this->getDescription(),
-                         array_shift($lines));
+            $dir .= '/';
         }
-        
-        $html = HTML::div(array('class' => $this->getHtmlClass()), HTML::p($msg));
+        $errfile = preg_replace('|^' . preg_quote($dir, '|') . '|', '', $this->errfile);
+        $lines   = explode("\n", $this->errstr);
+        if (DEBUG & _DEBUG_VERBOSE) {
+            $msg = sprintf(
+                "%s:%d: %s[%d]: %s",
+                $errfile,
+                $this->errline,
+                $this->getDescription(),
+                $this->errno,
+                array_shift($lines)
+            );
+        } else {
+            $msg = sprintf(
+                "%s:%d: %s: \"%s\"",
+                $errfile,
+                $this->errline,
+                $this->getDescription(),
+                array_shift($lines)
+            );
+        }
+
+        $html = HTML::div(['class' => $this->getHtmlClass()], HTML::p($msg));
         // The class is now used for the div container.
         // $html = HTML::div(HTML::p($msg));
         if ($lines) {
             $list = HTML::ul();
-            foreach ($lines as $line)
+            foreach ($lines as $line) {
                 $list->pushContent(HTML::li($line));
+            }
             $html->pushContent($list);
         }
-        
+
         return $html;
     }
 
@@ -490,30 +543,33 @@ class PhpError {
      * Print an HTMLified version of this error.
      * @see asXML()
      */
-    function printXML() {
+    public function printXML()
+    {
         PrintXML($this->_getDetail());
     }
 
     /**
      * Return an HTMLified version of this error.
      */
-    function asXML() {
+    public function asXML()
+    {
         return AsXML($this->_getDetail());
     }
 
     /**
      * Return a plain-text version of this error.
      */
-    function asString() {
+    public function asString()
+    {
         return AsString($this->_getDetail());
     }
 
-    function printSimpleTrace($bt) {
-
+    public function printSimpleTrace($bt)
+    {
         $nl = isset($_SERVER['REQUEST_METHOD']) ? "<br />" : "\n";
-        echo $nl."Traceback:".$nl;
+        echo $nl . "Traceback:" . $nl;
         foreach ($bt as $i => $elem) {
-            if (!array_key_exists('file', $elem)) {
+            if (! array_key_exists('file', $elem)) {
                 continue;
             }
             print "  " . $elem['file'] . ':' . $elem['line'] . $nl;
@@ -528,96 +584,121 @@ class PhpError {
  * This is essentially the same as a PhpError, except that the
  * error message is quieter: no source line, etc...
  */
-class PhpWikiError extends PhpError {
+class PhpWikiError extends PhpError
+{
     /**
      * Construct a new PhpError.
      * @param $errno   int
      * @param $errstr  string
      */
-    function __construct($errno, $errstr) {
+    public function __construct($errno, $errstr)
+    {
         parent::__construct($errno, $errstr, '?', '?');
     }
 
-    function _getDetail() {
-        return HTML::div(array('class' => $this->getHtmlClass()), 
-                         HTML::p($this->getDescription() . ": $this->errstr"));
+    public function _getDetail()
+    {
+        return HTML::div(
+            ['class' => $this->getHtmlClass()],
+            HTML::p($this->getDescription() . ": $this->errstr")
+        );
     }
 }
 
 /**
  * A class representing a Php warning, printed only the first time.
  *
- * Similar to PhpError, except only the first same error message is printed, 
+ * Similar to PhpError, except only the first same error message is printed,
  * with number of occurences.
  */
-class PhpErrorOnce extends PhpError {
+class PhpErrorOnce extends PhpError
+{
 
-    function __construct($errno, $errstr, $errfile, $errline) {
+    public function __construct($errno, $errstr, $errfile, $errline)
+    {
         $this->_count = 1;
         parent::__construct($errno, $errstr, $errfile, $errline);
     }
 
-    function _sameError($error) {
-        if (!$error) return false;
+    public function _sameError($error)
+    {
+        if (! $error) {
+            return false;
+        }
         return ($this->errno == $error->errno and
                 $this->errfile == $error->errfile and
                 $this->errline == $error->errline);
     }
 
     // count similar handlers, increase _count and remove the rest
-    function removeDoublettes(&$errors) {
-        for ($i=0; $i < count($errors); $i++) {
-            if (!isset($errors[$i])) continue;
+    public function removeDoublettes(&$errors)
+    {
+        for ($i = 0; $i < count($errors); $i++) {
+            if (! isset($errors[$i])) {
+                continue;
+            }
             if ($this->_sameError($errors[$i])) {
                 $errors[$i]->_count++;
                 $this->_count++;
-                if ($i) unset($errors[$i]);
+                if ($i) {
+                    unset($errors[$i]);
+                }
             }
         }
         return $this->_count;
     }
-    
-    function _getDetail($count=0) {
+
+    public function _getDetail($count = 0)
+    {
         // Codendi : don't display notices
         //if ($this->isNotice()) return;
-    	if (!$count) $count = $this->_count;
-	    $dir = defined('PHPWIKI_DIR') ? PHPWIKI_DIR : substr(dirname(__FILE__),0,-4);
-        if (substr(PHP_OS,0,3) == 'WIN') {
-           $dir = str_replace('/','\\',$dir);
-           $this->errfile = str_replace('/','\\',$this->errfile);
-           $dir .= "\\";
-        } else 
-           $dir .= '/';
+        if (! $count) {
+            $count = $this->_count;
+        }
+        $dir = defined('PHPWIKI_DIR') ? PHPWIKI_DIR : substr(dirname(__FILE__), 0, -4);
+        if (substr(PHP_OS, 0, 3) == 'WIN') {
+            $dir           = str_replace('/', '\\', $dir);
+            $this->errfile = str_replace('/', '\\', $this->errfile);
+            $dir          .= "\\";
+        } else {
+            $dir .= '/';
+        }
         $errfile = preg_replace('|^' . preg_quote($dir, '|') . '|', '', $this->errfile);
-        if (is_string($this->errstr))
-	        $lines = explode("\n", $this->errstr);
-	    elseif (is_object($this->errstr))
-	        $lines = array($this->errstr->asXML());
+        if (is_string($this->errstr)) {
+            $lines = explode("\n", $this->errstr);
+        } elseif (is_object($this->errstr)) {
+            $lines = [$this->errstr->asXML()];
+        }
         $errtype = (DEBUG & _DEBUG_VERBOSE) ? sprintf("%s[%d]", $this->getDescription(), $this->errno)
                                             : sprintf("%s", $this->getDescription());
-        $msg = sprintf("%s:%d: %s: %s %s",
-                       $errfile, $this->errline,
-                       $errtype,
-                       array_shift($lines),
-                       $count > 1 ? sprintf(" (...repeated %d times)",$count) : ""
-                       );
-        $html = HTML::div(array('class' => $this->getHtmlClass()), 
-                          HTML::p($msg));
+        $msg     = sprintf(
+            "%s:%d: %s: %s %s",
+            $errfile,
+            $this->errline,
+            $errtype,
+            array_shift($lines),
+            $count > 1 ? sprintf(" (...repeated %d times)", $count) : ""
+        );
+        $html    = HTML::div(
+            ['class' => $this->getHtmlClass()],
+            HTML::p($msg)
+        );
         if ($lines) {
             $list = HTML::ul();
-            foreach ($lines as $line)
+            foreach ($lines as $line) {
                 $list->pushContent(HTML::li($line));
+            }
             $html->pushContent($list);
         }
-        
+
         return $html;
     }
 }
 
-require_once(dirname(__FILE__).'/HtmlElement.php');
+require_once(dirname(__FILE__) . '/HtmlElement.php');
 
-if (!isset($GLOBALS['ErrorManager'])) {
-    $GLOBALS['ErrorManager'] = new ErrorManager;
+if (! isset($GLOBALS['ErrorManager'])) {
+    $GLOBALS['ErrorManager'] = new ErrorManager();
 }
 
 // $Log: ErrorManager.php,v $
@@ -700,9 +781,6 @@ if (!isset($GLOBALS['ErrorManager'])) {
 // fixed adodb session AffectedRows
 // added FileFinder helpers to unify local filenames and DATA_PATH names
 // editpage.php: new edit toolbar javascript on ENABLE_EDIT_TOOLBAR
-//
-//
-
 // (c-file-style: "gnu")
 // Local Variables:
 // mode: php
@@ -711,4 +789,3 @@ if (!isset($GLOBALS['ErrorManager'])) {
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

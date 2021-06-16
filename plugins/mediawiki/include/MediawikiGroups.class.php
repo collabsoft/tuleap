@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,41 +21,47 @@
 
 use Tuleap\DB\Compat\Legacy2018\LegacyDataAccessResultInterface;
 
-class MediawikiGroups {
-    private $added_removed = array(
-        'added'   => array(),
-        'removed' => array(),
-    );
+class MediawikiGroups
+{
+    private $added_removed = [
+        'added'   => [],
+        'removed' => [],
+    ];
 
-    private $added_index = array();
+    private $added_index = [];
 
-    private $original_groups = array();
+    private $original_groups = [];
 
-    public function __construct(LegacyDataAccessResultInterface $original_groups) {
+    public function __construct(LegacyDataAccessResultInterface $original_groups)
+    {
         foreach ($original_groups as $row) {
             $this->original_groups[$row['ug_group']] = true;
         }
     }
 
-    public function getOriginalGroups() {
+    public function getOriginalGroups()
+    {
         return array_keys($this->original_groups);
     }
 
-    public function add($group) {
+    public function add($group)
+    {
         if (! isset($this->added_index[$group]) && ! isset($this->original_groups[$group])) {
             $this->added_removed['added'][] = $group;
         }
         $this->added_index[$group] = true;
     }
 
-    public function getAddedRemoved() {
+    public function getAddedRemoved()
+    {
         $this->removeGroupsNotExplicitelyAdded();
         return $this->added_removed;
     }
 
-    private function removeGroupsNotExplicitelyAdded() {
+    private function removeGroupsNotExplicitelyAdded()
+    {
         foreach ($this->original_groups as $group => $nop) {
-             if (! isset($this->added_index[$group])) {
+            if (! isset($this->added_index[$group])) {
                 $this->added_removed['removed'][] = $group;
             }
         }

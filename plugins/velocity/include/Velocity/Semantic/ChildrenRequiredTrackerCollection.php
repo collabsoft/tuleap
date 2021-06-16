@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,7 +23,7 @@ namespace Tuleap\Velocity\Semantic;
 class ChildrenRequiredTrackerCollection
 {
     /**
-     * @var []
+     * @var array
      */
     private $children_trackers = [];
 
@@ -85,7 +85,7 @@ class ChildrenRequiredTrackerCollection
     }
 
     /**
-     * @return []
+     * @return array
      */
     public function getChildrenMisconfiguredTrackers()
     {

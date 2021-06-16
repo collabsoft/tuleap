@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -68,8 +68,8 @@ class ForListBindUgroups implements FieldFromWhereBuilder, ListBindUgroupsFromWh
     {
         $query_presenter = new QueryListFieldPresenter($comparison, $field);
 
-        $values     = $this->values_extractor->extractCollectionOfValues($comparison->getValueWrapper(), $field);
-        $value      = $values[0];
+        $values = $this->values_extractor->extractCollectionOfValues($comparison->getValueWrapper(), $field);
+        $value  = $values[0];
 
         if ($value === '') {
             return $this->getFromWhereForEmptyCondition($query_presenter);

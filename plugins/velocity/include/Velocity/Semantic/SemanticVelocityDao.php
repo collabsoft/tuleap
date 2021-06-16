@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,6 @@
 
 namespace Tuleap\Velocity\Semantic;
 
-use PDOException;
 use Tuleap\DB\DataAccessObject;
 
 class SemanticVelocityDao extends DataAccessObject

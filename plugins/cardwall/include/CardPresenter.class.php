@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,16 +20,18 @@
 
 use Tuleap\Cardwall\AccentColor\AccentColor;
 use Tuleap\Cardwall\BackgroundColor\BackgroundColor;
+use Tuleap\Tracker\Artifact\Artifact;
 
+// phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace, Squiz.Classes.ValidClassName.NotCamelCaps
 class Cardwall_CardPresenter implements Tracker_CardPresenter
 {
     /**
-     * @var Tracker_Artifact
+     * @var Artifact
      */
     private $artifact;
 
     /**
-     * @var Tracker_Artifact
+     * @var Artifact
      */
     private $parent;
 
@@ -62,44 +64,47 @@ class Cardwall_CardPresenter implements Tracker_CardPresenter
 
     public function __construct(
         PFUser $user,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Cardwall_CardFields $card_fields,
         AccentColor $accent_color,
         Cardwall_UserPreferences_UserPreferencesDisplayUser $display_preferences,
         $swimline_id,
         array $allowed_children,
         BackgroundColor $background_color,
-        Tracker_Artifact $parent = null
+        ?Artifact $parent = null
     ) {
         $this->artifact                    = $artifact;
         $this->parent                      = $parent;
-        $this->details                     = $GLOBALS['Language']->getText('plugin_cardwall', 'details');
+        $this->details                     = dgettext('tuleap-cardwall', 'details');
         $this->card_fields                 = $card_fields;
         $this->accent_color                = $accent_color;
         $this->display_preferences         = $display_preferences;
         $this->allowed_children            = $allowed_children;
         $this->swimline_id                 = $swimline_id;
         $this->background_color            = $background_color;
-        $this->user_has_accessibility_mode = $user->getPreference(PFUser::ACCESSIBILITY_MODE);
+        $this->user_has_accessibility_mode = (bool) $user->getPreference(PFUser::ACCESSIBILITY_MODE);
     }
 
     /**
      * @see Tracker_CardPresenter
      */
-    public function getId() {
+    public function getId()
+    {
         return $this->artifact->getId();
     }
 
     /**
      * @see Tracker_CardPresenter
      */
-    public function getTitle() {
+    public function getTitle()
+    {
         return $this->artifact->getTitle();
     }
 
-    public function getFields() {
-        $diplayed_fields_presenter = array();
-        $displayed_fields = $this->card_fields->getFields($this->getArtifact());
+    public function getFields()
+    {
+        $diplayed_fields_presenter = [];
+        $displayed_fields          = $this->card_fields->getFields($this->getArtifact());
 
         foreach ($displayed_fields as $displayed_field) {
             $diplayed_fields_presenter[] = new Cardwall_CardFieldPresenter($displayed_field, $this->artifact, $this->display_preferences);
@@ -107,58 +112,67 @@ class Cardwall_CardPresenter implements Tracker_CardPresenter
         return $diplayed_fields_presenter;
     }
 
-    public function hasFields() {
+    public function hasFields()
+    {
         return count($this->getFields()) > 0;
     }
 
     /**
      * @see Tracker_CardPresenter
      */
-    public function getUrl() {
+    public function getUrl()
+    {
         return $this->artifact->getUri();
     }
 
     /**
      * @see Tracker_CardPresenter
      */
-    public function getXRef() {
+    public function getXRef()
+    {
         return $this->artifact->getXRef();
     }
 
     /**
      * @see Tracker_CardPresenter
      */
-    public function getEditUrl() {
+    public function getEditUrl()
+    {
         return $this->getUrl();
     }
 
     /**
      * @see Tracker_CardPresenter
      */
-    public function getArtifactId() {
+    public function getArtifactId()
+    {
         return $this->artifact->getId();
     }
 
     /**
      * @see Tracker_CardPresenter
      */
-    public function getArtifact() {
+    public function getArtifact()
+    {
         return $this->artifact;
     }
 
-    public function getAncestorId() {
+    public function getAncestorId()
+    {
         return $this->parent ? $this->parent->getId() : 0;
     }
 
-    public function getSwimlineId() {
+    public function getSwimlineId()
+    {
         return $this->swimline_id;
     }
 
     /**
      * @see Tracker_CardPresenter
      */
-    public function getEditLabel() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'edit_item');
+    public function getEditLabel()
+    {
+        return dgettext('tuleap-agiledashboard', 'Edit');
     }
 
     /**
@@ -166,7 +180,7 @@ class Cardwall_CardPresenter implements Tracker_CardPresenter
      */
     public function getCssClasses()
     {
-        $classes = '';
+        $classes  = '';
         $classes .= (! $this->hasLegacyAccentColor()) ? ' card-accent-' . $this->getAccentColor() : '';
         $classes .= ($this->getBackgroundColorName()) ? ' card-style-' . $this->getBackgroundColorName() : '';
 
@@ -194,7 +208,8 @@ class Cardwall_CardPresenter implements Tracker_CardPresenter
      *
      * @return Tracker[]
      */
-    public function allowedChildrenTypes() {
+    public function allowedChildrenTypes()
+    {
         return $this->allowed_children;
     }
 

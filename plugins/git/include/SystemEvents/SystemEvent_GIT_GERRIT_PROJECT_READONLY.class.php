@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2011, 2012, 2013, 2014. All rights reserved.
+ * Copyright Enalean (c) 2011, 2012, 2013, 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -21,11 +21,11 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-require_once('common/system_event/SystemEvent.class.php');
 
-class SystemEvent_GIT_GERRIT_PROJECT_READONLY extends SystemEvent {
+class SystemEvent_GIT_GERRIT_PROJECT_READONLY extends SystemEvent
+{
 
-    const NAME = 'GIT_GERRIT_PROJECT_READONLY';
+    public const NAME = 'GIT_GERRIT_PROJECT_READONLY';
 
     /**
      * @var GitRepositoryFactory
@@ -45,15 +45,16 @@ class SystemEvent_GIT_GERRIT_PROJECT_READONLY extends SystemEvent {
     public function injectDependencies(
         GitRepositoryFactory $repository_factory,
         Git_RemoteServer_GerritServerFactory $gerrit_server_factory,
-        Git_Driver_Gerrit_GerritDriverFactory $driver_factory)
-    {
+        Git_Driver_Gerrit_GerritDriverFactory $driver_factory
+    ) {
         $this->repository_factory = $repository_factory;
         $this->server_factory     = $gerrit_server_factory;
         $this->driver_factory     = $driver_factory;
     }
 
-    public function process() {
-        $parameters   = $this->getParametersAsArray();
+    public function process()
+    {
+        $parameters = $this->getParametersAsArray();
 
         if (! empty($parameters[0])) {
             $repository_id = (int) $parameters[0];
@@ -75,7 +76,7 @@ class SystemEvent_GIT_GERRIT_PROJECT_READONLY extends SystemEvent {
             return false;
         }
 
-        $server  = $this->server_factory->getServerById($remote_server_id);
+        $server = $this->server_factory->getServerById($remote_server_id);
         if (! $server) {
             $this->error('Failed to find server ' . $remote_server_id);
             return false;
@@ -91,14 +92,14 @@ class SystemEvent_GIT_GERRIT_PROJECT_READONLY extends SystemEvent {
     }
 
     private function makeGerritProjectReadOnly(
-            GitRepository $repository,
-            Git_RemoteServer_GerritServer $server,
-            Project $project
+        GitRepository $repository,
+        Git_RemoteServer_GerritServer $server,
+        Project $project
     ) {
         try {
-            $this->driver_factory->getDriver($server)->makeGerritProjectReadOnly($server, $project->getUnixName().'/'.$repository->getName());
+            $this->driver_factory->getDriver($server)->makeGerritProjectReadOnly($server, $project->getUnixName() . '/' . $repository->getName());
         } catch (Exception $e) {
-            $this->error($e->getMessage().$e->getTraceAsString());
+            $this->error($e->getMessage() . $e->getTraceAsString());
             return false;
         }
 
@@ -106,7 +107,8 @@ class SystemEvent_GIT_GERRIT_PROJECT_READONLY extends SystemEvent {
         return true;
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         return $this->parameters;
     }
 }

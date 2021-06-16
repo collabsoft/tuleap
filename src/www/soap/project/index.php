@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,26 +19,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once 'pre.php';
-require_once 'common/project/Project_SOAPServer.class.php';
-require_once 'common/soap/SOAP_RequestLimitatorFactory.class.php';
-require_once 'common/user/GenericUserFactory.class.php';
-require_once 'common/project/CustomDescription/CustomDescriptionFactory.class.php';
-require_once 'common/project/CustomDescription/CustomDescriptionValueManager.class.php';
-require_once 'common/project/CustomDescription/CustomDescriptionDao.class.php';
-require_once 'common/project/CustomDescription/CustomDescriptionValueDao.class.php';
-require_once 'common/project/CustomDescription/CustomDescriptionValueFactory.class.php';
-require_once 'common/project/Service/ServiceUsageFactory.class.php';
-require_once 'common/project/Service/ServiceUsageManager.class.php';
+require_once __DIR__ . '/../../include/pre.php';
 
-use Tuleap\Dashboard\Project\ProjectDashboardDuplicator;
-use Tuleap\Dashboard\Project\ProjectDashboardDao;
-use Tuleap\Dashboard\Widget\DashboardWidgetDao;
-use Tuleap\Dashboard\Project\ProjectDashboardRetriever;
-use Tuleap\Dashboard\Widget\DashboardWidgetRetriever;
-use Tuleap\Project\Label\LabelDao;
-use Tuleap\Service\ServiceCreator;
-use Tuleap\Widget\WidgetFactory;
+use Tuleap\Project\Registration\ProjectRegistrationUserPermissionChecker;
 
 // Check if we the server is in secure mode or not.
 $request  = HTTPRequest::instance();
@@ -48,12 +31,11 @@ if ($request->isSecure() || ForgeConfig::get('sys_https_host')) {
 }
 $default_domain = ForgeConfig::get('sys_default_domain');
 
-$uri = $protocol.'://'.$default_domain.'/soap/project';
+$uri = $protocol . '://' . $default_domain . '/soap/project';
 
-$serviceClass = 'Project_SOAPServer';
+$serviceClass = Project_SOAPServer::class;
 
 if ($request->exist('wsdl')) {
-    require_once 'common/soap/SOAP_NusoapWSDL.class.php';
     $wsdlGen = new SOAP_NusoapWSDL($serviceClass, 'TuleapProjectAPI', $uri);
     $wsdlGen->dumpWSDL();
 } else {
@@ -61,53 +43,9 @@ if ($request->exist('wsdl')) {
     $projectManager   = ProjectManager::instance();
     $soapLimitFactory = new SOAP_RequestLimitatorFactory();
 
-    $ugroup_dao         = new UGroupDao();
-    $send_notifications = true;
-    $ugroup_user_dao    = new UGroupUserDao();
-    $ugroup_manager     = new UGroupManager();
-    $ugroup_duplicator  = new Tuleap\Project\UgroupDuplicator(
-        $ugroup_dao,
-        $ugroup_manager,
-        new UGroupBinding($ugroup_user_dao, $ugroup_manager),
-        $ugroup_user_dao,
-        EventManager::instance()
-    );
+    $ugroup_dao = new UGroupDao();
 
-    $widget_factory = new WidgetFactory(
-        UserManager::instance(),
-        new User_ForgeUserGroupPermissionsManager(new User_ForgeUserGroupPermissionsDao()),
-        EventManager::instance()
-    );
-
-    $widget_dao        = new DashboardWidgetDao($widget_factory);
-    $project_dao       = new ProjectDashboardDao($widget_dao);
-    $project_retriever = new ProjectDashboardRetriever($project_dao);
-    $widget_retriever  = new DashboardWidgetRetriever($widget_dao);
-    $duplicator        = new ProjectDashboardDuplicator(
-        $project_dao,
-        $project_retriever,
-        $widget_dao,
-        $widget_retriever,
-        $widget_factory
-    );
-
-    $force_activation = false;
-
-    $projectCreator = new ProjectCreator(
-        $projectManager,
-        ReferenceManager::instance(),
-        $userManager,
-        $ugroup_duplicator,
-        $send_notifications,
-        new Tuleap\FRS\FRSPermissionCreator(
-            new Tuleap\FRS\FRSPermissionDao(),
-            $ugroup_dao
-        ),
-        $duplicator,
-        new ServiceCreator(),
-        new LabelDao(),
-        $force_activation
-    );
+    $projectCreator = ProjectCreator::buildSelfRegularValidation();
 
     $generic_user_dao     = new GenericUserDao();
     $generic_user_factory = new GenericUserFactory($userManager, $projectManager, $generic_user_dao);
@@ -129,8 +67,10 @@ if ($request->exist('wsdl')) {
         new User_ForgeUserGroupPermissionsDao()
     );
 
-    $server = new TuleapSOAPServer($uri.'/?wsdl',
-                             array('cache_wsdl' => WSDL_CACHE_NONE));
+    $server = new TuleapSOAPServer(
+        $uri . '/?wsdl',
+        ['cache_wsdl' => WSDL_CACHE_NONE]
+    );
     $server->setClass(
         $serviceClass,
         $projectManager,
@@ -143,10 +83,14 @@ if ($request->exist('wsdl')) {
         $custom_project_description_value_factory,
         $service_usage_factory,
         $service_usage_manager,
-        $forge_ugroup_permissions_manager
+        $forge_ugroup_permissions_manager,
+        new ProjectRegistrationUserPermissionChecker(
+            new ProjectDao()
+        )
     );
-    $xml_security = new XML_Security();
-    $xml_security->enableExternalLoadOfEntities();
-    $server->handle();
-    $xml_security->disableExternalLoadOfEntities();
+    XML_Security::enableExternalLoadOfEntities(
+        function () use ($server) {
+            $server->handle();
+        }
+    );
 }

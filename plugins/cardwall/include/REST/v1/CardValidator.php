@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,19 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
 namespace Tuleap\Cardwall\REST\v1;
 
-use \Luracast\Restler\RestException;
-use \Tracker_Semantic_Title;
-use \Tracker_FormElement_Field;
-use \CardResourceBadValueFormatException;
-use \Cardwall_FieldNotOnCardException;
-use \Cardwall_SingleCard;
-use \PFUser;
+use Luracast\Restler\RestException;
+use Tracker_Semantic_Title;
+use Tracker_FormElement_Field;
+use CardResourceBadValueFormatException;
+use Cardwall_FieldNotOnCardException;
+use Cardwall_SingleCard;
+use PFUser;
 
-class CardValidator {
+class CardValidator
+{
 
-    public function getFieldsDataFromREST(PFUser $user, Cardwall_SingleCard $single_card, $label, array $values, $column_id = null) {
+    public function getFieldsDataFromREST(PFUser $user, Cardwall_SingleCard $single_card, $label, array $values, $column_id = null)
+    {
         $fields_data  = $this->getLabelFieldData($single_card, $label);
         $fields_data += $this->getValuesFieldData($user, $values, $single_card);
         if ($column_id !== null) {
@@ -38,31 +41,37 @@ class CardValidator {
         return $fields_data;
     }
 
-    private function getLabelFieldData(Cardwall_SingleCard $single_card, $label) {
+    private function getLabelFieldData(Cardwall_SingleCard $single_card, $label)
+    {
         $semantic_title = Tracker_Semantic_Title::load($single_card->getArtifact()->getTracker());
         if ($semantic_title) {
-            return array(
+            return [
                 $semantic_title->getFieldId() => $label
-            );
+            ];
         }
-        return array();
+        return [];
     }
 
-    private function getColumnIdFieldData(Cardwall_SingleCard $single_card, $column_id) {
+    private function getColumnIdFieldData(Cardwall_SingleCard $single_card, $column_id)
+    {
         $mapping = $single_card->getMapping();
-        foreach($mapping->getValueMappings() as $value_mapping) {
+        if (! $mapping) {
+            return [];
+        }
+        foreach ($mapping->getValueMappings() as $value_mapping) {
             if ($value_mapping->getColumnId() == $column_id) {
-                return array(
+                return [
                     $mapping->getField()->getId() => $value_mapping->getValueId()
-                );
+                ];
             }
         }
-        return array();
+        return [];
     }
 
-    private function getValuesFieldData(PFUser $user, $values, Cardwall_SingleCard $single_card) {
-        $new_values = array();
-        foreach($values as $value) {
+    private function getValuesFieldData(PFUser $user, $values, Cardwall_SingleCard $single_card)
+    {
+        $new_values = [];
+        foreach ($values as $value) {
             try {
                 $field                       = $this->getField($user, $single_card, $value);
                 $new_values[$field->getId()] = $this->getFieldValue($single_card, $field, $value);
@@ -75,22 +84,24 @@ class CardValidator {
         return $new_values;
     }
 
-    private function getFieldValue(Cardwall_SingleCard $single_card, Tracker_FormElement_Field $field, $value) {
+    private function getFieldValue(Cardwall_SingleCard $single_card, Tracker_FormElement_Field $field, $value)
+    {
         $artifact = $single_card->getArtifact();
         return $field->getFieldDataFromRESTValue($value, $artifact);
     }
 
-    private function getField(PFUser $user, Cardwall_SingleCard $single_card, $value) {
-        if(! array_key_exists('field_id', $value)) {
+    private function getField(PFUser $user, Cardwall_SingleCard $single_card, $value)
+    {
+        if (! array_key_exists('field_id', $value)) {
             throw new CardResourceBadValueFormatException('field_id');
         }
 
         $field = $single_card->getFieldById($value['field_id']);
         if (! $field) {
-            throw new RestException(404, 'Field '.$value['field_id'].' doesn\'t belongs to card');
+            throw new RestException(404, 'Field ' . $value['field_id'] . ' doesn\'t belongs to card');
         }
         if (! $field->userCanUpdate($user)) {
-            throw new RestException(403, 'Field "'.$field->getLabel().'" ('.$field->getId().') cannot be modified or you don\'t have permission to update it');
+            throw new RestException(403, 'Field "' . $field->getLabel() . '" (' . $field->getId() . ') cannot be modified or you don\'t have permission to update it');
         }
         return $field;
     }

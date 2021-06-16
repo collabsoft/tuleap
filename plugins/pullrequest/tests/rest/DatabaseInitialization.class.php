@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,6 +19,8 @@
  */
 
 namespace Tuleap\PullRequest\REST;
+
+require_once __DIR__ . '/../../../../tests/lib/DatabaseInitialisation.class.php';
 
 use ForgeConfig;
 

@@ -3,7 +3,7 @@
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2007
- * 
+ *
  * This file is a part of Codendi.
  *
  * Codendi is free software; you can redistribute it and/or modify
@@ -20,13 +20,11 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('Docman_Folder.class.php');
-require_once('Docman_ItemFactory.class.php');
+class Docman_FolderFactory extends Docman_ItemFactory
+{
 
-class Docman_FolderFactory
-extends Docman_ItemFactory {
-    
-    function __construct($groupId=null) {
+    public function __construct($groupId = null)
+    {
         parent::__construct($groupId);
     }
 
@@ -35,21 +33,23 @@ extends Docman_ItemFactory {
      * user. Stricly speaking, we should pass user in argument but there is no
      * existing function that handle prefences in this way.
      *
-     * @param Folder
+     * @param Docman_Folder $folder
      */
-    function collapse($folder) {
-        user_del_preference(PLUGIN_DOCMAN_EXPAND_FOLDER_PREF.'_'.$folder->getGroupId().'_'.$folder->getId());
+    public function collapse($folder)
+    {
+        user_del_preference(PLUGIN_DOCMAN_EXPAND_FOLDER_PREF . '_' . $folder->getGroupId() . '_' . $folder->getId());
     }
 
     /**
      * Set a expand preference for given folder for current user.
      *
-     * @param Folder
+     * @param Docman_Folder $folder
      */
-    function expand($folder) {
-        user_set_preference(PLUGIN_DOCMAN_EXPAND_FOLDER_PREF.'_'.$folder->getGroupId().'_'.$folder->getId(),
-                            PLUGIN_DOCMAN_EXPAND_FOLDER);
+    public function expand($folder)
+    {
+        user_set_preference(
+            PLUGIN_DOCMAN_EXPAND_FOLDER_PREF . '_' . $folder->getGroupId() . '_' . $folder->getId(),
+            PLUGIN_DOCMAN_EXPAND_FOLDER
+        );
     }
 }
-
-?>

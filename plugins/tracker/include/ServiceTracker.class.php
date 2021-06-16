@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,98 +17,100 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class ServiceTracker extends Service {
+use Tuleap\Project\MappingRegistry;
 
-    const NAME = 'tracker';
+class ServiceTracker extends Service
+{
+
+    public const NAME = 'tracker';
+
+    public function getIconName(): string
+    {
+        return 'fa-list-ol';
+    }
 
     /**
      * Display header for service tracker
-     *
-     * @param string $title       The title
-     * @param array  $breadcrumbs array of breadcrumbs (array of 'url' => string, 'title' => string)
-     * @param array  $toolbar     array of toolbars (array of 'url' => string, 'title' => string)
-     *
-     * @return void
      */
-    public function displayHeader($title, $breadcrumbs, $toolbar, $params = array()) {
+    public function displayHeader(string $title, $breadcrumbs, array $toolbar, array $params = []): void
+    {
         $GLOBALS['HTML']->includeCalendarScripts();
 
-        $tracker_manager         = new TrackerManager();
-        $user_has_special_access = $tracker_manager->userCanAdminAllProjectTrackers();
+        $global_admin_permissions_checker = new \Tuleap\Tracker\Admin\GlobalAdmin\GlobalAdminPermissionsChecker(
+            new User_ForgeUserGroupPermissionsManager(
+                new User_ForgeUserGroupPermissionsDao()
+            )
+        );
+        $user_has_special_access          = $global_admin_permissions_checker
+            ->doesUserHaveTrackerGlobalAdminRightsOnProject($this->getProject(), UserManager::instance()->getCurrentUser());
 
-        $params = $params + array('user_has_special_access' => $user_has_special_access);
+        $params                 = $params + ['user_has_special_access' => $user_has_special_access];
         $params['service_name'] = self::NAME;
         $params['project_id']   = $this->getGroupId();
 
         parent::displayHeader($title, $breadcrumbs, $toolbar, $params);
     }
-    
+
     /**
      * Duplicate this service from the current project to another
-     * 
+     *
      * @param int   $to_project_id  The target paroject Id
      * @param array $ugroup_mapping The ugroup mapping
-     * 
-     * @return void
+     *
      */
-    public function duplicate($to_project_id, $ugroup_mapping) {
+    public function duplicate(int $to_project_id, array $ugroup_mapping): void
+    {
         $tracker_manager = $this->getTrackerManager();
-        $tracker_manager->duplicate($this->project->getId(), $to_project_id, $ugroup_mapping);
+        $tracker_manager->duplicate($this->project->getId(), $to_project_id, new MappingRegistry($ugroup_mapping));
     }
-    
+
     /**
-     * @return TrackerManager 
+     * @return TrackerManager
      */
-    protected function getTrackerManager() {
+    protected function getTrackerManager()
+    {
         return new TrackerManager();
     }
-    
+
     /**
      * Say if the service is allowed for the project
-     *
-     * @param Project $project
-     *
-     * @return bool
      */
-    protected function isAllowed($project) {
+    protected function isAllowed($project): bool
+    {
         $plugin_manager = PluginManager::instance();
-        $p = $plugin_manager->getPluginByName('tracker');
+        $p              = $plugin_manager->getPluginByName('tracker');
         if ($p && $plugin_manager->isPluginAvailable($p) && $p->isAllowed($project->getGroupId())) {
             return true;
         }
         return false;
     }
-    
+
     /**
      * Say if the service is restricted
-     *
-     * @param Project $project
-     *
-     * @return bool
      */
-    public function isRestricted() {
+    public function isRestricted(): bool
+    {
         $plugin_manager = PluginManager::instance();
-        $p = $plugin_manager->getPluginByName('tracker');
+        $p              = $plugin_manager->getPluginByName('tracker');
         if ($p && $plugin_manager->isProjectPluginRestricted($p)) {
             return true;
         }
         return false;
     }
-    
+
     /**
      * Trackers are cloned on project creation
-     * 
+     *
      * @see Service::isInheritedOnDuplicate()
-     * 
-     * @return Boolean
      */
-    public function isInheritedOnDuplicate() {
+    public function isInheritedOnDuplicate(): bool
+    {
         return true;
     }
 
     public static function getDefaultServiceData($project_id)
     {
-        return array(
+        return [
             'label'        => 'plugin_tracker:service_lbl_key',
             'description'  => 'plugin_tracker:service_desc_key',
             'link'         => "/plugins/tracker/?group_id=$project_id",
@@ -118,7 +120,6 @@ class ServiceTracker extends Service {
             'location'     => 'master',
             'is_in_iframe' => 0,
             'server_id'    => 0,
-        );
+        ];
     }
 }
-?>

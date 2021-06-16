@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ArtifactXMLExporter {
+class ArtifactXMLExporter
+{
 
-    const ARCHIVE_DATA_DIR = 'data';
+    public const ARCHIVE_DATA_DIR = 'data';
 
     /** @var ArtifactXMLExporterDao */
     private $dao;
@@ -31,21 +32,23 @@ class ArtifactXMLExporter {
     /** @var ArtifactXMLNodeHelper */
     private $node_helper;
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
-    public function __construct(ArtifactXMLExporterDao $dao, ArtifactAttachmentXMLExporter $attachment_exporter, ArtifactXMLNodeHelper $node_helper, Logger $logger) {
-        $this->dao                  = $dao;
-        $this->node_helper          = $node_helper;
-        $this->logger               = $logger;
-        $this->attachment_exporter  = $attachment_exporter;
+    public function __construct(ArtifactXMLExporterDao $dao, ArtifactAttachmentXMLExporter $attachment_exporter, ArtifactXMLNodeHelper $node_helper, \Psr\Log\LoggerInterface $logger)
+    {
+        $this->dao                 = $dao;
+        $this->node_helper         = $node_helper;
+        $this->logger              = $logger;
+        $this->attachment_exporter = $attachment_exporter;
     }
 
-    public function exportTrackerData($tracker_id) {
+    public function exportTrackerData($tracker_id)
+    {
         $artifacts_node = $this->node_helper->createElement('artifacts');
         foreach ($this->dao->searchArtifacts($tracker_id) as $row) {
             $artifact_exporter = new ArtifactXMLExporterArtifact($this->dao, $this->attachment_exporter, $this->node_helper, $this->logger);
-            $artifact_node = $artifact_exporter->exportArtifact($tracker_id, $row);
+            $artifact_node     = $artifact_exporter->exportArtifact($tracker_id, $row);
             $artifacts_node->appendChild($artifact_node);
         }
         $this->node_helper->appendChild($artifacts_node);

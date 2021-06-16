@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All rights reserved
+ * Copyright (c) Enalean, 2018 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,23 +20,25 @@
 
 namespace Tuleap\Timetracking\REST;
 
-use REST_TestDataBuilder;
 use RestBase;
 
 class TimetrackingBase extends RestBase
 {
 
-    const PROJECT_NAME = 'test-timetracking';
-    const TRACKER_NAME = 'timetracking_testing';
+    public const PROJECT_NAME = 'test-timetracking';
+    public const TRACKER_NAME = 'timetracking_testing';
 
     protected $tracker_timetracking;
+    protected $timetracking_project_id;
     protected $timetracking_artifact_ids;
+    protected $timetracking_user_test;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $project_id                      = $this->getProjectId(self::PROJECT_NAME);
-        $this->tracker_timetracking      = $this->tracker_ids[ $project_id ][ self::TRACKER_NAME ];
+        $this->timetracking_project_id   = $this->getProjectId(self::PROJECT_NAME);
+        $this->tracker_timetracking      = $this->tracker_ids[$this->timetracking_project_id][self::TRACKER_NAME];
         $this->timetracking_artifact_ids = $this->getArtifacts($this->tracker_timetracking);
+        $this->timetracking_user_test    = $this->initUserId(TimetrackingDataBuilder::USER_TESTER_NAME);
     }
 }

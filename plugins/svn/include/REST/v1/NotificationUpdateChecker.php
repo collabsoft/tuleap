@@ -1,6 +1,6 @@
 <?php
 /**
- *  Copyright (c) Enalean, 2017. All Rights Reserved.
+ *  Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  *  This file is a part of Tuleap.
  *
@@ -20,10 +20,10 @@
 
 namespace Tuleap\SVN\REST\v1;
 
-use Tuleap\Svn\Admin\MailNotification;
-use Tuleap\Svn\Admin\MailNotificationManager;
-use Tuleap\Svn\Notifications\EmailsToBeNotifiedRetriever;
-use Tuleap\Svn\Repository\Repository;
+use Tuleap\SVN\Admin\MailNotification;
+use Tuleap\SVN\Admin\MailNotificationManager;
+use Tuleap\SVN\Notifications\EmailsToBeNotifiedRetriever;
+use Tuleap\SVN\Repository\Repository;
 
 class NotificationUpdateChecker
 {
@@ -46,7 +46,6 @@ class NotificationUpdateChecker
     }
 
     /**
-     * @param Repository $repository
      * @param MailNotification[] $new_notifications
      *
      * @return bool
@@ -60,11 +59,13 @@ class NotificationUpdateChecker
         }
 
         foreach ($new_notifications as $new_notification) {
-            if (! $this->mail_notification_manager->isAnExistingPath(
-                $repository,
-                0,
-                $new_notification->getPath()
-            )) {
+            if (
+                ! $this->mail_notification_manager->isAnExistingPath(
+                    $repository,
+                    0,
+                    $new_notification->getPath()
+                )
+            ) {
                 return true;
             }
 
@@ -75,19 +76,24 @@ class NotificationUpdateChecker
 
             foreach ($old_notifications as $old_notification) {
                 if ($new_notification->getPath() === $old_notification->getPath()) {
-                    if ($this->sortNotification($new_notification->getNotifiedMails())
+                    if (
+                        $this->sortNotification($new_notification->getNotifiedMails())
                         !== $this->sortNotification($old_notification->getNotifiedMails())
                     ) {
                         return true;
                     }
 
-                    if ($this->sortNotification($new_notification->getNotifiedUsers())
-                        != $this->sortNotification($old_notification->getNotifiedUsers())) {
+                    if (
+                        $this->sortNotification($new_notification->getNotifiedUsers())
+                        != $this->sortNotification($old_notification->getNotifiedUsers())
+                    ) {
                         return true;
                     }
 
-                    if ($this->sortNotification($new_notification->getNotifiedUgroups())
-                        != $this->sortNotification($old_notification->getNotifiedUgroups())) {
+                    if (
+                        $this->sortNotification($new_notification->getNotifiedUgroups())
+                        != $this->sortNotification($old_notification->getNotifiedUgroups())
+                    ) {
                         return true;
                     }
                 }

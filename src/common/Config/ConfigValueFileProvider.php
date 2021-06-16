@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,21 +18,24 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ConfigValueFileProvider implements ConfigValueProvider {
+class ConfigValueFileProvider implements ConfigValueProvider
+{
 
     /** @var string */
     private $file;
 
-    public function __construct($file) {
+    public function __construct($file)
+    {
         $this->file = $file;
     }
 
     /**
      * @see ConfigValueProvider::getVariables()
      */
-    public function getVariables() {
+    public function getVariables()
+    {
         if (! is_file($this->file)) {
-            return array();
+            return [];
         }
 
         include($this->file);

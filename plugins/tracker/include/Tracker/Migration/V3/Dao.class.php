@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-require_once 'common/dao/TrackerIdSharingDao.class.php';
 
-class Tracker_Migration_V3_Dao extends DataAccessObject {
+class Tracker_Migration_V3_Dao extends DataAccessObject
+{
 
-    public function create($project_id, $name, $description, $itemname, $tv3_id) {
+    public function create($project_id, $name, $description, $itemname, $tv3_id)
+    {
         $id_sharing = new TrackerIdSharingDao();
         if ($tv5_id = $id_sharing->generateTrackerId()) {
             $tv3_id     = $this->da->escapeInt($tv3_id);
@@ -32,12 +33,13 @@ class Tracker_Migration_V3_Dao extends DataAccessObject {
         return false;
     }
 
-    private function createTracker($id, $project_id, $name, $description, $itemname, $tv3_id) {
+    private function createTracker($id, $project_id, $name, $description, $itemname, $tv3_id)
+    {
         $project_id  = $this->da->escapeInt($project_id);
         $name        = $this->da->quoteSmart($name);
         $description = $this->da->quoteSmart($description);
         $itemname    = $this->da->quoteSmart($itemname);
-        $sql = "INSERT INTO tracker ( id, group_id, name, description, item_name, allow_copy, submit_instructions, browse_instructions,
+        $sql         = "INSERT INTO tracker ( id, group_id, name, description, item_name, allow_copy, submit_instructions, browse_instructions,
                                       status, deletion_date, instantiate_for_new_projects, notifications_level, from_tv3_id)
                 SELECT $id, $project_id, $name, $description, $itemname, allow_copy, submit_instructions, browse_instructions,
                        status, deletion_date, instantiate_for_new_projects, stop_notification, $tv3_id
@@ -56,4 +58,3 @@ class Tracker_Migration_V3_Dao extends DataAccessObject {
         $this->update($sql);
     }
 }
-?>

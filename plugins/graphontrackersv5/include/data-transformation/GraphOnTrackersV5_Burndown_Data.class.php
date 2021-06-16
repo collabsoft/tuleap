@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,10 +24,10 @@
  */
 class GraphOnTrackersV5_Burndown_Data
 {
-    private $artifact_ids     = array();
-    private $remaining_effort = array();
-    private $min_day = PHP_INT_MAX;
-    private $max_day = 0;
+    private $artifact_ids     = [];
+    private $remaining_effort = [];
+    private $min_day          = PHP_INT_MAX;
+    private $max_day          = 0;
     /**
      * @var TimePeriodWithWeekEnd
      */
@@ -46,19 +46,23 @@ class GraphOnTrackersV5_Burndown_Data
         $this->time_period = $time_period;
     }
 
-    public function getRemainingEffort() {
+    public function getRemainingEffort()
+    {
         return $this->remaining_effort;
     }
 
-    public function getMinDay() {
+    public function getMinDay()
+    {
         return $this->min_day;
     }
 
-    public function getMaxDay() {
+    public function getMaxDay()
+    {
         return $this->max_day;
     }
 
-    public function getArtifactIds() {
+    public function getArtifactIds()
+    {
         return $this->artifact_ids;
     }
 

@@ -23,13 +23,17 @@
                 data-target="#{{ target_modal }}"
             {{/ has_reached_the_limit }}
         >
-            <i class="icon-plus"></i> {{ label }}
+            <i class="fa fa-plus"></i> {{ label }}
         </button>
 
         {{# has_reached_the_limit }}
         </span>
         {{/ has_reached_the_limit }}
     {{/ create_buttons }}
+
+    {{# additional_description }}
+        <p class="hooks-desc alert alert-info">{{ . }}</p>
+    {{/ additional_description }}
 
     <table class="table hooks-list">
         <thead>
@@ -49,15 +53,21 @@
             </tbody>
             <tbody>
                 {{# webhooks }}
+                    {{# isSimple }}
+                    <tr>
+                        <td colspan="3">{{ webhook_url }}</td>
+                    </tr>
+                    {{/ isSimple }}
+                    {{^ isSimple }}
                     <tr>
                         <td>{{ webhook_url }}</td>
                         <td class="last-push">{{{ purified_last_push_info }}}</td>
                         <td class="action-buttons">
                             <a role="button" data-toggle="modal" href="#modal-logs-{{ id }}">
-                                <i class="icon-list"></i> {{ logs }}
+                                <i class="fa fa-list"></i> {{ logs }}
                             </a>
                             <a role="button" data-toggle="modal" href="#modal-edit-{{ id }}">
-                                <i class="icon-edit"></i> {{ edit_hook }}
+                                <i class="far fa-edit"></i> {{ edit_hook }}
                             </a>
                             <a href="javascript:;"
                                 class="remove-hook"
@@ -67,14 +77,20 @@
                                 data-html="true"
                                 data-popover-id="remove-{{ id }}-popover"
                             >
-                                <i class="icon-trash"></i> {{ remove }}
+                                <i class="far fa-trash-alt"></i> {{ remove }}
                             </a>
 
                             {{> modal-logs }}
                             {{> popover-remove-hook }}
                         </td>
                     </tr>
+                    {{/ isSimple }}
                 {{/ webhooks }}
+                {{# external_information }}
+                    <tr>
+                        <td colspan="3">{{ title }}</td>
+                    </tr>
+                {{/ external_information }}
             </tbody>
         {{/ sections }}
         {{^ has_sections }}

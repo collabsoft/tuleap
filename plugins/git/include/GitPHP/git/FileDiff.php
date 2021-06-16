@@ -1,23 +1,31 @@
 <?php
+/**
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
+ * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
-/**
- * GitPHP File Diff
- *
- * Represents a single file difference
- *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Git
- */
+use Tuleap\Git\BinaryDetector;
 
 /**
  * Commit class
  *
- * @package GitPHP
- * @subpackage Git
  */
 class FileDiff
 {
@@ -184,31 +192,59 @@ class FileDiff
     protected $commit;
 
     /**
-     * __construct
-     *
-     * Constructor
-     *
-     * @access public
-     * @param mixed $project project
+     * @var array
+     */
+    private $stats = [];
+
+    /**
+     * @param mixed  $project  project
      * @param string $fromHash source hash, can also be a diff-tree info line
-     * @param string $toHash target hash, required if $fromHash is a hash
-     * @return mixed FileDiff object
+     * @param string $toHash   target hash, required if $fromHash is a hash
+     * @param array  $stats_indexed_by_filename
+     *
      * @throws \Exception on invalid parameters
      */
-    public function __construct($project, $fromHash, $toHash = '')
+    public function __construct($project, $fromHash, $toHash = '', array $stats_indexed_by_filename = [])
     {
         $this->project = $project;
 
         if ($this->ParseDiffTreeLine($fromHash)) {
+            if (isset($stats_indexed_by_filename[$this->toFile])) {
+                $this->stats = $stats_indexed_by_filename[$this->toFile];
+            }
             return;
         }
 
-        if (!(preg_match('/^[0-9a-fA-F]{40}$/', $fromHash) && preg_match('/^[0-9a-fA-F]{40}$/', $toHash))) {
+        if (! (preg_match('/^[0-9a-fA-F]{40}$/', $fromHash) && preg_match('/^[0-9a-fA-F]{40}$/', $toHash))) {
             throw new \Exception('Invalid parameters for FileDiff');
         }
 
         $this->fromHash = $fromHash;
-        $this->toHash = $toHash;
+        $this->toHash   = $toHash;
+    }
+
+    public function isBinaryFile()
+    {
+        $blob = $this->GetToBlob();
+        if (! $blob) {
+            return false;
+        }
+        return BinaryDetector::isBinary($blob->GetData());
+    }
+
+    public function hasStats()
+    {
+        return ! empty($this->stats);
+    }
+
+    public function getAddedStats()
+    {
+        return $this->stats['added'];
+    }
+
+    public function getRemovedStats()
+    {
+        return $this->stats['removed'];
     }
 
     /**
@@ -216,21 +252,21 @@ class FileDiff
      *
      * @access private
      * @param string $diffTreeLine line from difftree
-     * @return boolean true if data was read from line
+     * @return bool true if data was read from line
      */
     private function ParseDiffTreeLine($diffTreeLine) // @codingStandardsIgnoreLine
     {
         if (preg_match('/^:([0-7]{6}) ([0-7]{6}) ([0-9a-fA-F]{40}) ([0-9a-fA-F]{40}) (.)([0-9]{0,3})\t(.*)$/', $diffTreeLine, $regs)) {
             $this->diffInfoRead = true;
 
-            $this->fromMode = $regs[1];
-            $this->toMode = $regs[2];
-            $this->fromHash = $regs[3];
-            $this->toHash = $regs[4];
-            $this->status = $regs[5];
+            $this->fromMode   = $regs[1];
+            $this->toMode     = $regs[2];
+            $this->fromHash   = $regs[3];
+            $this->toHash     = $regs[4];
+            $this->status     = $regs[5];
             $this->similarity = ltrim($regs[6], '0');
-            $this->fromFile = strtok($regs[7], "\t");
-            $this->toFile = strtok("\t");
+            $this->fromFile   = strtok($regs[7], "\t");
+            $this->toFile     = strtok("\t");
             if ($this->toFile === false) {
                 /* no filename change */
                 $this->toFile = $this->fromFile;
@@ -267,7 +303,7 @@ class FileDiff
      */
     public function GetFromMode() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -285,7 +321,7 @@ class FileDiff
      */
     public function GetFromModeShort() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -303,7 +339,7 @@ class FileDiff
      */
     public function GetToMode() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -321,7 +357,7 @@ class FileDiff
      */
     public function GetToModeShort() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -377,7 +413,7 @@ class FileDiff
      * Gets the to file blob
      *
      * @access public
-     * @return mixed blob object
+     * @return null|Blob
      */
     public function GetToBlob() // @codingStandardsIgnoreLine
     {
@@ -398,7 +434,7 @@ class FileDiff
      */
     public function GetStatus() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -415,7 +451,7 @@ class FileDiff
      */
     public function GetSimilarity() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -432,7 +468,7 @@ class FileDiff
      */
     public function GetFromFile() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -449,7 +485,7 @@ class FileDiff
      */
     public function GetToFile() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -462,12 +498,12 @@ class FileDiff
      * Gets the from file type
      *
      * @access public
-     * @param boolean $local true if caller wants localized type
+     * @param bool $local true if caller wants localized type
      * @return string from file type
      */
     public function GetFromFileType($local = false) // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -480,12 +516,12 @@ class FileDiff
      * Gets the to file type
      *
      * @access public
-     * @param boolean $local true if caller wants localized type
+     * @param bool $local true if caller wants localized type
      * @return string to file type
      */
     public function GetToFileType($local = false) // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -498,11 +534,11 @@ class FileDiff
      * Tests if filetype changed
      *
      * @access public
-     * @return boolean true if file type changed
+     * @return bool true if file type changed
      */
     public function FileTypeChanged() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -515,11 +551,11 @@ class FileDiff
      * Tests if file mode changed
      *
      * @access public
-     * @return boolean true if file mode changed
+     * @return bool true if file mode changed
      */
     public function FileModeChanged() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -532,11 +568,11 @@ class FileDiff
      * Tests if the from file is a regular file
      *
      * @access public
-     * @return boolean true if from file is regular
+     * @return bool true if from file is regular
      */
     public function FromFileIsRegular() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -549,11 +585,11 @@ class FileDiff
      * Tests if the to file is a regular file
      *
      * @access public
-     * @return boolean true if to file is regular
+     * @return bool true if to file is regular
      */
     public function ToFileIsRegular() // @codingStandardsIgnoreLine
     {
-        if (!$this->diffInfoRead) {
+        if (! $this->diffInfoRead) {
             $this->ReadDiffInfo();
         }
 
@@ -579,14 +615,14 @@ class FileDiff
             }
         }
 
-        if ((!$this->diffInfoRead) && $readFileData) {
+        if ((! $this->diffInfoRead) && $readFileData) {
             $this->ReadDiffInfo();
         }
 
         $this->diffDataName = $file;
         $this->diffDataRead = true;
 
-        if ((!empty($this->status)) && ($this->status != 'A') && ($this->status != 'D') && ($this->status != 'M')) {
+        if ((! empty($this->status)) && ($this->status != 'A') && ($this->status != 'D') && ($this->status != 'M')) {
             $this->diffData = '';
             return;
         }
@@ -596,28 +632,23 @@ class FileDiff
         } else {
             $tmpdir = TmpDir::GetInstance();
 
-            $pid = 0;
-            if (function_exists('posix_getpid')) {
-                $pid = posix_getpid();
-            } else {
-                $pid = rand();
-            }
+            $pid = posix_getpid();
 
             $fromTmpFile = null;
-            $toTmpFile = null;
+            $toTmpFile   = null;
 
             $fromName = null;
-            $toName = null;
+            $toName   = null;
 
             if ((empty($this->status)) || ($this->status == 'D') || ($this->status == 'M')) {
-                $fromBlob = $this->GetFromBlob();
+                $fromBlob    = $this->GetFromBlob();
                 $fromTmpFile = 'gitphp_' . $pid . '_from';
                 $tmpdir->AddFile($fromTmpFile, $fromBlob->GetData());
 
                 $fromName = 'a/';
-                if (!empty($file)) {
+                if (! empty($file)) {
                     $fromName .= $file;
-                } elseif (!empty($this->fromFile)) {
+                } elseif (! empty($this->fromFile)) {
                     $fromName .= $this->fromFile;
                 } else {
                     $fromName .= $this->fromHash;
@@ -625,27 +656,27 @@ class FileDiff
             }
 
             if ((empty($this->status)) || ($this->status == 'A') || ($this->status == 'M')) {
-                $toBlob = $this->GetToBlob();
+                $toBlob    = $this->GetToBlob();
                 $toTmpFile = 'gitphp_' . $pid . '_to';
                 $tmpdir->AddFile($toTmpFile, $toBlob->GetData());
 
                 $toName = 'b/';
-                if (!empty($file)) {
+                if (! empty($file)) {
                     $toName .= $file;
-                } elseif (!empty($this->toFile)) {
+                } elseif (! empty($this->toFile)) {
                     $toName .= $this->toFile;
                 } else {
                     $toName .= $this->toHash;
                 }
             }
 
-            $this->diffData = DiffExe::Diff((empty($fromTmpFile) ? null : escapeshellarg($tmpdir->GetDir() . $fromTmpFile)), $fromName, (empty($toTmpFile) ? null : escapeshellarg($tmpdir->GetDir() . $toTmpFile)), $toName);
+            $this->diffData = DiffExe::Diff((empty($fromTmpFile) ? null : escapeshellarg($tmpdir->GetDir() . $fromTmpFile)), $fromName === null ? null : escapeshellarg($fromName), (empty($toTmpFile) ? null : escapeshellarg($tmpdir->GetDir() . $toTmpFile)), $toName);
 
-            if (!empty($fromTmpFile)) {
+            if (! empty($fromTmpFile)) {
                 $tmpdir->RemoveFile($fromTmpFile);
             }
 
-            if (!empty($toTmpFile)) {
+            if (! empty($toTmpFile)) {
                 $tmpdir->RemoveFile($toTmpFile);
             }
         }
@@ -665,8 +696,6 @@ class FileDiff
      * First the mode ("" or "-added" or "-deleted" or "-modified"),
      * then the first column, then the second.
      *
-     * @author Mattias Ulbrich
-     *
      * @access public
      * @return an array of line elements (see above)
      */
@@ -681,7 +710,7 @@ class FileDiff
         $exe = new GitExe($this->project);
 
         $fromBlob = $this->GetFromBlob();
-        $blob = $fromBlob->GetData(true);
+        $blob     = $fromBlob->GetData(true);
 
         $diffLines = '';
         if (function_exists('xdiff_string_diff')) {
@@ -689,16 +718,15 @@ class FileDiff
         } else {
             $diffLines = explode("\n", $exe->Execute(
                 GitExe::DIFF,
-                array("-U0", escapeshellarg($this->fromHash),
-                    escapeshellarg($this->toHash))
+                ["-U0", escapeshellarg($this->fromHash),
+                    escapeshellarg($this->toHash)]
             ));
         }
 
         unset($exe);
 
-        //
         // parse diffs
-        $diffs = array();
+        $diffs       = [];
         $currentDiff = false;
         foreach ($diffLines as $d) {
             if (strlen($d) == 0) {
@@ -707,15 +735,16 @@ class FileDiff
             switch ($d[0]) {
                 case '@':
                     if ($currentDiff) {
+                        assert(isset($currentDiff['left'], $currentDiff['right'], $currentDiff['line']));
                         if (count($currentDiff['left']) == 0 && count($currentDiff['right']) > 0) {
                             $currentDiff['line']++;     // HACK to make added blocks align correctly
                         }
                         $diffs[] = $currentDiff;
                     }
-                    $comma = strpos($d, ",");
-                    $line = -intval(substr($d, 2, $comma-2));
-                    $currentDiff = array("line" => $line,
-                        "left" => array(), "right" => array());
+                    $comma       = strpos($d, ",");
+                    $line        = -intval(substr($d, 2, $comma - 2));
+                    $currentDiff = ["line" => $line,
+                        "left" => [], "right" => []];
                     break;
                 case '+':
                     if ($currentDiff) {
@@ -730,28 +759,28 @@ class FileDiff
                 case ' ':
                     echo "should not happen!";
                     if ($currentDiff) {
-                        $currentDiff["left"][] = substr($d, 1);
+                        $currentDiff["left"][]  = substr($d, 1);
                         $currentDiff["right"][] = substr($d, 1);
                     }
                     break;
             }
         }
         if ($currentDiff) {
+            assert(isset($currentDiff['left'], $currentDiff['right'], $currentDiff['line']));
             if (count($currentDiff['left']) == 0 && count($currentDiff['right']) > 0) {
                 $currentDiff['line']++;     // HACK to make added blocks align correctly
             }
             $diffs[] = $currentDiff;
         }
 
-        //
         // iterate over diffs
-        $output = array();
-        $idx = 0;
+        $output = [];
+        $idx    = 0;
         foreach ($diffs as $d) {
-            while ($idx+1 < $d['line']) {
-                $h = $blob[$idx];
-                $output[] = array('', $h, $h);
-                $idx ++;
+            while ($idx + 1 < $d['line']) {
+                $h        = $blob[$idx];
+                $output[] = ['', $h, $h];
+                $idx++;
             }
 
             if (count($d['left']) == 0) {
@@ -763,18 +792,18 @@ class FileDiff
             }
 
             for ($i = 0; $i < count($d['left']) || $i < count($d['right']); $i++) {
-                $left = $i < count($d['left']) ? $d['left'][$i] : false;
-                $right = $i < count($d['right']) ? $d['right'][$i] : false;
-                $output[] = array($mode, $left, $right);
+                $left     = $i < count($d['left']) ? $d['left'][$i] : false;
+                $right    = $i < count($d['right']) ? $d['right'][$i] : false;
+                $output[] = [$mode, $left, $right];
             }
 
             $idx += count($d['left']);
         }
 
         while ($idx < count($blob)) {
-            $h = $blob[$idx];
-            $output[] = array('', $h, $h);
-            $idx ++;
+            $h        = $blob[$idx];
+            $output[] = ['', $h, $h];
+            $idx++;
         }
 
         $this->diffDataSplit = $output;
@@ -788,42 +817,42 @@ class FileDiff
      *
      * @access private
      * @param int $context number of context lines
-     * @param boolean $header true to include standard diff header
+     * @param bool $header true to include standard diff header
      * @param string $file override the file name
      * @return string diff content
      */
     private function GetXDiff($context = 3, $header = true, $file = null) // @codingStandardsIgnoreLine
     {
-        if (!function_exists('xdiff_string_diff')) {
+        if (! function_exists('xdiff_string_diff')) {
             return '';
         }
 
         $fromData = '';
-        $toData = '';
+        $toData   = '';
         $isBinary = false;
         $fromName = '/dev/null';
-        $toName = '/dev/null';
+        $toName   = '/dev/null';
         if (empty($this->status) || ($this->status == 'M') || ($this->status == 'D')) {
             $fromBlob = $this->GetFromBlob();
-            $isBinary = $isBinary || $fromBlob->IsBinary();
             $fromData = $fromBlob->GetData(false);
+            $isBinary = BinaryDetector::isBinary($fromData);
             $fromName = 'a/';
-            if (!empty($file)) {
+            if (! empty($file)) {
                 $fromName .= $file;
-            } elseif (!empty($this->fromFile)) {
+            } elseif (! empty($this->fromFile)) {
                 $fromName .= $this->fromFile;
             } else {
                 $fromName .= $this->fromHash;
             }
         }
         if (empty($this->status) || ($this->status == 'M') || ($this->status == 'A')) {
-            $toBlob = $this->GetToBlob();
-            $isBinary = $isBinary || $toBlob->IsBinary();
-            $toData = $toBlob->GetData(false);
-            $toName = 'b/';
-            if (!empty($file)) {
+            $toBlob   = $this->GetToBlob();
+            $toData   = $toBlob->GetData(false);
+            $isBinary = $isBinary || BinaryDetector::isBinary($toData);
+            $toName   = 'b/';
+            if (! empty($file)) {
                 $toName .= $file;
-            } elseif (!empty($this->toFile)) {
+            } elseif (! empty($this->toFile)) {
                 $toName .= $this->toFile;
             } else {
                 $toName .= $this->toHash;
@@ -831,7 +860,7 @@ class FileDiff
         }
         $output = '';
         if ($isBinary) {
-            $output = sprintf(__('Binary files %1$s and %2$s differ'), $fromName, $toName) . "\n";
+            $output = sprintf(dgettext("gitphp", 'Binary files %1$s and %2$s differ'), $fromName, $toName) . "\n";
         } else {
             if ($header) {
                 $output = '--- ' . $fromName . "\n" . '+++ ' . $toName . "\n";
@@ -847,7 +876,7 @@ class FileDiff
      * Gets the commit for this filediff
      *
      * @access public
-     * @return commit object
+     * @return Commit object
      */
     public function GetCommit() // @codingStandardsIgnoreLine
     {

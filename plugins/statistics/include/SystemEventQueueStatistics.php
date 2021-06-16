@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,19 +18,23 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SystemEventQueueStatistics extends SystemEventQueue {
+class SystemEventQueueStatistics extends SystemEventQueue
+{
 
-    const NAME = 'statistics';
+    public const NAME = 'statistics';
 
-    public function getName() {
+    public function getName()
+    {
         return self::NAME;
     }
 
-    public function getOwner() {
+    public function getOwner()
+    {
         return SystemEvent::OWNER_ROOT;
     }
 
-    public function getLabel() {
-        return $GLOBALS['Language']->getText('plugin_statistics', 'sysevents_queue');
+    public function getLabel()
+    {
+        return dgettext('tuleap-statistics', 'Statistics');
     }
 }

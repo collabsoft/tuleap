@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -35,7 +35,7 @@ use UserManager;
 
 class ProjectResource
 {
-    const MAX_LIMIT = 50;
+    public const MAX_LIMIT = 50;
 
     /** @var UserManager */
     private $user_manager;
@@ -90,17 +90,13 @@ class ProjectResource
      *
      * @param int $id   Id of the project
      * @param string $query Search string in json format {@required}
-     * @param int $limit    Number of elements displayed per page {@from path} {@max 50}
+     * @param int $limit    Number of elements displayed per page {@from path} {@min 0} {@max 50}
      * @param int $offset   Position of the first element to display {@from path} {@min 0}
      *
      * @return CollectionOfLabeledItemsRepresentation {@type CollectionOfLabeledItemsRepresentation}
-     *
-     * @throws 406
      */
     public function getLabeledItems($id, $query, $limit = 50, $offset = 0)
     {
-        $this->checkLimitValueIsAcceptable($limit);
-
         $project   = $this->getProjectForUser($id);
         $user      = $this->user_manager->getCurrentUser();
         $label_ids = $this->getLabelIdsFromQuery($query);
@@ -108,8 +104,7 @@ class ProjectResource
         $collection = new LabeledItemCollection($project, $user, $label_ids, $limit, $offset);
         $this->event_manager->processEvent($collection);
 
-        $labeled_items = new CollectionOfLabeledItemsRepresentation();
-        $labeled_items->build($collection);
+        $labeled_items = CollectionOfLabeledItemsRepresentation::build($collection);
 
         $this->sendAllowHeadersForLabeledItems();
         Header::sendPaginationHeaders($limit, $offset, $collection->getTotalSize(), self::MAX_LIMIT);
@@ -141,21 +136,9 @@ class ProjectResource
         Header::allowOptionsGet();
     }
 
-    private function checkLimitValueIsAcceptable($limit)
-    {
-        if (! $this->limitValueIsAcceptable($limit)) {
-            throw new RestException(406, 'Maximum value for limit exceeded');
-        }
-    }
-
-    private function limitValueIsAcceptable($limit)
-    {
-        return $limit <= self::MAX_LIMIT;
-    }
-
     /**
-     * @throws 403
-     * @throws 404
+     * @throws RestException 403
+     * @throws RestException 404
      *
      * @return Project
      */

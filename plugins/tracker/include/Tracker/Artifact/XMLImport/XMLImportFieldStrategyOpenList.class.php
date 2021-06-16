@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,12 +18,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_XMLImport_XMLImportFieldStrategyOpenList implements Tracker_Artifact_XMLImport_XMLImportFieldStrategy {
+use Tuleap\Tracker\Artifact\Artifact;
 
-    const FORMAT_ID       = 'id';
-    const FORMAT_LDAP     = 'ldap';
-    const FORMAT_USERNAME = 'username';
-    const BIND_USERS      = 'users';
+class Tracker_Artifact_XMLImport_XMLImportFieldStrategyOpenList implements Tracker_Artifact_XMLImport_XMLImportFieldStrategy
+{
+
+    public const FORMAT_ID       = 'id';
+    public const FORMAT_LDAP     = 'ldap';
+    public const FORMAT_USERNAME = 'username';
+    public const BIND_USERS      = 'users';
 
     /** @var TrackerXmlFieldsMapping */
     private $xml_fields_mapping;
@@ -42,20 +45,16 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyOpenList implements Track
     /**
      * Extract Field data from XML input
      *
-     * @param Tracker_FormElement_Field $field
-     * @param SimpleXMLElement $field_change
      *
-     * @param PFUser $submitted_by
-     * @param Tracker_Artifact $artifact
      * @return mixed
      */
     public function getFieldData(
         Tracker_FormElement_Field $field,
         SimpleXMLElement $field_change,
         PFUser $submitted_by,
-        Tracker_Artifact $artifact
+        Artifact $artifact
     ) {
-        $values = array();
+        $values = [];
         $bind   = (string) $field_change['bind'];
 
         foreach ($field_change->value as $value) {
@@ -69,33 +68,36 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyOpenList implements Track
         return implode(',', $values);
     }
 
-    private function getUserValue(Tracker_FormElement_Field $field, $value) {
+    private function getUserValue(Tracker_FormElement_Field $field, SimpleXMLElement $value)
+    {
         if (isset($value['format']) && (string) $value['format'] === self::FORMAT_ID) {
             return (string) $value;
         }
 
-        if ($this->doesValueConcernUser($value)){
+        if ($this->doesValueConcernUser($value)) {
             $user = $this->user_finder->getUser($value);
 
             if ($user->isAnonymous()) {
                 return '';
             }
 
-            return Tracker_FormElement_Field_OpenList::BIND_PREFIX.$user->getId();
+            return Tracker_FormElement_Field_OpenList::BIND_PREFIX . $user->getId();
         }
 
         return $field->getFieldData((string) $value);
     }
 
-    private function doesValueConcernUser($value) {
+    private function doesValueConcernUser($value)
+    {
         return isset($value['format']) &&
             ((string) $value['format'] === self::FORMAT_LDAP ||
              (string) $value['format'] === self::FORMAT_USERNAME
             );
     }
 
-    private function getFieldChangeId(Tracker_FormElement_Field $field, $value) {
-        if (isset($value['format']) && (string) $value['format'] === self::FORMAT_ID){
+    private function getFieldChangeId(Tracker_FormElement_Field $field, SimpleXMLElement $value)
+    {
+        if (isset($value['format']) && (string) $value['format'] === self::FORMAT_ID) {
             return $this->xml_fields_mapping->getNewOpenValueId((string) $value);
         }
 

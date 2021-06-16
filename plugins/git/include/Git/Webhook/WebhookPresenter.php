@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2020 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,56 +20,7 @@
 
 namespace Tuleap\Git\Webhook;
 
-use GitRepository;
-use CSRFSynchronizerToken;
-
-class WebhookPresenter
+interface WebhookPresenter
 {
-    public $use_default_edit_modal;
-    public $edit_modal;
-    public $repository_id;
-    public $hooklogs;
-    public $csrf_token;
-    public $webhook_url;
-    public $last_push_info;
-    public $modal_logs_time_label;
-    public $modal_logs_info_label;
-    public $logs_for;
-    public $empty_logs;
-    public $remove_webhook_desc;
-    public $remove_webhook_confirm;
-    public $remove_form_action;
-    public $id;
-
-    public function __construct(
-        GitRepository $repository,
-        $id,
-        $webhook_url,
-        array $hooklogs,
-        CSRFSynchronizerToken $csrf,
-        $use_default_edit_modal
-    ) {
-        $this->id                      = $id;
-        $this->webhook_url             = $webhook_url;
-        $this->purified_last_push_info = '';
-        $this->hooklogs                = $hooklogs;
-        $this->csrf_token              = $csrf->getToken();
-        $this->use_default_edit_modal  = $use_default_edit_modal;
-
-        $this->repository_id = $repository->getId();
-
-        $this->modal_logs_time_label = $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_time_label');
-        $this->modal_logs_info_label = $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_info_label');
-
-        $this->remove_webhook_desc    = $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_remove_webhook_desc');
-        $this->remove_webhook_confirm = $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_remove_webhook_confirm');
-        $this->remove_form_action     = GIT_BASE_URL .'/?group_id='. (int)$repository->getProjectId();
-
-        $this->logs_for   = $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_logs_for', $webhook_url);
-        $this->empty_logs = $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_empty_logs');
-
-        if (count($hooklogs) > 0) {
-            $this->purified_last_push_info = $hooklogs[0]->purified_information;
-        }
-    }
+    public function isSimple(): bool;
 }

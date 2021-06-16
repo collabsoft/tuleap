@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,19 +18,17 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-interface PFO_Plugin {
+interface PFO_Plugin
+{
 
     /**
      * Listen to an event and associate a callback
      *
      * @param String  $hook       Event name
      * @param String  $callback   Callback method name (method of the current object)
-     * @param Boolean $recallHook If set to true, event name is passed as parameter
+     * @param bool $recallHook If set to true, event name is passed as parameter
      *
      * @return void
      */
     public function addHook($hook, $callback = null, $recallHook = false);
-
 }
-
-?>

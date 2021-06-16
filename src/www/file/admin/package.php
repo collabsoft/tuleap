@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * SourceForge: Breaking Down the Barriers to Open Source Development
- * Copyright (c) Enalean, 2016. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,18 +21,18 @@
 
 use Tuleap\FRS\FRSPackageController;
 use Tuleap\FRS\FRSPackageRouter;
-use Tuleap\FRS\FRSPermissionDao;
-use Tuleap\FRS\FRSPermissionFactory;
 use Tuleap\FRS\FRSPermissionManager;
+use Tuleap\FRS\LicenseAgreement\LicenseAgreementDao;
+use Tuleap\FRS\LicenseAgreement\LicenseAgreementFactory;
 
-require_once('pre.php');
+require_once __DIR__ . '/../../include/pre.php';
 
 $request         = HTTPRequest::instance();
 $project_manager = ProjectManager::instance();
 
 $valid_group_id = new Valid_GroupId();
 $valid_group_id->required();
-if(! $request->valid($valid_group_id)) {
+if (! $request->valid($valid_group_id)) {
     exit_no_group();
 }
 
@@ -45,13 +45,14 @@ $router = new FRSPackageRouter(
         FRSPackageFactory::instance(),
         FRSReleaseFactory::instance(),
         new User_ForgeUserGroupFactory(new UserGroupDao()),
-        PermissionsManager::instance()
+        PermissionsManager::instance(),
+        new LicenseAgreementFactory(
+            new LicenseAgreementDao()
+        ),
+        Codendi_HTMLPurifier::instance(),
     ),
     FRSPackageFactory::instance(),
-    new FRSPermissionManager(
-        new FRSPermissionDao(),
-        new FRSPermissionFactory(new FRSPermissionDao())
-    )
+    FRSPermissionManager::build()
 );
 
 $router->route($request, $project, $user);

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -30,6 +30,8 @@ use Tuleap\Request\NotFoundException;
 
 class TroveCatListController implements DispatchableWithRequest
 {
+    private const DEFAULT_NB_MAX_VALUES = 3;
+
     /**
      * @var TroveCatDao
      */
@@ -53,8 +55,6 @@ class TroveCatListController implements DispatchableWithRequest
     /**
      * Is able to process a request routed by FrontRouter
      *
-     * @param HTTPRequest $request
-     * @param BaseLayout $layout
      * @param array $variables
      * @throws NotFoundException
      * @throws ForbiddenException
@@ -95,7 +95,9 @@ class TroveCatListController implements DispatchableWithRequest
             $trove_category['mandatory'],
             $trove_category['display'],
             $trove_category['fullpath'],
-            $trove_category['fullpath_ids']
+            $trove_category['fullpath_ids'],
+            $trove_category['nb_max_values'],
+            $trove_category['is_project_flag']
         );
     }
 
@@ -123,10 +125,10 @@ class TroveCatListController implements DispatchableWithRequest
     {
         $current_trove_category = $this->formatTroveCategoriesFromRequest($request);
 
-        $last_parent             = array();
-        $already_seen            = array();
-        $trove_category_children = array();
-        $last_parent_ids         = array();
+        $last_parent             = [];
+        $already_seen            = [];
+        $trove_category_children = [];
+        $last_parent_ids         = [];
         $this->trove_cat_retriever->retrieveChildren(
             $current_trove_category['trove_cat_id'],
             $last_parent,
@@ -152,9 +154,15 @@ class TroveCatListController implements DispatchableWithRequest
             $current_trove_category['display'],
             $current_trove_category['trove_cat_id'],
             $current_trove_category['fullpath'],
-            $current_trove_category['fullpath_ids']
+            $current_trove_category['fullpath_ids'],
+            $current_trove_category['nb_max_values'],
+            $current_trove_category['is_project_flag']
         );
 
+        $newroot_for_children = $current_trove_category['root_parent'];
+        if (! $newroot_for_children) {
+            $newroot_for_children = $current_trove_category['trove_cat_id'];
+        }
         foreach ($trove_category_children as $child) {
             if ($current_trove_category['parent'] === $child['trove_cat_id']) {
                 $this->trove_cat_dao->rollBack();
@@ -165,12 +173,14 @@ class TroveCatListController implements DispatchableWithRequest
                 $child['fullname'],
                 $child['description'],
                 $child['parent'],
-                isset($current_trove_category['root_parent']) ? $current_trove_category['root_parent'] : 0,
+                $newroot_for_children,
                 $child['is_top_level_id'],
                 $child['display_during_project_creation'],
                 $child['trove_cat_id'],
                 $current_trove_category['fullpath'] . ' :: ' . $child['hierarchy'],
-                $current_trove_category['fullpath_ids'] . ' :: ' . $child['trove_cat_id']
+                $current_trove_category['fullpath_ids'] . ' :: ' . $child['trove_cat_id'],
+                $child['nb_max_values'],
+                $child['is_project_flag']
             );
         }
 
@@ -197,15 +207,22 @@ class TroveCatListController implements DispatchableWithRequest
             throw new TroveCatMissingShortNameException();
         }
 
+        $nb_max_values = (int) $request->get('nb-max-values');
+        if ($nb_max_values < 1) {
+            $nb_max_values = self::DEFAULT_NB_MAX_VALUES;
+        }
+
+        $is_project_flag = $this->isProjectFlag($request, $nb_max_values);
+
         $display = $this->isANewRootChild(
             $request->get('parent'),
             $request->get('display-at-project-creation')
         );
 
-        $trove_cat_list  = array();
-        $already_seen    = array();
-        $last_parent     = array();
-        $last_parent_ids = array();
+        $trove_cat_list  = [];
+        $already_seen    = [];
+        $last_parent     = [];
+        $last_parent_ids = [];
         $this->trove_cat_retriever->retrieveFathers(
             $request->get('parent'),
             $last_parent,
@@ -214,12 +231,12 @@ class TroveCatListController implements DispatchableWithRequest
             $last_parent_ids
         );
 
-        $ids = array(0);
+        $ids = [0];
         if (isset($trove_cat_list['hierarchy_id'])) {
             $ids = explode(' :: ', $trove_cat_list['hierarchy_id']);
         }
 
-        $trove_categories = array(
+        $trove_categories = [
             'shortname'    => $request->get('shortname'),
             'fullname'     => $request->get('fullname'),
             'description'  => $request->get('description'),
@@ -227,10 +244,12 @@ class TroveCatListController implements DispatchableWithRequest
             'display'      => $display,
             'mandatory'    => $this->isMandatory($display, $request->get('is-mandatory')),
             'trove_cat_id' => $request->get('id'),
-            'fullpath'     => (isset($trove_cat_list['hierarchy'])) ? $trove_cat_list['hierarchy'] .  " :: " .$request->get('fullname') : $request->get('fullname'),
+            'fullpath'     => (isset($trove_cat_list['hierarchy'])) ? $trove_cat_list['hierarchy'] .  " :: " . $request->get('fullname') : $request->get('fullname'),
             'fullpath_ids' => (isset($trove_cat_list['hierarchy_id'])) ? $trove_cat_list['hierarchy_id'] . " :: "  . $trove_cat_id : $trove_cat_id,
-            'root_parent'  => (int) $ids[0]
-        );
+            'root_parent'  => (int) $ids[0],
+            'nb_max_values' => $nb_max_values,
+            'is_project_flag' => $is_project_flag
+        ];
 
         return $trove_categories;
     }
@@ -238,10 +257,10 @@ class TroveCatListController implements DispatchableWithRequest
     private function delete(HTTPRequest $request)
     {
         $trove_cat_id            = $request->get('trove_cat_id');
-        $last_parent             = array();
-        $already_seen            = array();
-        $trove_category_children = array();
-        $hierarchy_ids           = array();
+        $last_parent             = [];
+        $already_seen            = [];
+        $trove_category_children = [];
+        $hierarchy_ids           = [];
 
         $this->trove_cat_retriever->retrieveChildren(
             $trove_cat_id,
@@ -260,5 +279,58 @@ class TroveCatListController implements DispatchableWithRequest
         $this->trove_cat_dao->delete($request->get('trove_cat_id'));
 
         $this->trove_cat_dao->commit();
+    }
+
+    /**
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    private function isProjectFlag(HTTPRequest $request, $nb_max_values)
+    {
+        $is_project_flag = $request->get('is-project-flag') === "1";
+        if ($is_project_flag) {
+            if ($request->get('parent') !== "0") {
+                throw new \Exception("Only top categories can be marked as project flag.");
+            }
+
+            $this->checkNbOfExistingProjectFlags($request);
+
+            if ($nb_max_values !== 1) {
+                throw new \Exception("Only categories with nb max values = 1 can be marked as project flag.");
+            }
+        }
+
+        return $is_project_flag;
+    }
+
+    private function checkNbOfExistingProjectFlags(HTTPRequest $request)
+    {
+        $last_parent    = [];
+        $already_seen   = [];
+        $trove_cat_list = [];
+        $hierarchy_ids  = [];
+
+        $this->trove_cat_retriever->retrieveFullHierarchy(
+            0,
+            $last_parent,
+            $already_seen,
+            $trove_cat_list,
+            $hierarchy_ids
+        );
+
+        $id                                             = $request->get('id');
+        $nb_of_other_categories_flagged_as_project_flag = 0;
+        foreach ($trove_cat_list as $trovecat) {
+            if ($trovecat['trove_cat_id'] === $id) {
+                continue;
+            }
+            if ($trovecat['is_top_level_id'] && $trovecat['is_project_flag']) {
+                $nb_of_other_categories_flagged_as_project_flag++;
+            }
+        }
+        if ($nb_of_other_categories_flagged_as_project_flag >= 2) {
+            throw new \Exception("Up to 2 categories can be used as flag.");
+        }
     }
 }

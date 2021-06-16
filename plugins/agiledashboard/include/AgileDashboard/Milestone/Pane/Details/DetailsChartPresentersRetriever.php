@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,7 +26,7 @@ use Tuleap\Event\Dispatchable;
 
 class DetailsChartPresentersRetriever implements Dispatchable
 {
-    const NAME = 'detailsChartPresentersRetriever';
+    public const NAME = 'detailsChartPresentersRetriever';
     /**
      * @var Planning_Milestone
      */

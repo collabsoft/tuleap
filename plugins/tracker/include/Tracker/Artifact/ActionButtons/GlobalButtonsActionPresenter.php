@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -35,10 +35,6 @@ class GlobalButtonsActionPresenter
      */
     public $artifact_copy_button_presenter;
     /**
-     * @var ArtifactGrapDependenciesButtonPresenter
-     */
-    public $artifact_graph_dependencies_button_presenter;
-    /**
      * @var ArtifactNotificationsButtonPresenter
      */
     public $artifact_notifications_button_presenter;
@@ -55,24 +51,31 @@ class GlobalButtonsActionPresenter
      */
     public $should_load_modal;
     /**
+     * @var bool
+     */
+    public $has_at_least_one_additional_action;
+    /**
      * @var ArtifactMoveModalPresenter
      */
     public $artifact_move_modal_presenter;
+    /**
+     * @var array
+     */
+    public $additional_buttons;
 
     public function __construct(
-        ArtifactMoveButtonPresenter $artifact_move_button_presenter = null,
-        ArtifactMoveModalPresenter $artifact_move_modal_presenter = null,
-        ArtifactCopyButtonPresenter $artifact_copy_button_presenter = null,
-        ArtifactGrapDependenciesButtonPresenter $artifact_graph_dependencies_button_presenter = null,
-        ArtifactNotificationsButtonPresenter $artifact_notifications_button_presenter = null,
-        ArtifactOriginalEmailButtonPresenter $artifact_original_email_button_presenter = null
+        array $additional_buttons,
+        ?ArtifactMoveButtonPresenter $artifact_move_button_presenter = null,
+        ?ArtifactMoveModalPresenter $artifact_move_modal_presenter = null,
+        ?ArtifactCopyButtonPresenter $artifact_copy_button_presenter = null,
+        ?ArtifactNotificationsButtonPresenter $artifact_notifications_button_presenter = null,
+        ?ArtifactOriginalEmailButtonPresenter $artifact_original_email_button_presenter = null
     ) {
-        $this->artifact_move_button_presenter               = $artifact_move_button_presenter;
-        $this->artifact_move_modal_presenter                = $artifact_move_modal_presenter;
-        $this->artifact_copy_button_presenter               = $artifact_copy_button_presenter;
-        $this->artifact_graph_dependencies_button_presenter = $artifact_graph_dependencies_button_presenter;
-        $this->artifact_notifications_button_presenter      = $artifact_notifications_button_presenter;
-        $this->artifact_original_email_button_presenter     = $artifact_original_email_button_presenter;
+        $this->artifact_move_button_presenter           = $artifact_move_button_presenter;
+        $this->artifact_move_modal_presenter            = $artifact_move_modal_presenter;
+        $this->artifact_copy_button_presenter           = $artifact_copy_button_presenter;
+        $this->artifact_notifications_button_presenter  = $artifact_notifications_button_presenter;
+        $this->artifact_original_email_button_presenter = $artifact_original_email_button_presenter;
 
         $this->should_load_modal = $artifact_move_button_presenter !== null &&
             ! $artifact_move_button_presenter->hasError();
@@ -80,35 +83,32 @@ class GlobalButtonsActionPresenter
         $this->divider = $this->hasPrimaryAction(
             $artifact_move_button_presenter,
             $artifact_copy_button_presenter,
-            $artifact_graph_dependencies_button_presenter,
             $artifact_original_email_button_presenter
         )
         && $artifact_notifications_button_presenter !== null;
 
+        $this->has_at_least_one_additional_action = count($additional_buttons) > 0;
+
         $this->has_at_least_one_action = $artifact_move_button_presenter !== null ||
             $artifact_copy_button_presenter !== null ||
-            $artifact_graph_dependencies_button_presenter !== null ||
             $artifact_original_email_button_presenter !== null ||
-            $artifact_notifications_button_presenter !== null;
+            $artifact_notifications_button_presenter !== null ||
+            $this->has_at_least_one_additional_action;
+
+        $this->additional_buttons = $additional_buttons;
     }
 
     /**
-     * @param ArtifactMoveButtonPresenter             $artifact_move_button_presenter
-     * @param ArtifactCopyButtonPresenter             $artifact_copy_button_presenter
-     * @param ArtifactGrapDependenciesButtonPresenter $artifact_graph_dependencies_button_presenter
-     * @param ArtifactOriginalEmailButtonPresenter    $artifact_original_email_button_presenter
      *
      * @return bool
      */
     private function hasPrimaryAction(
-        ArtifactMoveButtonPresenter $artifact_move_button_presenter = null,
-        ArtifactCopyButtonPresenter $artifact_copy_button_presenter = null,
-        ArtifactGrapDependenciesButtonPresenter $artifact_graph_dependencies_button_presenter = null,
-        ArtifactOriginalEmailButtonPresenter $artifact_original_email_button_presenter = null
+        ?ArtifactMoveButtonPresenter $artifact_move_button_presenter = null,
+        ?ArtifactCopyButtonPresenter $artifact_copy_button_presenter = null,
+        ?ArtifactOriginalEmailButtonPresenter $artifact_original_email_button_presenter = null
     ) {
         return ($artifact_move_button_presenter !== null ||
             $artifact_copy_button_presenter !== null ||
-            $artifact_graph_dependencies_button_presenter !== null ||
             $artifact_original_email_button_presenter !== null
         );
     }

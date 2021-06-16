@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,25 +18,31 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_View_Copy extends Tracker_Artifact_View_Edit {
+class Tracker_Artifact_View_Copy extends Tracker_Artifact_View_Edit
+{
 
     /** @see Tracker_Artifact_View_Edit::getURL() */
-    public function getURL() {
-        return TRACKER_BASE_URL .'/?'. http_build_query(
-            array(
+    public function getURL()
+    {
+        return TRACKER_BASE_URL . '/?' . http_build_query(
+            [
                 'aid' => $this->artifact->getId(),
                 'func' => 'copy-artifact'
-            )
+            ]
         );
     }
 
     /** @see Tracker_Artifact_View_Edit::getTitle() */
-    public function getTitle() {
-        return $GLOBALS['Language']->getText('plugin_tracker_artifact', 'edit_title');
+    public function getTitle()
+    {
+        return dgettext('tuleap-tracker', 'Artifact');
     }
 
     /** @see Tracker_Artifact_View_Edit::fetch() */
-    public function fetch() {
+    public function fetch()
+    {
+        self::fetchEditViewJSCode();
+
         $html  = '';
         $html .= '<div class="tracker_artifact">';
         $html .= $this->renderer->fetchFieldsForCopy($this->artifact, $this->request->get('artifact'));

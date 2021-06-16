@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
  *
  * Originally written by Manuel VACELET, 2007.
  *
@@ -24,11 +24,12 @@
  */
 
 use Tuleap\Admin\AdminPageRenderer;
+use Tuleap\Userlog\UserlogAccess;
 use Tuleap\Userlog\UserLogBuilder;
 use Tuleap\Userlog\UserLogPresenter;
 
-
-class UserLogManager {
+class UserLogManager
+{
     /**
      * @var AdminPageRenderer
      */
@@ -44,7 +45,7 @@ class UserLogManager {
         $this->user_manager        = $user_manager;
     }
 
-    function getDao()
+    public function getDao()
     {
         $da  = CodendiDataAccess::instance();
         $dao = new UserLogDao($da);
@@ -52,24 +53,34 @@ class UserLogManager {
         return $dao;
     }
 
-    public function logAccess($time, $gid, $uid, $userAgent, $requestMethod, $requestUri, $remoteAddr, $httpReferer)
+    public function logAccess(UserlogAccess $userlog_access)
     {
         $dao = $this->getDao();
-        $dao->addRequest($time, $gid, $uid, $userAgent, $requestMethod, $requestUri, $remoteAddr, $httpReferer);
+        $dao->addRequest(
+            $userlog_access->getDate()->getTimestamp(),
+            $userlog_access->getProject()->getID(),
+            $userlog_access->getUser()->getId(),
+            $userlog_access->getUserAgent(),
+            $userlog_access->getRequestMethod(),
+            $userlog_access->getRequestUri(),
+            $userlog_access->getIpAddress(),
+            $userlog_access->getHttpReferer()
+        );
     }
 
-    function displayNewOrIdem($key, $row, &$pval, $display = null) {
-        if($pval[$key] != $row[$key]) {
-            if($display === null) {
+    public function displayNewOrIdem($key, $row, &$pval, $display = null)
+    {
+        if ($pval[$key] != $row[$key]) {
+            if ($display === null) {
                 $dis = $row[$key];
             } else {
                 $dis = $display;
             }
             // Display treatment
-            if($dis == '') {
+            if ($dis == '') {
                 $dis = '&nbsp;';
             } else {
-                $hp = Codendi_HTMLPurifier::instance();
+                $hp  = Codendi_HTMLPurifier::instance();
                 $dis = $hp->purify($dis);
             }
         } else {
@@ -80,8 +91,9 @@ class UserLogManager {
         return $dis;
     }
 
-    function initPval(&$pval) {
-        $pval = array('time' => -1,
+    public function initPval(&$pval)
+    {
+        $pval = ['time' => -1,
                       'hour' => -1,
                       'group_id' => -1,
                       'user_id' => -1,
@@ -90,13 +102,13 @@ class UserLogManager {
                       'http_request_method' => -1,
                       'http_request_uri' => -1,
                       'http_remote_addr' => -1,
-                      'http_referer' => -1);
+                      'http_referer' => -1];
     }
 
-    function displayLogs($offset, $selected_day = null)
+    public function displayLogs($offset, $selected_day = null)
     {
-        $count       = 100;
-        $log_builder = new UserLogBuilder($this->getDao(), $this->user_manager);
+        $count                    = 100;
+        $log_builder              = new UserLogBuilder($this->getDao(), $this->user_manager);
         list($logs, $total_count) = $log_builder->build($selected_day, $offset, $count);
 
         $presenter = new UserLogPresenter($logs, $selected_day, $count, $offset, $total_count);

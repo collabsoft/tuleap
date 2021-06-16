@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,10 +18,13 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class Tracker_Artifact_PaginatedArtifacts {
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Tracker_Artifact_PaginatedArtifacts
+{
 
     /**
-     * @var Tracker_Artifact[]
+     * @var Artifact[]
      */
     private $artifacts;
 
@@ -32,23 +35,25 @@ class Tracker_Artifact_PaginatedArtifacts {
 
     /**
      *
-     * @param Tracker_Artifact[] $artifacts
-     * @param int $total_size
+     * @param Artifact[] $artifacts
+     * @param int        $total_size
      */
-    public function __construct(array $artifacts, $total_size) {
+    public function __construct(array $artifacts, $total_size)
+    {
         $this->artifacts  = $artifacts;
         $this->total_size = $total_size;
     }
 
-    public function getTotalSize() {
+    public function getTotalSize()
+    {
         return $this->total_size;
     }
 
     /**
-     * @return Tracker_Artifact[]
+     * @return Artifact[]
      */
-    public function getArtifacts() {
+    public function getArtifacts()
+    {
         return $this->artifacts;
     }
 }
-?>

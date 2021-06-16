@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,10 +22,12 @@ namespace Tuleap\Git\CommitStatus;
 
 final class CommitStatusWithKnownStatus implements CommitStatus
 {
-    const STATUS_SUCCESS      = 0;
-    const STATUS_SUCCESS_NAME = 'success';
-    const STATUS_FAILURE      = 1;
-    const STATUS_FAILURE_NAME = 'failure';
+    public const STATUS_SUCCESS      = 0;
+    public const STATUS_SUCCESS_NAME = 'success';
+    public const STATUS_FAILURE      = 1;
+    public const STATUS_FAILURE_NAME = 'failure';
+    public const STATUS_PENDING      = 2;
+    public const STATUS_PENDING_NAME = 'pending';
 
     /**
      * @var int
@@ -41,6 +43,7 @@ final class CommitStatusWithKnownStatus implements CommitStatus
         switch ($status) {
             case self::STATUS_SUCCESS:
             case self::STATUS_FAILURE:
+            case self::STATUS_PENDING:
                 break;
             default:
                 throw new \DomainException("Commit status $status is unknown");
@@ -60,6 +63,9 @@ final class CommitStatusWithKnownStatus implements CommitStatus
                 break;
             case self::STATUS_FAILURE_NAME:
                 $status = self::STATUS_FAILURE;
+                break;
+            case self::STATUS_PENDING_NAME:
+                $status = self::STATUS_PENDING;
                 break;
             default:
                 throw new \DomainException("Commit status $status_name is unknown");
@@ -85,6 +91,8 @@ final class CommitStatusWithKnownStatus implements CommitStatus
                 return self::STATUS_SUCCESS_NAME;
             case self::STATUS_FAILURE:
                 return self::STATUS_FAILURE_NAME;
+            case self::STATUS_PENDING:
+                return self::STATUS_PENDING_NAME;
             default:
                 throw new \DomainException("Commit status $this->status is unknown");
         }

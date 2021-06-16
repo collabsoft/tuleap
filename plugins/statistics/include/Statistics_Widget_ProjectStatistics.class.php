@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2011. All Rights Reserved.
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017-Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,27 +19,25 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-require_once('common/widget/Widget.class.php');
-require_once('Statistics_DiskUsageHtml.class.php');
-require_once ('Statistics_DiskUsageGraph.class.php');
-
-use Tuleap\SVN\DiskUsage\Collector as SVNCollector;
-use Tuleap\SVN\DiskUsage\Retriever as SVNRetriever;
-use Tuleap\CVS\DiskUsage\Retriever as CVSRetriever;
-use Tuleap\CVS\DiskUsage\Collector as CVSCollector;
-use Tuleap\CVS\DiskUsage\FullHistoryDao;
+use Tuleap\Statistics\DiskUsage\Subversion\Collector as SVNCollector;
+use Tuleap\Statistics\DiskUsage\Subversion\Retriever as SVNRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Retriever as CVSRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Collector as CVSCollector;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\FullHistoryDao;
 
 /**
  * Statisitics_Widget_ProjectStatistics
  */
-class Statistics_Widget_ProjectStatistics extends Widget {
+class Statistics_Widget_ProjectStatistics extends Widget
+{
 
     /**
      * Constructor
      *
      * @return void
      */
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct('plugin_statistics_projectstatistics');
     }
 
@@ -50,8 +48,9 @@ class Statistics_Widget_ProjectStatistics extends Widget {
      *
      * @see Widget::getTitle()
      */
-    public function getTitle() {
-        return $GLOBALS['Language']->getText('plugin_statistics', 'widget_title_projectstatistics');
+    public function getTitle()
+    {
+        return dgettext('tuleap-statistics', 'Project statistics');
     }
 
     /**
@@ -61,7 +60,8 @@ class Statistics_Widget_ProjectStatistics extends Widget {
      *
      * @see Widget::getContent()
      */
-    public function getContent() {
+    public function getContent()
+    {
         $request  = HTTPRequest::instance();
         $group_id = $request->get('group_id');
 
@@ -92,8 +92,9 @@ class Statistics_Widget_ProjectStatistics extends Widget {
      *
      * @see Widget::getDescription()
      */
-    function getDescription() {
-        return $GLOBALS['Language']->getText('plugin_statistics', 'widget_desc_projectstatistics');
+    public function getDescription()
+    {
+        return dgettext('tuleap-statistics', 'Show project disk statistics');
     }
 
     /**
@@ -103,8 +104,8 @@ class Statistics_Widget_ProjectStatistics extends Widget {
      *
      * @see Widget::getCategory()
      */
-    function getCategory() {
-        return 'plugin_statistics';
+    public function getCategory()
+    {
+        return dgettext('tuleap-statistics', 'Project statistics');
     }
 }
-?>

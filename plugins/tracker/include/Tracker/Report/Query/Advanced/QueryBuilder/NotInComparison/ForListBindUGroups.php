@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ class ForListBindUGroups implements ListBindUgroupsFromWhereBuilder
 
         $values = $this->values_extractor->extractCollectionOfValues($comparison->getValueWrapper(), $field);
 
-        $normalized_values = array();
+        $normalized_values = [];
         foreach ($values as $value) {
             if ($this->label_converter->isASupportedDynamicUgroup($value)) {
                 $value = $this->label_converter->convertLabelToTranslationKey($value);

@@ -2,24 +2,12 @@
 
 set -e
 
-PHP=/opt/remi/php72/root/usr/bin/php
-
-setup_composer() {
-    (cd /usr/share/tuleap/tests/rest && scl enable rh-git29 "$PHP /usr/local/bin/composer.phar --no-interaction install")
-}
-
-generate_testsuite() {
-    php /usr/share/tuleap/tests/rest/bin/generate-testsuite.php /tmp /output
-}
-
 run_testsuite() {
-    PHPUNIT=/usr/share/tuleap/src/vendor/bin/phpunit
-    if [ -x $PHP ]; then
-        PHPUNIT="$PHP $PHPUNIT"
+    PHPUNIT=/usr/share/tuleap/tests/rest/vendor/bin/phpunit
+    if [ -x "$PHP_CLI" ]; then
+        PHPUNIT="$PHP_CLI $PHPUNIT"
     fi
-    $PHPUNIT --configuration /tmp/suite.xml
+    $PHPUNIT --configuration /usr/share/tuleap/tests/rest/phpunit.xml --do-not-cache-result --log-junit /output/rest_tests.xml $1
 }
 
-setup_composer
-generate_testsuite
-run_testsuite
+run_testsuite $1

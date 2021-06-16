@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2004-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -54,10 +54,10 @@ class AdminDelegation_UserServiceManager
 
     public function removeUser(PFUser $user, $time)
     {
-        $ret   = true;
+        $ret             = true;
         $darUserServices = $this->user_service_dao->searchUser($user->getId());
         $this->user_service_dao->removeUser($user->getId());
-        
+
         foreach ($darUserServices as $row) {
             $this->user_service_log_dao->addLog('revoke', $row['service_id'], $user->getId(), $time);
         }

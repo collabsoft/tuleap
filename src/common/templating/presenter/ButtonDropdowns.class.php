@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class Templating_Presenter_ButtonDropdowns {
+class Templating_Presenter_ButtonDropdowns
+{
 
     private $id;
     private $label;
@@ -27,41 +28,49 @@ class Templating_Presenter_ButtonDropdowns {
      * @var Templating_Presenter_ButtonDropdownsOption[]
      */
     private $options;
-    private $icon = 'icon-cog';
-    private $class_names = array();
+    private $icon        = 'fa fa-cog';
+    private $class_names = [];
 
-    public function __construct($id, $label, array $options) {
+    public function __construct($id, $label, array $options)
+    {
         $this->label   = $label;
         $this->options = $options;
         $this->id      = $id;
     }
 
-    public function setIcon($icon) {
+    public function setIcon($icon)
+    {
         $this->icon = $icon;
         return $this;
     }
 
-    public function id() {
+    public function id()
+    {
         return $this->id;
     }
 
-    public function label() {
+    public function label()
+    {
         return $this->label;
     }
 
-    public function options() {
+    public function options()
+    {
         return $this->options;
     }
 
-    public function icon() {
+    public function icon()
+    {
         return $this->icon;
     }
 
-    public function class_names() {
+    public function class_names()
+    {
         return $this->class_names;
     }
 
-    protected function addClassName($classname) {
+    protected function addClassName($classname)
+    {
         $this->class_names[] = $classname;
     }
 }

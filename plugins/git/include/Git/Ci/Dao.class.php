@@ -18,83 +18,87 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/dao/include/DataAccessObject.class.php';
-
 /**
  * Continuous integration DAO for Git
  */
-class Git_Ci_Dao extends DataAccessObject {
+class Git_Ci_Dao extends DataAccessObject
+{
 
     /**
      * Retrieve git trigger of a ci job
      *
-     * @param Integer $jobId Id of the CI job
+     * @param int $jobId Id of the CI job
      *
      * @return DataAccessResult
      */
-    function retrieveTrigger($jobId) {
+    public function retrieveTrigger($jobId)
+    {
         $sql = 'SELECT repository_id
                 FROM plugin_git_ci
-                WHERE job_id = '.$this->da->escapeInt($jobId);
+                WHERE job_id = ' . $this->da->escapeInt($jobId);
         return $this->retrieve($sql);
     }
 
     /**
      * Retrieve git triggers of a project
      *
-     * @param Integer $projectId Id of the project
+     * @param int $projectId Id of the project
      *
      * @return DataAccessResult
      */
-    function retrieveTriggers($projectId) {
+    public function retrieveTriggers($projectId)
+    {
         $sql = 'SELECT job_id
                 FROM plugin_git_ci
                 JOIN plugin_git USING(repository_id)
-                WHERE project_id = '.$this->da->escapeInt($projectId);
+                WHERE project_id = ' . $this->da->escapeInt($projectId);
         return $this->retrieve($sql);
     }
 
     /**
      * Retrieve Jobs path corresponding to the repository
      *
-     * @param Integer $repositoryId Id of the repository
+     * @param int $repositoryId Id of the repository
      *
      * @return DataAccessResult
      */
-    function retrieveTriggersPathByRepository($repositoryId) {
+    public function retrieveTriggersPathByRepository($repositoryId)
+    {
         $sql = 'SELECT job_url, token
                 FROM plugin_hudson_job
                 JOIN plugin_git_ci USING(job_id)
-                WHERE repository_id = '.$this->da->escapeInt($repositoryId);
+                WHERE repository_id = ' . $this->da->escapeInt($repositoryId);
         return $this->retrieve($sql);
     }
 
     /**
      * Check that the repository exist and belong to the same project as the ci job
      *
-     * @param Integer $jobId        Id of the CI job
-     * @param Integer $repositoryId Id of the repository
+     * @param int $jobId Id of the CI job
+     * @param int $repositoryId Id of the repository
      *
      * @return DataAccessResult
      */
-    function checkRepository($jobId, $repositoryId) {
+    public function checkRepository($jobId, $repositoryId)
+    {
         $sql = 'SELECT job_id
                 FROM plugin_hudson_job
                 JOIN plugin_git ON (group_id = project_id)
-                WHERE repository_id = '.$this->da->escapeInt($repositoryId).'
-                AND job_id = '.$this->da->escapeInt($jobId);
+                WHERE repository_id = ' . $this->da->escapeInt($repositoryId) . '
+                AND job_id = ' . $this->da->escapeInt($jobId);
         return $this->retrieve($sql);
     }
 
     /**
      * Save a new trigger
      *
-     * @param Integer $jobId        Id of the CI job
-     * @param Integer $repositoryId Id of the repository
+     * @param int $jobId Id of the CI job
+     * @param int $repositoryId Id of the repository
      *
-     * @return Boolean
+     * @return bool
      */
-    function saveTrigger($jobId, $repositoryId) {
+    public function saveTrigger($jobId, $repositoryId)
+    {
         $sql = 'REPLACE INTO plugin_git_ci
                 (
                 job_id,
@@ -102,8 +106,8 @@ class Git_Ci_Dao extends DataAccessObject {
                 )
                 VALUES
                 (
-                '.$this->da->escapeInt($jobId).',
-                '.$this->da->escapeInt($repositoryId).'
+                ' . $this->da->escapeInt($jobId) . ',
+                ' . $this->da->escapeInt($repositoryId) . '
                 )';
         return $this->update($sql);
     }
@@ -111,16 +115,14 @@ class Git_Ci_Dao extends DataAccessObject {
     /**
      * Delete trigger
      *
-     * @param Integer $jobId Id of the CI job
+     * @param int $jobId Id of the CI job
      *
-     * @return Boolean
+     * @return bool
      */
-    function deleteTrigger($jobId) {
+    public function deleteTrigger($jobId)
+    {
         $sql = 'DELETE FROM plugin_git_ci
-                WHERE job_id = '.$this->da->escapeInt($jobId);
+                WHERE job_id = ' . $this->da->escapeInt($jobId);
         return $this->update($sql);
     }
-
 }
-
-?>

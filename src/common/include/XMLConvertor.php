@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  *  This file is a part of Tuleap.
  *
@@ -25,13 +25,15 @@ use SimpleXMLElement;
 class XMLConvertor
 {
     /**
-     * @param SimpleXMLElement $xml_element
      *
      * @return String
      */
     public function convertToXml(SimpleXMLElement $xml_element)
     {
-        $dom               = dom_import_simplexml($xml_element)->ownerDocument;
+        $dom = dom_import_simplexml($xml_element)->ownerDocument;
+        if ($dom === null) {
+            return '';
+        }
         $dom->formatOutput = true;
 
         return $dom->saveXML();

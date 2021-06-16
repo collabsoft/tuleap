@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,6 +22,7 @@ namespace Tuleap\Velocity\Semantic;
 
 use CSRFSynchronizerToken;
 use Tracker;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDone;
 
 class SemanticVelocityAdminPresenter
 {
@@ -90,6 +91,8 @@ class SemanticVelocityAdminPresenter
      */
     public $has_a_selected_field;
 
+    public $url_done_semantic;
+
     public function __construct(
         array $possible_velocity_field,
         CSRFSynchronizerToken $csrf_token,
@@ -115,6 +118,13 @@ class SemanticVelocityAdminPresenter
                 "func"    => "admin-semantic"
             ]
         );
+        $this->url_done_semantic         = TRACKER_BASE_URL . '/?' . http_build_query(
+            [
+                "tracker"  => $tracker->getId(),
+                "func"     => "admin-semantic",
+                "semantic" => SemanticDone::NAME,
+            ]
+        );
 
         $this->children_misconfigured_semantic           = $children_required_tracker_collection->getChildrenMisconfiguredTrackers();
         $this->has_at_least_one_well_configured_children = $children_required_tracker_collection->hasAtLeastOneChildrenWithVelocitySemanticForBacklogTrackers();
@@ -125,9 +135,9 @@ class SemanticVelocityAdminPresenter
         $this->are_all_backlog_trackers_misconfigured = $backlog_required_tracker_collection->areAllBacklogTrackersMisconfigured();
 
         $this->has_at_least_one_tracker_correctly_configured = $has_at_least_one_tracker_correctly_configured;
-        $this->nb_semantic_misconfigured = $children_required_tracker_collection->getNbTrackersWithoutVelocitySemantic()
+        $this->nb_semantic_misconfigured                     = $children_required_tracker_collection->getNbTrackersWithoutVelocitySemantic()
             + $backlog_required_tracker_collection->getNbMisconfiguredTrackers();
-        $this->semantics_not_correctly_set = $this->getMisconfiguredSemantics($backlog_required_tracker_collection, $children_required_tracker_collection);
+        $this->semantics_not_correctly_set                   = $this->getMisconfiguredSemantics($backlog_required_tracker_collection, $children_required_tracker_collection);
     }
 
     private function buildPossibleVelocityField(array $possible_velocity_field, $selected_velocity_field_id)

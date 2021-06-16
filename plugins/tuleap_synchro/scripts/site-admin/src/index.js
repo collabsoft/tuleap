@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,28 @@
  *
  */
 
-import { modal as createModal } from "tlp";
+import { createModal } from "tlp";
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     const modal_element = document.getElementById("add-import-endpoint");
     const modal_simple_content = createModal(modal_element);
 
-    document.getElementById("button-add-import-endpoint").addEventListener("click", function() {
+    document.getElementById("button-add-import-endpoint").addEventListener("click", function () {
         modal_simple_content.toggle();
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const delete_modal_element = document.querySelectorAll(".delete-modal-button");
+    [].forEach.call(delete_modal_element, function (button) {
+        let modal_element = document.getElementById(button.dataset.modalId);
+
+        if (modal_element) {
+            let modal = createModal(modal_element);
+
+            button.addEventListener("click", function () {
+                modal.toggle();
+            });
+        }
     });
 });

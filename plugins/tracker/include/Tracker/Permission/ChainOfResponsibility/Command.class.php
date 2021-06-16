@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,42 +24,47 @@
  *
  * @see http://en.wikipedia.org/wiki/Chain-of-responsibility_pattern
  */
-abstract class Tracker_Permission_Command {
+abstract class Tracker_Permission_Command
+{
 
-    const PERMISSION_PREFIX = 'permissions_';
+    public const PERMISSION_PREFIX = 'permissions_';
 
-    const PERMISSION_ADMIN                  = 'ADMIN';
-    const PERMISSION_FULL                   = 'FULL';
-    const PERMISSION_ASSIGNEE               = 'ASSIGNEE';
-    const PERMISSION_SUBMITTER              = 'SUBMITTER';
-    const PERMISSION_ASSIGNEE_AND_SUBMITTER = 'SUBMITTER_N_ASSIGNEE';
-    const PERMISSION_NONE                   = 'NONE';
-    const PERMISSION_SUBMITTER_ONLY         = 'SUBMITTER_ONLY';
+    public const PERMISSION_ADMIN                  = 'ADMIN';
+    public const PERMISSION_FULL                   = 'FULL';
+    public const PERMISSION_ASSIGNEE               = 'ASSIGNEE';
+    public const PERMISSION_SUBMITTER              = 'SUBMITTER';
+    public const PERMISSION_ASSIGNEE_AND_SUBMITTER = 'SUBMITTER_N_ASSIGNEE';
+    public const PERMISSION_NONE                   = 'NONE';
+    public const PERMISSION_SUBMITTER_ONLY         = 'SUBMITTER_ONLY';
 
-    protected static $non_admin_permissions = array(
-        Tracker_Permission_Command::PERMISSION_FULL,
-        Tracker_Permission_Command::PERMISSION_ASSIGNEE,
-        Tracker_Permission_Command::PERMISSION_SUBMITTER,
-        Tracker_Permission_Command::PERMISSION_SUBMITTER_ONLY,
-        Tracker_Permission_Command::PERMISSION_ASSIGNEE_AND_SUBMITTER
-    );
+    protected static $non_admin_permissions = [
+        self::PERMISSION_FULL,
+        self::PERMISSION_ASSIGNEE,
+        self::PERMISSION_SUBMITTER,
+        self::PERMISSION_SUBMITTER_ONLY,
+        self::PERMISSION_ASSIGNEE_AND_SUBMITTER
+    ];
 
     /** @var Tracker_Permission_Command */
     private $next_command;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->setNextCommand(new Tracker_Permission_ChainOfResponsibility_DoNothing());
     }
 
-    public function setNextCommand(Tracker_Permission_Command $next_command) {
+    public function setNextCommand(Tracker_Permission_Command $next_command)
+    {
         $this->next_command = $next_command;
     }
 
-    public function getNextCommand() {
+    public function getNextCommand()
+    {
         return $this->next_command;
     }
 
-    public function applyNextCommand(Tracker_Permission_PermissionRequest $request, Tracker_Permission_PermissionSetter $permissions_setter) {
+    public function applyNextCommand(Tracker_Permission_PermissionRequest $request, Tracker_Permission_PermissionSetter $permissions_setter)
+    {
         $this->next_command->apply($request, $permissions_setter);
     }
 
@@ -70,7 +75,6 @@ abstract class Tracker_Permission_Command {
         Tracker_Permission_PermissionSetter $permission_setter,
         $ugroup_id
     ) {
-
         if ($this->requestContainsNonAdminPermissions($request, $ugroup_id)) {
             $this->warnAlreadyHaveFullAccess($permission_setter, $ugroup_id);
             $request->revoke($ugroup_id);
@@ -78,18 +82,21 @@ abstract class Tracker_Permission_Command {
         }
     }
 
-    private function requestContainsNonAdminPermissions(Tracker_Permission_PermissionRequest $request, $ugroup_id) {
+    private function requestContainsNonAdminPermissions(Tracker_Permission_PermissionRequest $request, $ugroup_id)
+    {
         return in_array($request->getPermissionType($ugroup_id), self::$non_admin_permissions);
     }
 
-    private function revokeNonAdmin(Tracker_Permission_PermissionSetter $permission_setter, $ugroup_id) {
+    private function revokeNonAdmin(Tracker_Permission_PermissionSetter $permission_setter, $ugroup_id)
+    {
         $permission_setter->revokeAccess(Tracker::PERMISSION_FULL, $ugroup_id);
         $permission_setter->revokeAccess(Tracker::PERMISSION_ASSIGNEE, $ugroup_id);
         $permission_setter->revokeAccess(Tracker::PERMISSION_SUBMITTER, $ugroup_id);
         $permission_setter->revokeAccess(Tracker::PERMISSION_SUBMITTER_ONLY, $ugroup_id);
     }
 
-    protected function warnAlreadyHaveFullAccess(Tracker_Permission_PermissionSetter $permission_setter, $ugroup_id) {
+    protected function warnAlreadyHaveFullAccess(Tracker_Permission_PermissionSetter $permission_setter, $ugroup_id)
+    {
         // eventually do something here
     }
 }

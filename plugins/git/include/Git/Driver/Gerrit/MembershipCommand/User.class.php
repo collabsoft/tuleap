@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2011, 2012, 2013. All rights reserved.
+ * Copyright Enalean (c) 2011, 2012, 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,7 +22,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-abstract class Git_Driver_Gerrit_MembershipCommand_User extends Git_Driver_Gerrit_MembershipCommand {
+abstract class Git_Driver_Gerrit_MembershipCommand_User extends Git_Driver_Gerrit_MembershipCommand
+{
     private $autoflush = true;
     private $gerrit_user_manager;
     protected $user;
@@ -39,11 +40,13 @@ abstract class Git_Driver_Gerrit_MembershipCommand_User extends Git_Driver_Gerri
         $this->user                = $user;
     }
 
-    public function disableAutoFlush() {
+    public function disableAutoFlush()
+    {
         $this->autoflush = false;
     }
 
-    public function execute(Git_RemoteServer_GerritServer $server) {
+    public function execute(Git_RemoteServer_GerritServer $server)
+    {
         $driver      = $this->getDriver($server);
         $gerrit_user = $this->gerrit_user_manager->getGerritUser($this->user);
         if ($gerrit_user) {
@@ -56,5 +59,3 @@ abstract class Git_Driver_Gerrit_MembershipCommand_User extends Git_Driver_Gerri
 
     abstract protected function executeForGerritUser(Git_RemoteServer_GerritServer $server, Git_Driver_Gerrit_User $gerrit_user);
 }
-
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -89,7 +89,7 @@ class DefaultFineGrainedPermissionReplicator
             $ugroups_mapping
         );
 
-        $warnings = array();
+        $warnings = [];
         foreach ($replicated_branch_permissions as $permission) {
             if ($this->pattern_validator->isValidForDefault($template_project, $permission->getPattern(), false)) {
                 $this->saver->saveBranchPermission($permission);
@@ -111,7 +111,7 @@ class DefaultFineGrainedPermissionReplicator
         }
 
         if (count($warnings) > 0) {
-            $GLOBALS['Response']->addFeedback('warning', $GLOBALS['Language']->getText('plugin_git', 'feedback_permissions_not_duplicated', implode(',', $warnings)));
+            $GLOBALS['Response']->addFeedback('warning', sprintf(dgettext('tuleap-git', 'Your platform does not allow regular expression usage, permissions %1$s not duplicated.'), implode(',', $warnings)));
         }
     }
 

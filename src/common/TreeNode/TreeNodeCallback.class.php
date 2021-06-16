@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,14 +23,13 @@ require_once 'TreeNode.class.php';
 /**
  * To be used with @see \TreeNodeMapper
  */
-interface TreeNodeCallback {
-    
+interface TreeNodeCallback
+{
+
     /**
      * Returns a new TreeNode based on the given one. This function should return a perfectly new node
-     * 
-     * @param TreeNode $node
+     *
      * @return TreeNode
      */
-    function apply(TreeNode $node);
+    public function apply(TreeNode $node);
 }
-?>

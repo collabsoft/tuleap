@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -30,6 +30,11 @@ class BreadCrumbLink
 
     /** @var string */
     private $icon_name;
+
+    /**
+     * @var array<string, string>
+     */
+    private $data_attributes = [];
 
     public function __construct(
         $label,
@@ -70,5 +75,18 @@ class BreadCrumbLink
     public function setIconName($icon_name)
     {
         $this->icon_name = $icon_name;
+    }
+
+    public function setDataAttribute(string $name, string $value): void
+    {
+        $this->data_attributes[$name] = $value;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getDataAttributes(): array
+    {
+        return $this->data_attributes;
     }
 }

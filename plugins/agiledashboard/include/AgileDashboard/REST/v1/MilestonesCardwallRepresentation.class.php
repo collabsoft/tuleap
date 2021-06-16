@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,9 +17,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class AgileDashboard_MilestonesCardwallRepresentation {
+/**
+ * @psalm-immutable
+ */
+class AgileDashboard_MilestonesCardwallRepresentation
+{
 
-    const ROUTE = 'cardwall';
+    public const ROUTE = 'cardwall';
 
     /** @var array */
     public $columns;
@@ -27,13 +31,14 @@ class AgileDashboard_MilestonesCardwallRepresentation {
     /** @var array */
     public $swimlanes;
 
-    public function build(Cardwall_Board $board, $planning_id, PFUser $user) {
+    public function __construct(Cardwall_Board $board, $planning_id, PFUser $user)
+    {
         $this->columns = $board->getColumns()->getRestValue();
-        $this->swimlanes = array();
-        foreach($board->getSwimlines() as $swimline) {
-            $swimline_representation = new AgileDashboard_SwimlineRepresentation();
-            $swimline_representation->build($swimline, $planning_id, $user);
-            $this->swimlanes[] = $swimline_representation;
+        $swimlanes     = [];
+        foreach ($board->getSwimlines() as $swimline) {
+            $swimline_representation = new AgileDashboard_SwimlineRepresentation($swimline, $planning_id, $user);
+            $swimlanes[]             = $swimline_representation;
         }
+        $this->swimlanes = $swimlanes;
     }
 }

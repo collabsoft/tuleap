@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,8 +19,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once 'pre.php';
-require_once 'common/svn/SVN_SOAPServer.class.php';
+use Tuleap\Project\ProjectAccessChecker;
+use Tuleap\Project\RestrictedUserCanAccessProjectVerifier;
+use Tuleap\SOAP\SOAPRequestValidatorImplementation;
+
+require_once __DIR__ . '/../../include/pre.php';
 
 // Check if we the server is in secure mode or not.
 $request  = HTTPRequest::instance();
@@ -30,25 +33,31 @@ if ($request->isSecure() || ForgeConfig::get('sys_https_host')) {
 }
 $default_domain = ForgeConfig::get('sys_default_domain');
 
-$uri = $protocol.'://'.$default_domain.'/soap/svn';
-
-$serviceClass = 'SVN_SOAPServer';
+$uri = $protocol . '://' . $default_domain . '/soap/svn';
 
 if ($request->exist('wsdl')) {
-    require_once 'common/soap/SOAP_NusoapWSDL.class.php';
-    $wsdlGen = new SOAP_NusoapWSDL($serviceClass, 'TuleapSubversionAPI', $uri);
+    $wsdlGen = new SOAP_NusoapWSDL(SVN_SOAPServer::class, 'TuleapSubversionAPI', $uri);
     $wsdlGen->dumpWSDL();
 } else {
-    $soap_request_validator = new SOAP_RequestValidator(ProjectManager::instance(), UserManager::instance());
-    $svn_repository_listing = new SVN_RepositoryListing(new SVN_PermissionsManager(), new SVN_Svnlook(), UserManager::instance());
-    
-    $server = new TuleapSOAPServer($uri.'/?wsdl',
-                             array('cache_wsdl' => WSDL_CACHE_NONE));
-    $server->setClass($serviceClass, $soap_request_validator, $svn_repository_listing);
-    $xml_security = new XML_Security();
-    $xml_security->enableExternalLoadOfEntities();
-    $server->handle();
-    $xml_security->disableExternalLoadOfEntities();
-}
+    $user_manager           = UserManager::instance();
+    $soap_request_validator = $soap_request_validator = new SOAPRequestValidatorImplementation(
+        ProjectManager::instance(),
+        $user_manager,
+        new ProjectAccessChecker(
+            new RestrictedUserCanAccessProjectVerifier(),
+            EventManager::instance()
+        )
+    );
+    $svn_repository_listing = new SVN_RepositoryListing(new SVN_PermissionsManager(), new SVN_Svnlook(), $user_manager);
 
-?>
+    $server = new TuleapSOAPServer(
+        $uri . '/?wsdl',
+        ['cache_wsdl' => WSDL_CACHE_NONE]
+    );
+    $server->setClass(SVN_SOAPServer::class, $soap_request_validator, $svn_repository_listing, EventManager::instance());
+    XML_Security::enableExternalLoadOfEntities(
+        function () use ($server) {
+            $server->handle();
+        }
+    );
+}

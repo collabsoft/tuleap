@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: PluginManager.php,v 1.19 2005/10/12 06:15:25 rurban Exp $');
 /**
  Copyright 1999, 2000, 2001, 2002 $ThePhpWikiProgrammingTeam
@@ -24,27 +25,34 @@ rcs_id('$Id: PluginManager.php,v 1.19 2005/10/12 06:15:25 rurban Exp $');
 // So far there are no known security issues.
 define('REQUIRE_ADMIN', false);
 
-class WikiPlugin_PluginManager
-extends WikiPlugin
+class WikiPlugin_PluginManager extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return _("PluginManager");
     }
 
-    function getDescription () {
+    public function getDescription()
+    {
         return _("Description: Provides a list of plugins on this wiki.");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.19 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.19 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array('info' => 'args');
+    public function getDefaultArguments()
+    {
+        return ['info' => 'args'];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         extract($this->getArgs($argstr, $request));
 
         $h = HTML();
@@ -53,139 +61,158 @@ extends WikiPlugin
         if (! REQUIRE_ADMIN || $request->_user->isadmin()) {
             $h->pushContent(HTML::h2(_("Plugins")));
 
-            $table = HTML::table(array('class' => "pagelist"));
+            $table = HTML::table(['class' => "pagelist"]);
             $this->_generateColgroups($info, $table);
             $this->_generateColheadings($info, $table);
             $this->_generateTableBody($info, $dbi, $request, $table);
             $h->pushContent($table);
 
             //$h->pushContent(HTML::h2(_("Disabled Plugins")));
-        }
-        else {
-            $h->pushContent(fmt("You must be an administrator to %s.",
-                                _("use this plugin")));
+        } else {
+            $h->pushContent(fmt(
+                "You must be an administrator to %s.",
+                _("use this plugin")
+            ));
         }
         return $h;
     }
 
-    function _generatePageheader(&$info, &$html) {
+    public function _generatePageheader(&$info, &$html)
+    {
         $html->pushContent(HTML::p($this->getDescription()));
     }
 
-    function _generateColgroups(&$info, &$table) {
+    public function _generateColgroups(&$info, &$table)
+    {
         // specify last two column widths
         $colgroup = HTML::colgroup();
-        $colgroup->pushContent(HTML::col(array('width' => '0*')));
-        $colgroup->pushContent(HTML::col(array('width' => '0*',
-                                               'align' => 'right')));
-        $colgroup->pushContent(HTML::col(array('width' => '9*')));
-        if ($info == 'args')
-            $colgroup->pushContent(HTML::col(array('width' => '2*')));
+        $colgroup->pushContent(HTML::col(['width' => '0*']));
+        $colgroup->pushContent(HTML::col(['width' => '0*',
+                                               'align' => 'right']));
+        $colgroup->pushContent(HTML::col(['width' => '9*']));
+        if ($info == 'args') {
+            $colgroup->pushContent(HTML::col(['width' => '2*']));
+        }
         $table->pushcontent($colgroup);
     }
 
-    function _generateColheadings(&$info, &$table) {
+    public function _generateColheadings(&$info, &$table)
+    {
         // table headings
-        $tr = HTML::tr();
-        $headings = array(_("Plugin"), _("Version"), _("Description"));
-        if ($info == 'args')
-            $headings []= _("Arguments");
+        $tr       = HTML::tr();
+        $headings = [_("Plugin"), _("Version"), _("Description")];
+        if ($info == 'args') {
+            $headings[] = _("Arguments");
+        }
         foreach ($headings as $title) {
             $tr->pushContent(HTML::td($title));
         }
         $table->pushContent(HTML::thead($tr));
     }
 
-    function _generateTableBody(&$info, &$dbi, &$request, &$table) {
+    public function _generateTableBody(&$info, &$dbi, &$request, &$table)
+    {
         $plugin_dir = 'lib/plugin';
-        if (defined('PHPWIKI_DIR'))
+        if (defined('PHPWIKI_DIR')) {
             $plugin_dir = PHPWIKI_DIR . "/$plugin_dir";
-        $pd = new fileSet($plugin_dir, '*.php');
+        }
+        $pd      = new fileSet($plugin_dir, '*.php');
         $plugins = $pd->getFiles();
         unset($pd);
         sort($plugins);
 
         // table body
-        $tbody = HTML::tbody();
+        $tbody  = HTML::tbody();
         $row_no = 0;
 
-        $w = new WikiPluginLoader;
+        $w = new WikiPluginLoader();
         foreach ($plugins as $pluginName) {
             // instantiate a plugin
-            $pluginName = str_replace(".php", "", $pluginName);
+            $pluginName      = str_replace(".php", "", $pluginName);
             $temppluginclass = "<? plugin $pluginName ?>"; // hackish
-            $p = $w->getPlugin($pluginName, false); // second arg?
+            $p               = $w->getPlugin($pluginName, false); // second arg?
             // trap php files which aren't WikiPlugin~s
-            if (!strtolower(substr(get_parent_class($p), 0, 10)) == 'wikiplugin') {
+            if (! strtolower(substr(get_parent_class($p), 0, 10)) == 'wikiplugin') {
                 // Security: Hide names of extraneous files within
                 // plugin dir from non-admins.
-                if ($request->_user->isAdmin())
-                    trigger_error(sprintf(_("%s does not appear to be a WikiPlugin."),
-                                          $pluginName . ".php"));
+                if ($request->_user->isAdmin()) {
+                    trigger_error(sprintf(
+                        _("%s does not appear to be a WikiPlugin."),
+                        $pluginName . ".php"
+                    ));
+                }
                 continue; // skip this non WikiPlugin file
             }
-            $desc = $p->getDescription();
-            $ver = $p->getVersion();
+            $desc      = $p->getDescription();
+            $ver       = $p->getVersion();
             $arguments = $p->getArgumentsDescription();
             unset($p); //done querying plugin object, release from memory
 
             // This section was largely improved by Pierrick Meignen:
             // make a link if an actionpage exists
-            $pluginNamelink = $pluginName;
+            $pluginNamelink    = $pluginName;
             $pluginDocPageName = $pluginName . "Plugin";
 
-            $pluginDocPageNamelink = false;
-            $localizedPluginName = '';
+            $pluginDocPageNamelink      = false;
+            $localizedPluginName        = '';
             $localizedPluginDocPageName = '';
 
-            if($GLOBALS['LANG'] != "en"){
-                if (_($pluginName) != $pluginName)
+            if ($GLOBALS['LANG'] != "en") {
+                if (_($pluginName) != $pluginName) {
                     $localizedPluginName = _($pluginName);
-                if($localizedPluginName && $dbi->isWikiPage($localizedPluginName))
-                    $pluginDocPageNamelink = WikiLink($localizedPluginName,'if_known');
-                
-                if (_($pluginDocPageName) != $pluginDocPageName)
+                }
+                if ($localizedPluginName && $dbi->isWikiPage($localizedPluginName)) {
+                    $pluginDocPageNamelink = WikiLink($localizedPluginName, 'if_known');
+                }
+
+                if (_($pluginDocPageName) != $pluginDocPageName) {
                     $localizedPluginDocPageName = _($pluginDocPageName);
-                if($localizedPluginDocPageName && 
-                   $dbi->isWikiPage($localizedPluginDocPageName))
-                    $pluginDocPageNamelink = 
-			WikiLink($localizedPluginDocPageName, 'if_known');
-            }
-            else {
+                }
+                if (
+                    $localizedPluginDocPageName &&
+                    $dbi->isWikiPage($localizedPluginDocPageName)
+                ) {
+                    $pluginDocPageNamelink =
+                    WikiLink($localizedPluginDocPageName, 'if_known');
+                }
+            } else {
                 $pluginNamelink = WikiLink($pluginName, 'if_known');
-                
-                if ($dbi->isWikiPage($pluginDocPageName))
-                    $pluginDocPageNamelink = WikiLink($pluginDocPageName,'if_known');
+
+                if ($dbi->isWikiPage($pluginDocPageName)) {
+                    $pluginDocPageNamelink = WikiLink($pluginDocPageName, 'if_known');
+                }
             }
 
             // highlight alternate rows
             $row_no++;
-            $group = (int)($row_no / 1); //_group_rows
+            $group = (int) ($row_no / 1); //_group_rows
             $class = ($group % 2) ? 'evenrow' : 'oddrow';
             // generate table row
-            $tr = HTML::tr(array('class' => $class));
+            $tr = HTML::tr(['class' => $class]);
             if ($pluginDocPageNamelink) {
                 // plugin has a description page 'PluginName' . 'Plugin'
-                $tr->pushContent(HTML::td($pluginNamelink, HTML::br(),
-                                          $pluginDocPageNamelink));
+                $tr->pushContent(HTML::td(
+                    $pluginNamelink,
+                    HTML::br(),
+                    $pluginDocPageNamelink
+                ));
                 $pluginDocPageNamelink = false;
-            }
-            else {
+            } else {
                 // plugin just has an actionpage
                 $tr->pushContent(HTML::td($pluginNamelink));
             }
             $tr->pushContent(HTML::td($ver), HTML::td($desc));
             if ($info == 'args') {
                 // add Arguments column
-                $style = array('style'
-                               => 'font-family:monospace;font-size:smaller');
+                $style = ['style'
+                               => 'font-family:monospace;font-size:smaller'];
                 $tr->pushContent(HTML::td($style, $arguments));
             }
             $tbody->pushContent($tr);
         }
         $table->pushContent($tbody);
     }
-};
+}
 
 // $Log: PluginManager.php,v $
 // Revision 1.19  2005/10/12 06:15:25  rurban
@@ -266,4 +293,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

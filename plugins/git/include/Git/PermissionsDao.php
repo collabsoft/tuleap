@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,12 +31,12 @@ class Git_PermissionsDao extends \Tuleap\DB\DataAccessObject
         try {
             $this->updatePermissionsForGitRepositories(
                 $project_id,
-                array(ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED),
+                [ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED],
                 ProjectUGroup::PROJECT_MEMBERS
             );
             $this->updatePermissionsForDefaultGitAccessRights(
                 $project_id,
-                array(ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED),
+                [ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED],
                 ProjectUGroup::PROJECT_MEMBERS
             );
         } catch (PDOException $ex) {
@@ -54,15 +54,15 @@ class Git_PermissionsDao extends \Tuleap\DB\DataAccessObject
         try {
             $this->updatePermissionsForGitRepositories(
                 $project_id,
-                array(ProjectUGroup::AUTHENTICATED),
+                [ProjectUGroup::AUTHENTICATED],
                 ProjectUGroup::REGISTERED
             );
             $this->updatePermissionsForDefaultGitAccessRights(
                 $project_id,
-                array(ProjectUGroup::AUTHENTICATED),
+                [ProjectUGroup::AUTHENTICATED],
                 ProjectUGroup::REGISTERED
             );
-        }  catch (PDOException $ex) {
+        } catch (PDOException $ex) {
             $this->getDB()->rollBack();
             throw $ex;
         }
@@ -131,7 +131,7 @@ class Git_PermissionsDao extends \Tuleap\DB\DataAccessObject
                   AND permissions.ugroup_id = ?
                 ";
 
-        $params = $git_permission_type_in_condition->values();
+        $params   = $git_permission_type_in_condition->values();
         $params[] = GitDao::NOT_DELETED_DATE;
         $params[] = $ugroup_id;
 

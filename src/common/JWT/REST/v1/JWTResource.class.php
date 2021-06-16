@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,15 +19,18 @@
 
 namespace Tuleap\JWT\REST\v1;
 
-use Luracast\Restler\RestException;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Hmac\Sha512;
+use Lcobucci\JWT\Signer\Key;
+use Tuleap\Project\UGroupLiteralizer;
 use Tuleap\REST\Header;
 use Tuleap\JWT\REST\JWTRepresentation;
 use Tuleap\JWT\Generators\JWTGenerator;
 use UserManager;
-use UGroupLiteralizer;
 use ForgeConfig;
 
-class JWTResource {
+class JWTResource
+{
     /**
      * To have a json web token
      *
@@ -35,9 +38,13 @@ class JWTResource {
      *
      * @return Tuleap\JWT\REST\JWTRepresentation
      */
-    public function get() {
+    public function get()
+    {
         $jwt_generator = new JWTGenerator(
-            ForgeConfig::get('nodejs_server_jwt_private_key'),
+            Configuration::forSymmetricSigner(
+                new Sha512(),
+                Key\InMemory::plainText(ForgeConfig::get('nodejs_server_jwt_private_key'))
+            ),
             UserManager::instance(),
             new UGroupLiteralizer()
         );
@@ -54,11 +61,13 @@ class JWTResource {
      * @url OPTIONS
      *
      */
-    public function options() {
+    public function options()
+    {
         $this->sendAllowHeader();
     }
 
-    private function sendAllowHeader() {
+    private function sendAllowHeader()
+    {
         Header::allowOptionsGet();
     }
 }

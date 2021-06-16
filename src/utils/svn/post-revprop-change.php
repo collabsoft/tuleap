@@ -1,9 +1,9 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright Enalean (c) 2011 - 2018. All rights reserved.
+ * Copyright Enalean (c) 2011 - Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -25,9 +25,8 @@
 
 
 try {
-    require_once 'env.inc.php';
-    require_once 'pre.php';
-    require_once 'common/svn/hook/PostRevPropset.class.php';
+    /** @psalm-suppress MissingFile This file is deployed under /usr/lib/tuleap/, an absolute path is needed */
+    require_once '/usr/share/tuleap/src/www/include/pre.php';
 
     $repository         = $argv[1];
     $revision           = $argv[2];
@@ -41,9 +40,7 @@ try {
     );
     $svn_commit_message->update($repository, $revision, $user, $old_commit_message);
     exit(0);
-} catch(Exception $e) {
-    fwrite(STDERR, $e->getMessage().PHP_EOL);
+} catch (Exception $e) {
+    fwrite(STDERR, $e->getMessage() . PHP_EOL);
     exit(1);
 }
-
-?>

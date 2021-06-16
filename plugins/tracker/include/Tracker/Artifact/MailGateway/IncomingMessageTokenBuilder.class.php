@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,35 +18,40 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_IncomingMessageTokenBuilder {
+use Tuleap\Tracker\Artifact\MailGateway\IncomingMail;
+
+class Tracker_Artifact_IncomingMessageTokenBuilder
+{
 
     /**
      * @var Tracker_Artifact_MailGateway_RecipientFactory
      */
     private $recipient_factory;
 
-    public function __construct(Tracker_Artifact_MailGateway_RecipientFactory $recipient_factory) {
+    public function __construct(Tracker_Artifact_MailGateway_RecipientFactory $recipient_factory)
+    {
         $this->recipient_factory = $recipient_factory;
     }
 
     /**
      * @return Tracker_Artifact_MailGateway_IncomingMessage
      */
-    public function build(array $raw_mail) {
-        if (! isset($raw_mail['headers']['references'])) {
+    public function build(IncomingMail $incoming_mail)
+    {
+        $references_header = $incoming_mail->getHeaderValue('references');
+        if ($references_header === false) {
             throw new Tracker_Artifact_MailGateway_InvalidMailHeadersException();
         }
         preg_match(
             Tracker_Artifact_MailGateway_RecipientFactory::EMAIL_PATTERN,
-            $raw_mail['headers']['references'],
+            $references_header,
             $matches
         );
-        $recipient     = $this->recipient_factory->getFromEmail($matches[0]);
-        $subject       = $raw_mail['headers']['subject'];
-        $body          = $raw_mail['body'];
+        $recipient = $this->recipient_factory->getFromEmail($matches[0]);
+        $subject   = $incoming_mail->getSubject();
+        $body      = $incoming_mail->getBodyText();
 
         $incoming_message = new Tracker_Artifact_MailGateway_IncomingMessage(
-            $raw_mail['headers'],
             $subject,
             $body,
             $recipient->getUser(),
@@ -55,5 +60,4 @@ class Tracker_Artifact_IncomingMessageTokenBuilder {
         );
         return $incoming_message;
     }
-
 }

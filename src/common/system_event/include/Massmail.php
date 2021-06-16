@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS - 2016-2018. All rights reserved
+ * Copyright (c) Enalean SAS - 2016-Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ class Massmail extends SystemEvent
     /**
      * Process stored event
      *
-     * @return Boolean
+     * @return bool
      */
     public function process()
     {
@@ -113,32 +113,33 @@ class Massmail extends SystemEvent
     private function flood(Codendi_Mail $mail, $recipients, &$errors, &$has_success)
     {
         $nb_rows = db_numrows($recipients);
-        $tolist  = '';
-        $noreply = ForgeConfig::get('sys_noreply');
+        $tolist  = [];
 
         for ($i = 1; $i <= $nb_rows; $i++) {
-            $tolist .= db_result($recipients, $i - 1, 'email') . ', ';
+            $tolist[] = db_result($recipients, $i - 1, 'email');
             if ($i % 25 == 0) {
-                $mail->setBcc($tolist, true);
-                $mail->setTo($noreply, true);
+                foreach ($tolist as $to) {
+                    $mail->setBcc($to, true);
+                }
                 if ($mail->send()) {
                     $has_success = true;
                 } else {
                     $errors .= $tolist;
                 }
                 usleep(2000000);
-                $tolist = '';
+                $tolist = [];
             }
         }
 
         //send the last of the messages.
-        if (strlen($tolist) > 0) {
-            $mail->setBcc($tolist, true);
-            $mail->setTo($noreply, true);
+        if (count($tolist) > 0) {
+            foreach ($tolist as $to) {
+                $mail->setBcc($to, true);
+            }
             if ($mail->send()) {
                 $has_success = true;
             } else {
-                $errors .= $tolist;
+                $errors .= implode(', ', $tolist);
             }
         }
     }
@@ -181,14 +182,14 @@ class Massmail extends SystemEvent
 
     private function getDestinationLabel($destination)
     {
-        $labels = array(
+        $labels = [
             'comm'    => 'Additional Community Mailings Subcribers',
             'sf'      => 'Site Updates Subcribers',
             'all'     => 'All Users',
             'admin'   => 'Project Administrators',
             'sfadmin' => ForgeConfig::get('sys_name') . ' Administrators',
             'devel'   => 'Project Developers',
-        );
+        ];
 
         return isset($labels[$destination]) ? $labels[$destination] : 'Unknown';
     }

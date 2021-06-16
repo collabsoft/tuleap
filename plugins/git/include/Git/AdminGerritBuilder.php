@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,24 +37,7 @@ class AdminGerritBuilder
 
     public function buildFromRequest(array $request)
     {
-
-        $gerrit_server                   = $this->initServer($request);
-        $gerrit_server['gerrit_version'] = $request['gerrit_version'];
-
-        return $gerrit_server;
-    }
-
-    public function buildFromRequestForEdition(array $request)
-    {
-        $gerrit_server = $this->initServer($request);
-        $gerrit_server['gerrit_version'] = isset($request['gerrit_version']) ? $request['gerrit_version'] : Git_RemoteServer_GerritServer::GERRIT_VERSION_2_8_PLUS;
-
-        return $gerrit_server;
-    }
-
-    private function initServer(array $request)
-    {
-        $gerrit_server                         = array();
+        $gerrit_server                         = [];
         $gerrit_server['host']                 = $request['host'];
         $gerrit_server['ssh_port']             = $request['ssh_port'];
         $gerrit_server['http_port']            = $request['http_port'];
@@ -64,7 +47,7 @@ class AdminGerritBuilder
         $gerrit_server['use_ssl']              = isset($request['use_ssl']) ? $request['use_ssl'] : false;
         $gerrit_server['http_password']        = $request['http_password'];
         $gerrit_server['replication_password'] = $request['replication_password'];
-        $gerrit_server['auth_type']            = $request['auth_type'];
+        $gerrit_server['gerrit_version']       = Git_RemoteServer_GerritServer::GERRIT_VERSION_2_8_PLUS;
 
         return $gerrit_server;
     }
@@ -81,11 +64,11 @@ class AdminGerritBuilder
         if (strpos($ssh_key, "\n") !== false) {
             $GLOBALS['Response']->addFeedback(
                 \Feedback::WARN,
-                $GLOBALS['Language']->getText('plugin_git', 'gerrit_servers_only_one_ssh_replication_key')
+                dgettext('tuleap-git', 'Only one replication SSH key is allowed by server')
             );
             return '';
         }
-        $validated_key = $this->ssh_key_validator->validateAllKeys(array($ssh_key));
+        $validated_key = $this->ssh_key_validator->validateAllKeys([$ssh_key]);
 
         if (empty($validated_key)) {
             return '';

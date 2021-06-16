@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2014. All rights reserved
+ * Copyright (c) Enalean SAS 2014 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,16 +19,20 @@
 /**
  * Replace svn_accessfile column name in groups by svn_accessfile_version_id
  */
-class b201405071410_replace_svn_accessfile_column_name_in_groups extends ForgeUpgrade_Bucket {
-    public function description() {
+class b201405071410_replace_svn_accessfile_column_name_in_groups extends ForgeUpgrade_Bucket
+{
+    public function description()
+    {
         return "svn_accessfile_version_id in groups";
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "ALTER TABLE groups
                 CHANGE svn_accessfile svn_accessfile_version_id INT(11)";
 

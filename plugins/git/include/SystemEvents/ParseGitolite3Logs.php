@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,7 +26,7 @@ use Tuleap\Git\Gitolite\Gitolite3LogParser;
 
 class ParseGitolite3Logs extends SystemEvent
 {
-    const NAME = 'GIT_PARSE_GITOLITE3_LOGS';
+    public const NAME = 'GIT_PARSE_GITOLITE3_LOGS';
 
     /** @var Gitolite3LogParser */
     private $gitolite_parser;

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -28,7 +28,7 @@ use Tuleap\DB\DataAccessObject;
 
 class ArtifactsDeletionConfigDAO extends DataAccessObject
 {
-    const CONFIG_NAME = 'artifacts_deletion_limit';
+    public const CONFIG_NAME = 'artifacts_deletion_limit';
 
     public function searchDeletableArtifactsLimit()
     {
@@ -42,7 +42,7 @@ class ArtifactsDeletionConfigDAO extends DataAccessObject
 
     public function updateDeletableArtifactsLimit($new_artifacts_limit)
     {
-        $sql= "REPLACE INTO plugin_tracker_config (name, value)
+        $sql = "REPLACE INTO plugin_tracker_config (name, value)
                 VALUES (?, ?)
         ";
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,7 +27,7 @@ class BurnupEffort
 
     public function __construct($team_effort, $total_effort)
     {
-        $this->team_effort = $team_effort;
+        $this->team_effort  = $team_effort;
         $this->total_effort = $total_effort;
     }
 

@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: PageGroup.php,v 1.9 2004/09/25 16:35:09 rurban Exp $');
 /**
  Copyright 1999,2000,2001,2002,2004 $ThePhpWikiProgrammingTeam
@@ -37,89 +38,106 @@ rcs_id('$Id: PageGroup.php,v 1.9 2004/09/25 16:35:09 rurban Exp $');
  *
  * Updated to use new HTML(). It mostly works, but it's still a giant hackish mess.
  */
-class WikiPlugin_PageGroup
-extends WikiPlugin
+class WikiPlugin_PageGroup extends WikiPlugin
 {
-    function getName() {
+    public function getName()
+    {
         return _("PageGroup");
     }
 
-    function getDescription() {
-        return sprintf(_("PageGroup for %s"),'[pagename]');
+    public function getDescription()
+    {
+        return sprintf(_("PageGroup for %s"), '[pagename]');
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.9 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.9 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array(
+    public function getDefaultArguments()
+    {
+        return [
                      'parent'  => '',
                      'rev'     => false,
                      'section' => _("Contents"),
                      'label'   => '',
                      'loop'    => false,
-                     );
+                     ];
     }
 
     // Stolen from IncludePage.php
-    function extractGroupSection ($section, $content, $page) {
+    public function extractGroupSection($section, $content, $page)
+    {
         $qsection = preg_replace('/\s+/', '\s+', preg_quote($section, '/'));
-        if (preg_match("/ ^(!{1,})\\s*$qsection" // section header
+        if (
+            preg_match(
+                "/ ^(!{1,})\\s*$qsection" // section header
                        . "  \\s*$\\n?"           // possible blank lines
                        . "  ( (?: ^.*\\n? )*? )" // some lines
                        . "  (?= ^\\1 | \\Z)/xm", // sec header (same or higher level) (or EOF)
-                       implode("\n", $content),
-                       $match)) {
-            $result = array();           	
+                implode("\n", $content),
+                $match
+            )
+        ) {
+            $result = [];
             //FIXME: return list of Wiki_Pagename objects
             foreach (explode("\n", $match[2]) as $line) {
-            	$text = trim($line);
+                $text = trim($line);
                 // Strip trailing blanks lines and ---- <hr>s
                 $text = preg_replace("/\\s*^-{4,}\\s*$/", "", $text);
                 // Strip leading list chars: * or #
                 $text = preg_replace("/^[\*#]+\s*(\S.+)$/", "\\1", $text);
-                // Strip surrounding [] 
+                // Strip surrounding []
                 // FIXME: parse [ name | link ]
                 $text = preg_replace("/^\[\s*(\S.+)\s*\]$/", "\\1", $text);
-                if (!empty($text))
+                if (! empty($text)) {
                     $result[] = $text;
+                }
             }
             return $result;
         }
-        return array(sprintf(_("<%s: no such section>"), $page ." ". $section));
+        return [sprintf(_("<%s: no such section>"), $page . " " . $section)];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
-
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         $args = $this->getArgs($argstr, $request);
         extract($args);
-        $html="";
+        $html = "";
         if (empty($parent)) {
             // FIXME: WikiPlugin has no way to report when
             // required args are missing?
-            $error_text = fmt("%s: %s", "WikiPlugin_" .$this->getName(),
-                              $error_text);
+            $error_text  = fmt(
+                "%s: %s",
+                "WikiPlugin_" . $this->getName(),
+                $error_text
+            );
             $error_text .= " " . sprintf(_("A required argument '%s' is missing."), 'parent');
-            $html = $error_text;
+            $html        = $error_text;
             return $html;
         }
-        $directions = array ('next'     => _("Next"),
+        $directions =  ['next'     => _("Next"),
                              'previous' => _("Previous"),
                              'contents' => _("Contents"),
                              'first'    => _("First"),
                              'last'     => _("Last")
-                             );
+                             ];
 
         global $WikiTheme;
         $sep = $WikiTheme->getButtonSeparator();
-        if (!$sep)
+        if (! $sep) {
             $sep = " | "; // force some kind of separator
+        }
 
         // default label
-        if (!$label)
+        if (! $label) {
             $label = $WikiTheme->makeLinkButton($parent);
+        }
 
         // This is where the list extraction occurs from the named
         // $section on the $parent page.
@@ -127,9 +145,12 @@ extends WikiPlugin
         $p = $dbi->getPage($parent);
         if ($rev) {
             $r = $p->getRevision($rev);
-            if (!$r) {
-                $this->error(sprintf(_("%s(%d): no such revision"), $parent,
-                                     $rev));
+            if (! $r) {
+                $this->error(sprintf(
+                    _("%s(%d): no such revision"),
+                    $parent,
+                    $rev
+                ));
                 return '';
             }
         } else {
@@ -147,24 +168,27 @@ extends WikiPlugin
 
         $thispage = array_search($pagename, $c);
 
-        $go = array ('previous','next');
+        $go    =  ['previous', 'next'];
         $links = HTML();
         $links->pushcontent($label);
         $links->pushcontent(" [ "); // an experiment
         $lastindex = count($c) - 1; // array is 0-based, count is 1-based!
 
-        foreach ( $go as $go_item ) {
+        foreach ($go as $go_item) {
             //yuck this smells, needs optimization.
             if ($go_item == 'previous') {
                 if ($loop) {
                     if ($thispage == 0) {
-                        $linkpage  = $c[$lastindex];
+                        $linkpage = $c[$lastindex];
                     } else {
-                        $linkpage  = $c[$thispage - 1];
+                        $linkpage = $c[$thispage - 1];
                     }
                     // mind the French : punctuation
-                    $text = fmt("%s: %s", $directions[$go_item],
-                                $WikiTheme->makeLinkButton($linkpage));
+                    $text = fmt(
+                        "%s: %s",
+                        $directions[$go_item],
+                        $WikiTheme->makeLinkButton($linkpage)
+                    );
                     $links->pushcontent($text);
                     $links->pushcontent($sep); // this works because
                                                // there are only 2 go
@@ -173,9 +197,12 @@ extends WikiPlugin
                     if ($thispage == 0) {
                         // skip it
                     } else {
-                        $linkpage  = $c[$thispage - 1];
-                        $text = fmt("%s: %s", $directions[$go_item],
-                                    $WikiTheme->makeLinkButton($linkpage));
+                        $linkpage = $c[$thispage - 1];
+                        $text     = fmt(
+                            "%s: %s",
+                            $directions[$go_item],
+                            $WikiTheme->makeLinkButton($linkpage)
+                        );
                         $links->pushcontent($text);
                         $links->pushcontent($sep); //this works
                                                    //because there are
@@ -183,22 +210,28 @@ extends WikiPlugin
                                                    //previous,next
                     }
                 }
-            } else if ($go_item == 'next') {
+            } elseif ($go_item == 'next') {
                 if ($loop) {
                     if ($thispage == $lastindex) {
-                        $linkpage  = $c[1];
+                        $linkpage = $c[1];
                     } else {
-                        $linkpage  = $c[$thispage + 1];
+                        $linkpage = $c[$thispage + 1];
                     }
-                    $text = fmt("%s: %s", $directions[$go_item],
-                                $WikiTheme->makeLinkButton($linkpage));
+                    $text = fmt(
+                        "%s: %s",
+                        $directions[$go_item],
+                        $WikiTheme->makeLinkButton($linkpage)
+                    );
                 } else {
                     if ($thispage == $lastindex) {
                         // skip it
                     } else {
                         $linkpage = $c[$thispage + 1];
-                        $text = fmt("%s: %s", $directions[$go_item],
-                                    $WikiTheme->makeLinkButton($linkpage));
+                        $text     = fmt(
+                            "%s: %s",
+                            $directions[$go_item],
+                            $WikiTheme->makeLinkButton($linkpage)
+                        );
                     }
                 }
                 $links->pushcontent($text);
@@ -207,7 +240,7 @@ extends WikiPlugin
         $links->pushcontent(" ] "); // an experiment
         return $links;
     }
-};
+}
 
 // $Log: PageGroup.php,v $
 // Revision 1.9  2004/09/25 16:35:09  rurban
@@ -232,8 +265,6 @@ extends WikiPlugin
 // Code cleanup:
 // Reformatting & tabs to spaces;
 // Added copyleft, getVersion, getDescription, rcs_id.
-//
-
 // Local Variables:
 // mode: php
 // tab-width: 8
@@ -241,4 +272,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

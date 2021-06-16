@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,14 +22,14 @@ namespace Tuleap\AgileDashboard\RealTime;
 
 use AgileDashboard_KanbanFactory;
 use PFUser;
-use Tracker_Artifact;
 use Tuleap\AgileDashboard\Kanban\RealTime\KanbanArtifactMessageSender;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class RealTimeArtifactMessageController
 {
-    const EVENT_NAME_ARTIFACT_CREATED   = 'created';
-    const EVENT_NAME_ARTIFACT_UPDATED   = 'updated';
-    const EVENT_NAME_ARTIFACT_REORDERED = 'reordered';
+    public const EVENT_NAME_ARTIFACT_CREATED   = 'created';
+    public const EVENT_NAME_ARTIFACT_UPDATED   = 'updated';
+    public const EVENT_NAME_ARTIFACT_REORDERED = 'reordered';
     /**
      * @var AgileDashboard_KanbanFactory
      */
@@ -47,7 +47,7 @@ class RealTimeArtifactMessageController
         $this->kanban_artifact_message_sender = $kanban_artifact_message_sender;
     }
 
-    public function sendMessageForKanban(PFUser $user, Tracker_Artifact $artifact, $event_name_artifact)
+    public function sendMessageForKanban(PFUser $user, Artifact $artifact, $event_name_artifact)
     {
         $kanban_id = $this->kanban_factory->getKanbanIdByTrackerId($artifact->getTrackerId());
 

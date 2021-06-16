@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,38 +19,35 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once dirname(__FILE__).'/../lib/autoload.php';
-
 /**
  * @group TokenTests
  */
-class TokenTest extends RestBase {
+class TokenTest extends RestBase
+{
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
-    public function testPostThrowExceptionIfUsernameDoesNotExist() {
-        $this->getResponseWithoutAuth($this->client->post(
+    public function testPostThrowExceptionIfUsernameDoesNotExist()
+    {
+        $response = $this->getResponseWithoutAuth($this->client->post(
             'tokens',
             null,
-            json_encode(array(
+            json_encode([
                 "username" => 'I don\'t exists',
                 "password" => 'pwd'
-            ))
+            ])
         ));
+        $this->assertEquals(401, $response->getStatusCode());
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
-    public function testPostThrowExceptionIfUsernameAndPaswordDoesNotMatch() {
-        $this->getResponseWithoutAuth($this->client->post(
+    public function testPostThrowExceptionIfUsernameAndPaswordDoesNotMatch()
+    {
+        $response = $this->getResponseWithoutAuth($this->client->post(
             'tokens',
             null,
-            json_encode(array(
+            json_encode([
                 "username" => REST_TestDataBuilder::TEST_USER_1_LDAPID,
                 "password" => 'pwd'
-            ))
+            ])
         ));
+        $this->assertEquals(401, $response->getStatusCode());
     }
 }

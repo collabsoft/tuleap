@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,13 +29,15 @@ class NotificationLevelExtractor
     {
         if ($request->exist('disable_notifications')) {
             return Tracker::NOTIFICATIONS_LEVEL_DISABLED;
-        } else if ($request->exist('enable_notifications')) {
+        } elseif ($request->exist('enable_notifications')) {
             return Tracker::NOTIFICATIONS_LEVEL_DEFAULT;
         }
 
         $notification_level = $request->get('notifications_level');
-        if ((int)$notification_level !== Tracker::NOTIFICATIONS_LEVEL_STATUS_CHANGE &&
-            (int)$notification_level !== Tracker::NOTIFICATIONS_LEVEL_DISABLED) {
+        if (
+            (int) $notification_level !== Tracker::NOTIFICATIONS_LEVEL_STATUS_CHANGE &&
+            (int) $notification_level !== Tracker::NOTIFICATIONS_LEVEL_DISABLED
+        ) {
             return Tracker::NOTIFICATIONS_LEVEL_DEFAULT;
         }
 
@@ -47,7 +49,6 @@ class NotificationLevelExtractor
         if ($notification_level === Tracker::NOTIFICATIONS_LEVEL_STATUS_CHANGE_LABEL) {
             return Tracker::NOTIFICATIONS_LEVEL_STATUS_CHANGE;
         }
-
 
         if ($notification_level === Tracker::NOTIFICATIONS_LEVEL_DISABLED_LABEL) {
             return Tracker::NOTIFICATIONS_LEVEL_DISABLED;

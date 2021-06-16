@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,14 +19,15 @@
  */
 
 use Tuleap\BurningParrotCompatiblePageDetector;
+use Tuleap\Theme\BurningParrot\BurningParrotTheme;
 
 /**
  * Instanciate the right theme according to user and platform preferences
  * and theme availability
  */
-class ThemeManager
+class ThemeManager //phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace
 {
-    private static $BURNING_PARROT   = 'BurningParrot';
+    private static $FLAMING_PARROT   = 'FlamingParrot';
     private static $LEGACY_EXTENSION = '_Theme.class.php';
     private static $PSR2_EXTENSION   = 'Theme.php';
 
@@ -43,95 +44,69 @@ class ThemeManager
 
     public function getTheme(PFUser $current_user)
     {
-        $GLOBALS['Response'] = $this->getFirstValidTheme($current_user, array(
-            $current_user->getTheme(),
-            $GLOBALS['sys_themedefault'],
-            'FlamingParrot',
-            'Tuleap',
-        ));
+        if ($this->page_detector->isInCompatiblePage($current_user)) {
+            $theme = $this->getBurningParrot($current_user);
+        } else {
+            $theme = $this->getFlamingParrot($current_user);
+        }
+
+        if ($theme === null && ! IS_SCRIPT) {
+            throw new Exception('No theme has been found. Do you have installed BurningParrot?');
+        }
+
+        $GLOBALS['Response'] = $theme;
         return $GLOBALS['Response'];
     }
 
     /**
-     * @param PFUser $current_user
-     * @return \Tuleap\Theme\BurningParrot\BurningParrotTheme
+     * @return \Tuleap\Theme\BurningParrot\BurningParrotTheme|null
      */
     public function getBurningParrot(PFUser $current_user)
     {
-        return $this->getStandardTheme($current_user, self::$BURNING_PARROT);
+        $path = __DIR__ . '/../../themes/BurningParrot/include/BurningParrotTheme.php';
+        if (! file_exists($path)) {
+            return null;
+        }
+        include_once $path;
+        return new BurningParrotTheme('/themes/BurningParrot', $current_user);
     }
 
-    private function getFirstValidTheme(PFUser $current_user, array $theme_names)
+    /**
+     * @return \Tuleap\Layout\BaseLayout|null
+     */
+    private function getFlamingParrot(PFUser $current_user)
     {
-        if ($this->page_detector->isInCompatiblePage($current_user)) {
-            return $this->getValidTheme($current_user, self::$BURNING_PARROT);
-        }
-
-        foreach ($theme_names as $name) {
-            $theme = $this->getValidTheme($current_user, $name);
-            if ($theme !== false && $this->isAllowedTheme($current_user, $name)) {
-                return $theme;
-            }
-        }
-
-        if (! IS_SCRIPT) {
-            throw new Exception('No theme has been found. Do you have installed BurningParrot?');
-        }
-    }
-
-    private function isAllowedTheme(PFUser $current_user, $name)
-    {
-        if ($name === self::$BURNING_PARROT) {
-            return $this->page_detector->isInCompatiblePage($current_user);
-        }
-
-        return true;
-    }
-
-    private function getValidTheme(PFUser $current_user, $name)
-    {
-        $theme = $this->getStandardTheme($current_user, $name);
-        if ($theme === false) {
-            $theme = $this->getCustomTheme($current_user, $name);
-        }
-
-        return $theme;
+        return $this->getStandardTheme($current_user, self::$FLAMING_PARROT);
     }
 
     private function getStandardTheme(PFUser $current_user, $name)
     {
-        if ($this->themeExists($GLOBALS['sys_themeroot'], $name)) {
-            $GLOBALS['sys_is_theme_custom'] = false;
-            $GLOBALS['sys_user_theme'] = $name;
-            $path = $this->getThemeClassPath($GLOBALS['sys_themeroot'], $name);
+        $theme_basedir_root = __DIR__ . '/../../www/themes/';
+        if ($this->themeExists($theme_basedir_root, $name)) {
+            ForgeConfig::set('sys_user_theme', $name);
+            $path = $this->getThemeClassPath($theme_basedir_root, $name);
 
-            return $this->instantiateTheme($current_user, $name, $path, '/themes/'.$name);
+            return $this->instantiateTheme($current_user, $name, $path, '/themes/' . $name);
         }
-        return false;
-    }
-
-    private function getCustomTheme(PFUser $current_user, $name)
-    {
-        if ($this->themeExists($GLOBALS['sys_custom_themeroot'], $name)) {
-            $GLOBALS['sys_is_theme_custom'] = true;
-            $GLOBALS['sys_user_theme'] = $name;
-            $path = $this->getThemeClassPath($GLOBALS['sys_custom_themeroot'], $name);
-
-            return $this->instantiateTheme($current_user, $name, $path, '/custom/'.$name);
-        }
-        return false;
+        return null;
     }
 
     private function instantiateTheme(PFUser $current_user, $name, $path, $webroot)
     {
-        if (preg_match('`'. preg_quote(self::$LEGACY_EXTENSION) .'$`', $path)) {
+        if (preg_match('`' . preg_quote(self::$LEGACY_EXTENSION, '`') . '$`', $path)) {
             $klass = $name . '_Theme';
             include_once $path;
+            if (! class_exists($klass)) {
+                throw new LogicException("$klass does not seem to be a valid theme class name");
+            }
             return new $klass($webroot);
         }
 
         $klass = "Tuleap\\Theme\\{$name}\\{$name}Theme";
-        include_once dirname($path) . '/autoload.php';
+        include_once dirname($path) . "/{$name}Theme.php";
+        if (! class_exists($klass)) {
+            throw new LogicException("$klass does not seem to be a valid theme class name");
+        }
         return new $klass($webroot, $current_user);
     }
 
@@ -160,11 +135,5 @@ class ThemeManager
         } else {
             return $name . self::$PSR2_EXTENSION;
         }
-    }
-
-    public function isThemeValid($name)
-    {
-        return $this->themeExists(ForgeConfig::get('sys_themeroot'), $name) ||
-               $this->themeExists(ForgeConfig::get('sys_custom_themeroot'), $name);
     }
 }

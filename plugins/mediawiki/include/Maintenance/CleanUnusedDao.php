@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,9 +23,9 @@ namespace Tuleap\Mediawiki\Maintenance;
 
 use DataAccessObject;
 use MediawikiDao;
-use Logger;
+use Psr\Log\LoggerInterface;
 use WrapperLogger;
-use Log_NoopLogger;
+use Psr\Log\NullLogger;
 use ForgeConfig;
 
 class CleanUnusedDao extends DataAccessObject
@@ -36,23 +36,23 @@ class CleanUnusedDao extends DataAccessObject
     private $central_database;
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
 
-    private $db_deleted = 0;
+    private $db_deleted     = 0;
     private $tables_deleted = 0;
 
-    public function __construct(Logger $logger, $central_database)
+    public function __construct(LoggerInterface $logger, $central_database)
     {
         parent::__construct();
         $this->enableExceptionsOnError();
         $this->central_database = $central_database;
 
-        $this->logger = new Log_NoopLogger();
+        $this->logger = new NullLogger();
     }
 
-    public function setLogger(Logger $logger)
+    public function setLogger(LoggerInterface $logger)
     {
         $this->logger = new WrapperLogger($logger, 'DB');
     }
@@ -89,19 +89,24 @@ class CleanUnusedDao extends DataAccessObject
         return $this->getServicesQuery(0);
     }
 
-    public function getMediawikiDatabasesInUsedServices()
+    public function getMediawikiDatabasesInUsedServices(?int $limit = null)
     {
-        return $this->getServicesQuery(1);
+        return $this->getServicesQuery(1, $limit);
     }
 
-    private function getServicesQuery($is_used)
+    private function getServicesQuery($is_used, ?int $limit = null)
     {
         $is_used = $this->da->escapeInt($is_used);
-        $sql = "SELECT plugin_mediawiki_database.*
+        $sql     = "SELECT plugin_mediawiki_database.*
                 FROM service
                   JOIN plugin_mediawiki_database ON (project_id = group_id)
                 WHERE short_name = 'plugin_mediawiki'
-                  AND is_used = $is_used";
+                AND is_used = $is_used";
+
+        if ($limit !== null) {
+            $sql .= " LIMIT $limit";
+        }
+
         return $this->retrieve($sql);
     }
 
@@ -111,8 +116,8 @@ class CleanUnusedDao extends DataAccessObject
         $project_id = (int) $project_id;
         if ($this->central_database && $project_id > 0) {
             foreach ($this->getTablesToDrop($project_id) as $row) {
-                $fullname = $this->central_database.'.'.$row['name'];
-                $sql = "DROP TABLE $fullname";
+                $fullname = $this->central_database . '.' . $row['name'];
+                $sql      = "DROP TABLE $fullname";
                 $this->logger->info("$sql");
                 if (! $dry_run) {
                     $this->update($sql);
@@ -126,7 +131,7 @@ class CleanUnusedDao extends DataAccessObject
     private function getTablesToDrop($project_id)
     {
         $central_db = $this->da->quoteSmart($this->central_database);
-        $prefix     = $this->da->quoteLikeValueSuffix(MediawikiDao::DEDICATED_DATABASE_TABLE_PREFIX.'_'.$project_id);
+        $prefix     = $this->da->quoteLikeValueSuffix(MediawikiDao::DEDICATED_DATABASE_TABLE_PREFIX . '_' . $project_id);
 
         $sql = "SELECT TABLE_NAME as name
               FROM INFORMATION_SCHEMA.TABLES
@@ -138,10 +143,10 @@ class CleanUnusedDao extends DataAccessObject
 
     public function dropDatabase($database, $dry_run)
     {
-        $this->logger->info("Attempt to purge database ".$database);
+        $this->logger->info("Attempt to purge database " . $database);
         if (strpos($database, MediawikiDao::DEDICATED_DATABASE_PREFIX) !== false) {
             if ($this->doesDatabaseExist($database)) {
-                $sql = 'DROP DATABASE '.$database;
+                $sql = 'DROP DATABASE ' . $this->da->quoteSmartSchema($database);
                 $this->logger->info($sql);
                 if (! $dry_run) {
                     $this->update($sql);
@@ -156,7 +161,7 @@ class CleanUnusedDao extends DataAccessObject
     private function doesDatabaseExist($database)
     {
         $database = $this->da->quoteSmart($database);
-        $sql = "SELECT SCHEMA_NAME AS 'name'
+        $sql      = "SELECT SCHEMA_NAME AS 'name'
           FROM INFORMATION_SCHEMA.SCHEMATA
           WHERE SCHEMA_NAME = $database";
         return $this->retrieveCount($sql) !== 0;
@@ -201,7 +206,7 @@ class CleanUnusedDao extends DataAccessObject
     {
         $this->logger->info("Desactivate service in project");
         $project_id = $this->da->escapeInt($project_id);
-        $sql = "UPDATE service SET is_used = 0 WHERE group_id = $project_id AND short_name = 'plugin_mediawiki'";
+        $sql        = "UPDATE service SET is_used = 0 WHERE group_id = $project_id AND short_name = 'plugin_mediawiki'";
         if (! $dry_run) {
             $this->update($sql);
             $this->logger->info("Service desactivated");
@@ -220,8 +225,8 @@ class CleanUnusedDao extends DataAccessObject
 
     public function getAllMediawikiBasesNotReferenced()
     {
-        $db_name   = ForgeConfig::get('sys_dbname');
-        $sql = "SELECT SCHEMA_NAME AS 'name'
+        $db_name = ForgeConfig::get('sys_dbname');
+        $sql     = "SELECT SCHEMA_NAME AS 'name'
                 FROM INFORMATION_SCHEMA.SCHEMATA
                   LEFT JOIN $db_name.plugin_mediawiki_database db ON (db.database_name = SCHEMA_NAME)
                 WHERE SCHEMA_NAME LIKE 'plugin_mediawiki_%'
@@ -232,25 +237,16 @@ class CleanUnusedDao extends DataAccessObject
     public function isDBEmpty($database_name)
     {
         $database_name = $this->da->quoteSmart($database_name);
-        $sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = $database_name LIMIT 1";
+        $sql           = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = $database_name LIMIT 1";
         return $this->retrieveCount($sql) === 0;
-    }
-
-    private function purgeIfOrphan($database_name, $dry_run)
-    {
-        if (! $this->doesDatabaseNameCorrespondToAnActiveProject($database_name)) {
-            $this->logger->warn("Project seems no longer referenced, please double check");
-        } else {
-            $this->logger->warn("Database $database_name cannot be associated to an active project, please check");
-        }
     }
 
     public function doesDatabaseNameCorrespondToAnActiveProject($database_name)
     {
         $identifier = substr($database_name, strlen(MediawikiDao::DEDICATED_DATABASE_PREFIX));
-        $where      = 'groups.unix_group_name = '.$this->da->quoteSmart($identifier);
+        $where      = 'groups.unix_group_name = ' . $this->da->quoteSmart($identifier);
         if (is_int($identifier)) {
-            $where = 'groups.group_id = '.$this->da->escapeInt($identifier);
+            $where = 'groups.group_id = ' . $this->da->escapeInt($identifier);
         }
         $sql = "SELECT 1
                 FROM groups
@@ -263,8 +259,8 @@ class CleanUnusedDao extends DataAccessObject
 
     public function doesDatabaseHaveContent($database_name)
     {
-        $table_name = $database_name.'.'.MediawikiDao::DEDICATED_DATABASE_TABLE_PREFIX.'page';
-        $sql = "SELECT 1 FROM $table_name LIMIT 1";
+        $table_name = $database_name . '.' . MediawikiDao::DEDICATED_DATABASE_TABLE_PREFIX . 'page';
+        $sql        = "SELECT 1 FROM $table_name LIMIT 1";
         $this->retrieveCount($sql) !== 0;
     }
 }

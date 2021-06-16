@@ -1,5 +1,5 @@
 #
-# Copyright (c) Enalean, 2011 - 2018. All Rights Reserved.
+# Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
 # Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
 #
 # This file is a part of Tuleap.
@@ -22,8 +22,11 @@
 system	locale	en_US
 system	locale_label	English
 system	strftimefmt	%Y %B %e  %H:%M
+system	strfdatefmt	%B %e, %Y
+system	strfdateshortfmt	%b %e, %Y
 system	datefmt	Y-m-d H:i
 system	datefmt_full	Y-m-d H:i:s
+system	datefmt_time	Y-m-d H:i
 system	datefmt_short	Y-m-d
 system	datefmt_day_and_month	M d
 system	decimal_separator	.
@@ -64,7 +67,6 @@ global	on	On
 global	off	Off
 global	any	Any
 global	none	None
-global	none_dashed	-- None --
 global	please_choose_dashed	-- Please choose
 global	begin	Begin
 global	end	End
@@ -111,5 +113,3 @@ global	null	NULL
 global	error_synchronizertoken	Your request doesn't appear to be valid. Please retry.
 global	settings	Settings
 global	usage	Usage
-global	powered_by	<a href="https://tuleap.org/?utm_source=forge&utm_medium=forge&utm_campaign=forge" target="_blank" rel="noreferrer">Tuleap&trade;</a>
-global	copyright	Copyright &copy; 2011-2018 <a href="https://www.enalean.com/?utm_source=forge&utm_medium=forge&utm_campaign=forge" target="_blank" rel="noreferrer">Enalean</a>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,18 +22,18 @@ namespace Tuleap\Git\Gitolite;
 
 use DateTime;
 use DateInterval;
-use Logger;
+use Psr\Log\LoggerInterface;
 use Exception;
 
 class GitoliteFullLogsToAggregatedLogs extends \DataAccessObject
 {
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
 
-    public function __construct(Logger $logger)
+    public function __construct(LoggerInterface $logger)
     {
         parent::__construct();
         $this->logger = $logger;
@@ -44,7 +44,7 @@ class GitoliteFullLogsToAggregatedLogs extends \DataAccessObject
     {
         $start_timestamp = $this->getLastImportedTimestamp();
         do {
-            $end_timestamp   = $this->getEndDate($start_timestamp);
+            $end_timestamp = $this->getEndDate($start_timestamp);
             $this->logger->info(sprintf("Import between %s and %s", date('c', $start_timestamp), date('c', $end_timestamp)));
             $start_timestamp = $this->updateBetween($start_timestamp, $end_timestamp);
             $this->logger->info('Done, wait for 1 sec');

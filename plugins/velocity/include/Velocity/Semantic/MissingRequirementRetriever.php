@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,7 +23,7 @@ namespace Tuleap\Velocity\Semantic;
 use Tracker;
 use Tracker_HierarchyFactory;
 use TrackerFactory;
-use Tuleap\AgileDashboard\Semantic\SemanticDoneFactory;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDoneFactory;
 
 class MissingRequirementRetriever
 {

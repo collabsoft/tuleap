@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,15 @@
 
 namespace Tuleap\Tracker\REST;
 
-use \Tracker;
+use Tracker;
+use Tuleap\Project\ProjectBackground\ProjectBackgroundConfiguration;
 use Tuleap\Project\REST\ProjectReference;
-use \Tuleap\REST\JsonCast;
 
-class TrackerReference {
+/**
+ * @psalm-immutable
+ */
+class TrackerReference
+{
 
     /**
      * @var int ID of the tracker {@type int} {@required true}
@@ -41,18 +45,32 @@ class TrackerReference {
     public $label;
 
     /**
-     * @var ProjectReference {@type Tuleap\Tracker\REST\ProjectReference} {@required false}
+     * @var ProjectReference {@required false}
      */
     public $project;
 
-    public function build(Tracker $tracker) {
-        $this->id    = JsonCast::toInt($tracker->getId());
-        $this->uri   = TrackerRepresentation::ROUTE . '/' . $this->id;
+    private function __construct(Tracker $tracker, ProjectReference $project)
+    {
+        $this->id    = $tracker->getId();
+        $this->uri   = CompleteTrackerRepresentation::ROUTE . '/' . $this->id;
         $this->label = $tracker->getName();
 
-        $project           = $tracker->getProject();
-        $project_reference = new ProjectReference();
-        $project_reference->build($project);
-        $this->project = $project_reference;
+        $this->project = $project;
+    }
+
+    public static function build(Tracker $tracker): self
+    {
+        return new self(
+            $tracker,
+            new ProjectReference($tracker->getProject()),
+        );
+    }
+
+    public static function buildWithExtendedProjectReference(Tracker $tracker, ProjectBackgroundConfiguration $project_background_configuration): self
+    {
+        return new self(
+            $tracker,
+            ProjectReferenceWithBackground::fromProject($tracker->getProject(), $project_background_configuration),
+        );
     }
 }

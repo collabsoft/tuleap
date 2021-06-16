@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -39,12 +39,12 @@ class GettextExtractor
      */
     private $collector;
 
-    private static $GETTEXT_NODE_NAMES = array(
+    private static $GETTEXT_NODE_NAMES = [
         GettextHelper::GETTEXT,
         GettextHelper::NGETTEXT,
         GettextHelper::DGETTEXT,
         GettextHelper::DNGETTEXT
-    );
+    ];
 
     public function __construct(
         Mustache_Parser $parser,
@@ -73,7 +73,7 @@ class GettextExtractor
 
             if ($this->isAGettextSection($node)) {
                 $this->collectEntry($template, $node, $collection);
-            } else if ($this->isASectionOrInvertedSection($node)) {
+            } elseif ($this->isASectionOrInvertedSection($node)) {
                 $this->walk($template, $node[Mustache_Tokenizer::NODES], $collection);
             }
         }
@@ -93,7 +93,7 @@ class GettextExtractor
     {
         return in_array(
             $node[Mustache_Tokenizer::TYPE],
-            array(Mustache_Tokenizer::T_SECTION, Mustache_Tokenizer::T_INVERTED),
+            [Mustache_Tokenizer::T_SECTION, Mustache_Tokenizer::T_INVERTED],
             true
         );
     }

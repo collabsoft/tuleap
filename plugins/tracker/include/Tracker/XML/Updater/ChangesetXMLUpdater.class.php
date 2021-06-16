@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -49,8 +49,8 @@ class Tracker_XML_Updater_ChangesetXMLUpdater
         $this->addSubmittedInformation($artifact_xml->changeset, $user, $submitted_on);
 
         foreach ($artifact_xml->changeset->field_change as $field_change) {
-            $field_name = (string)$field_change['field_name'];
-            $field = $this->formelement_factory->getUsedFieldByNameForUser(
+            $field_name = (string) $field_change['field_name'];
+            $field      = $this->formelement_factory->getUsedFieldByNameForUser(
                 $tracker->getId(),
                 $field_name,
                 $user

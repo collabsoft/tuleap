@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,20 +21,10 @@
 namespace Tuleap\AgileDashboard\Milestone\Pane\Details;
 
 use Tuleap\AgileDashboard\Milestone\Pane\PaneInfo;
-use Planning_Milestone;
 
 class DetailsPaneInfo extends PaneInfo
 {
-    const IDENTIFIER = 'details';
-
-    /** @var string */
-    private $theme_path;
-
-    public function __construct(Planning_Milestone $milestone, $theme_path)
-    {
-        parent::__construct($milestone);
-        $this->theme_path = $theme_path;
-    }
+    public const IDENTIFIER = 'details';
 
     /**
      * @return string eg: 'cardwall'
@@ -49,11 +39,11 @@ class DetailsPaneInfo extends PaneInfo
      */
     public function getTitle()
     {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'details_pane_title');
+        return dgettext('tuleap-agiledashboard', 'Overview');
     }
 
     public function getIconName()
     {
-        return 'fa-bar-chart icon-bar-chart';
+        return 'fa-bar-chart';
     }
 }

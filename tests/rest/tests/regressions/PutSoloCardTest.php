@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -17,8 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
-
-require_once __DIR__.'/../../lib/autoload.php';
 
 /**
  * PUT /cards/:id cannot update solo card
@@ -37,19 +35,19 @@ class Regressions_PutSoloCardTest extends RestBase
         $stories     = $this->getArtifactIdsIndexedByTitle('private-member', 'story');
         $planning_id = $this->getSprintPlanningId();
 
-        $put = json_encode(
-            array(
+        $put      = json_encode(
+            [
                 "label"     => "Whatever",
                 "column_id" => null,
-                "values"    => array()
-            )
+                "values"    => []
+            ]
         );
-        $response = $this->getResponse($this->client->put('cards/'.$planning_id.'_'.$stories['Story 1'], null, $put));
+        $response = $this->getResponse($this->client->put('cards/' . $planning_id . '_' . $stories['Story 1'], null, $put));
         $this->assertEquals($response->getStatusCode(), 200);
     }
 
     private function getSprintPlanningId()
-        {
+    {
         $project_plannings = $this->getResponse($this->client->get("projects/$this->project_private_member_id/plannings"))->json();
         foreach ($project_plannings as $planning) {
             if ($planning['label'] == 'Sprint Planning') {

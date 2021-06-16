@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,6 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Git\Gerrit\ReplicationHTTPUserAuthenticator;
 use Tuleap\Git\Gitolite\VersionDetector;
 
 class Git_HTTP_CommandFactory
@@ -33,7 +32,7 @@ class Git_HTTP_CommandFactory
         $this->detector = $detector;
     }
 
-    public function getCommandForUser(Git_URL $url, PFO_User $user = null)
+    public function getCommandForUser(Git_URL $url, ?PFO_User $user = null)
     {
         $command = $this->getGitHttpBackendCommand();
         if ($user !== null) {
@@ -44,15 +43,17 @@ class Git_HTTP_CommandFactory
         return $command;
     }
 
-    private function getGitHttpBackendCommand() {
-        $command = new Git_HTTP_CommandCentos6GitHttpBackend();
-        if (Git_Exec::isGit29Installed()) {
-            $command = new \Tuleap\Git\HTTP\CommandSCL29GitHttpBackend();
+    private function getGitHttpBackendCommand()
+    {
+        if (Git_Exec::isGit218Installed()) {
+            return new \Tuleap\Git\HTTP\CommandSCL218GitHttpBackend();
         }
-        return $command;
+
+        throw new RuntimeException('Cannot find a Git HTTP backend command');
     }
 
-    private function getGitoliteCommand(PFO_User $user, Git_HTTP_Command $command) {
+    private function getGitoliteCommand(PFO_User $user, Git_HTTP_Command $command)
+    {
         if ($this->detector->isGitolite3()) {
             return new Git_HTTP_CommandGitolite3($user, $command);
         }

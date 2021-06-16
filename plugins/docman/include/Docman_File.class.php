@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -18,19 +18,23 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-require_once('Docman_Document.class.php');
 
 /**
  * URL is a transport object (aka container) used to share data between
  * Model/Controler and View layer of the application
  */
-class Docman_File extends Docman_Document {
-    
-    function __construct($data = null) {
+class Docman_File extends Docman_Document
+{
+
+    public function __construct($data = null)
+    {
         parent::__construct($data);
     }
-    
-    var $currentVersion;
+
+    /**
+     * @var Docman_Version
+     */
+    public $currentVersion;
     public function setCurrentVersion($currentVersion)
     {
         $this->currentVersion = $currentVersion;
@@ -43,21 +47,20 @@ class Docman_File extends Docman_Document {
     public function getType()
     {
         $version      = $this->getCurrentVersion();
-        $default_type = $GLOBALS['Language']->getText('plugin_docman', 'doc_type_file');
+        $default_type = dgettext('tuleap-docman', 'File');
         $type         = $version ? $version->getFiletype() : $default_type;
         return $type;
     }
 
-    function toRow() {
-        $row = parent::toRow();
+    public function toRow()
+    {
+        $row              = parent::toRow();
         $row['item_type'] = PLUGIN_DOCMAN_ITEM_TYPE_FILE;
         return $row;
     }
 
-    public function accept($visitor, $params = array())
+    public function accept($visitor, $params = [])
     {
         return $visitor->visitFile($this, $params);
     }
 }
-
-?>

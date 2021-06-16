@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) 2010 Christopher Han
  *
  * This file is a part of Tuleap.
@@ -26,16 +26,10 @@ namespace Tuleap\Git\GitPHP;
  *
  * Controller factory
  *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Controller
  */
 /**
  * Controller
  *
- * @package GitPHP
- * @subpackage Controller
  */
 class Controller
 {
@@ -84,12 +78,6 @@ class Controller
             case 'tag':
                 $controller = new Controller_Tag();
                 break;
-            case 'tags':
-                $controller = new Controller_Tags();
-                break;
-            case 'heads':
-                $controller = new Controller_Heads();
-                break;
             case 'blame':
                 $controller = new Controller_Blame();
                 break;
@@ -98,15 +86,6 @@ class Controller
                 $controller = new Controller_Blob();
                 if ($action === 'blob_plain') {
                     $controller->SetParam('plain', true);
-                }
-                break;
-            case 'atom':
-            case 'rss':
-                $controller = new Controller_Feed();
-                if ($action == 'rss') {
-                    $controller->SetParam('format', Controller_Feed::FEED_FORMAT_RSS);
-                } elseif ($action == 'atom') {
-                    $controller->SetParam('format', Controller_Feed::FEED_FORMAT_ATOM);
                 }
                 break;
             case 'commit':

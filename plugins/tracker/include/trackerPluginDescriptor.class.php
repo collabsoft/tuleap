@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,16 +17,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once('common/plugin/PluginDescriptor.class.php');
-
 /**
  * trackerPluginDescriptor
  */
-class trackerPluginDescriptor extends PluginDescriptor {
-    
-    function __construct() {
-        parent::__construct($GLOBALS['Language']->getText('plugin_tracker', 'descriptor_name'), false, $GLOBALS['Language']->getText('plugin_tracker', 'descriptor_description'));
-        $this->setVersionFromFile(dirname(__FILE__).'/../VERSION');
+class trackerPluginDescriptor extends PluginDescriptor
+{
+
+    public function __construct()
+    {
+        parent::__construct(dgettext('tuleap-tracker', 'Tracker'), false, dgettext('tuleap-tracker', 'Trackers new generation'));
     }
 }
-?>

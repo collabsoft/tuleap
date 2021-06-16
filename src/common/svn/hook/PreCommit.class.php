@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2014 - 2017. All rights reserved.
+ * Copyright Enalean (c) 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -21,13 +21,15 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
 use Tuleap\Svn\SHA1CollisionDetector;
 use Tuleap\Svn\SHA1CollisionException;
 
 /**
  * I'm responsible of handling what happens in pre-commit subversion hook
  */
-class SVN_Hook_PreCommit extends SVN_Hook {
+class SVN_Hook_PreCommit extends SVN_Hook
+{
 
     /**
      * @var SVN_Immutable_Tags_Handler
@@ -49,7 +51,7 @@ class SVN_Hook_PreCommit extends SVN_Hook {
         SVN_Svnlook $svn_look,
         SVN_Immutable_Tags_Handler $handler,
         SHA1CollisionDetector $sha1_collision_detector,
-        Logger $logger
+        \Psr\Log\LoggerInterface $logger
     ) {
         parent::__construct($svn_hooks, $message_validator);
 
@@ -67,7 +69,8 @@ class SVN_Hook_PreCommit extends SVN_Hook {
      *
      * @throws Exception
      */
-    public function assertCommitMessageIsValid($repository, $commit_message) {
+    public function assertCommitMessageIsValid($repository, $commit_message)
+    {
         if ($this->optionDoesNotAllowEmptyCommitMessage() && $commit_message === '') {
             throw new Exception('Commit message must not be empty');
         }
@@ -76,20 +79,23 @@ class SVN_Hook_PreCommit extends SVN_Hook {
         $this->message_validator->assertCommitMessageIsValid($project, $commit_message);
     }
 
-    private function optionDoesNotAllowEmptyCommitMessage() {
+    private function optionDoesNotAllowEmptyCommitMessage()
+    {
         return ! ForgeConfig::get('sys_allow_empty_svn_commit_message');
     }
 
     /**
      * Check if the commit is done on an allowed path
      * @param String  $repository
-     * @param Integer $transaction
+     * @param int $transaction
      * @throws Exception
      */
-    public function assertCommitToTagIsAllowed($repository, $transaction) {
+    public function assertCommitToTagIsAllowed($repository, $transaction)
+    {
         $project = $this->getProjectFromRepositoryPath($repository);
 
-        if ($this->handler->doesProjectUsesImmutableTags($project) &&
+        if (
+            $this->handler->doesProjectUsesImmutableTags($project) &&
             ! $this->isCommitAllowed($project, $transaction)
         ) {
             throw new SVN_CommitToTagDeniedException("Commit to tag is not allowed");
@@ -105,12 +111,12 @@ class SVN_Hook_PreCommit extends SVN_Hook {
         $project       = $this->getProjectFromRepositoryPath($repository);
         $changed_paths = $this->svn_look->getTransactionPath($project, $transaction);
         foreach ($changed_paths as $path) {
-            $matches = array();
+            $matches = [];
             if ($this->extractFilenameFromNonDeletedPath($path, $matches)) {
                 continue;
             }
-            $filename     = $matches[1];
-            $handle_file  = $this->svn_look->getContent($project, $transaction, $filename);
+            $filename    = $matches[1];
+            $handle_file = $this->svn_look->getContent($project, $transaction, $filename);
             if ($handle_file === false) {
                 throw new \RuntimeException("Can't get the content of the file $filename");
             }
@@ -134,11 +140,12 @@ class SVN_Hook_PreCommit extends SVN_Hook {
    /**
      * Check if the commit target is tags
      * @param Project $project
-     * @param Integer $transaction
+     * @param int $transaction
      *
-     * @return Boolean
+     * @return bool
      */
-    private function isCommitAllowed($project, $transaction) {
+    private function isCommitAllowed($project, $transaction)
+    {
         $paths = $this->svn_look->getTransactionPath($project, $transaction);
 
         $this->logger->debug("Checking if commit is done in tag");
@@ -159,9 +166,10 @@ class SVN_Hook_PreCommit extends SVN_Hook {
      * Check if it is an update or delete to tags
      * @param String $path
      *
-     * @return Boolean
+     * @return bool
      */
-    private function isCommitDoneInImmutableTag(Project $project, $path) {
+    private function isCommitDoneInImmutableTag(Project $project, $path)
+    {
         $immutable_paths = explode(PHP_EOL, $this->handler->getImmutableTagsPathForProject($project->getID()));
 
         foreach ($immutable_paths as $immutable_path) {
@@ -173,14 +181,15 @@ class SVN_Hook_PreCommit extends SVN_Hook {
         return false;
     }
 
-    private function isCommitForbidden(Project $project, $immutable_path, $path) {
+    private function isCommitForbidden(Project $project, $immutable_path, $path)
+    {
         $immutable_path_regexp = $this->getWellFormedRegexImmutablePath($immutable_path);
 
         $pattern = "%^(?:
             (?:U|D)\s+$immutable_path_regexp            # U  moduleA/tags/v1
                                                         # U  moduleA/tags/v1/toto
             |
-            A\s+".$immutable_path_regexp."/[^/]+/[^/]+  # A  moduleA/tags/v1/toto
+            A\s+" . $immutable_path_regexp . "/[^/]+/[^/]+  # A  moduleA/tags/v1/toto
             )%x";
 
         if (preg_match($pattern, $path)) {
@@ -188,13 +197,14 @@ class SVN_Hook_PreCommit extends SVN_Hook {
         }
     }
 
-    private function isCommitDoneOnWhitelistElement(Project $project, $path) {
+    private function isCommitDoneOnWhitelistElement(Project $project, $path)
+    {
         $whitelist = $this->handler->getAllowedTagsFromWhiteList($project);
         if (! $whitelist) {
             return false;
         }
 
-        $whitelist_regexp = array();
+        $whitelist_regexp = [];
         foreach ($whitelist as $whitelist_path) {
             $whitelist_regexp[] = $this->getWellFormedRegexImmutablePath($whitelist_path);
         }
@@ -210,9 +220,10 @@ class SVN_Hook_PreCommit extends SVN_Hook {
         return preg_match($pattern, $path);
     }
 
-    private function getWellFormedRegexImmutablePath($immutable_path) {
+    private function getWellFormedRegexImmutablePath($immutable_path)
+    {
         $immutable_path = trim($immutable_path, '/');
-        $immutable_path = preg_quote($immutable_path);
+        $immutable_path = preg_quote($immutable_path, '%');
         $immutable_path = str_replace('\*', '[^/]+', $immutable_path);
 
         return $immutable_path;

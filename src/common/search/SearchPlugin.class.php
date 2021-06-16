@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Search_SearchPlugin {
+class Search_SearchPlugin
+{
 
-    const RESULTS_PER_QUERY = 15;
+    public const RESULTS_PER_QUERY = 15;
 
     /**
      * @var EventManager
@@ -28,16 +29,17 @@ class Search_SearchPlugin {
     private $event_manager;
 
 
-    public function __construct(EventManager $event_manager) {
+    public function __construct(EventManager $event_manager)
+    {
         $this->event_manager = $event_manager;
     }
 
-    public function search(Search_SearchQuery $query, Search_SearchResults $results) {
-
-        $params   = array(
+    public function search(Search_SearchQuery $query, Search_SearchResults $results)
+    {
+        $params = [
             'query'   => $query,
             'results' => $results,
-        );
+        ];
 
         $this->event_manager->processEvent(Event::SEARCH_TYPE, $params);
     }

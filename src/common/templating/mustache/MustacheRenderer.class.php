@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,10 +19,10 @@
  */
 
 use Tuleap\Templating\Mustache\MustacheEngine;
-use Tuleap\Templating\TemplateCache;
+use Tuleap\Templating\TemplateCacheInterface;
 
 /**
- * Adapts the Mustache template engine to the expected Tuleap interface. 
+ * Adapts the Mustache template engine to the expected Tuleap interface.
  */
 class MustacheRenderer extends TemplateRenderer
 {
@@ -31,11 +31,11 @@ class MustacheRenderer extends TemplateRenderer
      */
     private $template_engine;
 
-    public function __construct(TemplateCache $template_cache, $plugin_templates_dir)
+    public function __construct(TemplateCacheInterface $template_cache, $plugin_templates_dir)
     {
         $templates_directories = (array) $plugin_templates_dir;
 
-        $common_templates_dir = ForgeConfig::get('codendi_dir') .'/src/templates/common/';
+        $common_templates_dir = ForgeConfig::get('codendi_dir') . '/src/templates/common/';
         if (is_dir($common_templates_dir)) {
             $templates_directories[] = $common_templates_dir;
         }
@@ -51,17 +51,17 @@ class MustacheRenderer extends TemplateRenderer
     /**
      * @return MustacheEngine
      */
-    protected function getEngine(\Mustache_Loader $loader, TemplateCache $template_cache)
+    protected function getEngine(\Mustache_Loader $loader, TemplateCacheInterface $template_cache)
     {
         return new MustacheEngine($loader, $template_cache);
     }
-    
+
     /**
      * @see TemplateEngine
      * @return string
      */
     public function renderToString($template_name, $presenter)
     {
-       return $this->template_engine->render($template_name, $presenter);
+        return $this->template_engine->render($template_name, $presenter);
     }
 }

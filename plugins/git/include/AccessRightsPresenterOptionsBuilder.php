@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -70,13 +70,10 @@ class AccessRightsPresenterOptionsBuilder
         );
 
         return $this->buildOptions($project, $selected_values, $permission);
-
     }
 
-    public function getAllOptions(Project $project)
+    public function getAllOptions(Project $project, array $selected_values = [])
     {
-        $selected_values = array();
-
         return $this->buildOptions($project, $selected_values, '');
     }
 
@@ -84,7 +81,7 @@ class AccessRightsPresenterOptionsBuilder
         FineGrainedPermission $permission,
         Project $project
     ) {
-        $selected_values = array();
+        $selected_values = [];
         foreach ($permission->getWritersUgroup() as $writer) {
             $selected_values[] = $writer->getId();
         }
@@ -96,7 +93,7 @@ class AccessRightsPresenterOptionsBuilder
         FineGrainedPermission $permission,
         Project $project
     ) {
-        $selected_values = array();
+        $selected_values = [];
         foreach ($permission->getRewindersUgroup() as $rewinder) {
             $selected_values[] = $rewinder->getId();
         }
@@ -108,7 +105,7 @@ class AccessRightsPresenterOptionsBuilder
         DefaultFineGrainedPermission $permission,
         Project $project
     ) {
-        $selected_values = array();
+        $selected_values = [];
         foreach ($permission->getWritersUgroup() as $writer) {
             $selected_values[] = $writer->getId();
         }
@@ -120,7 +117,7 @@ class AccessRightsPresenterOptionsBuilder
         DefaultFineGrainedPermission $permission,
         Project $project
     ) {
-        $selected_values = array();
+        $selected_values = [];
         foreach ($permission->getRewindersUgroup() as $rewinder) {
             $selected_values[] = $rewinder->getId();
         }
@@ -131,21 +128,22 @@ class AccessRightsPresenterOptionsBuilder
     private function buildOptions(Project $project, array $selected_values, $permission)
     {
         $user_groups = $this->user_group_factory->getAllForProject($project);
-        $options     = array();
+        $options     = [];
 
         foreach ($user_groups as $ugroup) {
-            if ($ugroup->getId() == ProjectUGroup::ANONYMOUS &&
+            if (
+                $ugroup->getId() == ProjectUGroup::ANONYMOUS &&
                 ($permission !== Git::PERM_READ && $permission !== Git::DEFAULT_PERM_READ)
             ) {
                 continue;
             }
 
             $selected  = in_array($ugroup->getId(), $selected_values) ? 'selected="selected"' : '';
-            $options []= array(
+            $options[] = [
                 'value'    => $ugroup->getId(),
                 'label'    => $ugroup->getName(),
                 'selected' => $selected
-            );
+            ];
         }
 
         return $options;

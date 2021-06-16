@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,11 @@
 
 namespace Tuleap\AgileDashboard\REST\v1\Kanban;
 
-class KanbanBacklogInfoRepresentation {
+/**
+ * @psalm-immutable
+ */
+class KanbanBacklogInfoRepresentation
+{
 
     /**
      * @var string
@@ -36,7 +40,8 @@ class KanbanBacklogInfoRepresentation {
      */
     public $user_can_add_in_place;
 
-    public function build($label, $is_open, $user_can_add_in_place) {
+    public function __construct($label, $is_open, $user_can_add_in_place)
+    {
         $this->label   = $label;
         $this->is_open = $is_open;
 

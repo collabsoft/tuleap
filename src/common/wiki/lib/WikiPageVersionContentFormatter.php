@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,27 +19,32 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+use Tuleap\PHPWiki\WikiPage;
+
 /**
  * WARNING !
  * For your sanity, please don't read this.
  */
 
-class WikiPageVersionContentFormatter {
+class WikiPageVersionContentFormatter
+{
 
-    const PHPWIKI_TEMPLATE = 'rest';
+    public const PHPWIKI_TEMPLATE = 'rest';
 
     /** @var WikiPageWrapper */
     private $wrapper;
 
-    public function __construct($project_id) {
+    public function __construct($project_id)
+    {
         $this->wrapper = new WikiPageWrapper($project_id);
     }
 
-    public function getFormattedContent(WikiPage $wiki_page, WikiPageVersion $version) {
+    public function getFormattedContent(WikiPage $wiki_page, WikiPageVersion $version)
+    {
         $request = $this->wrapper->getRequest();
         $request->initializeTheme();
 
-        require_once(dirname(__FILE__).'/../phpwiki/lib/Template.php');
+        require_once(dirname(__FILE__) . '/../phpwiki/lib/Template.php');
         $template = new Template(
             self::PHPWIKI_TEMPLATE,
             $request,

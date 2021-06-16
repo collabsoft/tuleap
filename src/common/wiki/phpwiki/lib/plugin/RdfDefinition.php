@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: RdfDefinition.php,v 1.6 2004/09/14 10:33:39 rurban Exp $');
 /*
  Copyright 2004 Reini Urban
@@ -26,7 +27,7 @@ rcs_id('$Id: RdfDefinition.php,v 1.6 2004/09/14 10:33:39 rurban Exp $');
  *                 <=>
  * page    - link-qualifier - pagelinkedto
  *
- * Similar to the InterWikiMap PageType, with the difference 
+ * Similar to the InterWikiMap PageType, with the difference
  * that the initerwiki map links are wiki global, and a RDF vocabulary
  * is only local. Multiple vocabularies may be defined.
  *
@@ -35,35 +36,41 @@ rcs_id('$Id: RdfDefinition.php,v 1.6 2004/09/14 10:33:39 rurban Exp $');
  *
  * @author: Reini Urban
  */
-class WikiPlugin_RdfDefinition
-extends WikiPlugin
+class WikiPlugin_RdfDefinition extends WikiPlugin
 {
-    function getName() {
+    public function getName()
+    {
         return _("RdfDefinition");
     }
-    function getDescription() {
+    public function getDescription()
+    {
         return _("Define the RDF vocabulary for a wiki subset.");
     }
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.6 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.6 $"
+        );
     }
-    function getDefaultArguments() { 
-        return array(
-                     'pages' => false,		// define affected pageset here?	
-                     );
+    public function getDefaultArguments()
+    {
+        return [
+                     'pages' => false,        // define affected pageset here?
+                     ];
     }
-    function handle_plugin_args_cruft(&$argstr, &$args) {
+    public function handle_plugin_args_cruft(&$argstr, &$args)
+    {
         $this->source = $argstr;
     }
 
-    function run($dbi, $argstr, &$request, $basepage) { 
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         // just a list of valid predicates
         // comments?
-        ;
     }
-
-};
+}
 
 // $Log: RdfDefinition.php,v $
 
@@ -74,4 +81,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

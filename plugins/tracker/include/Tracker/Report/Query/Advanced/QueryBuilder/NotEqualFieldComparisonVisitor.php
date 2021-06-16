@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ use Tracker_FormElement_Field_MultiSelectbox;
 use Tracker_FormElement_Field_OpenList;
 use Tracker_FormElement_Field_PermissionsOnArtifact;
 use Tracker_FormElement_Field_PerTrackerArtifactId;
+use Tracker_FormElement_Field_Priority;
 use Tracker_FormElement_Field_Radiobutton;
 use Tracker_FormElement_Field_Selectbox;
 use Tracker_FormElement_Field_String;
@@ -49,7 +50,6 @@ use Tuleap\Tracker\FormElement\TrackerFormElementExternalField;
 use Tuleap\Tracker\Report\Query\Advanced\CollectionOfListValuesExtractor;
 use Tuleap\Tracker\Report\Query\Advanced\FieldFromWhereBuilder;
 use Tuleap\Tracker\Report\Query\Advanced\ListFieldBindValueNormalizer;
-use Tuleap\Tracker\Report\Query\Advanced\QueryBuilder\NotEqualComparison;
 use Tuleap\Tracker\Report\Query\Advanced\UgroupLabelConverter;
 use UserManager;
 
@@ -143,11 +143,11 @@ class NotEqualFieldComparisonVisitor implements
 
     private function visitList(Tracker_FormElement_Field_List $field)
     {
-        $static_bind_builder = new NotEqualComparison\ForListBindStatic(
+        $static_bind_builder  = new NotEqualComparison\ForListBindStatic(
             new FromWhereEmptyNotEqualComparisonFieldBuilder(),
             new FromWhereNotEqualComparisonListFieldBuilder()
         );
-        $users_bind_builder = new NotEqualComparison\ForListBindUsers(
+        $users_bind_builder   = new NotEqualComparison\ForListBindUsers(
             new CollectionOfListValuesExtractor(),
             new FromWhereEmptyNotEqualComparisonFieldBuilder(),
             new FromWhereNotEqualComparisonListFieldBuilder()
@@ -239,6 +239,11 @@ class NotEqualFieldComparisonVisitor implements
     }
 
     public function visitExternalField(TrackerFormElementExternalField $element)
+    {
+        return null;
+    }
+
+    public function visitPriority(Tracker_FormElement_Field_Priority $field)
     {
         return null;
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,9 +22,12 @@ namespace Tuleap\REST\v1;
 
 use Tuleap\Project\REST\MinimalProjectRepresentation;
 
+/**
+ * @psalm-immutable
+ */
 class SvnRepositoryRepresentationBase
 {
-    const ROUTE = 'svn';
+    public const ROUTE = 'svn';
 
     /**
      * @var int {@type int}
@@ -45,4 +48,13 @@ class SvnRepositoryRepresentationBase
      * @var string {@type string}
      */
     public $name;
+
+    /**
+     * @var string {@type string}
+     */
+    public $svn_url;
+
+    protected function __construct()
+    {
+    }
 }

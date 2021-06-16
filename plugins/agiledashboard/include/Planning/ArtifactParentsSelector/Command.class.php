@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-abstract class Planning_ArtifactParentsSelector_Command {
+use Tuleap\Tracker\Artifact\Artifact;
+
+abstract class Planning_ArtifactParentsSelector_Command
+{
 
     /**
      * @var Tracker_ArtifactFactory
@@ -40,22 +43,23 @@ abstract class Planning_ArtifactParentsSelector_Command {
      */
     protected $hierarchy_factory;
 
-    public function __construct(Tracker_ArtifactFactory $artifact_factory, PlanningFactory $planning_factory, Planning_MilestoneFactory $milestone_factory, Tracker_HierarchyFactory $hierarchy_factory) {
+    public function __construct(Tracker_ArtifactFactory $artifact_factory, PlanningFactory $planning_factory, Planning_MilestoneFactory $milestone_factory, Tracker_HierarchyFactory $hierarchy_factory)
+    {
         $this->artifact_factory  = $artifact_factory;
         $this->planning_factory  = $planning_factory;
         $this->milestone_factory = $milestone_factory;
         $this->hierarchy_factory = $hierarchy_factory;
     }
 
-    public abstract function getPossibleParents(Tracker $parent_tracker, Tracker_Artifact $source_artifact, PFUser $user);
+    abstract public function getPossibleParents(Tracker $parent_tracker, Artifact $source_artifact, PFUser $user);
 
     /**
      * @return array of Tracker_Artifact
      */
-    protected function keepOnlyArtifactsBelongingToParentTracker(&$artifact, $key, $parent_tracker) {
-        if ($artifact->getTracker() != $parent_tracker) {
+    protected function keepOnlyArtifactsBelongingToParentTracker(&$artifact, $key, $parent_tracker)
+    {
+        if ((int) $artifact->getTracker()->getId() !== (int) $parent_tracker->getId()) {
             $artifact = null;
         }
     }
 }
-?>

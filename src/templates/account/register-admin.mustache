@@ -7,8 +7,8 @@
                 <div class="control-group error">
                     <div class="controls">
             {{/has_error }}
-                        <input type="text" value="" placeholder="{{ new_password }} *" id="form_pw" name="form_pw" required />
-                        <script type="text/javascript" src="/scripts/user.js"></script>
+                        <input type="text" value="" placeholder="{{ new_password }} *" id="form_pw" name="form_pw" required data-password-validators="{{ json_password_strategy_keys }}" />
+                        <button class="btn" id="form_pw_generate" type="button">{{# gettext }}Generate{{/ gettext }}</button>
             {{# has_error }}
                         <span class="help-inline">{{ error }}</span>
                     </div>
@@ -34,9 +34,9 @@
 
         <div class="datetimepicker input-prepend">
             <span class="add-on">
-                <i data-date-icon="icon-calendar"></i>
+                <i data-date-icon="fas fa-calendar-alt"></i>
             </span>
-            <input data-format="yyyy-MM-dd" type="text" id="form_expiry" placeholder="{{ expiry_date }}" />
+            <input data-format="yyyy-MM-dd" type="text" id="form_expiry" name="form_expiry" placeholder="{{ expiry_date }}" />
         </div>
         <div id="form_expiry-tooltip" style="display: none">
             {{{ expiry_date_directions }}}

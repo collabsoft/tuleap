@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,8 +29,8 @@ use Tuleap\PullRequest\MergeSetting\MergeSettingRetriever;
 
 class PullRequestMerger
 {
-    const GIT_MERGE_CONFLICT_MARKER = '+<<<<<<<';
-    const MERGE_TEMPORARY_SUBFOLDER = 'tuleap-pr';
+    public const MERGE_TEMPORARY_SUBFOLDER = 'tuleap-pr';
+
     /**
      * @var MergeSettingRetriever
      */
@@ -41,6 +41,9 @@ class PullRequestMerger
         $this->merge_setting_retriever = $merge_setting_retriever;
     }
 
+    /**
+     * @throws PullRequestCannotBeMerged
+     */
     public function doMergeIntoDestination(PullRequest $pull_request, GitRepository $repository_dest, PFUser $user)
     {
         if ((int) $pull_request->getRepoDestId() !== (int) $repository_dest->getId()) {
@@ -103,12 +106,10 @@ class PullRequestMerger
             return PullRequest::UNKNOWN_MERGE;
         }
 
-        $merge_result_lines = $git_exec->mergeTree($merge_bases[0], $destination_revision, $merge_revision);
+        $merge_result_conflict_marker = $git_exec->searchMergeConflictSymbolInMergeTree($merge_bases[0], $destination_revision, $merge_revision);
 
-        foreach ($merge_result_lines as $merge_result_line) {
-            if (strpos($merge_result_line, self::GIT_MERGE_CONFLICT_MARKER) === 0) {
-                return PullRequest::CONFLICT_MERGE;
-            }
+        if (count($merge_result_conflict_marker) > 0) {
+            return PullRequest::CONFLICT_MERGE;
         }
 
         return PullRequest::NO_FASTFORWARD_MERGE;
@@ -120,11 +121,11 @@ class PullRequestMerger
      */
     private function getUniqueRandomDirectory()
     {
-        $parent_tmp = \ForgeConfig::get('tmp_dir') . DIRECTORY_SEPARATOR . PullRequestMerger::MERGE_TEMPORARY_SUBFOLDER;
+        $parent_tmp = \ForgeConfig::get('tmp_dir') . DIRECTORY_SEPARATOR . self::MERGE_TEMPORARY_SUBFOLDER;
 
         is_dir($parent_tmp) || mkdir($parent_tmp, 0750, true);
 
-        $cmd = new System_Command();
+        $cmd        = new System_Command();
         $result_cmd = $cmd->exec('mktemp -d -p ' . escapeshellarg($parent_tmp) . ' pr_XXXXXX');
         return $result_cmd[0];
     }
@@ -132,7 +133,7 @@ class PullRequestMerger
     private function cleanTemporaryRepository($temporary_name)
     {
         $path       = realpath($temporary_name);
-        $check_path = strpos($path, PullRequestMerger::MERGE_TEMPORARY_SUBFOLDER);
+        $check_path = strpos($path, self::MERGE_TEMPORARY_SUBFOLDER);
         if ($check_path !== false) {
             $cmd = new System_Command();
             $cmd->exec('rm -rf ' . escapeshellarg($path));

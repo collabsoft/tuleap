@@ -142,17 +142,6 @@ $alias_file      = "/etc/aliases.codendi";
 // Comma separated paths where Tuleap can find plugins
 $sys_extra_plugin_path = '';
 
-// Themeing related paths
-$sys_themeroot = $codendi_dir . "/src/www/themes/";
-$sys_custom_themeroot = $sys_custom_dir . "/themes";
-
-// 3rd Party libraries
-$jpgraph_dir      = "/usr/share/jpgraph";
-$ckeditor_dir     = "/usr/share/ckeditor";
-
-// TrueType font dir (be careful, the leading / is mandatory).
-$ttf_font_dir     = "/usr/share/fonts/";
-
 // ForgeUpgrade config file
 $forgeupgrade_file = "/etc/tuleap/forgeupgrade/config.ini";
 
@@ -181,10 +170,6 @@ $sys_dbauth_passwd = '%sys_dbauth_passwd%';
 // (was group 714 in SourceForge - sfnews)
 $sys_news_group = 46;
 
-// Default trove category in software map welcome page.
-// Default is 18 ('topic')
-$sys_default_trove_cat = 18;
-
 // Make project categorisation mandatory. If a project has not categorized itself,
 // it will result in a warning in project summary page.
 $sys_trove_cat_mandatory = 1;
@@ -195,12 +180,6 @@ $sys_lf = "\n";
 // Disable sub-domains (like cvs.proj.example.com)
 // Should be disabled if no DNS delegation
 $sys_disable_subdomains = 0;
-
-// Display boxes (Site stats, most active, ...) on Home Page
-$sys_display_homepage_boxes = 1;
-
-// Display site news on Home Page
-$sys_display_homepage_news = 1;
 
 //
 // Authentication scheme
@@ -233,19 +212,6 @@ $sys_supported_languages = 'en_US,fr_FR';
 
 // Default language for the system
 $sys_lang = 'en_US';
-
-// Default theme
-$sys_themedefault = 'FlamingParrot';
-
-// Default theme for old browsers (currently netscape 4)
-$sys_themedefault_old = 'savannah';
-
-// If set to 1 (one) the user registration must be approved by site
-// admin. If 0 user can register by themselves
-$sys_user_approval = 0;
-
-// Project default privacy status (1 is public, 0 is private)
-$sys_is_project_public = 1;
 
 // Is license approval mandatory when downloading a file from the FRS?
 // (1 is mandatory, 0 is optional)
@@ -286,10 +252,6 @@ $sys_file_deletion_delay = 3;
 // are also configured to allow this size.
 $sys_max_size_upload = 67108864;
 
-// Max upload size for attachments (bugs, SR, artifacts, etc.)
-// in bytes. E.g. 16777216 for 16 MB
-$sys_max_size_attachment = 16777216;
-
 //Proxy used to access to Internet. "host:port"
 $sys_proxy = "";
 
@@ -300,10 +262,6 @@ $sys_use_trove = 1;
 //Enable new project registration
 // (1 to enable, 0 to disable)
 $sys_use_project_registration = 1;
-
-//Enable users avatar?
-// (1 to enable, 0 to disable)
-$sys_enable_avatars = 1;
 
 //User's avatar path
 $sys_avatar_path = $sys_data_dir . "/user/avatar/";

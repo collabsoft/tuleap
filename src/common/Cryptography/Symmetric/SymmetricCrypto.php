@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,6 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\Cryptography\Symmetric;
 
 use Tuleap\Cryptography\ConcealedString;
@@ -31,26 +33,26 @@ final class SymmetricCrypto
         throw new \RuntimeException('Do not instantiate this class, invoke the static methods directly');
     }
 
-    /**
-     * @return string
-     */
-    public static function encrypt(ConcealedString $plaintext, EncryptionKey $secret_key)
+    public static function encrypt(ConcealedString $plaintext, EncryptionKey $secret_key): string
     {
-        $nonce = \sodium_randombytes_buf(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+        $nonce = \random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
 
-        return $nonce . \sodium_crypto_secretbox($plaintext->getString(), $nonce, $secret_key->getRawKeyMaterial());
+        $raw_plaintext    = $plaintext->getString();
+        $raw_key_material = $secret_key->getRawKeyMaterial();
+
+        $encrypted_data = $nonce . \sodium_crypto_secretbox($raw_plaintext, $nonce, $raw_key_material);
+
+        \sodium_memzero($raw_plaintext);
+        \sodium_memzero($raw_key_material);
+
+        return $encrypted_data;
     }
 
     /**
-     * @return ConcealedString
      * @throws \Tuleap\Cryptography\Exception\InvalidCiphertextException
      */
-    public static function decrypt($ciphertext, EncryptionKey $secret_key)
+    public static function decrypt(string $ciphertext, EncryptionKey $secret_key): ConcealedString
     {
-        if (! is_string($ciphertext)) {
-            throw new \TypeError('Expected $ciphertext to be a string, got ' . gettype($ciphertext));
-        }
-
         $nonce             = \mb_substr($ciphertext, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES, '8bit');
         $ciphertext_length = \mb_strlen($ciphertext, '8bit');
         if ($ciphertext_length === false) {
@@ -58,10 +60,15 @@ final class SymmetricCrypto
         }
         $encrypted = \mb_substr($ciphertext, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES, $ciphertext_length, '8bit');
 
-        $plaintext = \sodium_crypto_secretbox_open($encrypted, $nonce, $secret_key->getRawKeyMaterial());
-        if ($plaintext === false) {
+        $raw_plaintext = \sodium_crypto_secretbox_open($encrypted, $nonce, $secret_key->getRawKeyMaterial());
+        if ($raw_plaintext === false) {
             throw new InvalidCiphertextException();
         }
-        return new ConcealedString($plaintext);
+
+        $plaintext = new ConcealedString($raw_plaintext);
+
+        \sodium_memzero($raw_plaintext);
+
+        return $plaintext;
     }
 }

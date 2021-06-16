@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -35,6 +35,10 @@ use TrackerFactory;
 use Tuleap\AgileDashboard\Kanban\TrackerReport\TrackerReportBuilder;
 use Tuleap\AgileDashboard\Kanban\TrackerReport\TrackerReportDao;
 use Tuleap\AgileDashboard\KanbanJavascriptDependenciesProvider;
+use Tuleap\Layout\CssAssetCollection;
+use Tuleap\Layout\CssAssetWithoutVariantDeclinaisons;
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Project\MappingRegistry;
 use Widget;
 
 abstract class Kanban extends Widget
@@ -81,6 +85,11 @@ abstract class Kanban extends Widget
      */
     private $widget_kanban_config_updater;
 
+    /**
+     * @var Tracker_ReportFactory
+     */
+    private $tracker_report_factory;
+
     public function __construct(
         $id,
         $owner_id,
@@ -92,7 +101,8 @@ abstract class Kanban extends Widget
         TrackerFactory $tracker_factory,
         AgileDashboard_PermissionsManager $permissions_manager,
         WidgetKanbanConfigRetriever $widget_kanban_config_retriever,
-        WidgetKanbanConfigUpdater $widget_kanban_config_updater
+        WidgetKanbanConfigUpdater $widget_kanban_config_updater,
+        Tracker_ReportFactory $tracker_report_factory
     ) {
         parent::__construct($id);
         $this->owner_id                       = $owner_id;
@@ -105,6 +115,7 @@ abstract class Kanban extends Widget
         $this->permissions_manager            = $permissions_manager;
         $this->widget_kanban_config_retriever = $widget_kanban_config_retriever;
         $this->widget_kanban_config_updater   = $widget_kanban_config_updater;
+        $this->tracker_report_factory         = $tracker_report_factory;
 
         $this->renderer = TemplateRendererFactory::build()->getRenderer(
             AGILEDASHBOARD_TEMPLATE_DIR . '/widgets'
@@ -121,7 +132,8 @@ abstract class Kanban extends Widget
         $kanban_name     = $this->kanban_title ? : 'Kanban';
         $selected_report = $this->getSelectedReport();
 
-        if ($this->tracker_report_id
+        if (
+            $this->tracker_report_id
             && $selected_report
             && $this->isCurrentReportSelectable($selected_report)
         ) {
@@ -169,16 +181,19 @@ abstract class Kanban extends Widget
             AGILEDASHBOARD_TEMPLATE_DIR . '/widgets'
         );
         try {
-            $kanban     = $this->kanban_factory->getKanban($this->getCurrentUser(), $this->kanban_id);
-            $tracker    = $this->tracker_factory->getTrackerByid($kanban->getTrackerId());
+            $kanban  = $this->kanban_factory->getKanban($this->getCurrentUser(), $this->kanban_id);
+            $tracker = $this->tracker_factory->getTrackerByid($kanban->getTrackerId());
+            if ($tracker === null) {
+                throw new \RuntimeException('Tracker does not exist');
+            }
             $project_id = $tracker->getProject()->getID();
             $is_empty   = ! $kanban;
 
-            $user_is_kanban_admin = $this->permissions_manager->userCanAdministrate(
+            $user_is_kanban_admin    = $this->permissions_manager->userCanAdministrate(
                 $this->getCurrentUser(),
                 $project_id
             );
-            $kanban_presenter = new KanbanPresenter(
+            $kanban_presenter        = new KanbanPresenter(
                 $kanban,
                 $this->getCurrentUser(),
                 $user_is_kanban_admin,
@@ -195,7 +210,7 @@ abstract class Kanban extends Widget
         } catch (AgileDashboard_KanbanNotFoundException $exception) {
             $widget_kanban_presenter = new WidgetKanbanPresenter(
                 $is_empty,
-                $GLOBALS['Language']->getText('plugin_agiledashboard', 'kanban_not_found')
+                dgettext('tuleap-agiledashboard', 'Kanban not found.')
             );
         } catch (AgileDashboard_KanbanCannotAccessException $exception) {
             $widget_kanban_presenter = new WidgetKanbanPresenter(
@@ -209,7 +224,7 @@ abstract class Kanban extends Widget
 
     public function getCategory()
     {
-        return 'plugin_agiledashboard';
+        return dgettext('tuleap-agiledashboard', 'Agile dashboard');
     }
 
     public function destroy($id)
@@ -237,11 +252,20 @@ abstract class Kanban extends Widget
         return dgettext('tuleap-agiledashboard', 'Add Kanban to dashboard');
     }
 
-    public function getJavascriptDependencies()
+    private function getIncludeAssets(): IncludeAssets
     {
-        $provider = new KanbanJavascriptDependenciesProvider();
+        return new IncludeAssets(__DIR__ . '/../../../../../src/www/assets/agiledashboard', '/assets/agiledashboard');
+    }
 
+    public function getJavascriptDependencies(): array
+    {
+        $provider = new KanbanJavascriptDependenciesProvider($this->getIncludeAssets());
         return $provider->getDependencies();
+    }
+
+    public function getStylesheetDependencies(): CssAssetCollection
+    {
+        return new CssAssetCollection([new CssAssetWithoutVariantDeclinaisons($this->getIncludeAssets(), 'kanban-style')]);
     }
 
     public function hasPreferences($widget_id)
@@ -252,7 +276,7 @@ abstract class Kanban extends Widget
     public function getPreferences($widget_id)
     {
         $tracker_reports_builder = new TrackerReportBuilder(
-            $this->getTrackerReportFactory(),
+            $this->tracker_report_factory,
             $this->kanban_factory->getKanban($this->getCurrentUser(), $this->kanban_id),
             new TrackerReportDao()
         );
@@ -269,7 +293,7 @@ abstract class Kanban extends Widget
         );
     }
 
-    public function updatePreferences(&$request)
+    public function updatePreferences(Codendi_Request $request)
     {
         $this->widget_kanban_config_updater->updateConfiguration(
             $this->content_id,
@@ -279,7 +303,7 @@ abstract class Kanban extends Widget
 
     private function getSelectedReport()
     {
-        return $this->getTrackerReportFactory()->getReportById(
+        return $this->tracker_report_factory->getReportById(
             $this->tracker_report_id,
             $this->getCurrentUser()->getId()
         );
@@ -303,83 +327,55 @@ abstract class Kanban extends Widget
         Project $new_project,
         $id,
         $owner_id,
-        $owner_type
+        $owner_type,
+        MappingRegistry $mapping_registry
     ) {
         $this->loadContent($id);
 
-        $new_kanban    = $this->findClonedKanbanInProject($new_project);
-        $new_report_id = 0;
+        $old_kanban = $this->kanban_factory->getKanban(
+            $this->getCurrentUser(),
+            $this->kanban_id
+        );
 
+        $new_tracker = $this->tracker_factory->getTrackerByShortnameAndProjectId(
+            $this->getKanbanTrackerShortname($old_kanban),
+            $new_project->getID()
+        );
+
+        $new_kanban_id = $this->kanban_factory->getKanbanIdByTrackerId($new_tracker->getId());
+
+        $new_report_id = null;
         if ($this->tracker_report_id) {
-            $new_report_id = (int) $this->findClonedTrackerReportForKanban($new_kanban)->getId();
+            $old_kanban_report = $this->tracker_report_factory->getReportById($this->tracker_report_id, $this->getCurrentUser());
+
+            $new_tracker_reports = $this->tracker_report_factory
+                ->getReportsByTrackerId(
+                    $new_tracker->getId(),
+                    $this->getCurrentUser()->getId()
+                );
+            foreach ($new_tracker_reports as $new_tracker_report) {
+                if ($new_tracker_report->getName() === $old_kanban_report->getName()) {
+                    $new_report_id = $new_tracker_report->getId();
+                    break;
+                }
+            }
         }
 
         return $this->widget_kanban_creator->createKanbanWidget(
             $owner_id,
             $owner_type,
-            $new_kanban->getId(),
-            $new_kanban->getName(),
+            $new_kanban_id,
+            $this->kanban_title,
             $new_report_id
         );
     }
 
-    private function findClonedKanbanInProject(Project $project)
+    private function getKanbanTrackerShortname(AgileDashboard_Kanban $kanban): string
     {
-        $kanban = $this->kanban_factory->getKanban(
-            $this->getCurrentUser(),
-            $this->kanban_id
-        );
-
-        $kanbans           = $this->kanban_factory->getListOfKanbansForProject($this->getCurrentUser(), $project->getID());
-        $tracker_shortname = $this->getKanbanTrackerShortname($kanban);
-
-        $cloned_kanban = array_filter(
-            $kanbans,
-            function (AgileDashboard_Kanban $cloned_kanban) use ($tracker_shortname) {
-                return $this->getKanbanTrackerShortname($cloned_kanban)=== $tracker_shortname;
-            }
-        )[0];
-
-        return $cloned_kanban;
-    }
-
-    private function getKanbanTrackerShortname(AgileDashboard_Kanban $kanban)
-    {
-        return $this->tracker_factory->getTrackerById(
-            $kanban->getTrackerId()
-        )->getItemName();
-    }
-
-    private function findClonedTrackerReportForKanban(AgileDashboard_Kanban $new_kanban)
-    {
-        $new_tracker_reports = $this->getTrackerReportFactory()
-            ->getReportsByTrackerId(
-                $new_kanban->getTrackerId(),
-                $this->getCurrentUser()->getId()
-            );
-
-        $kanban_report = $this->getTrackerReportFactory()
-            ->getReportById(
-                $this->tracker_report_id,
-                $this->getCurrentUser()
-            );
-
-        $new_report = array_filter(
-            $new_tracker_reports,
-            function (Tracker_Report $new_report) use ($kanban_report) {
-                return $new_report->getName() === $kanban_report->getName();
-            }
-        );
-
-        if (count($new_report) === 1) {
-            return array_values($new_report)[0];
+        $tracker = $this->tracker_factory->getTrackerById($kanban->getTrackerId());
+        if ($tracker === null) {
+            throw new \RuntimeException('Tracker does not exist');
         }
-
-        return 0;
-    }
-
-    private function getTrackerReportFactory()
-    {
-        return Tracker_ReportFactory::instance();
+        return $tracker->getItemName();
     }
 }

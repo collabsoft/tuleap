@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,12 +22,14 @@
 /**
  * Manage values in changeset for float fields
  */
-class Tracker_Artifact_ChangesetValue_Float extends Tracker_Artifact_ChangesetValue_Numeric {
+class Tracker_Artifact_ChangesetValue_Float extends Tracker_Artifact_ChangesetValue_Numeric
+{
 
     /**
      * @return mixed
      */
-    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor) {
+    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor)
+    {
         return $visitor->visitFloat($this);
     }
 
@@ -36,51 +38,44 @@ class Tracker_Artifact_ChangesetValue_Float extends Tracker_Artifact_ChangesetVa
      *
      * @return float the float value
      */
-    public function getFloat() {
+    public function getFloat()
+    {
         if ($this->numeric !== null) {
-            $this->numeric = (float)$this->numeric;
+            $this->numeric = (float) $this->numeric;
         }
         return $this->numeric;
     }
-    
+
     /**
      * Get the float value
      *
      * @return float the float value
      */
-    public function getNumeric() {
+    public function getNumeric()
+    {
         return $this->getFloat();
     }
-    
+
     /**
      * Get the string value for this float
      *
-     * @return string The value of this artifact changeset value
+     * @return string|null The value of this artifact changeset value
      */
-    public function getValue() {
+    public function getValue()
+    {
         if ($this->getFloat() !== null) {
-            return number_format($this->getFloat(), Tracker_FormElement_Field_Float::FLOAT_DECIMALS, '.', '');
-        } else {
-            return '';
+            return (string) (float) number_format($this->getFloat(), Tracker_FormElement_Field_Float::FLOAT_DECIMALS, '.', '');
         }
-    }
-    
-    /**
-     * Get the SOAP value
-     *
-     * @param PFUser $user
-     *
-     * @return string The value of this artifact changeset value for SOAP
-     */
-    public function getSoapValue(PFUser $user) {
-        return $this->encapsulateRawSoapValue($this->getFloat());
+        return null;
     }
 
-    public function getRESTValue(PFUser $user) {
+    public function getRESTValue(PFUser $user)
+    {
         return $this->getFullRESTValue($user);
     }
 
-    public function getFullRESTValue(PFUser $user) {
+    public function getFullRESTValue(PFUser $user)
+    {
         return $this->getFullRESTRepresentation($this->getFloat());
     }
 
@@ -89,7 +84,8 @@ class Tracker_Artifact_ChangesetValue_Float extends Tracker_Artifact_ChangesetVa
      *
      * @return string The value of this artifact changeset value in Json format
      */
-    public function getJsonValue() {
+    public function getJsonValue()
+    {
         return $this->getFloat();
     }
 }

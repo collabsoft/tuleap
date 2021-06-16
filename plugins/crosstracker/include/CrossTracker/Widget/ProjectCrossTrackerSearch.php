@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,13 +24,16 @@ use Codendi_Request;
 use HTTPRequest;
 use Project;
 use TemplateRendererFactory;
-use Tuleap\Layout\IncludeAssets;
 use Tuleap\CrossTracker\CrossTrackerReportDao;
+use Tuleap\Layout\CssAssetCollection;
+use Tuleap\Layout\CssAssetWithoutVariantDeclinaisons;
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Project\MappingRegistry;
 use Widget;
 
 class ProjectCrossTrackerSearch extends Widget
 {
-    const NAME = 'crosstrackersearch';
+    public const NAME = 'crosstrackersearch';
 
     public function __construct()
     {
@@ -49,12 +52,16 @@ class ProjectCrossTrackerSearch extends Widget
         );
 
         $request = HTTPRequest::instance();
+        $user    = $request->getCurrentUser();
+
+        $permission_checker = new WidgetPermissionChecker(new CrossTrackerReportDao(), \ProjectManager::instance());
+        $is_admin           = $permission_checker->isUserWidgetAdmin($user, $this->content_id);
 
         return $renderer->renderToString(
             'project-cross-tracker-search',
             new ProjectCrossTrackerSearchPresenter(
                 $this->content_id,
-                $request->getCurrentUser()
+                $is_admin
             )
         );
     }
@@ -76,7 +83,7 @@ class ProjectCrossTrackerSearch extends Widget
 
     public function getCategory()
     {
-        return 'trackers';
+        return dgettext('tuleap-tracker', 'Trackers');
     }
 
     public function isUnique()
@@ -100,20 +107,21 @@ class ProjectCrossTrackerSearch extends Widget
         Project $template_project,
         Project $new_project,
         $id,
-        $new_project_id,
-        $owner_type
+        $owner_id,
+        $owner_type,
+        MappingRegistry $mapping_registry
     ) {
         $content_id      = $this->getDao()->create();
         $tracker_factory = $this->getTrackerFactory();
 
         $trackers_existing_widget = $this->getTrackers($id);
-        $trackers_new_widget      = array();
+        $trackers_new_widget      = [];
 
         foreach ($trackers_existing_widget as $tracker) {
             if ($this->owner_id == $tracker->getGroupId()) {
                 $trackers_new_widget[] = $tracker_factory->getTrackerByShortnameAndProjectId(
                     $tracker->getItemName(),
-                    $new_project_id
+                    $owner_id
                 );
             } else {
                 $trackers_new_widget[] = $tracker;
@@ -132,7 +140,7 @@ class ProjectCrossTrackerSearch extends Widget
     {
         $tracker_factory = $this->getTrackerFactory();
         $tracker_rows    = $this->getDao()->searchReportTrackersById($report_id);
-        $trackers        = array();
+        $trackers        = [];
         foreach ($tracker_rows as $row) {
             $tracker = $tracker_factory->getTrackerById($row['tracker_id']);
             if ($tracker !== null) {
@@ -150,15 +158,23 @@ class ProjectCrossTrackerSearch extends Widget
         return \TrackerFactory::instance();
     }
 
-    public function getJavascriptDependencies()
+    public function getJavascriptDependencies(): array
     {
-        $cross_tracker_include_assets = new IncludeAssets(
-            CROSSTRACKER_BASE_DIR . '/www/assets',
-            CROSSTRACKER_BASE_URL . '/assets'
-        );
+        return [
+            ['file' => $this->getAssets()->getFileURL('cross-tracker.js')]
+        ];
+    }
 
-        return array(
-            array('file' => $cross_tracker_include_assets->getFileURL('cross-tracker.js'))
+    public function getStylesheetDependencies(): CssAssetCollection
+    {
+        return new CssAssetCollection([new CssAssetWithoutVariantDeclinaisons($this->getAssets(), 'cross-tracker-style')]);
+    }
+
+    private function getAssets(): IncludeAssets
+    {
+        return new IncludeAssets(
+            __DIR__ . '/../../../../../src/www/assets/crosstracker',
+            '/assets/crosstracker'
         );
     }
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use User_ForgeUserGroupPermission;
 
 class TrackerAdminAllProjects extends User_ForgeUserGroupPermission
 {
-    const ID = 2;
+    public const ID = 2;
 
     public function getId()
     {
@@ -33,11 +33,11 @@ class TrackerAdminAllProjects extends User_ForgeUserGroupPermission
 
     public function getName()
     {
-        return $GLOBALS['Language']->getText('plugin_tracker', 'permission_delegation_name');
+        return dgettext('tuleap-tracker', 'Global Tracker Administrator');
     }
 
     public function getDescription()
     {
-        return $GLOBALS['Language']->getText('plugin_tracker', 'permission_delegation_description');
+        return dgettext('tuleap-tracker', 'This permission grants tracker administration rights on all trackers on all projects');
     }
 }

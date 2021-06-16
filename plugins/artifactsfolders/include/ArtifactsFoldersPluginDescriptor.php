@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -30,10 +30,9 @@ class ArtifactsFoldersPluginDescriptor extends PluginDescriptor
     public function __construct()
     {
         parent::__construct(
-            $GLOBALS['Language']->getText('plugin_folders', 'descriptor_name'),
+            dgettext('tuleap-artifactsfolders', 'Artifacts Folders'),
             false,
-            $GLOBALS['Language']->getText('plugin_folders', 'descriptor_description')
+            dgettext('tuleap-artifactsfolders', 'Add a "Folder" tab in an artifact')
         );
-        $this->setVersionFromFile(dirname(__FILE__).'/../VERSION');
     }
 }

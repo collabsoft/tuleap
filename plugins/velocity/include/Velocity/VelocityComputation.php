@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use Feedback;
 use PFUser;
 use Tracker_FormElement_Field;
 use Tracker_Semantic_Status;
-use Tuleap\AgileDashboard\Semantic\SemanticDone;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDone;
 use Tuleap\Tracker\Workflow\BeforeEvent;
 use Tuleap\Velocity\Semantic\SemanticVelocity;
 
@@ -72,9 +72,16 @@ class VelocityComputation
 
     private function getComputedVelocity(BeforeEvent $before_event, SemanticVelocity $semantic_velocity)
     {
-        $computed_velocity = $this->calculator->calculate($before_event->getArtifact());
+        $computed_velocity = $this->calculator->calculate(
+            $before_event->getArtifact(),
+            $before_event->getUser()
+        );
 
-        $this->displayUpdateMessageForUserWhoCanReadField($before_event->getUser(), $computed_velocity, $semantic_velocity->getVelocityField());
+        $this->displayUpdateMessageForUserWhoCanReadField(
+            $before_event->getUser(),
+            $computed_velocity,
+            $semantic_velocity->getVelocityField()
+        );
 
         return $computed_velocity;
     }
@@ -86,7 +93,7 @@ class VelocityComputation
     private function displayUpdateMessageForUserWhoCanReadField(
         PFUser $user,
         $computed_velocity,
-        Tracker_FormElement_Field $field = null
+        ?Tracker_FormElement_Field $field = null
     ) {
         if ($field && $field->userCanRead($user)) {
             $GLOBALS['Response']->addFeedback(

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,23 +24,25 @@
  * These additional criteria are not linked to a tracker field, but are datas from
  * other plugins for example
  */
-class Tracker_Report_AdditionalCriterion {
+class Tracker_Report_AdditionalCriterion
+{
 
     private $key;
     private $value;
 
-    public function __construct($key, $value) {
+    public function __construct($key, $value)
+    {
         $this->key   = $key;
         $this->value = $value;
     }
 
-    public function getValue() {
+    public function getValue()
+    {
         return $this->value;
     }
 
-    public function getKey() {
+    public function getKey()
+    {
         return $this->key;
     }
 }
-
-?>

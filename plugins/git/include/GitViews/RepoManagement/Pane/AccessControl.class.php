@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -76,7 +76,7 @@ class AccessControl extends Pane
         DefaultFineGrainedPermissionFactory $default_fine_grained_factory,
         GitPermissionsManager $git_permission_manager,
         RegexpFineGrainedRetriever $regexp_retriever
-    ){
+    ) {
         parent::__construct($repository, $request);
 
         $this->fine_grained_permission_factory = $fine_grained_permission_factory;
@@ -100,7 +100,7 @@ class AccessControl extends Pane
      */
     public function getTitle()
     {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_repo_access_control');
+        return dgettext('tuleap-git', 'Access control');
     }
 
     /**
@@ -108,10 +108,11 @@ class AccessControl extends Pane
      */
     public function getContent()
     {
-        $html = '';
+        $html  = '';
         $html .= '<h2>' . $this->getTitle() . '</h2>';
         $html .= '<form id="repoAction" name="repoAction" method="POST" action="/plugins/git/?group_id=' .
             $this->repository->getProjectId() . '">';
+        $html .= $this->csrf_token()->fetchHTMLInput();
         $html .= '<input type="hidden" id="action" name="action" value="edit" />';
         $html .= '<input type="hidden" name="pane" value="' . $this->getIdentifier() . '" />';
         $html .= '<input type="hidden" id="repo_id" name="repo_id" value="' . $this->repository->getId() . '" />';
@@ -129,7 +130,7 @@ class AccessControl extends Pane
         $html .= '<p><input type="submit" name="save" data-are-regexp-enabled="' . $are_regexp_enabled . '"
                 data-are-regexp-confliting="' . $are_regexp_conflicting . '"
                 class="btn btn-primary save-permissions-with-regexp" value="' .
-            $GLOBALS['Language']->getText('plugin_git', 'save_access_control') . '" /></p>';
+            dgettext('tuleap-git', 'Save permissions') . '" /></p>';
         $html .= '</form>';
 
         return $html;
@@ -148,16 +149,16 @@ class AccessControl extends Pane
         $checked = 'checked="checked"';
         if ($this->repository->getAccess() == GitRepository::PRIVATE_ACCESS) {
             $private = $checked;
-            $html .= '<input type="hidden" id="action" name="action" value="edit" />';
+            $html   .= '<input type="hidden" id="action" name="action" value="edit" />';
         } elseif ($this->repository->getAccess() == GitRepository::PUBLIC_ACCESS) {
-            $public  = $checked;
-            $html .= '<input type="hidden" id="action" name="action" value="confirm_private" />';
+            $public = $checked;
+            $html  .= '<input type="hidden" id="action" name="action" value="confirm_private" />';
         }
         $html .= '<p id="plugin_git_access">';
-        $html .= $GLOBALS['Language']->getText('plugin_git', 'view_repo_access');
-        $html .= ': <span><input type="radio" name="repo_access" value="private" '. $private .'/> ';
-        $html .= $GLOBALS['Language']->getText('plugin_git', 'view_repo_access_private');
-        $html .= '<input type="radio" name="repo_access" value="public" '. $public .'/> Public';
+        $html .= dgettext('tuleap-git', 'Access');
+        $html .= ': <span><input type="radio" name="repo_access" value="private" ' . $private . '/> ';
+        $html .= dgettext('tuleap-git', 'Private');
+        $html .= '<input type="radio" name="repo_access" value="public" ' . $public . '/> Public';
         $html .= '</span>';
         $html .= '</p>';
 

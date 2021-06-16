@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -34,7 +34,7 @@ use Tuleap\Tracker\Webhook\WebhookLogsRetriever;
 
 class AdminWebhooks extends Tracker_Workflow_Action
 {
-    const FUNC_ADMIN_WEBHOOKS = 'admin-webhooks';
+    public const FUNC_ADMIN_WEBHOOKS = 'admin-webhooks';
 
     /**
      * @var WebhookFactory
@@ -54,19 +54,11 @@ class AdminWebhooks extends Tracker_Workflow_Action
     }
 
     /**
-     * @return string eg: rules, transitions
-     */
-    protected function getPaneIdentifier()
-    {
-        return self::PANE_WEBHOOKS;
-    }
-
-    /**
      * Process the request
      */
     public function process(Tracker_IDisplayTrackerLayout $layout, Codendi_Request $request, PFUser $current_user)
     {
-        $this->displayHeader($layout);
+        $this->displayHeader($layout, dgettext('tuleap-tracker', 'Webhooks'));
 
         $presenter = new AdminPresenter(
             $this->getWebhookPresenters(),
@@ -74,7 +66,7 @@ class AdminWebhooks extends Tracker_Workflow_Action
             $this->tracker
         );
 
-        $renderer  = TemplateRendererFactory::build()->getRenderer(TRACKER_TEMPLATE_DIR . '/webhook');
+        $renderer = TemplateRendererFactory::build()->getRenderer(TRACKER_TEMPLATE_DIR . '/webhook');
         $renderer->renderToPage('administration', $presenter);
 
         $this->displayFooter($layout);
@@ -111,7 +103,7 @@ class AdminWebhooks extends Tracker_Workflow_Action
      */
     private function getLogsForWebhook(Webhook $webhook)
     {
-        $logs = array();
+        $logs = [];
         foreach ($this->logs_retriever->getLogsForWebhook($webhook) as $row) {
             $logs[] = new WebhookLogPresenter($row['created_on'], $row['status']);
         }

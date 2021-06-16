@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 /**
  * A board that contains swimlines (with cards) and columns
  */
-class Cardwall_Board {
+class Cardwall_Board
+{
 
     /**
      * @var array of TreeNode
@@ -39,23 +40,22 @@ class Cardwall_Board {
     public $mappings;
 
     /**
-     * @param array of Cardwall_Swimline             $swimlines 
-     * @param Cardwall_OnTop_Config_ColumnCollection $columns   
-     * @param Cardwall_MappingCollection             $mappings  
+     * @param array of Cardwall_Swimline             $swimlines
      */
-    public function __construct(array $swimlines, Cardwall_OnTop_Config_ColumnCollection $columns, Cardwall_MappingCollection $mappings) {
+    public function __construct(array $swimlines, Cardwall_OnTop_Config_ColumnCollection $columns, Cardwall_MappingCollection $mappings)
+    {
         $this->swimlines = $swimlines;
         $this->columns   = $columns;
         $this->mappings  = $mappings;
     }
 
-    public function getColumns() {
+    public function getColumns()
+    {
         return $this->columns;
     }
 
-    public function getSwimlines() {
+    public function getSwimlines()
+    {
         return $this->swimlines;
     }
-
 }
-?>

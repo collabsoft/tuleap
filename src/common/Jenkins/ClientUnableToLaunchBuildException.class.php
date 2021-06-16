@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All rights reserved
+ * Copyright (c) Enalean, 2012 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,5 +18,6 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class Jenkins_ClientUnableToLaunchBuildException extends Exception{}
-?>
+class Jenkins_ClientUnableToLaunchBuildException extends Exception
+{
+}

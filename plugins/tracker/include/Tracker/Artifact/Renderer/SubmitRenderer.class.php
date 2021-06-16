@@ -1,6 +1,6 @@
 <?php
-/*
- * Copyright Enalean (c) 2013 - 2018. All rights reserved.
+/**
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,14 +22,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_SubmitRenderer extends Tracker_Artifact_SubmitAbstractRenderer {
+use Tuleap\Tracker\Artifact\Renderer\ListPickerIncluder;
+
+class Tracker_Artifact_SubmitRenderer extends Tracker_Artifact_SubmitAbstractRenderer
+{
 
     /**
      * @var Tracker_IDisplayTrackerLayout
      */
     private $layout;
 
-    public function __construct(Tracker $tracker, EventManager $event_manager, Tracker_IDisplayTrackerLayout $layout) {
+    public function __construct(Tracker $tracker, EventManager $event_manager, Tracker_IDisplayTrackerLayout $layout)
+    {
         parent::__construct($tracker, $event_manager);
         $this->layout = $layout;
     }
@@ -37,23 +41,34 @@ class Tracker_Artifact_SubmitRenderer extends Tracker_Artifact_SubmitAbstractRen
     protected function fetchFormContent(Codendi_Request $request, PFUser $current_user)
     {
         return $this->fetchArtifactForm(
-            $this->fetchNewArtifactForm($request, $current_user)
+            $this->fetchNewArtifactForm($request)
         );
     }
 
-    protected function displayHeader() {
-        $breadcrumbs = array(
-            array(
-                'title' => 'New artifact',
+    protected function displayHeader()
+    {
+        $breadcrumbs = [
+            [
+                'title' => sprintf(dgettext('tuleap-tracker', 'New %s'), $this->tracker->getItemName()),
                 'url'   => $this->tracker->getSubmitUrl(),
-            ),
+            ],
+        ];
+
+        $this->tracker->displayHeader(
+            $this->layout,
+            $this->tracker->name,
+            $breadcrumbs,
+            [],
+            ['body_class' => ['widgetable']]
         );
 
-        $this->tracker->displayHeader($this->layout, $this->tracker->name, $breadcrumbs, null, array('body_class' => array('widgetable')));
+        ListPickerIncluder::includeListPickerAssets(HTTPRequest::instance(), $this->tracker->getId());
+
         echo $this->fetchSubmitInstructions();
     }
 
-    private function fetchNewArtifactForm(Codendi_Request $request, PFUser $current_user) {
+    private function fetchNewArtifactForm(Codendi_Request $request)
+    {
         $html = '';
 
         $html .= $this->fetchFormElements($request);
@@ -61,11 +76,12 @@ class Tracker_Artifact_SubmitRenderer extends Tracker_Artifact_SubmitAbstractRen
         $html .= '<div class="artifact-submit-button">';
         $html .= '<input type="hidden" id="submit-type" />';
         $html .= '<div class="btn-group dropup">';
-        $html .= '<button class="btn btn-large btn-primary" type="submit">'. $GLOBALS['Language']->getText('global', 'btn_submit') .'</button>';
-        $html .= '<button class="btn btn-large btn-primary dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>';
+        $html .= '<button class="btn btn-large btn-primary" data-test="artifact-submit-button" type="submit">'
+            . $GLOBALS['Language']->getText('global', 'btn_submit') . '</button>';
+        $html .= '<button class="btn btn-large btn-primary dropdown-toggle" data-toggle="dropdown" data-test="artifact-submit-options"><span class="caret"></span></button>';
         $html .= '<ul class="dropdown-menu">';
-        $html .= '<li><input type="submit" name="submit_and_continue" class="btn btn-link" value="'.$GLOBALS['Language']->getText('global', 'btn_submit_and_continue').'" /></li>';
-        $html .= '<li><input type="submit" name="submit_and_stay" class="btn btn-link" value="'.$GLOBALS['Language']->getText('global', 'btn_submit_and_stay').'" /></li>';
+        $html .= '<li><input type="submit" name="submit_and_continue" class="btn btn-link" value="' . $GLOBALS['Language']->getText('global', 'btn_submit_and_continue') . '" /></li>';
+        $html .= '<li><input type="submit" name="submit_and_stay" class="btn btn-link" value="' . $GLOBALS['Language']->getText('global', 'btn_submit_and_stay') . '" data-test="artifact-submit-and-stay" /></li>';
         $html .= '</ul>';
         $html .= '</div>';
         $html .= '</div>';
@@ -73,7 +89,13 @@ class Tracker_Artifact_SubmitRenderer extends Tracker_Artifact_SubmitAbstractRen
         return $html;
     }
 
-    protected function displayFooter() {
+    protected function displayFooter()
+    {
+        $include_assets = new \Tuleap\Layout\IncludeAssets(
+            __DIR__ . '/../../../../../../src/www/assets/trackers',
+            '/assets/trackers'
+        );
+        $GLOBALS['HTML']->includeFooterJavascriptFile($include_assets->getFileURL('create-view.js'));
         $this->tracker->displayFooter($this->layout);
     }
 }

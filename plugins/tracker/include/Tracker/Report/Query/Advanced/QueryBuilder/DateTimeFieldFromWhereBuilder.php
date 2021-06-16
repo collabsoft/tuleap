@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -101,10 +101,10 @@ class DateTimeFieldFromWhereBuilder implements FieldFromWhereBuilder, ValueWrapp
 
     public function visitBetweenValueWrapper(BetweenValueWrapper $value_wrapper, ValueWrapperParameters $parameters)
     {
-        $values = array(
+        $values = [
             'min_value' => $value_wrapper->getMinValue()->accept($this, $parameters),
             'max_value' => $value_wrapper->getMaxValue()->accept($this, $parameters)
-        );
+        ];
 
         return $values;
     }

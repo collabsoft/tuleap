@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All rights reserved
+ * Copyright (c) Enalean, 2016-Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,74 +19,74 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
- 
-class HudsonTestResult {
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
+
+class HudsonTestResult
+{
 
     protected $hudson_test_result_url;
     protected $dom_job;
     /**
-     * @var Http_Client
+     * @var ClientInterface
      */
     private $http_client;
-    
+    /**
+     * @var RequestFactoryInterface
+     */
+    private $request_factory;
+
     /**
      * Construct an Hudson job from a job URL
      */
-    public function __construct($hudson_job_url, Http_Client $http_client)
-    {
+    public function __construct(
+        string $hudson_job_url,
+        ClientInterface $http_client,
+        RequestFactoryInterface $request_factory
+    ) {
         $parsed_url = parse_url($hudson_job_url);
-        
-        if ( ! $parsed_url || ! array_key_exists('scheme', $parsed_url) ) {
-            throw new HudsonJobURLMalformedException($GLOBALS['Language']->getText('plugin_hudson','wrong_job_url', array($hudson_job_url)));
+
+        if (! $parsed_url || ! array_key_exists('scheme', $parsed_url)) {
+            throw new HudsonJobURLMalformedException(sprintf(dgettext('tuleap-hudson', 'Wrong Job URL: %1$s'), $hudson_job_url));
         }
-                
+
         $this->hudson_test_result_url = $hudson_job_url . "/lastBuild/testReport/api/xml/";
         $this->http_client            = $http_client;
+        $this->request_factory        = $request_factory;
 
         $this->dom_job = $this->_getXMLObject($this->hudson_test_result_url);
     }
-    
+
     protected function _getXMLObject($hudson_test_result_url)
     {
-        $this->http_client->setOption(CURLOPT_URL, $hudson_test_result_url);
-        $this->http_client->doRequest();
-
-        $xmlstr = $this->http_client->getLastResponse();
-        if ($xmlstr !== false) {
-            $xmlobj = simplexml_load_string($xmlstr);
-            if ($xmlobj !== false) {
-                return $xmlobj;
-            } else {
-                throw new HudsonJobURLFileException($GLOBALS['Language']->getText('plugin_hudson','job_url_file_error', array($hudson_test_result_url)));
-            }
-        } else {
-            throw new HudsonJobURLFileNotFoundException($GLOBALS['Language']->getText('plugin_hudson','job_url_file_not_found', array($hudson_test_result_url))); 
+        $response = $this->http_client->sendRequest(
+            $this->request_factory->createRequest('GET', $hudson_test_result_url)
+        );
+        if ($response->getStatusCode() !== 200) {
+            throw new HudsonJobURLFileNotFoundException(sprintf(dgettext('tuleap-hudson', 'File not found at URL: %1$s'), $hudson_test_result_url));
         }
+
+        $xmlobj = simplexml_load_string($response->getBody()->getContents());
+        if ($xmlobj !== false) {
+            return $xmlobj;
+        }
+        throw new HudsonJobURLFileException(sprintf(dgettext('tuleap-hudson', 'Unable to read file at URL: %1$s'), $hudson_test_result_url));
     }
 
-    function getFailCount() {
+    public function getFailCount()
+    {
         return (int) $this->dom_job->failCount;
     }
-    function getPassCount() {
+    public function getPassCount()
+    {
         return (int) $this->dom_job->passCount;
     }
-    function getSkipCount() {
+    public function getSkipCount()
+    {
         return (int) $this->dom_job->skipCount;
     }
-    function getTotalCount() {
-        return $this->getFailCount() + $this->getPassCount() + $this->getSkipCount();
-    }
-
-    public function getTestResultPieChart()
+    public function getTotalCount()
     {
-        $purifier = Codendi_HTMLPurifier::instance();
-        $url      = '/plugins/hudson/test_result_pie_chart.php?' . http_build_query(
-                array(
-                    'p' => $this->getPassCount(),
-                    'f' => $this->getFailCount(),
-                    's' => $this->getSkipCount()
-                ));
-
-        return '<img class="test_result_pie_chart" src="' . $url . '" alt="Test result: ' . $purifier->purify($this->getPassCount() . '/' . $this->getTotalCount()) . '" title="Test result: ' . $purifier->purify($this->getPassCount() . '/' . $this->getTotalCount()) . '" />';
+        return $this->getFailCount() + $this->getPassCount() + $this->getSkipCount();
     }
 }

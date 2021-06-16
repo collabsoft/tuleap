@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,12 +19,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
+
 /**
  * I am a Backlog Item
  */
 interface AgileDashboard_Milestone_Backlog_IBacklogItem
 {
-    const REMAINING_EFFORT_FIELD_NAME = 'remaining_effort';
+    public const REMAINING_EFFORT_FIELD_NAME = 'remaining_effort';
 
     public function setInitialEffort($value);
 
@@ -38,13 +40,24 @@ interface AgileDashboard_Milestone_Backlog_IBacklogItem
 
     public function id();
 
+    public function title(): string;
+
+    public function getShortType(): string;
+
+    public function color(): string;
+
     public function hasChildren();
 
     public function xRef();
 
     public function getParent();
 
-    public function setParent(Tracker_Artifact $parent);
+    public function setParent(Artifact $parent);
+
+    /**
+     * @return Artifact
+     */
+    public function getArtifact();
 
     /**
      * @return bool

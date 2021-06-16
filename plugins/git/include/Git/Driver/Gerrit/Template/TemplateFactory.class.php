@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013-2018. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -25,24 +25,25 @@
 /**
  * I'm responsible for instanciating Gerrit's Templates
  */
-class Git_Driver_Gerrit_Template_TemplateFactory {
+class Git_Driver_Gerrit_Template_TemplateFactory
+{
 
     /** @var Git_Driver_Gerrit_Template_TemplateDao */
     private $dao;
 
-    public function __construct(Git_Driver_Gerrit_Template_TemplateDao $template_dao) {
+    public function __construct(Git_Driver_Gerrit_Template_TemplateDao $template_dao)
+    {
         $this->dao = $template_dao;
     }
 
     /**
      * Get all templates of a project
      *
-     * @param Project
-     *
      * @return Git_Driver_Gerrit_Template_Template[]
      */
-    public function getAllTemplatesOfProject(Project $project) {
-        $templates      = array();
+    public function getAllTemplatesOfProject(Project $project)
+    {
+        $templates      = [];
         $templates_rows = $this->dao->getAllTemplatesOfProject($project->getId());
 
         foreach ($templates_rows as $row) {
@@ -60,7 +61,8 @@ class Git_Driver_Gerrit_Template_TemplateFactory {
      *
      * @return Git_Driver_Gerrit_Template_Template[] the templates
      */
-    public function getTemplatesAvailableForRepository(GitRepository $repository) {
+    public function getTemplatesAvailableForRepository(GitRepository $repository)
+    {
         $current_project = $repository->getProject();
 
         return $this->getTemplatesAvailableForProject($current_project);
@@ -73,9 +75,10 @@ class Git_Driver_Gerrit_Template_TemplateFactory {
      *
      * @return Git_Driver_Gerrit_Template_Template[] the templates
      */
-    public function getTemplatesAvailableForProject(Project $project) {
+    public function getTemplatesAvailableForProject(Project $project)
+    {
         if ($project->isError()) {
-            return array();
+            return [];
         }
 
         $templates = array_merge(
@@ -90,15 +93,15 @@ class Git_Driver_Gerrit_Template_TemplateFactory {
      * Get All templates for projects higher in hierarchy. Does not include
      * templates for project itself.
      *
-     * @param Project $project
      * @return Git_Driver_Gerrit_Template_Template[]
      */
-    public function getTemplatesAvailableForParentProjects(Project $project) {
+    public function getTemplatesAvailableForParentProjects(Project $project)
+    {
         if ($project->isError()) {
-            return array();
+            return [];
         }
 
-        $templates       = array();
+        $templates       = [];
         $project_manager = ProjectManager::instance();
         $projects        = $project_manager->getAllParentsProjects($project->getId());
 
@@ -115,7 +118,8 @@ class Git_Driver_Gerrit_Template_TemplateFactory {
      * @return Git_Driver_Gerrit_Template_Template
      * @throws Git_Template_NotFoundException
      */
-    public function getTemplate($template_id) {
+    public function getTemplate($template_id)
+    {
         $row = $this->dao->getTemplate($template_id);
         if (empty($row)) {
             throw new Git_Template_NotFoundException($template_id);
@@ -126,10 +130,11 @@ class Git_Driver_Gerrit_Template_TemplateFactory {
     /**
      * Instatiate a Template from a SQL row
      *
-     * @param array
-     * @return Git_Driver_Gerrit_Template_Template[] | false -where the array is in DAR format
+     * @param array $row
+     * @return Git_Driver_Gerrit_Template_Template -where the array is in DAR format
      */
-    private function instantiateTemplateFromRow(array $row) {
+    private function instantiateTemplateFromRow(array $row)
+    {
         return new Git_Driver_Gerrit_Template_Template(
             $row['id'],
             $row['group_id'],
@@ -139,10 +144,10 @@ class Git_Driver_Gerrit_Template_TemplateFactory {
     }
 
     /**
-     * @param Git_Driver_Gerrit_Template_Template $template
      * @return bool
      */
-    public function updateTemplate(Git_Driver_Gerrit_Template_Template $template) {
+    public function updateTemplate(Git_Driver_Gerrit_Template_Template $template)
+    {
         return $this->dao->updateTemplate($template->getId(), $template->getName(), $template->getContent());
     }
 
@@ -153,7 +158,8 @@ class Git_Driver_Gerrit_Template_TemplateFactory {
      * @param string $template_name
      * @return bool
      */
-    public function createTemplate($project_id, $template_content, $template_name) {
+    public function createTemplate($project_id, $template_content, $template_name)
+    {
         return $this->dao->addTemplate($project_id, $template_name, $template_content);
     }
 
@@ -162,8 +168,8 @@ class Git_Driver_Gerrit_Template_TemplateFactory {
      *
      * @return bool
      */
-    public function deleteTemplate($template_id) {
+    public function deleteTemplate($template_id)
+    {
         return $this->dao->deleteTemplate($template_id);
     }
 }
-?>

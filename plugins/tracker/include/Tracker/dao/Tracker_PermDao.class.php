@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -21,15 +21,15 @@
 
 class Tracker_PermDao extends DataAccessObject
 {
-    
+
     public function searchAccessPermissionsByTrackerId($tracker_id)
     {
         $tracker_id = $this->da->escapeInt($tracker_id);
-        
+
         $sql = "SELECT *
                 FROM permissions
                 WHERE (permission_type LIKE 'PLUGIN_TRACKER_ACCESS%'
-                    OR permission_type = '".Tracker::PERMISSION_ADMIN."')
+                    OR permission_type = '" . Tracker::PERMISSION_ADMIN . "')
                     AND object_id='$tracker_id'
                 ORDER BY ugroup_id";
 

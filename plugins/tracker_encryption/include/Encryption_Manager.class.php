@@ -1,5 +1,6 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2016. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -17,21 +18,29 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-require_once '/usr/share/pear/Crypt/RSA.php';
+
+use phpseclib3\Exception\NoKeyLoadedException;
 
 class Encryption_Manager
 {
-    const HASH_FUNCTION = 'sha256';
-    const HLEN = 32;
-    private $rsa;
+    /**
+     * @var \phpseclib3\Crypt\RSA\PublicKey
+     */
+    private $public_key;
 
     public function __construct(Tracker_Key $tracker_key)
     {
-        $this->rsa = new \Crypt_RSA();
-        $this->rsa->setEncryptionMode(\CRYPT_RSA_ENCRYPTION_OAEP);
-        $this->rsa->setHash(self::HASH_FUNCTION);
-        $this->rsa->setMGFHash(self::HASH_FUNCTION);
-        $this->loadRSAKey($tracker_key);
+        $raw_key = $tracker_key->getKey();
+        if ($raw_key === '') {
+            self::throwException();
+        }
+        try {
+            $public_key = \phpseclib3\Crypt\RSA\PublicKey::load($tracker_key->getKey());
+            assert($public_key instanceof \phpseclib3\Crypt\RSA\PublicKey);
+        } catch (NoKeyLoadedException $exception) {
+            self::throwException();
+        }
+        $this->public_key = $public_key;
     }
 
     /**
@@ -42,17 +51,19 @@ class Encryption_Manager
      */
     public function encrypt($data)
     {
-        if ($encrypted = $this->rsa->encrypt($data)) {
-            $data      = base64_encode($encrypted);
-            return $data;
-        } else {
-            throw new Tracker_EncryptionException($GLOBALS['Response']->addFeedback('error',$GLOBALS['Language']->getText('plugin_tracker_encryption', 'encryption_error')));
+        $encrypted = $this->public_key->encrypt($data);
+        if (is_string($encrypted)) {
+            return base64_encode($encrypted);
         }
+        self::throwException();
     }
 
-    private function loadRSAKey(Tracker_Key $tracker_key) {
-        if (!$this->rsa->loadKey($tracker_key->getKey())) {
-            throw new Tracker_EncryptionException($GLOBALS['Response']->addFeedback('error',$GLOBALS['Language']->getText('plugin_tracker_encryption', 'encryption_error')));
-        }
+    /**
+     * @psalm-return never-return
+     */
+    private static function throwException(): void
+    {
+        $GLOBALS['Response']->addFeedback(Feedback::ERROR, dgettext('tuleap-tracker_encryption', 'Unable to encrypt data. Please add a valid public RSA key in the tracker administration to be able to encrypt data.'));
+        throw new Tracker_EncryptionException();
     }
 }

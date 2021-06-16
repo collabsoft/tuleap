@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -36,10 +36,7 @@ class FileExtensionFilterIterator extends RecursiveFilterIterator
         $this->allowed_extensions = $allowed_extensions;
     }
 
-    /**
-     * @return bool
-     */
-    public function accept()
+    public function accept(): bool
     {
         $file = $this->current();
         if ($file->isDir() || empty($this->allowed_extensions)) {
@@ -51,10 +48,7 @@ class FileExtensionFilterIterator extends RecursiveFilterIterator
         return in_array($extension, $this->allowed_extensions);
     }
 
-    /**
-     * @return FileExtensionFilterIterator
-     */
-    public function getChildren()
+    public function getChildren(): RecursiveFilterIterator
     {
         return new self($this->getInnerIterator()->getChildren(), $this->allowed_extensions);
     }

@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2011. All Rights Reserved.
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,18 +19,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require 'pre.php';
-require_once dirname(__FILE__).'/../include/Statistics_DiskUsageGraph.class.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/Statistics_DiskUsageGraph.class.php';
 
-use Tuleap\SVN\DiskUsage\Collector as SVNCollector;
-use Tuleap\SVN\DiskUsage\Retriever as SVNRetriever;
-use Tuleap\CVS\DiskUsage\Retriever as CVSRetriever;
-use Tuleap\CVS\DiskUsage\Collector as CVSCollector;
-use Tuleap\CVS\DiskUsage\FullHistoryDao;
+use Tuleap\Statistics\DiskUsage\Subversion\Collector as SVNCollector;
+use Tuleap\Statistics\DiskUsage\Subversion\Retriever as SVNRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Retriever as CVSRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Collector as CVSCollector;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\FullHistoryDao;
 
 // First, check plugin availability
 $pluginManager = PluginManager::instance();
-$p = $pluginManager->getPluginByName('statistics');
+$p             = $pluginManager->getPluginByName('statistics');
 if (! $p || ! $pluginManager->isPluginAvailable($p)) {
     $GLOBALS['Response']->redirect('/');
 }
@@ -95,19 +95,15 @@ $duration = strtotime($endDate) - strtotime($startDate);
 $error = false;
 if ($duration <= 0) {
     $feedback[] = 'You made a mistake in selecting period. Please try again!';
-    $error = true;
+    $error      = true;
 } elseif ($duration < 31536000) {
     $groupBy = 'week';
 } else {
     $groupBy = 'month';
 }
 
-//
 // Display graph
-//
-if (!$error) {
+if (! $error) {
     $graph = new Statistics_DiskUsageGraph($duMgr);
     $graph->displayProjectGraph($groupId, $services, $groupBy, $startDate, $endDate, true, true, false);
 }
-
-?>

@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,28 +23,28 @@ require_once 'TreeNodeCallback.class.php';
 /**
  * Like array_map this produces a new node tree by calling $callback on every node in the current tree
  */
-class TreeNodeMapper {
+class TreeNodeMapper
+{
 
     /** @var TreeNodeCallback */
     private $function;
-    
-    public function __construct(TreeNodeCallback $function) {
+
+    public function __construct(TreeNodeCallback $function)
+    {
         $this->function = $function;
     }
-    
+
     /**
      * Create a new node by applying the function to the node and recursively over its children
      *
-     * @param TreeNode $node
-     * 
+     *
      * @return TreeNode
      */
-    public function map(TreeNode $node) {
+    public function map(TreeNode $node)
+    {
         $new_node = $this->function->apply($node);
-        $children = array_map(array($this, 'map'), $node->getChildren());
+        $children = array_map([$this, 'map'], $node->getChildren());
         $new_node->setChildren($children);
         return $new_node;
     }
 }
-
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,12 +20,12 @@
 
 namespace Tuleap\CreateTestEnv\Plugin;
 
-class PluginInfo extends \PluginInfo
+class PluginInfo extends \PluginFileInfo
 {
 
     public function __construct(\Plugin $plugin)
     {
-        parent::__construct($plugin);
+        parent::__construct($plugin, 'config');
 
         $this->setPluginDescriptor(new PluginDescriptor());
     }

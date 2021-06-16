@@ -10,16 +10,16 @@
     {{/ csrf }}
     <div class="tlp-modal-header">
         <h1 class="tlp-modal-title" id="edit-notification-modal-label-{{ id }}">
-            <i class="fa fa-pencil tlp-modal-title-icon"></i> {{ edit_notif_label }}
+            <i class="fas fa-pencil-alt tlp-modal-title-icon"></i> {{ edit_notif_label }}
         </h1>
-        <div class="tlp-modal-close" data-dismiss="modal" aria-label="Close">×</div>
+        <button class="tlp-modal-close" type="button" data-dismiss="modal" aria-label="Close">×</button>
     </div>
     <div class="tlp-modal-body">
         <div class="tlp-form-element">
             <label class="tlp-label" for="followers-emails-{{ id }}">
                 {{ notified_label }} <i class="fa fa-asterisk"></i>
             </label>
-            <textarea type="text"
+            <textarea
                       class="tlp-textarea"
                       id="followers-emails-{{ id }}"
                       name="followers[{{ id }}][emails]"

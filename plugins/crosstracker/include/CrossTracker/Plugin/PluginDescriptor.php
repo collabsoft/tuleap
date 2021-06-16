@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,7 +29,5 @@ class PluginDescriptor extends \PluginDescriptor
             false,
             dgettext('tuleap-crosstracker', 'Search artifacts that are in different trackers')
         );
-
-        $this->setVersionFromFile(CROSSTRACKER_BASE_DIR.'/VERSION');
     }
 }

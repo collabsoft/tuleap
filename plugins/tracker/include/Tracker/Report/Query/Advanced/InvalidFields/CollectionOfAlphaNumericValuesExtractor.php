@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ class CollectionOfAlphaNumericValuesExtractor implements ValueWrapperVisitor
 
     public function visitBetweenValueWrapper(BetweenValueWrapper $value_wrapper, ValueWrapperParameters $parameters)
     {
-        $values   = array();
+        $values   = [];
         $values[] = $value_wrapper->getMinValue()->accept($this, $parameters);
         $values[] = $value_wrapper->getMaxValue()->accept($this, $parameters);
 
@@ -60,7 +60,7 @@ class CollectionOfAlphaNumericValuesExtractor implements ValueWrapperVisitor
 
     public function visitInValueWrapper(InValueWrapper $collection_of_value_wrappers, ValueWrapperParameters $parameters)
     {
-        $values = array();
+        $values = [];
         foreach ($collection_of_value_wrappers->getValueWrappers() as $value_wrapper) {
             $values[] = $value_wrapper->accept($this, $parameters);
         }

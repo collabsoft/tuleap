@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,9 +20,8 @@
 
 use Tuleap\Tracker\Colorpicker\ColorpickerMountPointPresenter;
 
-require_once 'common/layout/ColorHelper.class.php';
-
-class Cardwall_OnTop_Config_View_ColumnDefinition {
+class Cardwall_OnTop_Config_View_ColumnDefinition
+{
 
     /**
      * @var array of Cardwall_OnTop_Config
@@ -35,7 +33,8 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
      */
     private $hp;
 
-    public function __construct(Cardwall_OnTop_Config $config) {
+    public function __construct(Cardwall_OnTop_Config $config)
+    {
         $this->config = $config;
         $this->hp     = Codendi_HTMLPurifier::instance();
     }
@@ -43,7 +42,8 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
     /**
      * @return string
      */
-    public function fetchColumnDefinition() {
+    public function fetchColumnDefinition()
+    {
         $html  = '';
         $html .= $this->fetchSpeech();
         $html .= '<br>';
@@ -54,32 +54,32 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
     private function fetchMappings()
     {
         $html  = '';
-        $html .= '<table class="cardwall_admin_ontop_mappings"><thead><tr valign="top">';
-        $html .= '<td></td>';
+        $html .= '<table class="table table-bordered cardwall_admin_ontop_mappings"><thead><tr valign="top">';
+        $html .= '<th></th>';
         foreach ($this->config->getDashboardColumns() as $column) {
             $html .= '<th>';
             if ($column->isHeaderATLPColor()) {
                 $color = $this->hp->purify($column->getHeadercolor());
-                $html .= '<div class="cardwall-column-header-color cardwall-column-header-color-'. $color . '"></div>';
+                $html .= '<div class="cardwall-column-header-color cardwall-column-header-color-' . $color . '"></div>';
             } else {
                 $hexa_color = $column->getHeadercolor();
                 if (preg_match('/^#([a-fA-F0-9]{3}){1,2}$/', $hexa_color) !== 1) {
                     $hexa_color = '';
                 }
-                $html .= '<div class="cardwall-column-header-color" style="background-color: '. $hexa_color .'"></div>';
+                $html .= '<div class="cardwall-column-header-color" style="background-color: ' . $hexa_color . '"></div>';
             }
 
             $html .= $this->fetchColumnHeader($column);
             $html .= '</th>';
         }
-        $html .= '<td>';
-        $html .= $this->fetchAdditionalColumnHeader();
-        $html .= '</td>';
-        $html .= '</tr></thead>';
-        $html .= '<tbody>';
+        $html      .= '<th>';
+        $html      .= $this->fetchAdditionalColumnHeader();
+        $html      .= '</th>';
+        $html      .= '</tr></thead>';
+        $html      .= '<tbody>';
         $row_number = 0;
         foreach ($this->config->getMappings() as $mapping) {
-            $html .= '<tr class="'. html_get_alt_row_color(++$row_number) .'" valign="top">';
+            $html .= '<tr class="' . html_get_alt_row_color(++$row_number) . '" valign="top">';
             $html .= $mapping->accept($this);
             $html .= '<td>';
             $html .= '</td>';
@@ -90,17 +90,18 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
         return $html;
     }
 
-    public function visitTrackerMappingNoField($mapping) {
-        $mapping_tracker= $mapping->getTracker();
-        $used_sb_fields = $mapping->getAvailableFields();
+    public function visitTrackerMappingNoField($mapping)
+    {
+        $mapping_tracker = $mapping->getTracker();
+        $used_sb_fields  = $mapping->getAvailableFields();
 
         $html  = '';
         $html .= '<td>';
-        $html .= '<a href="/plugins/tracker/?tracker='. $mapping_tracker->getId() .'&func=admin">'. $this->purify($mapping_tracker->getName()) .'</a><br />';
-        $html .= '<select name="mapping_field['. (int)$mapping_tracker->getId() .'][field]" disabled="disabled">';
-        $html .= '<option value="">'. $this->translate('global', 'please_choose_dashed') .'</option>';
+        $html .= '<a href="/plugins/tracker/?tracker=' . $mapping_tracker->getId() . '&func=admin">' . $this->purify($mapping_tracker->getName()) . '</a><br />';
+        $html .= '<select name="mapping_field[' . (int) $mapping_tracker->getId() . '][field]" disabled="disabled">';
+        $html .= '<option value="">' . $GLOBALS['Language']->getText('global', 'please_choose_dashed') . '</option>';
         foreach ($used_sb_fields as $sb_field) {
-            $html .= '<option value="'. (int)$sb_field->getId() .'">'. $this->purify($sb_field->getLabel()) .'</option>';
+            $html .= '<option value="' . (int) $sb_field->getId() . '">' . $this->purify($sb_field->getLabel()) . '</option>';
         }
         $html .= '</select>';
         $html .= $this->fetchCustomizationSwitch($mapping_tracker);
@@ -113,46 +114,48 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
         return $html;
     }
 
-    public function visitTrackerMappingStatus($mapping) {
-        $mapping_tracker= $mapping->getTracker();
-        $used_sb_fields = $mapping->getAvailableFields();
-        $field          = $mapping->getField();
-        $mapping_values = $mapping->getValueMappings();
+    public function visitTrackerMappingStatus($mapping)
+    {
+        $mapping_tracker = $mapping->getTracker();
+        $used_sb_fields  = $mapping->getAvailableFields();
+        $field           = $mapping->getField();
+        $mapping_values  = $mapping->getValueMappings();
 
-        $html  = '';
-        $html .= '<td class="not-freestyle">';
-        $html .= '<a href="/plugins/tracker/?tracker='. $mapping_tracker->getId() .'&func=admin">'. $this->purify($mapping_tracker->getName()) .'</a><br />';
+        $html     = '';
+        $html    .= '<td class="not-freestyle">';
+        $html    .= '<a href="/plugins/tracker/?tracker=' . $mapping_tracker->getId() . '&func=admin">' . $this->purify($mapping_tracker->getName()) . '</a><br />';
         $disabled = $field ? 'disabled="disabled"' : '';
-        $html .= '<select name="mapping_field['. (int)$mapping_tracker->getId() .'][field]" '. $disabled .'>';
+        $html    .= '<select name="mapping_field[' . (int) $mapping_tracker->getId() . '][field]" ' . $disabled . '>';
         foreach ($used_sb_fields as $sb_field) {
             $selected = $field == $sb_field ? 'selected="selected"' : '';
-            $html .= '<option value="'. (int)$sb_field->getId() .'" '. $selected .'>'. $this->purify($sb_field->getLabel()) .'</option>';
+            $html    .= '<option value="' . (int) $sb_field->getId() . '" ' . $selected . '>' . $this->purify($sb_field->getLabel()) . '</option>';
         }
         $html .= '</select>';
         $html .= $this->fetchCustomizationSwitch($mapping_tracker);
         $html .= '</td>';
         foreach ($this->config->getDashboardColumns() as $column) {
             $html .= '<td>';
-            $html .= $mapping->getSelectedValueLabel($column, '<em>'.$this->translate('plugin_cardwall', 'on_top_no_matching_for_column').'</em>');
+            $html .= $mapping->getSelectedValueLabel($column, '<em>' . dgettext('tuleap-cardwall', 'No matching for this column') . '</em>');
             $html .= '</td>';
         }
         return $html;
     }
 
-    public function visitTrackerMappingFreestyle($mapping) {
-        $mapping_tracker= $mapping->getTracker();
-        $used_sb_fields = $mapping->getAvailableFields();
-        $field          = $mapping->getField();
-        $mapping_values = $mapping->getValueMappings();
+    public function visitTrackerMappingFreestyle($mapping)
+    {
+        $mapping_tracker = $mapping->getTracker();
+        $used_sb_fields  = $mapping->getAvailableFields();
+        $field           = $mapping->getField();
+        $mapping_values  = $mapping->getValueMappings();
 
         $html  = '';
         $html .= '<td>';
-        $html .= '<a href="/plugins/tracker/?tracker='. $mapping_tracker->getId() .'&func=admin">'. $this->purify($mapping_tracker->getName()) .'</a><br />';
-        $html .= '<select name="mapping_field['. (int)$mapping_tracker->getId() .'][field]">';
-        $html .= '<option value="">'. $this->translate('global', 'please_choose_dashed') .'</option>';
+        $html .= '<a href="/plugins/tracker/?tracker=' . $mapping_tracker->getId() . '&func=admin">' . $this->purify($mapping_tracker->getName()) . '</a><br />';
+        $html .= '<select name="mapping_field[' . (int) $mapping_tracker->getId() . '][field]">';
+        $html .= '<option value="">' . $GLOBALS['Language']->getText('global', 'please_choose_dashed') . '</option>';
         foreach ($used_sb_fields as $sb_field) {
             $selected = $field == $sb_field ? 'selected="selected"' : '';
-            $html .= '<option value="'. (int)$sb_field->getId() .'" '. $selected .'>'. $this->purify($sb_field->getLabel()) .'</option>';
+            $html    .= '<option value="' . (int) $sb_field->getId() . '" ' . $selected . '>' . $this->purify($sb_field->getLabel()) . '</option>';
         }
         $html .= '</select>';
         $html .= $this->fetchCustomizationSwitch($mapping_tracker, true);
@@ -165,26 +168,28 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
         return $html;
     }
 
-    private function fetchCustomizationSwitch(Tracker $mapping_tracker, $customized=false) {
+    private function fetchCustomizationSwitch(Tracker $mapping_tracker, $customized = false)
+    {
         $html     = '';
         $selected = '';
         if ($customized) {
             $selected = 'checked="checked"';
         }
-        $name = 'custom_mapping['.(int)$mapping_tracker->getId() .']';
+        $name  = 'custom_mapping[' . (int) $mapping_tracker->getId() . ']';
         $html .= '<p>';
-        $html .= '<input type="hidden" name="'. $name .'" value="0" />';
-        $html .= '<label><input type="checkbox" name="'. $name .'" '.$selected.' value="1" /> '.$this->translate('plugin_cardwall', 'on_top_custom_mapping').'</label>';
+        $html .= '<input type="hidden" name="' . $name . '" value="0" />';
+        $html .= '<label><input type="checkbox" name="' . $name . '" ' . $selected . ' value="1" /> ' . dgettext('tuleap-cardwall', 'Custom mapping') . '</label>';
         $html .= '</p>';
         return $html;
     }
 
-    private function editValues($mapping_tracker, $column, $mapping_values, $field) {
-        $column_id = $column->id;
+    private function editValues($mapping_tracker, $column, $mapping_values, $field)
+    {
+        $column_id    = $column->id;
         $field_values = $field->getVisibleValuesPlusNoneIfAny();
-        $html = '';
+        $html         = '';
         if ($field_values) {
-            $html .= '<select name="mapping_field['. (int)$mapping_tracker->getId() .'][values]['. $column_id .'][]" multiple="multiple" size="'. count($field_values) .'">';
+            $html .= '<select name="mapping_field[' . (int) $mapping_tracker->getId() . '][values][' . $column_id . '][]" multiple="multiple" size="' . count($field_values) . '">';
             foreach ($field_values as $value) {
                 $selected = '';
 
@@ -193,28 +198,31 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
                 if (isset($mapping_values[$value->getId()]) && $mapping_values[$value->getId()]->getColumnId() == $column_id) {
                     $selected = 'selected="selected"';
                 }
-                $html .= '<option value="'. $value->getId() .'" '. $selected .'>'. $value->getLabel() .'</option>';
+                $html .= '<option value="' . $this->purify($value->getId()) . '" ' . $selected . '>' . $this->purify($value->getLabel()) . '</option>';
             }
             $html .= '</select>';
         } else {
-            $html .= '<em>'. $this->translate('plugin_cardwall', 'on_top_no_values') .'</em>';
+            $html .= '<em>' . dgettext('tuleap-cardwall', 'There isn\'t any value') . '</em>';
         }
 
         return $html;
-
     }
 
-    protected function fetchSpeech() {
+    protected function fetchSpeech()
+    {
         if (! count($this->config->getDashboardColumns())) {
-            return $this->translate('plugin_cardwall', 'on_top_semantic_freestyle_column_definition_speech_no_column');
+            return dgettext('tuleap-cardwall', '<p>You can define your own set of columns for the cardwall. Values will be associated is they match column title (be careful to lower case/upper case).</p>');
         } else {
-            return $this->translate('plugin_cardwall', 'on_top_semantic_freestyle_column_definition_speech_with_columns');
+            return dgettext('tuleap-cardwall', '<p>Note: you can delete a column by removing its name (make text field blank).</p>');
         }
     }
 
-    protected function fetchColumnHeader(Cardwall_Column $column) {
-        $html  = '<input type="text" name="column['. $column->id .'][label]" value="'. $this->purify($column->label) .'" />';
+    protected function fetchColumnHeader(Cardwall_Column $column)
+    {
+        $html  = '<div class="planning-admin-color-picker">';
+        $html .= '<input type="text" name="column[' . $column->id . '][label]" value="' . $this->purify($column->label) . '" />';
         $html .= $this->decorateEdit($column);
+        $html .= '</div>';
 
         return $html;
     }
@@ -230,7 +238,7 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
             }
         }
 
-        $input_id   = 'column_'. $column->id .'_field';
+        $input_id   = 'column_' . $column->id . '_field';
         $input_name = "column[$column->id][bgcolor]";
 
         $renderer = TemplateRendererFactory::build()->getRenderer(
@@ -248,24 +256,34 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
         );
     }
 
-    protected function fetchAdditionalColumnHeader() {
-        $suggestion = $GLOBALS['Language']->getText('plugin_cardwall', 'on_top_column_placeholder_suggestion', $this->getPlaceholderSuggestion());
-        return '<label>'. $this->translate('plugin_cardwall', 'on_top_new_column') . '<br /><input type="text" name="new_column" value="" placeholder="'. $suggestion  .'" /></label>';
+    protected function fetchAdditionalColumnHeader()
+    {
+        $suggestion = sprintf(dgettext('tuleap-cardwall', 'E.g.: %1$s'), $this->getPlaceholderSuggestion());
+        return '<label>' . dgettext('tuleap-cardwall', 'New column:') . '<br /><input type="text" name="new_column" value="" placeholder="' . $suggestion  . '" /></label>';
     }
 
     /**
      * @return string
      */
-    private function getPlaceholderSuggestion() {
-        $placeholders = explode('|', $GLOBALS['Language']->getText('plugin_cardwall', 'on_top_column_placeholders'));
+    private function getPlaceholderSuggestion()
+    {
+        $placeholders = explode('|', dgettext('tuleap-cardwall', 'Todo|On Going|Done|Done-Done'));
         foreach ($this->config->getDashboardColumns() as $column) {
-            array_walk($placeholders, array($this, 'removeUsedColumns'), $column->getLabel());
+            array_walk(
+                $placeholders,
+                function (&$placeholder, $key, $column_label) {
+                    $this->removeUsedColumns($placeholder, $key, $column_label);
+                },
+                $column->getLabel()
+            );
         }
-        $suggestion = array_shift(array_filter($placeholders));
-        return $suggestion ? $suggestion : $GLOBALS['Language']->getText('plugin_cardwall', 'on_top_column_placeholder_default');
+        $filtered_placeholders = array_filter($placeholders);
+        $suggestion            = array_shift($filtered_placeholders);
+        return $suggestion ? $suggestion : dgettext('tuleap-cardwall', 'On Going');
     }
 
-    private function removeUsedColumns(&$placeholder, $key, $column_label) {
+    private function removeUsedColumns(&$placeholder, $key, $column_label)
+    {
         if (! levenshtein(soundex($column_label), soundex($placeholder))) {
             $placeholder = '';
         }
@@ -274,14 +292,8 @@ class Cardwall_OnTop_Config_View_ColumnDefinition {
     /**
      * @return string
      */
-    protected function purify($value) {
+    protected function purify($value)
+    {
         return $this->hp->purify($value);
-    }
-
-    /**
-     * @return string
-     */
-    protected function translate($page, $category, $args = "") {
-        return $GLOBALS['Language']->getText($page, $category, $args);
     }
 }

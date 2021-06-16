@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -23,18 +23,21 @@ namespace Tuleap\ProFTPd\Admin;
 /**
  * Files should not have x (executable bit set)
  */
-class ACLBuilderForFile extends ACLBuilder {
+class ACLBuilderForFile extends ACLBuilder
+{
 
-    public function getACL($http_user, $writers, $readers) {
+    public function getACL($http_user, $writers, $readers)
+    {
         return $this->getEffectiveACL($http_user, $writers, $readers);
     }
 
-    protected function getACLReaders($label) {
+    protected function getACLReaders($label)
+    {
         return "$label:r";
     }
 
-    protected function getACLWriters($label) {
+    protected function getACLWriters($label)
+    {
         return "$label:rw";
     }
-
 }

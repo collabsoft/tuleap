@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ use Tuleap\Event\Dispatchable;
 
 class AllowedFieldTypeChangesRetriever implements Dispatchable
 {
-    const NAME = 'semanticAllowedFieldTypeRetriever';
+    public const NAME = 'semanticAllowedFieldTypeRetriever';
 
     /**
      * @var \Tracker_FormElement
@@ -46,9 +46,6 @@ class AllowedFieldTypeChangesRetriever implements Dispatchable
         return $this->field;
     }
 
-    /**
-     * @param \Tracker_FormElement $field
-     */
     public function setField(Tracker_FormElement $field)
     {
         $this->field = $field;

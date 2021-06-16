@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,10 +25,9 @@ class PluginDescriptor extends \PluginDescriptor
     public function __construct()
     {
         parent::__construct(
-            $GLOBALS['Language']->getText('plugin_frs', 'descriptor_name'),
+            dgettext('tuleap-frs', 'File release system'),
             false,
-            $GLOBALS['Language']->getText('plugin_frs', 'descriptor_description')
+            dgettext('tuleap-frs', 'Extends file release system included into the Tuleap core with new features')
         );
-        $this->setVersionFromFile(dirname(__FILE__).'/../../VERSION');
     }
 }

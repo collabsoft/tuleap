@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Search_SearchTypePresenter {
+class Search_SearchTypePresenter
+{
     public $search_type;
     public $title;
     public $facets;
     public $has_facets;
     public $url;
 
-    public function __construct($search_type, $title, $facets = array(), $url = '#') {
+    public function __construct($search_type, $title, $facets = [], $url = '#')
+    {
         $this->search_type = $search_type;
         $this->title       = $title;
         $this->facets      = $facets;

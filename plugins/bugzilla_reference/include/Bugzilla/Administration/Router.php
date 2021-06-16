@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,12 +20,16 @@
 
 namespace Tuleap\Bugzilla\Administration;
 
-use CSRFSynchronizerToken;
 use Feedback;
 use HTTPRequest;
 use PFUser;
+use Tuleap\Layout\BaseLayout;
+use Tuleap\Layout\CssAssetWithoutVariantDeclinaisons;
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Request\DispatchableWithBurningParrot;
+use Tuleap\Request\DispatchableWithRequest;
 
-class Router
+class Router implements DispatchableWithRequest, DispatchableWithBurningParrot
 {
     /**
      * @var Controller
@@ -37,10 +41,14 @@ class Router
         $this->controller = $controller;
     }
 
-    public function route(HTTPRequest $request)
+    public function process(HTTPRequest $request, BaseLayout $layout, array $variables)
     {
         $current_user = $request->getCurrentUser();
         $this->checkUserIsSiteAdmin($current_user);
+
+        $assets = $this->getIncludeAsset();
+        $layout->includeFooterJavascriptFile($assets->getFileURL('bugzilla-reference.js'));
+        $layout->addCssAsset(new CssAssetWithoutVariantDeclinaisons($assets, 'burningparrot-style'));
 
         $action = $request->get('action');
         switch ($action) {
@@ -67,5 +75,13 @@ class Router
             );
             $GLOBALS['Response']->redirect('/');
         }
+    }
+
+    private function getIncludeAsset(): IncludeAssets
+    {
+        return new IncludeAssets(
+            __DIR__ . '/../../../../../src/www/assets/bugzilla_reference',
+            '/assets/bugzilla_reference'
+        );
     }
 }

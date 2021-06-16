@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013 - 2018. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,18 +22,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
+
 /**
  * I build BacklogItem{,Collection}
  */
-interface AgileDashboard_Milestone_Backlog_IBuildBacklogItemAndBacklogItemCollection {
+interface AgileDashboard_Milestone_Backlog_IBuildBacklogItemAndBacklogItemCollection
+{
 
     /**
      * @return AgileDashboard_Milestone_Backlog_IBacklogItemCollection
      */
-    function getCollection();
+    public function getCollection();
 
     /**
      * @return AgileDashboard_Milestone_Backlog_IBacklogItem
      */
-    function getItem(Tracker_Artifact $artifact, $redirect_to_self, $is_inconsistent);
+    public function getItem(Artifact $artifact, $redirect_to_self, $is_inconsistent);
 }

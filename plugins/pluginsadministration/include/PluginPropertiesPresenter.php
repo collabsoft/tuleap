@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,7 +31,7 @@ class PluginPropertiesPresenter
     public $description;
     public $scope;
     public $is_there_enable_switch;
-    public $enable_switch;
+    public $enable_url;
     public $are_there_dependencies;
     public $dependencies;
     public $is_there_readme;
@@ -45,6 +45,10 @@ class PluginPropertiesPresenter
      * @var \CSRFSynchronizerToken
      */
     public $csrf_token;
+    /**
+     * @var bool
+     */
+    public $is_enabled;
 
     public function __construct(
         $id,
@@ -53,7 +57,7 @@ class PluginPropertiesPresenter
         $description,
         $scope,
         $is_there_enable_switch,
-        $enable_switch,
+        $enable_url,
         $are_there_dependencies,
         $dependencies,
         $is_there_readme,
@@ -62,15 +66,16 @@ class PluginPropertiesPresenter
         $properties,
         $are_there_additional_options,
         $additional_options,
-        \CSRFSynchronizerToken $csrf_token
+        \CSRFSynchronizerToken $csrf_token,
+        bool $is_enabled
     ) {
         $this->id                           = $id;
         $this->name                         = $name;
         $this->version                      = $version;
         $this->description                  = $description;
-        $this->scope                        = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'scope_'.$scope);
+        $this->scope                        = $this->getScopeLabel((int) $scope);
         $this->is_there_enable_switch       = $is_there_enable_switch;
-        $this->enable_switch                = $enable_switch;
+        $this->enable_url                   = $enable_url;
         $this->are_there_dependencies       = $are_there_dependencies;
         $this->dependencies                 = $dependencies;
         $this->is_there_readme              = $is_there_readme;
@@ -80,18 +85,28 @@ class PluginPropertiesPresenter
         $this->are_there_additional_options = $are_there_additional_options;
         $this->additional_options           = $additional_options;
         $this->csrf_token                   = $csrf_token;
+        $this->is_enabled                   = $is_enabled;
 
-        $this->properties_pane_title              = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_title');
-        $this->properties_pane_name               = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_name');
-        $this->properties_pane_version            = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_version');
-        $this->properties_pane_description        = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_description');
-        $this->properties_pane_scope              = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_scope');
-        $this->properties_pane_dependencies       = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_dependencies');
-        $this->properties_pane_enabled            = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_enabled');
-        $this->properties_pane_update_label       = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_update_label');
-        $this->properties_pane_empty_dependencies = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_empty_dependencies');
-        $this->properties_pane_readme_title       = $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_pane_readme_title');
-        $this->properties_edit_web_ui_security    = $GLOBALS['Language']->getText('plugin_pluginsadministration_properties', 'edit_web_ui_security');
+        $this->properties_pane_title              = dgettext('tuleap-pluginsadministration', 'Properties');
+        $this->properties_pane_name               = dgettext('tuleap-pluginsadministration', 'Name');
+        $this->properties_pane_version            = dgettext('tuleap-pluginsadministration', 'Version');
+        $this->properties_pane_description        = dgettext('tuleap-pluginsadministration', 'Description');
+        $this->properties_pane_scope              = dgettext('tuleap-pluginsadministration', 'Scope');
+        $this->properties_pane_dependencies       = dgettext('tuleap-pluginsadministration', 'Dependencies');
+        $this->properties_pane_enabled            = dgettext('tuleap-pluginsadministration', 'Enabled?');
+        $this->properties_pane_update_label       = dgettext('tuleap-pluginsadministration', 'Update properties');
+        $this->properties_pane_empty_dependencies = dgettext('tuleap-pluginsadministration', 'No dependencies');
+        $this->properties_pane_readme_title       = dgettext('tuleap-pluginsadministration', 'Readme');
+        $this->properties_edit_web_ui_security    = dgettext('tuleap-pluginsadministration', 'Editing plugin properties through the web UI present a security risk, it is strongly advised to disable it. Check the deployment guide for more information.');
         $this->can_submit                         = ! empty($properties) || ! empty($additional_options) || $this->scope == Plugin::SCOPE_PROJECT;
+    }
+
+    private function getScopeLabel(int $scope): string
+    {
+        if ($scope === Plugin::SCOPE_PROJECT) {
+            return dgettext('tuleap-pluginsadministration', 'Projects');
+        }
+
+        return dgettext('tuleap-pluginsadministration', 'System');
     }
 }

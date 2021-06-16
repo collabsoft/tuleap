@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -53,6 +53,6 @@ class WebhookLogPresenter
 
     private function isStatusOk($status_message)
     {
-        return $status_message{0} === '2';
+        return $status_message[0] === '2';
     }
 }

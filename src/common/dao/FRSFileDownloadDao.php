@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,7 +28,7 @@ class FRSFileDownloadDao extends DataAccessObject
     public function searchByFile($file_id)
     {
         $file_id = $this->da->escapeInt($file_id);
-        $sql = "SELECT * FROM frs_dlstats_filetotal_agg WHERE file_id=$file_id";
+        $sql     = "SELECT * FROM frs_dlstats_filetotal_agg WHERE file_id=$file_id";
 
         return $this->retrieveFirstRow($sql);
     }

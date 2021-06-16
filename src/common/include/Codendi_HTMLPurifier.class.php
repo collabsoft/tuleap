@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
  *
  * Originally written by Manuel VACELET, 2007.
@@ -36,10 +36,20 @@
  * </pre>
  */
 
-require_once __DIR__.'/../constants.php';
+class Codendi_HTMLPurifier
+{
+    public const CONFIG_CONVERT_HTML                  = 0;
+    public const CONFIG_STRIP_HTML                    = 1;
+    public const CONFIG_BASIC                         = 5;
+    public const CONFIG_BASIC_NOBR                    = 6;
+    public const CONFIG_LIGHT                         = 10;
+    public const CONFIG_FULL                          = 15;
+    public const CONFIG_JS_QUOTE                      = 20;
+    public const CONFIG_JS_DQUOTE                     = 25;
+    public const CONFIG_MINIMAL_FORMATTING_NO_NEWLINE = 35;
+    public const CONFIG_DISABLED                      = 100;
 
-class Codendi_HTMLPurifier {
-    private static $allowed_schemes = array(
+    private static $allowed_schemes = [
         'http'   => true,
         'https'  => true,
         'mailto' => true,
@@ -47,18 +57,21 @@ class Codendi_HTMLPurifier {
         'nntp'   => true,
         'news'   => true,
         'tel'    => true
-    );
+    ];
 
     /**
      * Hold an instance of the class
+     *
+     * @var self|null
      */
     private static $Codendi_HTMLPurifier_instance;
-    private $config = array();
+    private $config = [];
 
     /**
      * Constructor
      */
-    protected function __construct() {
+    protected function __construct()
+    {
     }
 
     /**
@@ -66,15 +79,16 @@ class Codendi_HTMLPurifier {
      *
      * @return Codendi_HTMLPurifier
      */
-    public static function instance() {
-        if (!isset(self::$Codendi_HTMLPurifier_instance)) {
-            $c = __CLASS__;
-            self::$Codendi_HTMLPurifier_instance = new $c;
+    public static function instance()
+    {
+        if (! isset(self::$Codendi_HTMLPurifier_instance)) {
+            self::$Codendi_HTMLPurifier_instance = new Codendi_HTMLPurifier();
         }
         return self::$Codendi_HTMLPurifier_instance;
     }
 
-    private function setConfigAttribute(HTMLPurifier_Config $config, $key, $subkey, $value) {
+    private function setConfigAttribute(HTMLPurifier_Config $config, $key, $subkey, $value)
+    {
         if (version_compare($config->version, '4.0.0') >= 0) {
             $config->set("$key.$subkey", $value);
         } else {
@@ -85,11 +99,31 @@ class Codendi_HTMLPurifier {
     /**
      * Base configuration of HTML Purifier for codendi.
      */
-    protected function getCodendiConfig() {
+    protected function getCodendiConfig()
+    {
         $config = HTMLPurifier_Config::createDefault();
         $this->setConfigAttribute($config, 'Core', 'Encoding', 'UTF-8');
-        $this->setConfigAttribute($config, 'Cache', 'SerializerPath', $GLOBALS['codendi_cache_dir']);
+        if (posix_getpwuid(posix_geteuid())['name'] === ForgeConfig::getApplicationUserLogin()) {
+            $this->setConfigAttribute($config, 'Cache', 'SerializerPath', ForgeConfig::getCacheDir());
+        } else {
+            $this->setConfigAttribute($config, 'Cache', 'DefinitionImpl', null);
+        }
         $this->setConfigAttribute($config, 'URI', 'AllowedSchemes', self::$allowed_schemes);
+        return $config;
+    }
+
+    private function getFullConfig(): HTMLPurifier_Config
+    {
+        $config = $this->getCodendiConfig();
+
+        $config->set('HTML.DefinitionID', 'Tuleap custom definition');
+        $config->set('HTML.DefinitionRev', 3);
+        $definition = $config->maybeGetRawHTMLDefinition();
+        if ($definition) {
+            $definition->addElement('tlp-mermaid-diagram', 'Block', 'Optional: pre', 'Common', []);
+            $definition->addElement('tlp-syntax-highlighting', 'Block', 'Optional: pre', 'Common', []);
+        }
+
         return $config;
     }
 
@@ -98,7 +132,8 @@ class Codendi_HTMLPurifier {
      * @see http://htmlpurifier.org/live/configdoc/plain.html#AutoFormat
      *
      */
-    function getLightConfig() {
+    public function getLightConfig()
+    {
         $config = $this->getCodendiConfig();
         $this->setConfigAttribute($config, 'HTML', 'Allowed', $this->getLightConfigMarkups());
         $this->setConfigAttribute($config, 'AutoFormat', 'Linkify', true);
@@ -121,42 +156,52 @@ class Codendi_HTMLPurifier {
      * - 'ul', 'ol', 'li'
      * - 'cite', 'code', 'blockquote', 'strong', 'em', 'pre', 'b', 'i'
      */
-    function getLightConfigMarkups() {
-        $allowed = 'p,br,'.
-                   'a[href|title|class],img[src|alt],'.
-                   'ul,ol,li,'.
+    public function getLightConfigMarkups()
+    {
+        $allowed = 'p,br,' .
+                   'a[href|title|class],img[src|alt],' .
+                   'ul,ol,li,' .
                    'cite,code,blockquote,strong,em,pre,b,i';
         return $allowed;
     }
 
-    /**
-     *
-     */
-    function getStripConfig() {
+    public function getStripConfig()
+    {
         $config = $this->getCodendiConfig();
         $this->setConfigAttribute($config, 'HTML', 'Allowed', '');
+        return $config;
+    }
+
+    private function getMinimalFormattingNoNewlineConfig(): HTMLPurifier_Config
+    {
+        $config = $this->getCodendiConfig();
+        $this->setConfigAttribute($config, 'HTML', 'Allowed', 'a[href],strong,em,b,i');
         return $config;
     }
 
     /**
      * HTML Purifier configuration factory
      */
-    function getHPConfig($level) {
+    public function getHPConfig($level)
+    {
         if (isset($this->config[$level])) {
             return $this->config[$level];
         }
-        switch($level) {
-        case CODENDI_PURIFIER_LIGHT:
-            $this->config[CODENDI_PURIFIER_LIGHT] = $this->getLightConfig();
-            break;
+        switch ($level) {
+            case self::CONFIG_LIGHT:
+                $this->config[self::CONFIG_LIGHT] = $this->getLightConfig();
+                break;
 
-        case CODENDI_PURIFIER_FULL:
-            $this->config[CODENDI_PURIFIER_FULL] = $this->getCodendiConfig();
-            break;
+            case self::CONFIG_FULL:
+                $this->config[self::CONFIG_FULL] = $this->getFullConfig();
+                break;
 
-        case CODENDI_PURIFIER_STRIP_HTML:
-            $this->config[CODENDI_PURIFIER_STRIP_HTML] = $this->getStripConfig();
-            break;
+            case self::CONFIG_STRIP_HTML:
+                $this->config[self::CONFIG_STRIP_HTML] = $this->getStripConfig();
+                break;
+            case self::CONFIG_MINIMAL_FORMATTING_NO_NEWLINE:
+                $this->config[self::CONFIG_MINIMAL_FORMATTING_NO_NEWLINE] = $this->getMinimalFormattingNoNewlineConfig();
+                break;
         }
         return $this->config[$level];
     }
@@ -188,8 +233,8 @@ class Codendi_HTMLPurifier {
         $matching    = '\1://\2\3';
 
         $data = preg_replace("`$url_pattern&quot;`i", "$matching\"", $data);
-        $data = preg_replace("`$url_pattern&#039;`i", "$matching'",  $data);
-        return preg_replace("`$url_pattern&gt;`i",   "$matching>",  $data);
+        $data = preg_replace("`$url_pattern&#039;`i", "$matching'", $data);
+        return preg_replace("`$url_pattern&gt;`i", "$matching>", $data);
     }
 
     /**
@@ -197,74 +242,81 @@ class Codendi_HTMLPurifier {
      *
      * There are 5 level of purification, from the most restrictive to most
      * permissive:
-     * - CODENDI_PURIFIER_CONVERT_HTML (default)
+     * - CONFIG_CONVERT_HTML (default)
      *   Transform HTML markups it in entities.
      *
-     * - CODENDI_PURIFIER_STRIP_HTML
-     *   Removes all HTML markups. Note: as we relly on HTML Purifier to
+     * - CONFIG_STRIP_HTML
+     *   Removes all HTML markups. Note: as we rely on HTML Purifier to
      *   perform this operation this option is not considered as secure as
      *   CONVERT_HTML. If you are looking for the most secure option please
      *   consider CONVERT_HTML.
      *
-     * - CODENDI_PURIFIER_BASIC (need $groupId to be set for automagic links)
+     * - CONFIG_BASIC (need $groupId to be set for automagic links)
      *   Removes all user submitted HTML markups but:
      *    - transform typed URLs into clickable URLs.
-     *    - transform autmagic links.
-     *    - transform carrige return into HTML br markup.
+     *    - transform automagic links.
+     *    - transform carriage return into HTML br markup.
      *
-     * - CODENDI_PURIFIER_LIGHT
+     * - CONFIG_LIGHT
      *   First set of HTML formatting (@see getLightConfig() for allowed
-     *   markups) plus all what is allowed by CODENDI_PURIFIER_BASIC.
+     *   markups) plus all what is allowed by CONFIG_BASIC.
      *
-     * - CODENDI_PURIFIER_FULL
+     * - CONFIG_FULL
      *   Clean-up plain HTML using HTML Purifier rules (remove forms,
-     *   javascript, ...). Warning: there is no longer codendi facilities
-     *   (neither automagic links nor carrige return to br transformation).
+     *   javascript, ...). Warning: there is no longer Tuleap facilities
+     *   (neither automagic links nor carriage return to br transformation).
      *
-     * - CODENDI_PURIFIER_DISABLED
+     * - CONFIG_DISABLED
      *   No filter at all.
+     *
+     *
+     * @psalm-taint-specialize
+     * @psalm-taint-escape html
      */
-    function purify($html, $level=0, $groupId=0) {
-        $clean = '';
-        switch($level) {
-        case CODENDI_PURIFIER_DISABLED:
-            $clean = $html;
-            break;
-
-        case CODENDI_PURIFIER_LIGHT:
-            if (empty($html)) {
+    public function purify($html, $level = 0, $groupId = 0)
+    {
+        switch ($level) {
+            case self::CONFIG_DISABLED:
                 $clean = $html;
                 break;
-            }
-            $this->insertReferences($html, $groupId);
-        case CODENDI_PURIFIER_STRIP_HTML:
-        case CODENDI_PURIFIER_FULL:
-            $hp = HTMLPurifier::getInstance();
 
-            $config = $this->getHPConfig($level);
-            $clean = $hp->purify($html, $config);
-            break;
+            case self::CONFIG_LIGHT:
+                if (empty($html)) {
+                    $clean = $html;
+                    break;
+                }
+                $this->insertReferences($html, $groupId);
+                // Actual purification still needs to be done
+            case self::CONFIG_STRIP_HTML:
+            case self::CONFIG_FULL:
+            case self::CONFIG_MINIMAL_FORMATTING_NO_NEWLINE:
+                $hp = HTMLPurifier::getInstance();
 
-        case CODENDI_PURIFIER_BASIC:
-            $data  = $this->linkifyMails(htmlentities($html, ENT_QUOTES, 'UTF-8'));
-            $data  = $this->dealWithSpecialCasesWithFramingURLCharacters($data);
-            $clean = $this->purify(nl2br($data), CODENDI_PURIFIER_LIGHT, $groupId);
-            break;
-        case CODENDI_PURIFIER_BASIC_NOBR:
-            $data  = $this->linkifyMails(htmlentities($html, ENT_QUOTES, 'UTF-8'));
-            $data  = $this->dealWithSpecialCasesWithFramingURLCharacters($data);
-            $clean = $this->purify($data, CODENDI_PURIFIER_LIGHT, $groupId);
-            break;
-        case CODENDI_PURIFIER_JS_QUOTE:
-            $clean = $this->js_string_purifier($html, JSON_HEX_APOS);
-            break;
-        case CODENDI_PURIFIER_JS_DQUOTE:
-            $clean = $this->js_string_purifier($html, JSON_HEX_QUOT);
-            break;
-        case CODENDI_PURIFIER_CONVERT_HTML:
-        default:
-            $clean = htmlentities($html, ENT_QUOTES, 'UTF-8');
-            break;
+                $config = $this->getHPConfig($level);
+                $clean  = $hp->purify($html, $config);
+                break;
+
+            case self::CONFIG_BASIC:
+                $data  = $this->linkifyMails(htmlentities($html, ENT_QUOTES, 'UTF-8'));
+                $data  = $this->dealWithSpecialCasesWithFramingURLCharacters($data);
+                $clean = $this->purify(nl2br($data), CODENDI_PURIFIER_LIGHT, $groupId);
+                break;
+            case self::CONFIG_BASIC_NOBR:
+                $data  = $this->linkifyMails(htmlentities($html, ENT_QUOTES, 'UTF-8'));
+                $data  = $this->dealWithSpecialCasesWithFramingURLCharacters($data);
+                $clean = $this->purify($data, CODENDI_PURIFIER_LIGHT, $groupId);
+                break;
+
+            case self::CONFIG_JS_QUOTE:
+                $clean = $this->js_string_purifier($html, JSON_HEX_APOS);
+                break;
+            case self::CONFIG_JS_DQUOTE:
+                $clean = $this->js_string_purifier($html, JSON_HEX_QUOT);
+                break;
+            case self::CONFIG_CONVERT_HTML:
+            default:
+                $clean = htmlentities($html, ENT_QUOTES, 'UTF-8');
+                break;
         }
         return $clean;
     }
@@ -283,22 +335,28 @@ class Codendi_HTMLPurifier {
      * Purify HTML and insert references
      *
      * @param String  $html Content to filter
-     * @param Integer $group_id
+     * @param int $group_id
      *
      * @return String
      */
-    public function purifyHTMLWithReferences($html, $group_id) {
+    public function purifyHTMLWithReferences($html, $group_id)
+    {
         $this->insertReferences($html, $group_id);
 
         return $this->purify($html, CODENDI_PURIFIER_FULL);
     }
 
-    public function purifyTextWithReferences($html, $group_id) {
+    /**
+     * @return string
+     */
+    public function purifyTextWithReferences($html, $group_id)
+    {
         return $this->purify($html, CODENDI_PURIFIER_BASIC, $group_id);
     }
 
-    function purifyMap($array, $level=0, $groupId=0) {
-        return array_map(array(&$this, "purify"), $array, array($level), array($groupId));
+    public function purifyMap($array, $level = 0, $groupId = 0)
+    {
+        return array_map([&$this, "purify"], $array, [$level], [$groupId]);
     }
 
     /**
@@ -306,11 +364,13 @@ class Codendi_HTMLPurifier {
      *
      * @return ReferenceManager
      */
-    public function getReferenceManager() {
+    public function getReferenceManager()
+    {
         return ReferenceManager::instance();
     }
 
-    private function insertReferences(&$html, $group_id = 0) {
+    private function insertReferences(&$html, $group_id = 0)
+    {
         if (! $group_id) {
             return;
         }

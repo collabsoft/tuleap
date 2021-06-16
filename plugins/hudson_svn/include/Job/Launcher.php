@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,18 +21,19 @@
 namespace Tuleap\HudsonSvn\Job;
 
 use Tuleap\HudsonSvn\BuildParams;
-use Tuleap\Svn\Repository\Repository;
-use Tuleap\Svn\Commit\CommitInfo;
+use Tuleap\SVN\Repository\Repository;
+use Tuleap\SVN\Commit\CommitInfo;
 use Jenkins_Client;
 use Jenkins_ClientUnableToLaunchBuildException;
-use Logger;
+use Psr\Log\LoggerInterface;
 
-class Launcher {
+class Launcher
+{
 
-    const ROOT_DIRECTORY = '/';
+    public const ROOT_DIRECTORY = '/';
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
 
@@ -47,16 +48,18 @@ class Launcher {
     /** @var BuildParams  */
     private $build_params;
 
-    private $launched_jobs = array();
+    private $launched_jobs = [];
 
-    public function __construct(Factory $factory, Logger $logger, Jenkins_Client $ci_client, BuildParams $build_params) {
+    public function __construct(Factory $factory, LoggerInterface $logger, Jenkins_Client $ci_client, BuildParams $build_params)
+    {
         $this->factory      = $factory;
         $this->logger       = $logger;
         $this->ci_client    = $ci_client;
         $this->build_params = $build_params;
     }
 
-    public function launch(Repository $repository, CommitInfo $commit_info) {
+    public function launch(Repository $repository, CommitInfo $commit_info)
+    {
         if (! $repository->getProject()->usesService('hudson')) {
             return;
         }
@@ -75,7 +78,7 @@ class Launcher {
                     continue;
                 }
 
-                $this->logger->info("Launching job #$job_id triggered by repository ".$repository->getFullName()." with the url " .$job->getUrl());
+                $this->logger->info("Launching job #$job_id triggered by repository " . $repository->getFullName() . " with the url " . $job->getUrl());
                 try {
                     $this->ci_client->setToken($job->getToken());
                     $this->ci_client->launchJobBuild(
@@ -84,8 +87,8 @@ class Launcher {
                     );
 
                     $this->launched_jobs[] = $job->getUrl();
-                } catch(Jenkins_ClientUnableToLaunchBuildException $exception) {
-                    $this->logger->error("Launching job #$job_id triggered by repository ".$repository->getFullName()." with the url " .$job->getUrl()." returns an error " .$exception->getMessage());
+                } catch (Jenkins_ClientUnableToLaunchBuildException $exception) {
+                    $this->logger->error("Launching job #$job_id triggered by repository " . $repository->getFullName() . " with the url " . $job->getUrl() . " returns an error " . $exception->getMessage());
                 }
 
                 continue;
@@ -93,11 +96,13 @@ class Launcher {
         }
     }
 
-    private function isJobAlreadyLaunched(Job $job) {
+    private function isJobAlreadyLaunched(Job $job)
+    {
         return in_array($job->getUrl(), $this->launched_jobs);
     }
 
-    private function doesCommitTriggerjob(CommitInfo $commit_info, Job $job) {
+    private function doesCommitTriggerjob(CommitInfo $commit_info, Job $job)
+    {
         $job_paths                       = explode(PHP_EOL, $job->getPath());
         $well_formed_changed_directories = $this->getWellFormedChangedDirectories($commit_info);
 
@@ -114,7 +119,8 @@ class Launcher {
         return false;
     }
 
-    private function getRegExpFromPath($path) {
+    private function getRegExpFromPath($path)
+    {
         $path = preg_quote($path);
         $path = str_replace('\*', '[^/]+', $path);
         $path = '#^' . $path . '#';
@@ -125,8 +131,9 @@ class Launcher {
     /**
      * @return array
      */
-    private function getWellFormedChangedDirectories(CommitInfo $commit_info) {
-        $well_formed_directories = array();
+    private function getWellFormedChangedDirectories(CommitInfo $commit_info)
+    {
+        $well_formed_directories = [];
         foreach ($commit_info->getChangedDirectories() as $changed_directory) {
             if ($changed_directory !== self::ROOT_DIRECTORY) {
                 $changed_directory = self::ROOT_DIRECTORY . $changed_directory;
@@ -138,8 +145,8 @@ class Launcher {
         return $well_formed_directories;
     }
 
-    private function getJobsForRepository(Repository $repository) {
+    private function getJobsForRepository(Repository $repository)
+    {
         return $this->factory->getJobsByRepository($repository);
     }
-
 }

@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2008. All Rights Reserved.
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2008
  *
@@ -45,26 +45,26 @@ class LDAP_ProjectGroupDao extends DataAccessObject
     /**
      * Search one user group by id
      *
-     * @param Integer $groupId Project id
+     * @param int $groupId Project id
      *
      * @return DataAccessResult
      */
     public function searchByGroupId($groupId)
     {
-        $sql = 'SELECT * FROM plugin_ldap_project_group'.
-            ' WHERE group_id = '.db_ei($groupId);
+        $sql = 'SELECT * FROM plugin_ldap_project_group' .
+            ' WHERE group_id = ' . db_ei($groupId);
         $dar = $this->retrieve($sql);
-        if ($dar && !$dar->isError() && $dar->rowCount() == 1) {
+        if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
             return $dar->getRow();
         } else {
             return false;
         }
     }
-    
+
     /**
      * Associate one Codendi user group to an LDAP group
      *
-     * @return Boolean
+     * @return bool
      */
     public function linkGroupLdap($project_id, $ldap_dn, $bind, $synchronization)
     {
@@ -78,42 +78,42 @@ class LDAP_ProjectGroupDao extends DataAccessObject
 
         return $this->update($sql);
     }
-    
+
     /**
      * Remove link between project members and a LDAP group
      *
-     * @param Integer $groupId Project id
-     * 
-     * @return Boolean
+     * @param int $groupId Project id
+     *
+     * @return bool
      */
     public function unlinkGroupLdap($groupId)
     {
-        $sql = 'DELETE FROM plugin_ldap_project_group'.
-            ' WHERE group_id = '.db_ei($groupId);
+        $sql = 'DELETE FROM plugin_ldap_project_group' .
+            ' WHERE group_id = ' . db_ei($groupId);
         return $this->update($sql);
     }
-    
+
     /**
      * Object oriented wrapper for account_add_user_to_group
      *
-     * @param Integer $groupId Project id
+     * @param int $groupId Project id
      * @param String  $name    User unix name
-     * 
-     * @return Boolean
+     *
+     * @return bool
      */
     public function addUserToGroup($groupId, $name)
     {
-        include_once 'account.php';
+        include_once __DIR__ . '/../../../src/www/include/account.php';
         return account_add_user_to_group($groupId, $name);
     }
 
     /**
      * Object oriented wrapper for account_remove_user_from_group
      *
-     * @param Integer $project_id Project id
-     * @param Integer $user_id    User id
-     * 
-     * @return Boolean
+     * @param int $project_id Project id
+     * @param int $user_id User id
+     *
+     * @return bool
      */
     public function removeUserFromGroup($project_id, $user_id)
     {

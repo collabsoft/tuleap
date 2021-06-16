@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,9 +22,8 @@
 namespace Tuleap\SVN\REST\v1;
 
 use Project;
-use Tuleap\Svn\Repository\RepositoryManager;
-use Tuleap\Svn\Dao;
-use Tuleap\Svn\Repository\RepositoryPaginatedCollection;
+use Tuleap\SVN\Repository\RepositoryManager;
+use Tuleap\SVN\Repository\RepositoryPaginatedCollection;
 
 class ProjectResource
 {
@@ -95,11 +94,10 @@ class ProjectResource
      */
     private function getRepresentations(array $svn_repositories)
     {
-        $representations = array();
+        $representations = [];
 
         foreach ($svn_repositories as $repository) {
-            $representation = new RepositoryRepresentation();
-            $representation->build($repository);
+            $representation = RepositoryRepresentation::build($repository);
 
             $representations[] = $representation;
         }

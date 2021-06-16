@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2013 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,26 +19,28 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Docman\View\DocmanViewURLBuilder;
+
 class Docman_View_Docman extends Docman_View_ProjectHeader
 {
     protected function getToolbar(array $params)
     {
-        $tools = array();
+        $tools = [];
 
         $this->addDocmanTool($params, $tools);
         $this->addNewDocumentEntry($params, $tools);
 
         if ($this->_controller->userCanAdmin()) {
-            $tools[] = array(
-                'title' => $GLOBALS['Language']->getText('plugin_docman', 'toolbar_admin'),
-                'url'   => $params['default_url'] .'&amp;action=admin'
-            );
+            $tools[] = [
+                'title' => dgettext('tuleap-docman', 'Admin'),
+                'url'   => $params['default_url'] . '&amp;action=admin'
+            ];
         }
 
-        $tools[] = array(
+        $tools[] = [
             'title' => $GLOBALS['Language']->getText('global', 'help'),
-            'url'   => "javascript:help_window('/doc/".$this->_controller->getUser()->getShortLocale()."/user-guide/doc.html')"
-        );
+            'url'   => "javascript:help_window('/doc/" . $this->_controller->getUser()->getShortLocale() . "/user-guide/documents-and-files/doc.html')"
+        ];
 
         return $tools;
     }
@@ -53,14 +55,14 @@ class Docman_View_Docman extends Docman_View_ProjectHeader
         $user                    = $this->_controller->getUser();
         $has_one_folder_writable = $permission_manager->oneFolderIsWritable($user);
         if ($has_one_folder_writable) {
-            $url_params = array('action' => 'newGlobalDocument');
+            $url_params = ['action' => 'newGlobalDocument'];
             if (isset($params['item'])) {
                 $url_params['id'] = $params['item']->accept(new Docman_View_ToolbarNewDocumentVisitor());
             }
-            $tools[] = array(
-                'title' => $GLOBALS['Language']->getText('plugin_docman', 'new_document'),
-                'url'   => $this->buildUrl($params['default_url'], $url_params)
-            );
+            $tools[] = [
+                'title' => dgettext('tuleap-docman', 'New document'),
+                'url'   => DocmanViewURLBuilder::buildUrl($params['default_url'], $url_params)
+            ];
         }
     }
 }

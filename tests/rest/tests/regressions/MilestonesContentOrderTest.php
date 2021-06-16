@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -17,8 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
-
-require_once __DIR__.'/../../lib/autoload.php';
 
 /**
  * PUT /milestones/123/content doesn't change the order of elements
@@ -39,13 +37,13 @@ class Regressions_MilestonesContentOrderTest extends RestBase
         $epics    = $this->getArtifactIdsIndexedByTitle('pbi-6348', 'epic');
         $products = $this->getArtifactIdsIndexedByTitle('pbi-6348', 'product');
 
-        $put = json_encode(array($epics['Epic 1'], $epics['Epic 2'], $epics['Epic 3'], $epics['Epic 4']));
-        $this->getResponse($this->client->put('milestones/'.$products['Widget 1'].'/content', null, $put));
-        $this->assertEquals($this->getMilestoneContentIds($products['Widget 1']), array($epics['Epic 1'], $epics['Epic 2'], $epics['Epic 3'], $epics['Epic 4']));
+        $put = json_encode([$epics['Epic 1'], $epics['Epic 2'], $epics['Epic 3'], $epics['Epic 4']]);
+        $this->getResponse($this->client->put('milestones/' . $products['Widget 1'] . '/content', null, $put));
+        $this->assertEquals($this->getMilestoneContentIds($products['Widget 1']), [$epics['Epic 1'], $epics['Epic 2'], $epics['Epic 3'], $epics['Epic 4']]);
 
-        $put = json_encode(array($epics['Epic 3'], $epics['Epic 1'], $epics['Epic 2'], $epics['Epic 4']));
-        $this->getResponse($this->client->put('milestones/'.$products['Widget 1'].'/content', null, $put));
-        $this->assertEquals($this->getMilestoneContentIds($products['Widget 1']), array($epics['Epic 3'], $epics['Epic 1'], $epics['Epic 2'], $epics['Epic 4']));
+        $put = json_encode([$epics['Epic 3'], $epics['Epic 1'], $epics['Epic 2'], $epics['Epic 4']]);
+        $this->getResponse($this->client->put('milestones/' . $products['Widget 1'] . '/content', null, $put));
+        $this->assertEquals($this->getMilestoneContentIds($products['Widget 1']), [$epics['Epic 3'], $epics['Epic 1'], $epics['Epic 2'], $epics['Epic 4']]);
     }
 
     private function getMilestoneContentIds($id)
@@ -55,7 +53,7 @@ class Regressions_MilestonesContentOrderTest extends RestBase
 
     private function getIds($route)
     {
-        $ids = array();
+        $ids = [];
         foreach ($this->getResponse($this->client->get($route))->json() as $item) {
             $ids[] = $item['id'];
         }

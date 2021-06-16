@@ -10,6 +10,22 @@
         {{/ is_active }}
     </nav>
 
+    {{# is_suspended_status }}
+        <section class="tlp-alert-warning site-admin-project-is-supended-warning">
+            {{# gettext }}This project is suspended. Only site administrators may access it.
+                However, the following services are not blocked and may still be used:{{/ gettext }}
+            <ul>
+                <li>{{# gettext }}Mailing lists (Lists Service){{/ gettext }}</li>
+                <li>{{# gettext }}Project web pages (Home Page Service){{/ gettext }}</li>
+                <li>{{# gettext }}CVS{{/ gettext }}</li>
+                <li>{{# gettext }}SOAP API{{/ gettext }}</li>
+                {{# plugin_suspended_and_not_blocked_warnings}}
+                    <li>{{ . }}</li>
+                {{/ plugin_suspended_and_not_blocked_warnings }}
+            </ul>
+        </section>
+    {{/ is_suspended_status }}
+
     <section class="tlp-framed-horizontally" id="siteadmin-project-information">
         <div id="siteadmin-project-information-details">
             <section class="tlp-pane">
@@ -18,6 +34,7 @@
                         {{> csrf_token_input }}
                     {{/ csrf_token }}
                     <input type="hidden" name="group_id" value="{{ id }}">
+                    <input type="hidden" name="action" value="update-project">
                     <div class="tlp-pane-header">
                         <h1 class="tlp-pane-title">
                             <i class="fa fa-list tlp-pane-title-icon"></i> {{ project_details_label }}
@@ -35,6 +52,10 @@
                                            id="public-name"
                                            name="new_name"
                                            value="{{ unix_name }}"
+                                           {{^ is_unix_name_editable }}
+                                           title="{{# gettext }} Shortname edition is not allowed : {{/ gettext }}{{ not_editable_reason }}"
+                                           disabled
+                                           {{/ is_unix_name_editable }}
                                            size="30">
                                 </div>
                                 <div class="tlp-form-element">
@@ -61,6 +82,10 @@
                                                 name="form_status"
                                                 {{# can_change_status }}disabled{{/ can_change_status }}
                                         >
+                                            {{# is_status_invalid }}
+                                                <option value="" selected>&nbsp</option>
+                                            {{/ is_status_invalid}}
+
                                             {{# status }}
                                                 <option value="{{ key }}" {{# is_current }}selected{{/ is_current }}>
                                                     {{ status }}
@@ -74,9 +99,12 @@
                                         {{ built_from_label }}
                                     </label>
                                     <p>
-                                        {{# built_from }}
+                                        {{# built_from_project }}
                                             <a href="{{ href }}">{{ name }}</a>
-                                        {{/ built_from }}
+                                        {{/ built_from_project }}
+                                        {{# built_from_xml_template }}
+                                            {{ name }}
+                                        {{/ built_from_xml_template }}
                                     </p>
                                 </div>
                             </div>
@@ -139,19 +167,20 @@
                         <section class="tlp-pane-section" id="siteadmin-project-information-additional-info-access">
                             <p id="siteadmin-project-information-additional-info-access-level">
                                 <i id="siteadmin-project-information-additional-info-access-level-icon"
-                                   class="fa
-                                    {{# is_wide_open }}fa-unlock{{/ is_wide_open }}
-                                    {{# is_open }}fa-unlock-alt{{/ is_open }}
-                                    {{# is_closed }}fa-lock{{/ is_closed }}
+                                   class="fas
+                                       {{# is_wide_open }}fa-tlp-unlock-plus-r{{/ is_wide_open }}
+                                       {{# is_open }}fa-lock-open{{/ is_open }}
+                                       {{# is_closed }}fa-lock{{/ is_closed }}
+                                       {{# is_closed_incl_restricted }}fa-tlp-lock-plus-r{{/ is_closed_incl_restricted }}
                                 "></i> {{ access }}
                             </p>
-                            {{# is_public_incl_restricted }}
+                            {{# is_incl_restricted }}
                                 <span class="tlp-badge-warning"
                                       id="siteadmin-project-information-additional-info-access-level-badge"
                                 >
                                     {{ incl_restricted_label }}
                                 </span>
-                            {{/ is_public_incl_restricted }}
+                            {{/ is_incl_restricted }}
                             <a href="/project/admin/editgroupinfo.php?group_id={{ id }}"
                                class="tlp-button-primary tlp-button-outline tlp-button-wide"
                                id="siteadmin-project-information-additional-info-access-button"
@@ -165,14 +194,14 @@
                 <section class="tlp-pane">
                     <div class="tlp-pane-container">
                         <div class="tlp-pane-header">
-                            <h1 class="tlp-pane-title"><i class="tlp-pane-title-icon fa fa-envelope-o"></i> {{ instructions_label }}</h1>
+                            <h1 class="tlp-pane-title"><i class="tlp-pane-title-icon far fa-envelope"></i> {{ instructions_label }}</h1>
                         </div>
                         <section class="tlp-pane-section">
                             <p>{{ instructions_desc }}</p>
                             <a href="/admin/newprojectmail.php?group_id={{ id }}"
                                class="tlp-button-primary tlp-button-outline tlp-button-wide"
                             >
-                                <i class="tlp-button-icon fa fa-paper-plane-o"></i> {{ send_email_label }}
+                                <i class="tlp-button-icon far fa-paper-plane"></i> {{ send_email_label }}
                             </a>
                         </section>
                     </div>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -15,20 +15,20 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Tuleap; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-
-require_once dirname(__FILE__).'/../lib/autoload.php';
 
 use Test\Rest\TuleapConfig;
 
 /**
  * @group UserGroupTests
  */
-class UsersTest extends RestBase {
+final class UsersTest extends RestBase // phpcs:ignore
+{
 
-    /** @var TuleapConfig */
+    /**
+ * @var TuleapConfig
+*/
     private $tuleap_config;
 
     public function __construct()
@@ -38,48 +38,170 @@ class UsersTest extends RestBase {
         $this->tuleap_config->setForgeToAnonymous();
     }
 
-    public function testGetIdAsAnonymousHasMinimalInformation() {
-        $response = $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_1_ID)->send();
+    public function testGetIdAsAnonymousHasMinimalInformation()
+    {
+        $response = $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME])->send();
         $this->assertEquals($response->getStatusCode(), 200);
 
         $json = $response->json();
-        $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_ID, $json['id']);
-        $this->assertEquals('users/'.REST_TestDataBuilder::TEST_USER_1_ID, $json['uri']);
+        $this->assertEquals($this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME], $json['id']);
+        $this->assertEquals('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME], $json['uri']);
         $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_REALNAME, $json['real_name']);
         $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_NAME, $json['username']);
         $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_LDAPID, $json['ldap_id']);
-        $this->assertEquals('https://localhost/themes/common/images/avatar_default.png', $json['avatar_url']);
+        $this->assertEquals('https://localhost/users/rest_api_tester_1/avatar.png', $json['avatar_url']);
         $this->assertFalse(isset($json['email']));
         $this->assertFalse(isset($json['status']));
     }
 
-    public function testGETIdAsRegularUser() {
-        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_1_ID));
-        $this->assertEquals($response->getStatusCode(), 200);
+    public function testGETIdAsRegularUser(): void
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME]));
+
+        $this->assertGETId($response);
+    }
+
+    public function testGETIdWithReadOnlyAdmin()
+    {
+        $response = $this->getResponse(
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME]),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertGETId($response);
+    }
+
+    public function testGETIdWithSelfKeyword()
+    {
+        $response = $this->getResponse(
+            $this->client->get('users/self'),
+            REST_TestDataBuilder::TEST_USER_1_NAME
+        );
+
+        $this->assertGETId($response);
+    }
+
+    private function assertGETId(\Guzzle\Http\Message\Response $response): void
+    {
+        $this->assertEquals(200, $response->getStatusCode());
 
         $json = $response->json();
-        $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_ID, $json['id']);
-        $this->assertEquals('users/'.REST_TestDataBuilder::TEST_USER_1_ID, $json['uri']);
+
+        $this->assertEquals($this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME], $json['id']);
+        $this->assertEquals('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME], $json['uri']);
         $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_EMAIL, $json['email']);
         $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_REALNAME, $json['real_name']);
         $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_NAME, $json['username']);
         $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_LDAPID, $json['ldap_id']);
-        $this->assertEquals('https://localhost/themes/common/images/avatar_default.png', $json['avatar_url']);
+        $this->assertEquals('https://localhost/users/rest_api_tester_1/avatar.png', $json['avatar_url']);
     }
 
-    public function testGETIdDoesNotWorkIfUserDoesNotExist() {
-        $exception_thrown = false;
-        try {
-            $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get('users/1'));
-        } catch(Guzzle\Http\Exception\ClientErrorResponseException $e) {
-            $this->assertEquals(404, $e->getResponse()->getStatusCode());
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
+    public function testGETIdDoesNotWorkIfUserDoesNotExist()
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get('users/1'));
+        $this->assertEquals(404, $response->getStatusCode());
     }
 
-    public function testGETMembershipBySelfReturnsUserGroups() {
-        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_2_NAME, $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_2_ID.'/membership'));
+    public function testGETMembershipBySelfReturnsUserGroups(): void
+    {
+        $this->assertGETMembershipBySelfReturnsUserGroupsForAnID($this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME]);
+    }
+
+    public function testGETMembershipBySelfReturnsUserGroupsWithSelfID(): void
+    {
+        $this->assertGETMembershipBySelfReturnsUserGroupsForAnID('self');
+    }
+
+    private function assertGETMembershipBySelfReturnsUserGroupsForAnID(string $id): void
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_2_NAME, $this->client->get('users/' . urlencode($id) . '/membership'));
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $json = $response->json();
+        $this->assertCount(3, $json);
+        $this->assertContains('site_active', $json);
+        $this->assertContains('private-member_project_members', $json);
+        $this->assertContains('ug_102', $json);
+    }
+
+    public function testGETMembershipWithProjectScopeDoesNotReturnSiteActive(): void
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_2_NAME, $this->client->get('users/self/membership?scope=project'));
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $json = $response->json();
+        $this->assertCount(2, $json);
+        $this->assertNotContains('site_active', $json);
+        $this->assertContains('private-member_project_members', $json);
+        $this->assertContains('ug_102', $json);
+    }
+
+    public function testGETMembershipWithProjectScopeAndIdFormatReturnsGroupsWithId(): void
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_2_NAME, $this->client->get('users/self/membership?scope=project&format=id'));
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $json = $response->json();
+        $this->assertCount(2, $json);
+        $this->assertContains($this->project_private_member_id . "_3", $json);
+        $this->assertContains('102', $json);
+    }
+
+    public function testGetMembershipWithProjectScopeAndFullFormatReturnsUserGroups(): void
+    {
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_2_NAME,
+            $this->client->get('users/self/membership?scope=project&format=full')
+        );
+        $json     = $response->json();
+
+        $expected_ugroup_id = $this->project_private_member_id . "_3";
+        $this->assertEquals($expected_ugroup_id, $json[0]['id']);
+        $this->assertEquals('user_groups/' . $expected_ugroup_id, $json[0]['uri']);
+        $this->assertEquals('Project members', $json[0]['label']);
+        $this->assertEquals('user_groups/' . $expected_ugroup_id . '/users', $json[0]['users_uri']);
+        $this->assertEquals(TestDataBuilder::DYNAMIC_UGROUP_PROJECT_MEMBERS_KEY, $json[0]['key']);
+        $this->assertEquals('project_members', $json[0]['short_name']);
+        $this->assertProject101($json[0]['project']);
+
+        $this->assertEquals(TestDataBuilder::STATIC_UGROUP_2_ID, $json[1]['id']);
+        $this->assertEquals('user_groups/' . TestDataBuilder::STATIC_UGROUP_2_ID, $json[1]['uri']);
+        $this->assertEquals(TestDataBuilder::STATIC_UGROUP_2_LABEL, $json[1]['label']);
+        $this->assertEquals('user_groups/' . TestDataBuilder::STATIC_UGROUP_2_ID . '/users', $json[1]['users_uri']);
+        $this->assertEquals(TestDataBuilder::STATIC_UGROUP_2_LABEL, $json[1]['key']);
+        $this->assertEquals(TestDataBuilder::STATIC_UGROUP_2_LABEL, $json[1]['short_name']);
+        $this->assertProject101($json[1]['project']);
+    }
+
+    private function assertProject101(array $project): void
+    {
+        $this->assertEquals($project['id'], '101');
+        $this->assertEquals($project['uri'], 'projects/101');
+        $this->assertEquals($project['label'], TestDataBuilder::PROJECT_PRIVATE_MEMBER_LABEL);
+        $this->assertEquals($project['shortname'], TestDataBuilder::PROJECT_PRIVATE_MEMBER_SHORTNAME);
+        $this->assertEquals($project['status'], 'active');
+        $this->assertEquals($project['access'], 'private');
+        $this->assertEquals($project['is_template'], false);
+    }
+
+    public function testGETMembershipWithIdFormatWithoutProjectScopeShouldReturn400(): void
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_2_NAME, $this->client->get('users/self/membership?format=id'));
+        $this->assertEquals(400, $response->getStatusCode());
+    }
+
+    public function testUserCannotSeeGroupOfAnotherUser()
+    {
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/membership')
+        );
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testUserCanSeeGroupOfAnotherUserIfSheHasDelegatedPermissions()
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_3_NAME, $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/membership'));
         $this->assertEquals($response->getStatusCode(), 200);
 
         $json = $response->json();
@@ -89,252 +211,493 @@ class UsersTest extends RestBase {
         $this->assertContains('ug_102', $json);
     }
 
-    public function testUserCannotSeeGroupOfAnotherUser() {
-        $exception_thrown = false;
-        try {
-            $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_2_ID.'/membership'));
-         } catch(Guzzle\Http\Exception\ClientErrorResponseException $e) {
-            $this->assertEquals(403, $e->getResponse()->getStatusCode());
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
-    }
-
-    public function testUserCanSeeGroupOfAnotherUserIfSheHasDelegatedPermissions() {
-        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_3_NAME, $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_2_ID.'/membership'));
-        $this->assertEquals($response->getStatusCode(), 200);
-
-        $json = $response->json();
-        $this->assertCount(3, $json);
-        $this->assertContains('site_active', $json);
-        $this->assertContains('private-member_project_members', $json);
-        $this->assertContains('ug_102', $json);
-    }
-
-    public function testUserCanUpdateAnotherUserIfSheHasDelegatedPermissions() {
-        $value = json_encode(array(
-            'values' => array(
+    public function testUserCanUpdateAnotherUserIfSheHasDelegatedPermissions(): void
+    {
+        $value = json_encode(
+            [
+            'values' => [
                     'status' => "R",
-            )
-        ));
-        $response = $this->getResponseByName(REST_TestDataBuilder::ADMIN_USER_NAME, $this->client->patch('users/'.REST_TestDataBuilder::TEST_USER_2_ID, null, $value));
+            ]
+            ]
+        );
+
+        $this->tuleap_config->setForgeToRestricted();
+
+        $response = $this->getResponseByName(REST_TestDataBuilder::ADMIN_USER_NAME, $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME], null, $value));
         $this->assertEquals($response->getStatusCode(), 200);
 
-        $response = $this->getResponseByName(REST_TestDataBuilder::ADMIN_USER_NAME, $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_2_ID));
+        $response = $this->getResponseByName(REST_TestDataBuilder::ADMIN_USER_NAME, $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME]));
         $this->assertEquals($response->getStatusCode(), 200);
         $json = $response->json();
-        $this->assertEquals(REST_TestDataBuilder::TEST_USER_2_ID, $json['id']);
-        $this->assertEquals('users/'.REST_TestDataBuilder::TEST_USER_2_ID, $json['uri']);
+        $this->assertEquals($this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME], $json['id']);
+        $this->assertEquals('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME], $json['uri']);
         $this->assertEquals("R", $json['status']);
 
-        $value = json_encode(array(
-            'values' => array(
+        $value    = json_encode(
+            [
+            'values' => [
                     'status' => "A",
-            )
-        ));
-        $response = $this->getResponseByName(REST_TestDataBuilder::ADMIN_USER_NAME, $this->client->patch('users/'.REST_TestDataBuilder::TEST_USER_2_ID, null, $value));
+            ]
+            ]
+        );
+        $response = $this->getResponseByName(REST_TestDataBuilder::ADMIN_USER_NAME, $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME], null, $value));
         $this->assertEquals($response->getStatusCode(), 200);
     }
 
-    public function testSiteAdminCanSeeGroupOfAnyUser() {
-        $response = $this->getResponseByName(REST_TestDataBuilder::ADMIN_USER_NAME, $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_2_ID.'/membership'));
+    public function testUserCanNotUpdateToRestrictedIfPlatformDoesntAllowsRestricted(): void
+    {
+        $value = json_encode(
+            [
+                'values' => [
+                    'status' => "R",
+                ]
+            ]
+        );
+        $this->tuleap_config->setForgeToRegular();
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->patch(
+                'users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME],
+                null,
+                $value
+            )
+        );
+        $this->assertEquals($response->getStatusCode(), 400);
+    }
+
+    public function testUserCanNotUpdateIfTheUpdatedUserIsSuperUser(): void
+    {
+        $value = json_encode(
+            [
+                'values' => [
+                    'status' => "R",
+                ]
+            ]
+        );
+
+        $this->tuleap_config->setForgeToRestricted();
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->patch(
+                'users/' . $this->user_ids[REST_TestDataBuilder::ADMIN_USER_NAME],
+                null,
+                $value
+            )
+        );
+        $this->assertEquals($response->getStatusCode(), 400);
+    }
+
+    public function testPATCHUserWithReadOnlySiteAdmin(): void
+    {
+        $value    = json_encode(
+            [
+                'values' => [
+                    'status' => "R",
+                ]
+            ]
+        );
+        $response = $this->getResponse(
+            $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME], null, $value),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testSiteAdminCanSeeGroupOfAnyUser(): void
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::ADMIN_USER_NAME, $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/membership'));
         $this->assertEquals($response->getStatusCode(), 200);
 
+        $this->assertGETMembershipAsAdmin($response);
+    }
+
+    private function assertGETMembershipAsAdmin(\Guzzle\Http\Message\Response $response): void
+    {
         $json = $response->json();
         $this->assertCount(3, $json);
     }
 
-    public function testInRestrictedForgeThatActiveProjectMemberIsMemberOfStaticUgroup() {
+    public function testReadOnlySiteAdminCanSeeGroupOfAnyUser(): void
+    {
+        $response = $this->getResponse(
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/membership'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $this->assertGETMembershipAsAdmin($response);
+    }
+
+    public function testInRestrictedForgeThatActiveProjectMemberIsMemberOfStaticUgroup()
+    {
         $this->tuleap_config->setForgeToRestricted();
 
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_1_ID.'/membership')
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/membership')
         );
 
         $ugroups = $response->json();
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID, $ugroups);
 
         $this->tuleap_config->setForgeToAnonymous();
     }
 
-    public function testInRestrictedForgeThatRestrictedProjectMemberIsMemberOfStaticUgroup() {
+    public function testInRestrictedForgeThatRestrictedProjectMemberIsMemberOfStaticUgroup()
+    {
         $this->tuleap_config->setForgeToRestricted();
 
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_RESTRICTED_1_ID.'/membership')
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_RESTRICTED_1_NAME] . '/membership')
         );
 
         $ugroups = $response->json();
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID, $ugroups);
 
         $this->tuleap_config->setForgeToAnonymous();
     }
 
-    public function testInRestrictedForgeThatRestrictedNotProjectMemberIsOnlyMemberOfStaticUgroupInPublicInclRestricted() {
+    public function testInRestrictedForgeThatRestrictedMemberOfStaticUGroupAlsoBecomesProjectMemberInPrivateProject(): void
+    {
         $this->tuleap_config->setForgeToRestricted();
 
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_RESTRICTED_2_ID.'/membership')
+            $this->client->get(
+                'users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_RESTRICTED_2_NAME] . '/membership'
+            )
         );
-
-        $ugroups = $response->json();
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID, $ugroups);
+        $ugroups  = $response->json();
+        $this->assertContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_restricted_2 should be listed as member of ug_103 ugroup because he is added as project member automatically'
+        );
 
         $this->tuleap_config->setForgeToAnonymous();
     }
 
-    public function testInRestrictedForgeThatActiveNotProjectMemberIsNotMemberOfStaticUgroup() {
+    public function testInRestrictedForgeThatRestrictedNotProjectMemberIsNotMemberOfStaticUGroupInPublicProject(): void
+    {
         $this->tuleap_config->setForgeToRestricted();
 
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_4_ID.'/membership')
+            $this->client->get(
+                'users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_RESTRICTED_2_NAME] . '/membership'
+            )
         );
-
-        $ugroups = $response->json();
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID, $ugroups);
+        $ugroups  = $response->json();
+        $this->assertNotContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_restricted_2 should NOT be listed as member of ug_103 ugroup because he is not project member'
+        );
 
         $this->tuleap_config->setForgeToAnonymous();
     }
 
-    public function testInRestrictedForgeThatActiveNotProjectMemberIsMemberOfStaticUgroupExceptPrivateProjects() {
+    public function testInRestrictedForgeThatRestrictedIsMemberOfStaticUGroupInPublicInclRestrictedProject(): void
+    {
         $this->tuleap_config->setForgeToRestricted();
 
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_5_ID.'/membership')
+            $this->client->get(
+                'users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_RESTRICTED_2_NAME] . '/membership'
+            )
         );
-
-        $ugroups = $response->json();
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID, $ugroups);
+        $ugroups  = $response->json();
+        $this->assertContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_restricted_2 should be listed as member of ug_105 ugroup because he is added as project member automatically'
+        );
 
         $this->tuleap_config->setForgeToAnonymous();
     }
 
-    public function testInAnonymousForgeThatActiveProjectMemberIsMemberOfStaticUgroup() {
+    public function testInRestrictedForgeThatActiveNotProjectMemberIsNotMemberOfStaticUgroup()
+    {
+        $this->tuleap_config->setForgeToRestricted();
+
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_1_ID.'/membership')
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_4_NAME] . '/membership')
+        );
+        $ugroups  = $response->json();
+        $this->assertNotContains('ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertNotContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertNotContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID, $ugroups);
+
+        $this->tuleap_config->setForgeToAnonymous();
+    }
+
+    public function testInRestrictedForgeThatActiveMemberOfStaticUGroupAlsoBecomesProjectMemberInPrivateProject(): void
+    {
+        $this->tuleap_config->setForgeToRestricted();
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->get(
+                'users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_5_NAME] . '/membership'
+            )
+        );
+        $ugroups  = $response->json();
+        $this->assertContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_tester_5 should be listed as member of ug_103 ugroup because he is added as project member automatically'
+        );
+
+        $this->tuleap_config->setForgeToAnonymous();
+    }
+
+    public function testInRestrictedForgeThatActiveNotProjectMemberIsMemberOfStaticUGroupInPublicProject(): void
+    {
+        $this->tuleap_config->setForgeToRestricted();
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->get(
+                'users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_5_NAME] . '/membership'
+            )
+        );
+        $ugroups  = $response->json();
+        $this->assertContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_tester_5 should be listed as member of ug_104 ugroup because the project is public'
+        );
+
+        $this->tuleap_config->setForgeToAnonymous();
+    }
+
+    public function testInRestrictedForgeThatActiveMemberOfStaticUGroupAlsoBecomesProjectMemberInPublicInclRestrictedProject(): void
+    {
+        $this->tuleap_config->setForgeToRestricted();
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->get(
+                'users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_5_NAME] . '/membership'
+            )
+        );
+        $ugroups  = $response->json();
+        $this->assertContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PUBLIC_INCL_RESTRICTED_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_tester_5 should be listed as member of ug_105 ugroup because he is added as project member automatically'
+        );
+
+        $this->tuleap_config->setForgeToAnonymous();
+    }
+
+    public function testInAnonymousForgeThatActiveProjectMemberIsMemberOfStaticUgroup()
+    {
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/membership')
         );
 
         $ugroups = $response->json();
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
     }
 
 
-    public function testInAnonymousForgeThatActiveNotProjectMemberIsNotMemberOfStaticUgroup() {
+    public function testInAnonymousForgeThatActiveNotProjectMemberIsNotMemberOfStaticUgroup()
+    {
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_4_ID.'/membership')
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_4_NAME] . '/membership')
         );
 
         $ugroups = $response->json();
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertNotContains('ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertNotContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
     }
 
-    public function testInAnonymousForgeThatActiveNotProjectMemberIsMemberOfStaticUgroupExceptPrivateProjects() {
+    public function testInAnonymousForgeThatActiveNotProjectMemberIsMemberOfStaticUgroupInPublicProject(): void
+    {
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_5_ID.'/membership')
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_5_NAME] . '/membership')
         );
 
         $ugroups = $response->json();
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_tester_5 should be listed as member of ug_104 ugroup because the project is public'
+        );
     }
 
-    public function testInRegularForgeThatActiveProjectMemberIsMemberOfStaticUgroup() {
+    public function testInAnonymousForgeThatActiveMemberOfStaticUGroupAlsoBecomesProjectMemberInPrivateProject(): void
+    {
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->get(
+                'users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_5_NAME] . '/membership'
+            )
+        );
+        $ugroups  = $response->json();
+        $this->assertContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_tester_5 should be listed as member of ug_103 ugroup because he is added as project member automatically'
+        );
+    }
+
+    public function testInRegularForgeThatActiveProjectMemberIsMemberOfStaticUgroup()
+    {
         $this->tuleap_config->setForgeToRegular();
 
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_1_ID.'/membership')
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/membership')
         );
 
         $ugroups = $response->json();
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
 
         $this->tuleap_config->setForgeToAnonymous();
     }
 
 
-    public function testInRegularForgeThatActiveNotProjectMemberIsNotMemberOfStaticUgroup() {
+    public function testInRegularForgeThatActiveNotProjectMemberIsNotMemberOfStaticUgroup()
+    {
         $this->tuleap_config->setForgeToRegular();
 
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_4_ID.'/membership')
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_4_NAME] . '/membership')
         );
 
         $ugroups = $response->json();
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertNotContains('ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertNotContains('ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
 
         $this->tuleap_config->setForgeToAnonymous();
     }
 
-    public function testInRegularForgeThatActiveNotProjectMemberIsMemberOfStaticUgroupExceptPrivateProjects() {
+    public function testInRegularForgeThatActiveNotProjectMemberIsMemberOfStaticUgroupInPublicProject(): void
+    {
         $this->tuleap_config->setForgeToRegular();
 
         $response = $this->getResponseByName(
             REST_TestDataBuilder::ADMIN_USER_NAME,
-            $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_5_ID.'/membership')
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_5_NAME] . '/membership')
         );
 
         $ugroups = $response->json();
-        $this->assertNotContains('ug_'. REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID, $ugroups);
-        $this->assertContains('ug_'. REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID, $ugroups);
+        $this->assertContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PUBLIC_MEMBER_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_tester_5 should be listed as member of ug_104 ugroup because the project is public'
+        );
 
         $this->tuleap_config->setForgeToAnonymous();
     }
 
-    public function testGetUsersWithMatching() {
+    public function testInRegularForgeThatActiveMemberOfStaticUGroupAlsoBecomesProjectMemberInPrivateProject(): void
+    {
+        $this->tuleap_config->setForgeToRegular();
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::ADMIN_USER_NAME,
+            $this->client->get(
+                'users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_5_NAME] . '/membership'
+            )
+        );
+        $ugroups  = $response->json();
+        $this->assertContains(
+            'ug_' . REST_TestDataBuilder::STATIC_PRIVATE_MEMBER_UGROUP_DEVS_ID,
+            $ugroups,
+            'rest_api_tester_5 should be listed as member of ug_103 ugroup because he is added as project member automatically'
+        );
+
+        $this->tuleap_config->setForgeToAnonymous();
+    }
+
+    public function testGetUsersWithMatching(): void
+    {
         $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get('users?query=rest_api_tester&limit=10'));
         $this->assertEquals($response->getStatusCode(), 200);
 
+        $this->assertGETUsersWithMatching($response);
+    }
+
+    public function testGetUsersWithMatchingAsReadOnlySiteAdmin(): void
+    {
+        $response = $this->getResponse(
+            $this->client->get('users?query=rest_api_tester&limit=10'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $this->assertGETUsersWithMatching($response);
+    }
+
+    private function assertGETUsersWithMatching(\Guzzle\Http\Message\Response $response): void
+    {
         $json = $response->json();
         $this->assertCount(5, $json);
     }
 
-    public function testGetUserWithExactSearch() {
+    public function testGetUserWithExactSearchOnUsername(): void
+    {
         $search = urlencode(
             json_encode(
-                array(
+                [
                     'username' => REST_TestDataBuilder::TEST_USER_1_NAME
-                )
+                ]
             )
         );
 
         $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get("users?query=$search&limit=10"));
-        $this->assertEquals($response->getStatusCode(), 200);
+        self::assertEquals(200, $response->getStatusCode());
 
         $json = $response->json();
-        $this->assertCount(1, $json);
-        $this->assertEquals(REST_TestDataBuilder::TEST_USER_1_ID, $json[0]['id']);
+        self::assertCount(1, $json);
+        self::assertEquals($this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME], $json[0]['id']);
     }
 
-    public function testGetUserWithExactSearchWithoutResult() {
+    public function testGetUserWithExactSearchOnLoginName(): void
+    {
         $search = urlencode(
             json_encode(
-                array(
+                [
+                    'loginname' => REST_TestDataBuilder::TEST_USER_1_NAME
+                ],
+                JSON_THROW_ON_ERROR
+            )
+        );
+
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get("users?query=$search&limit=10"));
+        self::assertEquals(200, $response->getStatusCode());
+
+        $json = $response->json();
+        self::assertCount(1, $json);
+        self::assertEquals($this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME], $json[0]['id']);
+    }
+
+    public function testGetUserWithExactSearchWithoutResult()
+    {
+        $search = urlencode(
+            json_encode(
+                [
                     'username' => 'muppet'
-                )
+                ]
             )
         );
 
@@ -345,127 +708,311 @@ class UsersTest extends RestBase {
         $this->assertCount(0, $json);
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
-    public function testGetUserWithInvalidJson() {
+    public function testGetUserWithInvalidJson()
+    {
         $search = urlencode('{jeanclaude}');
 
         $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get("users?query=$search&limit=10"));
         $this->assertEquals($response->getStatusCode(), 400);
     }
 
-    public function testOptionsPreferences() {
-        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->options('users/'.REST_TestDataBuilder::TEST_USER_1_ID.'/preferences'));
+    public function testOptionsPreferences(): void
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->options('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences'));
 
-        $this->assertEquals(array('OPTIONS', 'GET', 'PATCH'), $response->getHeader('Allow')->normalize()->toArray());
-        $this->assertEquals($response->getStatusCode(), 200);
+        $this->assertEquals(['OPTIONS', 'GET', 'PATCH', 'DELETE'], $response->getHeader('Allow')->normalize()->toArray());
+        $this->assertEquals(200, $response->getStatusCode());
     }
 
-    public function testPatchPreferences() {
-        $preference = json_encode(
-            array(
-                'key'   => 'my_preference',
-                'value' => 'my_preference_value'
-            )
+    public function testOptionsPreferencesWithReadOnlySiteAdmin(): void
+    {
+        $response = $this->getResponse(
+            $this->client->options('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
         );
 
-        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->patch('users/'.REST_TestDataBuilder::TEST_USER_1_ID.'/preferences', null, $preference));
-        $this->assertEquals($response->getStatusCode(), 200);
+        $this->assertEquals(['OPTIONS', 'GET', 'PATCH', 'DELETE'], $response->getHeader('Allow')->normalize()->toArray());
+        $this->assertEquals(200, $response->getStatusCode());
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
-    public function testPatchPreferencesAnotherUser() {
+    public function testPatchPreferences(): void
+    {
         $preference = json_encode(
-            array(
+            [
                 'key'   => 'my_preference',
-                'value' => 'my_preference_value'
-            )
+                'value' => 'my_preference_value_1'
+            ]
         );
 
-        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->patch('users/'.REST_TestDataBuilder::TEST_USER_2_ID.'/preferences', null, $preference));
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences', null, $preference));
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function testPatchPreferencesMultipleTimes(): void
+    {
+        $preference = json_encode(
+            [
+                'key' => 'my_preference_multiple_times',
+                'value' => 'my_preference_value_1'
+            ],
+            JSON_THROW_ON_ERROR
+        );
+
+        $response_1 = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences', null, $preference));
+        $this->assertEquals(200, $response_1->getStatusCode());
+        $response_2 = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences', null, $preference));
+        $this->assertEquals(200, $response_2->getStatusCode());
+    }
+
+    public function testPatchPreferencesWithSelfKeyword(): void
+    {
+        $preference = json_encode(
+            [
+                'key'   => 'my_preference',
+                'value' => 'my_preference_value'
+            ]
+        );
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->patch('users/self/preferences', null, $preference)
+        );
+
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function testPatchPreferencesWithReadOnlySiteAdmin(): void
+    {
+        $preference = json_encode(
+            [
+                'key'   => 'my_preference',
+                'value' => 'my_preference_value'
+            ]
+        );
+
+        $response = $this->getResponse(
+            $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences', null, $preference),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testPatchPreferencesAnotherUser()
+    {
+        $preference = json_encode(
+            [
+                'key'   => 'my_preference',
+                'value' => 'my_preference_value'
+            ]
+        );
+
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/preferences', null, $preference));
         $this->assertEquals($response->getStatusCode(), 403);
     }
 
-    public function testGETPreferences() {
-        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_1_ID.'/preferences?key=my_preference'));
+    public function testGETPreferences(): void
+    {
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences?key=my_preference')
+        );
 
-        $this->assertEquals($response->getStatusCode(), 200);
+        $this->assertGETPreferences($response);
+    }
+
+    public function testGETPreferencesReturnsFalseIfPreferenceDoesNotExistInDB(): void
+    {
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences?key=my_preference_not_in_db')
+        );
+
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $json = $response->json();
+        $this->assertEquals('my_preference_not_in_db', $json['key']);
+        $this->assertFalse($json['value']);
+    }
+
+    public function testGETPreferencesWithSelfKeyword()
+    {
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->get('users/self/preferences?key=my_preference')
+        );
+
+        $this->assertGETPreferences($response);
+    }
+
+    public function testGETPreferencesWithReadOnlySiteAdmin(): void
+    {
+        $response = $this->getResponse(
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences?key=my_preference'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    private function assertGETPreferences(\Guzzle\Http\Message\Response $response): void
+    {
+        $this->assertEquals(200, $response->getStatusCode());
 
         $json = $response->json();
         $this->assertEquals('my_preference', $json['key']);
         $this->assertEquals('my_preference_value', $json['value']);
     }
 
+    public function testDeletePreferences()
+    {
+        $preference = json_encode(
+            [
+                'key'   => 'preference_to_be_deleted',
+                'value' => 'awesome_value'
+            ]
+        );
+
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences', null, $preference));
+        $this->assertEquals($response->getStatusCode(), 200);
+
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->delete('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences?key=preference_to_be_deleted'));
+        $this->assertEquals($response->getStatusCode(), 200);
+
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences?key=preference_to_be_deleted'));
+        $this->assertEquals($response->getStatusCode(), 200);
+
+        $json = $response->json();
+        $this->assertEquals('preference_to_be_deleted', $json['key']);
+        $this->assertEquals(false, $json['value']);
+    }
+
+    public function testDeletePreferencesWithSelfKeyword()
+    {
+        $preference = json_encode(
+            [
+                'key'   => 'preference_to_be_deleted',
+                'value' => 'awesome_value'
+            ]
+        );
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->patch('users/self/preferences', null, $preference)
+        );
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->delete('users/self/preferences?key=preference_to_be_deleted')
+        );
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->get('users/self/preferences?key=preference_to_be_deleted')
+        );
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $json = $response->json();
+        $this->assertEquals('preference_to_be_deleted', $json['key']);
+        $this->assertEquals(false, $json['value']);
+    }
+
+    public function testDeletePreferencesWithReadOnlySiteAdmin(): void
+    {
+        $preference = json_encode(
+            [
+                'key' => 'preference_to_be_deleted',
+                'value' => 'awesome_value'
+            ]
+        );
+
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_1_NAME, $this->client->patch('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences', null, $preference));
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $response = $this->getResponse(
+            $this->client->delete('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_1_NAME] . '/preferences?key=preference_to_be_deleted'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
     public function testGETPreferencesAnotherUser()
     {
-        $exception_thrown = false;
-        try {
-            $this->getResponseByName(
-                REST_TestDataBuilder::TEST_USER_1_NAME,
-                $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_2_ID.'/preferences?key=my_preference')
-            );
-        } catch(Guzzle\Http\Exception\ClientErrorResponseException $e) {
-            $this->assertEquals(403, $e->getResponse()->getStatusCode());
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/preferences?key=my_preference')
+        );
+        $this->assertEquals(403, $response->getStatusCode());
     }
 
     public function testGETHistoryAnotherUser()
     {
-        $exception_thrown = false;
-        try {
-            $this->getResponseByName(
-                REST_TestDataBuilder::TEST_USER_1_NAME,
-                $this->client->get('users/'.REST_TestDataBuilder::TEST_USER_2_ID.'/history')
-            );
-        } catch(Guzzle\Http\Exception\ClientErrorResponseException $e) {
-            $this->assertEquals(403, $e->getResponse()->getStatusCode());
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/history')
+        );
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testGETHistoryWithReadOnlySiteAdmin(): void
+    {
+        $response = $this->getResponse(
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/history'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
     }
 
     public function testPUTHistoryAnotherUser()
     {
-        $exception_thrown = false;
-        try {
-            $this->getResponseByName(
-                REST_TestDataBuilder::TEST_USER_1_NAME,
-                $this->client->put('users/'.REST_TestDataBuilder::TEST_USER_2_ID.'/history', null, json_encode(array()))
-            );
-        } catch(Guzzle\Http\Exception\ClientErrorResponseException $e) {
-            $this->assertEquals(403, $e->getResponse()->getStatusCode());
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->put('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/history', null, json_encode([]))
+        );
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testPUTHistoryWithReadOnlySiteAdmin(): void
+    {
+        $response = $this->getResponse(
+            $this->client->put('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/history', null, json_encode([])),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
     }
 
     public function testPUTHistoryManipulation()
     {
-        $exception_thrown = false;
-        $history_entries  = json_encode(
-            array (
-                array (
+        $history_entries = json_encode(
+            [
+                 [
                     'visit_time' => 1496386853,
                     'xref' => 'bugs #845',
                     'link' => '/plugins/tracker/?aid=845',
                     'title' => '',
-                )
-            )
+                 ]
+             ]
         );
-        try {
-            $this->getResponseByName(
-                REST_TestDataBuilder::TEST_USER_1_NAME,
-                $this->client->put('users/'.REST_TestDataBuilder::TEST_USER_2_ID.'/history', null, $history_entries)
-            );
-        } catch(Guzzle\Http\Exception\ClientErrorResponseException $e) {
-            $this->assertEquals(403, $e->getResponse()->getStatusCode());
-            $exception_thrown = true;
-        }
-        $this->assertTrue($exception_thrown);
+
+        $response = $this->getResponseByName(
+            REST_TestDataBuilder::TEST_USER_1_NAME,
+            $this->client->put('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/history', null, $history_entries)
+        );
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testGETAccessKeysWithReadOnlySiteAdmin(): void
+    {
+        $response = $this->getResponse(
+            $this->client->get('users/' . $this->user_ids[REST_TestDataBuilder::TEST_USER_2_NAME] . '/access_keys'),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
     }
 }

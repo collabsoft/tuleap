@@ -1,6 +1,6 @@
 <?php
 /**
-* Copyright Enalean (c) 2014. All rights reserved.
+* Copyright Enalean (c) 2014 - Present. All rights reserved.
 *
 * Tuleap and Enalean names and logos are registrated trademarks owned by
 * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,26 +22,31 @@
 * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
 */
 
-class b201411251018_add_agiledashboard_kanban_table extends ForgeUpgrade_Bucket {
+class b201411251018_add_agiledashboard_kanban_table extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Creating table plugin_agiledashboard_kanban.
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE IF NOT EXISTS plugin_agiledashboard_kanban (
                     project_id INT(11) PRIMARY KEY
                 )";
         $this->db->createTable('plugin_agiledashboard_kanban', $sql);
     }
 
-    public function postUp() {
+    public function postUp()
+    {
         if (! $this->db->tableNameExists('plugin_agiledashboard_kanban')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('plugin_agiledashboard_kanban table is missing');
         }

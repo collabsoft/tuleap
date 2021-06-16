@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,27 +19,32 @@
  */
 
 
-class LDAP_SearchPeople extends Search_SearchPeople {
+class LDAP_SearchPeople extends Search_SearchPeople
+{
     /** @var UserManager */
     private $manager;
 
     /** @var LDAP */
     private $ldap;
 
-    public function __construct(UserManager $manager, LDAP $ldap) {
+    public function __construct(UserManager $manager, LDAP $ldap)
+    {
         $this->manager = $manager;
         $this->ldap    = $ldap;
     }
 
-    public function search(Search_SearchQuery $query, $limit, Search_SearchResults $result) {
+    public function search(Search_SearchQuery $query, Search_SearchResults $search_results)
+    {
+        $limit = $query->getNumberOfResults();
+
         if (! $this->ldap->connect()) {
-            $users = array();
+            $users = [];
         } else {
             $users = $this->getMatchingUsers($query, $limit);
         }
 
         $has_more = count($users) == $limit ? true : false;
-        $result->setHasMore($has_more);
+        $search_results->setHasMore($has_more);
 
         return new Search_SearchResultsPresenter(
             new Search_SearchResultsIntroPresenter($users, $query->getWords()),
@@ -49,16 +54,17 @@ class LDAP_SearchPeople extends Search_SearchPeople {
         );
     }
 
-    private function getMatchingUsers(Search_SearchQuery $query, $limit) {
-        $users = array();
-        $ldap_result_iterator  = $this->ldap->searchUser($query->getWords());
-        if ($ldap_result_iterator->count() > 0) {
+    private function getMatchingUsers(Search_SearchQuery $query, $limit)
+    {
+        $users                = [];
+        $ldap_result_iterator = $this->ldap->searchUser($query->getWords());
+        if ($ldap_result_iterator !== false && $ldap_result_iterator->count() > 0) {
             $ldap_result_iterator->count();
 
             $ldap_result_iterator->seek($query->getOffset());
             while ($ldap_result_iterator->valid() && $limit > 0) {
                 $ldap_result = $ldap_result_iterator->current();
-                $users[] = $this->getUserPresenter($ldap_result);
+                $users[]     = $this->getUserPresenter($ldap_result);
                 $ldap_result_iterator->next();
                 $limit--;
             }
@@ -66,7 +72,8 @@ class LDAP_SearchPeople extends Search_SearchPeople {
         return $users;
     }
 
-    private function getUserPresenter(LDAPResult $ldap_result) {
+    private function getUserPresenter(LDAPResult $ldap_result)
+    {
         $directory_uri = $this->buildLinkToDirectory($ldap_result, $ldap_result->getCommonName());
         $user          = $this->manager->getUserByLdapId($ldap_result->getEdUid());
         if ($user) {
@@ -91,7 +98,6 @@ class LDAP_SearchPeople extends Search_SearchPeople {
             }
 
             return $a_tag->getAttribute("href");
-
         }
         return '';
     }

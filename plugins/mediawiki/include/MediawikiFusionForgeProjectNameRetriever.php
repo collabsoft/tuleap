@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,19 +18,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class MediawikiFusionForgeProjectNameRetriever {
+class MediawikiFusionForgeProjectNameRetriever
+{
 
-    public function getFusionForgeProjectName($fusionforgeprojectname) {
+    public function getFusionForgeProjectName($fusionforgeprojectname)
+    {
         if ($fusionforgeprojectname !== null) {
             return $fusionforgeprojectname;
         }
         if (! $fusionforgeprojectname) {
             $administration_project = new Group(1);
-            $fusionforgeprojectname     = $administration_project->getUnixName();
+            $fusionforgeprojectname = $administration_project->getUnixName();
         }
 
-        $wiki_url = substr($_SERVER['REQUEST_URI'], strlen('/plugins/mediawiki/wiki') + 1);
-        $wiki_url_array = explode('/', $wiki_url);
+        $wiki_url               = substr($_SERVER['REQUEST_URI'], strlen('/plugins/mediawiki/wiki') + 1);
+        $wiki_url_array         = explode('/', $wiki_url);
         $fusionforgeprojectname = $wiki_url_array[0];
         return $fusionforgeprojectname;
     }

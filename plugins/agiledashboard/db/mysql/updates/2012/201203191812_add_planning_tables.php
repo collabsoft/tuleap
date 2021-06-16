@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,22 +19,23 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/**
- *
- */
-class b201203191812_add_planning_tables extends ForgeUpgrade_Bucket {
+class b201203191812_add_planning_tables extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Add tables to store planning
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE IF NOT EXISTS plugin_agiledashboard_planning (
                   id int(11) NOT NULL auto_increment,
                   name varchar(255) NOT NULL,
@@ -42,7 +43,7 @@ EOT;
                   KEY idx(id, release_tracker_id)
                 )";
         $this->db->createTable('plugin_agiledashboard_planning', $sql);
-        
+
         $sql = "CREATE TABLE IF NOT EXISTS plugin_agiledashboard_planning_backlog_tracker (
                   planning_id int(11) NOT NULL,
                   tracker_id int(11) NOT NULL,
@@ -50,15 +51,15 @@ EOT;
                 )";
         $this->db->createTable('plugin_agiledashboard_planning_backlog_tracker', $sql);
     }
-    
-    public function postUp() {
-        if (!$this->db->tableNameExists('plugin_agiledashboard_planning')) {
+
+    public function postUp()
+    {
+        if (! $this->db->tableNameExists('plugin_agiledashboard_planning')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('plugin_agiledashboard_planning table is missing');
         }
-        
-        if (!$this->db->tableNameExists('plugin_agiledashboard_planning_backlog_tracker')) {
+
+        if (! $this->db->tableNameExists('plugin_agiledashboard_planning_backlog_tracker')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('plugin_agiledashboard_planning_backlog_tracker table is missing');
         }
     }
 }
-?>

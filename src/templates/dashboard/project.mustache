@@ -8,24 +8,25 @@
                         <path d="M1,27 L1,28 L11,28 L11,30 L14,27 L11,24 L11,26 L3,26 L3,20 L1,20 L1,27 Z" transform="translate(-1 -20)"/>
                     </svg>
                 {{/ has_parent }}
-                <span class="dashboard-project-title-name">{{ name }}</span>
+                <span class="dashboard-project-title-name" data-test="dashboard-project-title-name">{{ name }}</span>
             </h1>
             {{# access }}
                 <span
                         class="tlp-badge-primary
                         dashboard-project-header-access
-                        {{# is_public_incl_restricted }}
+                        {{# is_incl_restricted }}
                             tlp-tooltip tlp-tooltip-bottom
-                        {{/ is_public_incl_restricted }}
+                        {{/ is_incl_restricted }}
                     "
-                    {{# is_public_incl_restricted }}
+                    {{# is_incl_restricted }}
                         data-tlp-tooltip="{{ incl_restricted_label }}"
-                    {{/ is_public_incl_restricted }}
+                    {{/ is_incl_restricted }}
                 >
-                    <i class="tlp-badge-icon fa
-                        {{# is_wide_open }}fa-unlock{{/ is_wide_open }}
-                        {{# is_open }}fa-unlock-alt{{/ is_open }}
-                        {{# is_closed }}fa-lock{{/ is_closed }}"
+                    <i class="tlp-badge-icon fas
+                        {{# is_wide_open }}fa-tlp-unlock-plus-r{{/ is_wide_open }}
+                        {{# is_open }}fa-lock-open{{/ is_open }}
+                        {{# is_closed }}fa-lock{{/ is_closed }}
+                        {{# is_closed_incl_restricted }}fa-tlp-lock-plus-r{{/ is_closed_incl_restricted }}"
                     ></i> {{ access }}
                 </span>
             {{/ access }}
@@ -42,40 +43,44 @@
         {{/ has_trove_cat }}
         {{# should_display_a_warning_message_for_no_trove_cat }}
             <div class="dashboard-project-header-trovecat">
-                <span class="tlp-text-danger"><i class="fa fa-warning"></i> {{ warning_no_trove_cat }}</span>
+                <span class="tlp-text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{# gettext }}This project is not categorized yet.{{/ gettext }}
+                    <a href="{{ trove_url }}" class="dashboard-project-header-trovecat-link">
+                        {{# gettext }}Please categorize it.{{/gettext}}
+                    </a>
+                </span>
             </div>
         {{/ should_display_a_warning_message_for_no_trove_cat }}
     {{/ project_presenter }}
 </div>
 
-<div class="tlp-framed-vertically">
-    {{# has_dashboard }}
-        {{> dashboard-tabs }}
+{{# has_dashboard }}
+    {{> dashboard-tabs }}
 
-        {{# dashboards }}
-            {{# is_active }}
-                {{# has_widget }}
-                    {{> widgets }}
-                {{/ has_widget }}
-                {{^ has_widget }}
-                    <div class="empty-page">
-                        <p class="empty-page-text">{{ no_widget_label }}</p>
-                        {{# can_update_dashboards }}
-                            <p class="empty-page-text">{{{ purified_no_widget_action_label }}}</p>
-                            <button class="tlp-button-primary tlp-button-large add-widget-button"
-                                    data-target-modal-id="add-widget-modal"
-                                    data-href="{{ url_add_widget_content }}"
-                            >
-                                <i class="fa fa-plus tlp-button-icon"></i>
-                                {{ add_widget_title }}
-                            </button>
-                        {{/ can_update_dashboards }}
-                    </div>
-                {{/ has_widget }}
-            {{/ is_active }}
-        {{/ dashboards }}
-    {{/ has_dashboard }}
-</div>
+    {{# dashboards }}
+        {{# is_active }}
+            {{# has_widget }}
+                {{> widgets }}
+            {{/ has_widget }}
+            {{^ has_widget }}
+                <div class="empty-page">
+                    <p class="empty-page-text">{{ no_widget_label }}</p>
+                    {{# can_update_dashboards }}
+                        <p class="empty-page-text">{{{ purified_no_widget_action_label }}}</p>
+                        <button class="tlp-button-primary tlp-button-large add-widget-button"
+                                data-target-modal-id="add-widget-modal"
+                                data-href="{{ url_add_widget_content }}"
+                        >
+                            <i class="fa fa-plus tlp-button-icon"></i>
+                            {{ add_widget_title }}
+                        </button>
+                    {{/ can_update_dashboards }}
+                </div>
+            {{/ has_widget }}
+        {{/ is_active }}
+    {{/ dashboards }}
+{{/ has_dashboard }}
 
 {{^ has_dashboard }}
     <div class="empty-page">
@@ -104,3 +109,7 @@
         {{/ is_active }}
     {{/ dashboards }}
 {{/ can_update_dashboards }}
+
+{{# should_display_project_created_modal }}
+    {{>  ../project/registration/creation/project-dashboard-creation-success-modal }}
+{{/should_display_project_created_modal}}

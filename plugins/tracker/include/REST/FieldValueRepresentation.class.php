@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,11 @@
 
 namespace Tuleap\Tracker\REST;
 
-use \Tracker_FormElement_Field_List_Bind;
+use Tracker_FormElement_Field_List_Bind;
 use Tuleap\REST\JsonCast;
 
-class FieldValueRepresentation {
+class FieldValueRepresentation
+{
     /**
      * @var int
      */
@@ -34,8 +35,9 @@ class FieldValueRepresentation {
      */
     public $label;
 
-    public function build(array $value) {
-        $this->id    = JsonCast::toInt($value[Tracker_FormElement_Field_List_Bind::SOAP_ID_KEY]);
-        $this->label = $value[Tracker_FormElement_Field_List_Bind::SOAP_LABEL_KEY];
+    public function build(array $value)
+    {
+        $this->id    = JsonCast::toInt($value[Tracker_FormElement_Field_List_Bind::REST_ID_KEY]);
+        $this->label = $value[Tracker_FormElement_Field_List_Bind::REST_LABEL_KEY];
     }
 }

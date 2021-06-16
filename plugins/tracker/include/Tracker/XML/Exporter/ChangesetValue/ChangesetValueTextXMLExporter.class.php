@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,25 +18,37 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Exporter_ChangesetValue_ChangesetValueTextXMLExporter extends Tracker_XML_Exporter_ChangesetValue_ChangesetValueXMLExporter {
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\XML\Exporter\FieldChange\FieldChangeTextBuilder;
 
-    protected function getFieldChangeType() {
-        return 'text';
+class Tracker_XML_Exporter_ChangesetValue_ChangesetValueTextXMLExporter extends Tracker_XML_Exporter_ChangesetValue_ChangesetValueXMLExporter
+{
+    /**
+     * @var FieldChangeTextBuilder
+     */
+    private $field_change_text_builder;
+
+    public function __construct(FieldChangeTextBuilder $field_change_text_builder)
+    {
+        $this->field_change_text_builder = $field_change_text_builder;
+    }
+
+    protected function getFieldChangeType()
+    {
+        return Tracker_FormElementFactory::FIELD_TEXT_TYPE;
     }
 
     public function export(
         SimpleXMLElement $artifact_xml,
         SimpleXMLElement $changeset_xml,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Tracker_Artifact_ChangesetValue $changeset_value
     ) {
-        $field_change = $this->createFieldChangeNodeInChangesetNode(
-            $changeset_value,
-            $changeset_xml
+        $this->field_change_text_builder->build(
+            $changeset_xml,
+            $changeset_value->getField()->getName(),
+            $changeset_value->getText(),
+            $changeset_value->getFormat()
         );
-        $cdata_factory = new XML_SimpleXMLCDATAFactory();
-        $cdata_factory->insert($field_change, 'value', $changeset_value->getText());
-
-        $field_change->value['format'] = $changeset_value->getFormat();
     }
 }

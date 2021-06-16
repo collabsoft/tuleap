@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -17,7 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
-class Tracker_Artifact_Presenter_FollowUpCommentsPresenter {
+class Tracker_Artifact_Presenter_FollowUpCommentsPresenter
+{
 
     /** @var PFUser */
     protected $user;
@@ -28,30 +29,38 @@ class Tracker_Artifact_Presenter_FollowUpCommentsPresenter {
     /**
      * @param Tracker_Artifact_Followup_Item[] $followups
      */
-    public function __construct(array $followups) {
-        $this->followups = $this->buildFollowUpsPresenters($followups);
+    public function __construct(array $followups, PFUser $current_user)
+    {
+        $this->followups = $this->buildFollowUpsPresenters($followups, $current_user);
     }
 
-    public function no_comment() {
-        return $GLOBALS['Language']->getText('plugin_tracker_modal_artifact', 'no_comment');
+    public function no_comment()
+    {
+        return dgettext('tuleap-tracker', 'No comment');
     }
 
     /**
      * @param Tracker_Artifact_Followup_Item[] $followups
      * @return array
      */
-    private function buildFollowUpsPresenters(array $followups)
+    private function buildFollowUpsPresenters(array $followups, PFUser $current_user)
     {
-        $presenters = array();
+        $presenters = [];
         foreach ($followups as $followup) {
-            $diff_to_previous = $followup->diffToPrevious();
-            $presenters[] = array(
+            $diff_to_previous  = $followup->diffToPrevious();
+            $follow_up_content = $followup->getFollowupContent($diff_to_previous, $current_user);
+
+            if ($follow_up_content === "") {
+                continue;
+            }
+
+            $presenters[] = [
                 'getId'              => $followup->getId(),
-                'getAvatarIfEnabled' => $followup->getAvatarIfEnabled(),
+                'getAvatar'          => $followup->getAvatar(),
                 'getUserLink'        => $followup->getUserLink(),
-                'getTimeAgo'         => $followup->getTimeAgo(),
-                'getFollowupContent' => $followup->getFollowupContent($diff_to_previous)
-            );
+                'getTimeAgo'         => $followup->getTimeAgo($current_user),
+                'getFollowupContent' => $follow_up_content
+            ];
         }
 
         return $presenters;

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,12 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Tuleap\layout\BreadCrumbDropdown;
+namespace Tuleap\Layout\BreadCrumbDropdown;
 
 class BreadCrumbPresenterBuilder
 {
     /**
-     * @param BreadCrumbCollection $collection
      *
      * @return BreadCrumbPresenter[]
      */
@@ -32,6 +31,7 @@ class BreadCrumbPresenterBuilder
         $presenters = [];
         foreach ($collection->getBreadcrumbs() as $breadcrumb) {
             $item_presenter = new BreadCrumbPresenter(
+                $breadcrumb->getAdditionalClassname(),
                 new BreadCrumbLinkPresenter($breadcrumb->getLink()),
                 $this->getSectionsPresenters($breadcrumb->getSubItems())
             );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,11 +20,14 @@
 
 namespace Tuleap\PullRequest;
 
+/**
+ * @psalm-immutable
+ */
 class UniDiffLine
 {
-    const REMOVED = -1;
-    const KEPT    =  0;
-    const ADDED   =  1;
+    public const REMOVED = -1;
+    public const KEPT    =  0;
+    public const ADDED   =  1;
 
     private $type;
     private $unidiff_offset;

@@ -1,65 +1,73 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+use Tuleap\Tracker\REST\Artifact\ArtifactFieldValueOpenListFullRepresentation;
 
 /**
  * Manage values in changeset for string fields
  */
-class Tracker_Artifact_ChangesetValue_OpenList extends Tracker_Artifact_ChangesetValue_List {
+class Tracker_Artifact_ChangesetValue_OpenList extends Tracker_Artifact_ChangesetValue_List
+{
 
     /**
      * @return mixed
      */
-    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor) {
+    public function accept(Tracker_Artifact_ChangesetValueVisitor $visitor)
+    {
         return $visitor->visitOpenList($this);
     }
-    
+
     /**
      * Get the value (an array of int)
      *
      * @return array of int The values of this artifact changeset value
      */
-    public function getValue() {
+    public function getValue()
+    {
         $values = $this->getListValues();
-        $array = array();
+        $array  = [];
         foreach ($values as $value) {
             $array[] = $value->getJsonId();
         }
         return $array;
     }
 
-    protected function getRESTBindValue(Tracker_FormElement_Field_List_Value $value) {
+    protected function getRESTBindValue(Tracker_FormElement_Field_List_Value $value)
+    {
         return $value->getAPIValue();
     }
 
-    public function getFullRESTValue(PFUser $user) {
-        $full_values = array();
-        $labels      = array();
+    public function getFullRESTValue(PFUser $user)
+    {
+        $full_values = [];
+        $labels      = [];
         foreach ($this->getListValues() as $list_value) {
             $full_values[] = $this->getFullRESTBindValue($list_value);
             $labels[]      = $this->getLabel($list_value);
         }
 
-        $classname_with_namespace = 'Tuleap\Tracker\REST\Artifact\ArtifactFieldValueOpenListRepresentation';
-        $representation           = new $classname_with_namespace;
+        $representation = new ArtifactFieldValueOpenListFullRepresentation();
         $representation->build(
             $this->field->getId(),
+            Tracker_FormElementFactory::instance()->getType($this->field),
             $this->field->getLabel(),
             $this->field->getBind()->getType(),
             array_values($full_values),
@@ -68,7 +76,8 @@ class Tracker_Artifact_ChangesetValue_OpenList extends Tracker_Artifact_Changese
         return $representation;
     }
 
-    protected function getLabel($value) {
+    protected function getLabel($value)
+    {
         return $value->getLabel();
     }
 }

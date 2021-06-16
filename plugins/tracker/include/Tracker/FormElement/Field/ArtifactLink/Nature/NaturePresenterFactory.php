@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,7 +26,7 @@ use Project;
 use Tuleap\Tracker\Admin\ArtifactLinksUsageDao;
 use Tuleap\Tracker\Events\GetEditableTypesInProject;
 
-class NaturePresenterFactory
+class NaturePresenterFactory implements AllNaturesRetriever
 {
     /**
      * Add new artifact link natures
@@ -34,15 +34,15 @@ class NaturePresenterFactory
      * Parameters:
      *  - natures: List of existing natures
      */
-    const EVENT_GET_ARTIFACTLINK_NATURES = 'event_get_artifactlink_natures';
+    public const EVENT_GET_ARTIFACTLINK_NATURES = 'event_get_artifactlink_natures';
 
     /**
-     * Return presneter from nature shortname
+     * Return presenter from nature shortname
      *
      * Parameters:
      *  - nature: input nature shortname
      */
-    const EVENT_GET_NATURE_PRESENTER = 'event_get_nature_presenter';
+    public const EVENT_GET_NATURE_PRESENTER = 'event_get_nature_presenter';
 
     /**
      * @var NatureDao
@@ -60,7 +60,8 @@ class NaturePresenterFactory
     }
 
     /** @return NaturePresenter[] */
-    public function getAllNatures() {
+    public function getAllNatures(): array
+    {
         $natures = $this->getDefaultNatures();
         $natures = array_merge($natures, $this->getPluginsNatures());
         $natures = array_merge($natures, $this->getCustomNatures());
@@ -83,7 +84,7 @@ class NaturePresenterFactory
     {
         $types = $this->getAllTypesEditableInProject($project);
         foreach ($types as $key => $type) {
-            if ($this->artifact_links_usage_dao->isTypeDisabledInProject($project->getID(), $type->shortname)) {
+            if ($this->artifact_links_usage_dao->isTypeDisabledInProject((int) $project->getID(), $type->shortname)) {
                 unset($types[$key]);
             }
         }
@@ -103,16 +104,16 @@ class NaturePresenterFactory
 
     private function getDefaultNatures()
     {
-        return array(new NatureIsChildPresenter());
+        return [new NatureIsChildPresenter()];
     }
 
     private function getPluginsNatures()
     {
-        $natures = array();
+        $natures = [];
 
-        $params  = array(
+        $params = [
             'natures' => &$natures
-        );
+        ];
 
         EventManager::instance()->processEvent(
             self::EVENT_GET_ARTIFACTLINK_NATURES,
@@ -132,33 +133,34 @@ class NaturePresenterFactory
 
     private function getCustomNatures()
     {
-        $natures = array();
+        $natures = [];
 
-        foreach ( $this->dao->searchAll() as $row) {
+        foreach ($this->dao->searchAll() as $row) {
             $natures[] = $this->instantiateFromRow($row);
         }
 
         return $natures;
     }
 
-    /** @return NaturePresenter[] */
-    public function getAllUsedNaturesByProject(Project $project) {
-        $natures = array();
+    /** @return string[] */
+    public function getAllUsedNaturesByProject(Project $project): array
+    {
+        $natures = [];
 
-        foreach ( $this->dao->searchAllUsedNatureByProject($project->getGroupId()) as $row) {
+        foreach ($this->dao->searchAllUsedNatureByProject($project->getGroupId()) as $row) {
             $natures[] = $row['nature'];
         }
 
         return $natures;
     }
 
-    /** @return NaturePresenter | null */
-    public function getFromShortname($shortname) {
-        if($shortname == \Tracker_FormElement_Field_ArtifactLink::NO_NATURE) {
+    public function getFromShortname($shortname): ?NaturePresenter
+    {
+        if ($shortname == \Tracker_FormElement_Field_ArtifactLink::NO_NATURE) {
             return new NaturePresenter('', '', '', true);
         }
 
-        if($shortname == \Tracker_FormElement_Field_ArtifactLink::NATURE_IS_CHILD) {
+        if ($shortname == \Tracker_FormElement_Field_ArtifactLink::NATURE_IS_CHILD) {
             return new NatureIsChildPresenter();
         }
 
@@ -168,20 +170,29 @@ class NaturePresenterFactory
         }
 
         $row = $this->dao->getFromShortname($shortname);
-        if(!$row) {
+        if (! $row) {
             return null;
         }
         return $this->instantiateFromRow($row);
+    }
+
+    public function getTypeEnabledInProjectFromShortname(Project $project, string $shortname): ?NaturePresenter
+    {
+        if ($this->artifact_links_usage_dao->isTypeDisabledInProject((int) $project->getID(), $shortname)) {
+            return null;
+        }
+
+        return $this->getFromShortname($shortname);
     }
 
     private function getNaturePresenterByShortname($shortname)
     {
         $presenter = null;
 
-        $params  = array(
+        $params = [
             'presenter' => &$presenter,
             'shortname' => $shortname
-        );
+        ];
 
         EventManager::instance()->processEvent(
             self::EVENT_GET_NATURE_PRESENTER,
@@ -191,7 +202,8 @@ class NaturePresenterFactory
         return $presenter;
     }
 
-    public function instantiateFromRow($row) {
+    public function instantiateFromRow($row)
+    {
         return new NaturePresenter(
             $row['shortname'],
             $row['forward_label'],

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,12 +21,17 @@
 
 namespace Tuleap\Admin;
 
-use CSRFSynchronizerToken;
+use Tuleap\CSRFSynchronizerTokenPresenter;
 
+/**
+ * @psalm-immutable
+ */
 class ProjectCreationModerationPresenter
 {
     public $projects_must_be_approved = false;
-    public $nb_max_projects_waiting_for_validation = -1;
+    public $platform_have_restricted;
+    public $restricted_users_can_create_projects;
+    public $nb_max_projects_waiting_for_validation          = -1;
     public $nb_max_projects_waiting_for_validation_per_user = -1;
     public $navbar;
     public $csrf_token;
@@ -34,17 +39,21 @@ class ProjectCreationModerationPresenter
 
     public function __construct(
         ProjectCreationNavBarPresenter $navbar,
-        CSRFSynchronizerToken $csrf_token,
-        $must_be_approved,
-        $max_global,
-        $max_per_user,
-        $warn_local_inc
+        CSRFSynchronizerTokenPresenter $csrf_token,
+        bool $must_be_approved,
+        int $max_global,
+        int $max_per_user,
+        bool $platform_have_restricted,
+        bool $restricted_users_can_create_projects,
+        bool $warn_local_inc
     ) {
         $this->navbar                                          = $navbar;
         $this->csrf_token                                      = $csrf_token;
         $this->projects_must_be_approved                       = $must_be_approved;
         $this->nb_max_projects_waiting_for_validation          = $max_global;
         $this->nb_max_projects_waiting_for_validation_per_user = $max_per_user;
+        $this->platform_have_restricted                        = $platform_have_restricted;
+        $this->restricted_users_can_create_projects            = $restricted_users_can_create_projects;
         $this->warn_local_inc                                  = $warn_local_inc;
     }
 }

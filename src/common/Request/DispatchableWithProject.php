@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,6 +21,8 @@
 
 namespace Tuleap\Request;
 
+use Project;
+
 interface DispatchableWithProject
 {
     /**
@@ -29,10 +31,7 @@ interface DispatchableWithProject
      * This part of controller is needed when you implement a new route without providing a $group_id.
      * It's the preferred way to deal with those kind of URLs over Event::GET_PROJECTID_FROM_URL
      *
-     * @param \HTTPRequest $request
      * @param array $variables
-     *
-     * @return Project
      */
-    public function getProject(\HTTPRequest $request, array $variables);
+    public function getProject(array $variables): Project;
 }

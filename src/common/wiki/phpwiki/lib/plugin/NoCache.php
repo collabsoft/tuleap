@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: NoCache.php,v 1.3 2004/06/18 14:42:17 rurban Exp $');
 /*
  Copyright 2004 $ThePhpWikiProgrammingTeam
@@ -21,44 +22,51 @@ rcs_id('$Id: NoCache.php,v 1.3 2004/06/18 14:42:17 rurban Exp $');
  */
 
 /**
- * Don't cache the following page. Mostly used for plugins, which 
+ * Don't cache the following page. Mostly used for plugins, which
  * display dynamic content.
  *
  * Usage:
- *   <?plugin NoCache ?> 
+ *   <?plugin NoCache ?>
  * or to delete the whole cache for this page:
  *   <?plugin NoCache nocache||=purge ?>
  *
  * Author:  Reini Urban <rurban@x-ray.at>
  *
  */
-class WikiPlugin_NoCache
-extends WikiPlugin
+class WikiPlugin_NoCache extends WikiPlugin
 {
-    function getName() {
+    public function getName()
+    {
         return _("NoCache");
     }
 
-    function getDescription() {
+    public function getDescription()
+    {
         return _("Don't cache this page.");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.3 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.3 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array( 'nocache' => 1 );
+    public function getDefaultArguments()
+    {
+        return ['nocache' => 1];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         $args = $this->getArgs($argstr, $request);
         // works regardless of WIKIDB_NOCACHE_MARKUP
         // if WIKIDB_NOCACHE_MARKUP is false it doesn't hurt
         return $request->setArg('nocache', $args['nocache']);
     }
-};
+}
 
 // $Log: NoCache.php,v $
 // Revision 1.3  2004/06/18 14:42:17  rurban
@@ -72,8 +80,6 @@ extends WikiPlugin
 // display dynamic content.
 //
 // ----------------------------------------------------------------------
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -82,4 +88,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

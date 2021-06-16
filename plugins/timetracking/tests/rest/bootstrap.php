@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,6 +22,5 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once dirname(__FILE__).'/../../../../tests/lib/autoload.php';
-require_once dirname(__FILE__).'/TimetrackingDataBuilder.php';
-require_once dirname(__FILE__).'/TimetrackingBase.php';
+require_once dirname(__FILE__) . '/TimetrackingDataBuilder.php';
+require_once dirname(__FILE__) . '/TimetrackingBase.php';

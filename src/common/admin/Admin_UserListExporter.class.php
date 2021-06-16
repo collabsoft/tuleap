@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2015. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -19,9 +19,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('www/project/export/project_export_utils.php');
+require_once __DIR__ . '/../../www/project/export/project_export_utils.php';
 
-class Admin_UserListExporter {
+class Admin_UserListExporter
+{
 
     /**
      * @var array
@@ -40,20 +41,24 @@ class Admin_UserListExporter {
     /**
      * Export user list in csv format
      *
+     * @param int    $group_id
      * @param String $user_name_search
      * @param String $current_sort_header
      * @param String $sort_order
+     * @param array  $status_values
      *
+     * @psalm-param "user_name"|"realname"|"status" $current_sort_header
+     * @psalm-param "ASC"|"DESC" $sort_order
      */
-    public function exportUserList($user_name_search, $current_sort_header, $sort_order, $status_values)
+    public function exportUserList($group_id, $user_name_search, $current_sort_header, $sort_order, $status_values)
     {
         global $Language;
-        header ('Content-Type: text/csv');
-        header ('Content-Disposition:attachment; filename=users_list.csv');
-        $eol = "\n";
+        header('Content-Type: text/csv');
+        header('Content-Disposition:attachment; filename=users_list.csv');
+        $eol             = "\n";
         $documents_title = [
             'user_id'          => $Language->getText('admin_userlist', 'id_user'),
-            'login_name'       => $Language->getText('include_user_home', 'login_name'),
+            'login_name'       => $Language->getOverridableText('include_user_home', 'login_name'),
             'real_name'        => $Language->getText('include_user_home', 'real_name'),
             'email'            => $Language->getText('admin_userlist', 'email'),
             'member_of'        => $Language->getText('admin_userlist', 'member_of'),
@@ -61,9 +66,9 @@ class Admin_UserListExporter {
             'status'           => $Language->getText('admin_userlist', 'status'),
             'last_access_date' => $Language->getText('admin_userlist', 'last_access_date'),
         ];
-        echo build_csv_header($this->col_list, $documents_title).$eol;
-        $dao = new UserDao(CodendiDataAccess::instance());
-        $result = $dao->listAllUsers(0, $user_name_search, 0, 0, $current_sort_header, $sort_order, $status_values);
+        echo build_csv_header($this->col_list, $documents_title) . $eol;
+        $dao    = new UserDao(CodendiDataAccess::instance());
+        $result = $dao->listAllUsers($group_id, $user_name_search, 0, 0, $current_sort_header, $sort_order, $status_values);
         $users  = $result['users'];
         echo $this->buildCsvBody($users);
     }
@@ -77,7 +82,7 @@ class Admin_UserListExporter {
     private function buildCsvBody($users)
     {
         $csv_body = "";
-        $hp = Codendi_HTMLPurifier::instance();
+        $hp       = Codendi_HTMLPurifier::instance();
         foreach ($users as $user) {
             $documents_body = [
                 'user_id'          => $user['user_id'],
@@ -89,7 +94,7 @@ class Admin_UserListExporter {
                 'status'           => $this->getUserStatus($user['status']),
                 'last_access_date' => $this->getLastAccessDate($user['last_access_date']),
             ];
-            $csv_body .= build_csv_record($this->col_list, $documents_body)."\n";
+            $csv_body      .= build_csv_record($this->col_list, $documents_body) . "\n";
         }
 
         return $csv_body;
@@ -100,8 +105,7 @@ class Admin_UserListExporter {
         if ((int) $last_access_date_timestamp === 0) {
             return $GLOBALS['Language']->getText('admin_userlist', 'never_logged');
         }
-
-        return date('Y M d H:i', $last_access_date_timestamp);
+        return format_date(util_get_user_preferences_export_datefmt(), $last_access_date_timestamp);
     }
 
     /**
@@ -110,29 +114,30 @@ class Admin_UserListExporter {
      * @param string $status_code
      *
      */
-    private function getUserStatus($status_code) {
+    private function getUserStatus($status_code)
+    {
         global $Language;
         switch ($status_code) {
             case PFUser::STATUS_ACTIVE:
-                $status = $Language->getText('admin_userlist','active');
+                $status = $Language->getText('admin_userlist', 'active');
                 break;
             case PFUser::STATUS_RESTRICTED:
-                $status = $Language->getText('admin_userlist','restricted');
+                $status = $Language->getText('admin_userlist', 'restricted');
                 break;
             case PFUser::STATUS_DELETED:
-                $status = $Language->getText('admin_userlist','deleted');
+                $status = $Language->getText('admin_userlist', 'deleted');
                 break;
             case PFUser::STATUS_SUSPENDED:
-                $status = $Language->getText('admin_userlist','suspended');
+                $status = $Language->getText('admin_userlist', 'suspended');
                 break;
             case PFUser::STATUS_PENDING:
-                $status = $Language->getText('admin_userlist','pending');
+                $status = $Language->getText('admin_userlist', 'pending');
                 break;
             case PFUser::STATUS_VALIDATED:
-                $status = $Language->getText('admin_userlist','validated');
+                $status = $Language->getText('admin_userlist', 'validated');
                 break;
             case PFUser::STATUS_VALIDATED_RESTRICTED:
-                $status = $Language->getText('admin_userlist','validated_restricted');
+                $status = $Language->getText('admin_userlist', 'validated_restricted');
                 break;
         }
         return $status;

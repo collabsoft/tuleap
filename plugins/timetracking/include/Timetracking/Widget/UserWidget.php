@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,11 +21,14 @@
 namespace Tuleap\Timetracking\Widget;
 
 use TemplateRendererFactory;
+use Tuleap\Layout\CssAssetCollection;
+use Tuleap\Layout\CssAssetWithoutVariantDeclinaisons;
+use Tuleap\Layout\IncludeAssets;
 use Widget;
 
 class UserWidget extends Widget
 {
-    const NAME = 'timetracking';
+    public const NAME = 'timetracking';
 
     public function __construct()
     {
@@ -54,18 +57,38 @@ class UserWidget extends Widget
 
     public function getCategory()
     {
-        return 'plugin_timetracking';
+        return dgettext('tuleap-timetracking', 'Time tracking');
     }
 
     public function getContent()
     {
         $renderer = TemplateRendererFactory::build()->getRenderer(TIMETRACKING_TEMPLATE_DIR);
 
-        return $renderer->renderToString('widget', array());
+        return $renderer->renderToString('widget', []);
     }
 
     public function getIcon()
     {
         return "fa-clock-o";
+    }
+
+    public function getJavascriptDependencies(): array
+    {
+        return [
+            ['file' => $this->getAssets()->getFileURL('widget-timetracking.js')]
+        ];
+    }
+
+    public function getStylesheetDependencies(): CssAssetCollection
+    {
+        return new CssAssetCollection([new CssAssetWithoutVariantDeclinaisons($this->getAssets(), 'style-bp')]);
+    }
+
+    private function getAssets(): IncludeAssets
+    {
+        return new IncludeAssets(
+            __DIR__ . '/../../../../../src/www/assets/timetracking',
+            '/assets/timetracking'
+        );
     }
 }

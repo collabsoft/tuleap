@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,11 +22,10 @@ namespace Tuleap;
 
 use ForgeConfig;
 use GitRepository;
-use Logger;
+use Psr\Log\LoggerInterface;
 use System_Command;
 use System_Command_CommandException;
 use Tuleap\Project\XML\Export\ArchiveInterface;
-use Tuleap\Project\XML\Export\ZipArchive;
 
 class GitBundle
 {
@@ -36,11 +35,11 @@ class GitBundle
     private $system_command;
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
 
-    public function __construct(System_Command $system_command, Logger $logger)
+    public function __construct(System_Command $system_command, LoggerInterface $logger)
     {
         $this->system_command = $system_command;
         $this->logger         = $logger;
@@ -49,7 +48,8 @@ class GitBundle
     public function dumpRepository(
         GitRepository $repository,
         ArchiveInterface $archive,
-        $temporary_dump_path_on_filesystem
+        $temporary_dump_path_on_filesystem,
+        string $file_name
     ) {
         try {
             if ($this->doesRepositoryHaveCommits($repository) === false) {
@@ -58,7 +58,6 @@ class GitBundle
                 return true;
             }
 
-            $file_name          = $repository->getName() . '.bundle';
             $repository_path    = $repository->getFullPath();
             $path_to_filesystem = "$temporary_dump_path_on_filesystem/$file_name";
 

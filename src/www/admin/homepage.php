@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+  * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
   *
   * This file is a part of Tuleap.
   *
@@ -20,15 +20,16 @@
 
 use Tuleap\Admin\AdminPageRenderer;
 
-require_once 'pre.php';
-require_once 'admin_utils.php';
+require_once __DIR__ . '/../include/pre.php';
+require_once __DIR__ . '/admin_utils.php';
 
 $controller = new Admin_Homepage_Controller(
     new CSRFSynchronizerToken($_SERVER['SCRIPT_NAME']),
     new Admin_Homepage_Dao(),
     $request,
     $GLOBALS['Response'],
-    new AdminPageRenderer()
+    new AdminPageRenderer(),
+    new ConfigDao()
 );
-$router = new Admin_Homepage_Router($controller, $request);
+$router     = new Admin_Homepage_Router($controller, $request);
 $router->route();

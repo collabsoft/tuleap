@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -26,6 +26,7 @@ use Tuleap\Dashboard\Widget\DashboardWidgetDao;
 use Tuleap\Dashboard\Widget\DashboardWidgetLine;
 use Tuleap\Dashboard\Widget\DashboardWidgetRetriever;
 use Tuleap\Dashboard\Widget\WidgetDashboardController;
+use Tuleap\Project\MappingRegistry;
 use Tuleap\Widget\WidgetFactory;
 
 class ProjectDashboardDuplicator
@@ -55,21 +56,28 @@ class ProjectDashboardDuplicator
      */
     private $widget_factory;
 
+    /**
+     * @var DisabledProjectWidgetsChecker
+     */
+    private $disabled_project_widgets_checker;
+
     public function __construct(
         ProjectDashboardDao $dao,
         ProjectDashboardRetriever $retriever,
         DashboardWidgetDao $widget_dao,
         DashboardWidgetRetriever $widget_retriever,
-        WidgetFactory $widget_factory
+        WidgetFactory $widget_factory,
+        DisabledProjectWidgetsChecker $disabled_project_widgets_checker
     ) {
-        $this->dao              = $dao;
-        $this->retriever        = $retriever;
-        $this->widget_dao       = $widget_dao;
-        $this->widget_retriever = $widget_retriever;
-        $this->widget_factory   = $widget_factory;
+        $this->dao                              = $dao;
+        $this->retriever                        = $retriever;
+        $this->widget_dao                       = $widget_dao;
+        $this->widget_retriever                 = $widget_retriever;
+        $this->widget_factory                   = $widget_factory;
+        $this->disabled_project_widgets_checker = $disabled_project_widgets_checker;
     }
 
-    public function duplicate(Project $template_project, Project $new_project)
+    public function duplicate(Project $template_project, Project $new_project, MappingRegistry $mapping_registry)
     {
         $this->dao->startTransaction();
 
@@ -81,7 +89,13 @@ class ProjectDashboardDuplicator
                 $template_dashboard->getId()
             );
 
-            $this->duplicateDashboardContent($template_project, $new_project, $template_dashboard, $new_dashboard_id);
+            $this->duplicateDashboardContent(
+                $template_project,
+                $new_project,
+                $template_dashboard,
+                $new_dashboard_id,
+                $mapping_registry,
+            );
         }
 
         return $this->dao->commit();
@@ -91,7 +105,8 @@ class ProjectDashboardDuplicator
         Project $template_project,
         Project $new_project,
         ProjectDashboard $template_dashboard,
-        $new_dashboard_id
+        $new_dashboard_id,
+        MappingRegistry $mapping_registry
     ) {
         $template_dashboard_id = $template_dashboard->getId();
 
@@ -108,7 +123,7 @@ class ProjectDashboardDuplicator
                 WidgetDashboardController::PROJECT_DASHBOARD_TYPE
             );
 
-            $this->duplicateColumns($template_project, $new_project, $template_line, $new_line_id);
+            $this->duplicateColumns($template_project, $new_project, $template_line, $new_line_id, $mapping_registry);
         }
     }
 
@@ -116,12 +131,19 @@ class ProjectDashboardDuplicator
         Project $template_project,
         Project $new_project,
         DashboardWidgetLine $template_line,
-        $new_line_id
+        $new_line_id,
+        MappingRegistry $mapping_registry
     ) {
         foreach ($template_line->getWidgetColumns() as $template_column) {
             $new_column_id = $this->widget_dao->duplicateColumn($template_line->getId(), $new_line_id, $template_column->getId());
 
-            $this->duplicateWidgets($template_project, $new_project, $template_column, $new_column_id);
+            $this->duplicateWidgets(
+                $template_project,
+                $new_project,
+                $template_column,
+                $new_column_id,
+                $mapping_registry
+            );
         }
     }
 
@@ -129,17 +151,24 @@ class ProjectDashboardDuplicator
         Project $template_project,
         Project $new_project,
         DashboardWidgetColumn $template_column,
-        $new_column_id
+        $new_column_id,
+        MappingRegistry $mapping_registry
     ) {
         foreach ($template_column->getWidgets() as $template_widget) {
             $widget = $this->widget_factory->getInstanceByWidgetName($template_widget->getName());
+
+            if (! $widget || $this->disabled_project_widgets_checker->isWidgetDisabled($widget, ProjectDashboardController::DASHBOARD_TYPE)) {
+                continue;
+            }
+
             $widget->setOwner($template_project->getID(), ProjectDashboardController::LEGACY_DASHBOARD_TYPE);
             $new_content_id = $widget->cloneContent(
                 $template_project,
                 $new_project,
                 $template_widget->getContentId(),
                 $new_project->getID(),
-                ProjectDashboardController::LEGACY_DASHBOARD_TYPE
+                ProjectDashboardController::LEGACY_DASHBOARD_TYPE,
+                $mapping_registry,
             );
 
             $this->widget_dao->duplicateWidget(

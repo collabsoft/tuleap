@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,34 +18,33 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Exporter_ChangesetValue_ChangesetValueFileXMLExporter extends Tracker_XML_Exporter_ChangesetValue_ChangesetValueXMLExporter {
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\FormElement\Field\File\IdForXMLImportExportConvertor;
+use Tuleap\Tracker\XML\Exporter\FileInfoXMLExporter;
 
-    const ID_PREFIX = 'fileinfo_';
-
+class Tracker_XML_Exporter_ChangesetValue_ChangesetValueFileXMLExporter extends Tracker_XML_Exporter_ChangesetValue_ChangesetValueXMLExporter
+{
     /**
-     * @var Tracker_XML_Exporter_FilePathXMLExporter
+     * @var FileInfoXMLExporter
      */
-    private $path_exporter;
+    private $file_info_xml_exporter;
 
-    public function __construct(Tracker_XML_Exporter_FilePathXMLExporter $path_exporter) {
-        $this->path_exporter = $path_exporter;
+    public function __construct(FileInfoXMLExporter $file_info_xml_exporter)
+    {
+        $this->file_info_xml_exporter = $file_info_xml_exporter;
     }
 
-    protected function getFieldChangeType() {
+    protected function getFieldChangeType()
+    {
         return 'file';
     }
 
     public function export(
         SimpleXMLElement $artifact_xml,
         SimpleXMLElement $changeset_xml,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Tracker_Artifact_ChangesetValue $changeset_value
     ) {
-
-        if (! $this->isCurrentChangesetTheLastChangeset($artifact, $changeset_value)) {
-            return;
-        }
-
         $field_change = $this->createFieldChangeNodeInChangesetNode(
             $changeset_value,
             $changeset_xml
@@ -61,15 +60,15 @@ class Tracker_XML_Exporter_ChangesetValue_ChangesetValueFileXMLExporter extends 
 
         array_walk(
             $files,
-            array($this, 'appendFileToFieldChangeNode'),
+            function (Tracker_FileInfo $file_info, $index, SimpleXMLElement $field_xml) {
+                $this->appendFileToFieldChangeNode($file_info, $index, $field_xml);
+            },
             $field_change
         );
 
-        array_walk(
-            $files,
-            array($this, 'appendFileToArtifactNode'),
-            $artifact_xml
-        );
+        foreach ($files as $file) {
+            $this->file_info_xml_exporter->add($artifact, $file);
+        }
     }
 
     private function appendFileToFieldChangeNode(
@@ -81,28 +80,13 @@ class Tracker_XML_Exporter_ChangesetValue_ChangesetValueFileXMLExporter extends 
         $node->addAttribute('ref', $this->getFileInfoIdForXML($file_info));
     }
 
-    private function appendEmptyValueToFieldChangeNode(SimpleXMLElement $field_xml) {
+    private function appendEmptyValueToFieldChangeNode(SimpleXMLElement $field_xml)
+    {
         $field_xml->addChild('value');
     }
 
-    private function appendFileToArtifactNode(
-        Tracker_FileInfo $file_info,
-        $index,
-        SimpleXMLElement $artifact_xml
-    ) {
-
-        $cdata_factory = new XML_SimpleXMLCDATAFactory();
-
-        $node = $artifact_xml->addChild('file');
-        $node->addAttribute('id',      $this->getFileInfoIdForXML($file_info));
-        $cdata_factory->insert($node, 'filename', $file_info->getFilename());
-        $node->addChild('path',        $this->path_exporter->getPath($file_info));
-        $node->addChild('filesize',    $file_info->getFilesize());
-        $node->addChild('filetype',    $file_info->getFiletype());
-        $cdata_factory->insert($node, 'description', $file_info->getDescription());
-    }
-
-    private function getFileInfoIdForXML(Tracker_FileInfo $file_info) {
-        return self::ID_PREFIX . $file_info->getId();
+    private function getFileInfoIdForXML(Tracker_FileInfo $file_info)
+    {
+        return IdForXMLImportExportConvertor::convertFileInfoIdToXMLId((int) $file_info->getId());
     }
 }

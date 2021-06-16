@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) Enalean SAS, 2016. All Rights Reserved.
+ * Copyright (c) Enalean SAS, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,6 @@
 namespace Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\CustomColumn;
 
 use Tracker_ArtifactLinkInfo;
-use Codendi_HTMLPurifier;
 
 /**
  * I am responsible of rendering an artifact link info to be displayed in a spreadsheet

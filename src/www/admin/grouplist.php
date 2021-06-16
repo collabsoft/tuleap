@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  * Copyright 1999-2000 (c) The SourceForge Crew
  *
  * This file is a part of Tuleap.
@@ -20,21 +20,17 @@
  */
 
 use Tuleap\Admin\AdminPageRenderer;
-use Tuleap\Layout\IncludeAssets;
 use Tuleap\Project\Admin\ProjectListPresenter;
-use Tuleap\Project\Admin\ProjectListSearchFieldsPresenterBuilder;
-use Tuleap\Project\Admin\ProjectListSearchFieldsPresenter;
 use Tuleap\Project\Admin\ProjectListResultsPresenterBuilder;
-use Tuleap\Project\Admin\ProjectListResultsPresenter;
+use Tuleap\Project\Admin\ProjectListSearchFieldsPresenterBuilder;
 
-require_once('pre.php');
-require_once('www/admin/admin_utils.php');
+require_once __DIR__ . '/../include/pre.php';
+require_once __DIR__ . '/admin_utils.php';
 
 $request = HTTPRequest::instance();
 $request->checkUserIsSuperUser();
 
-$assets_path    = ForgeConfig::get('tuleap_dir') . '/src/www/assets';
-$include_assets = new IncludeAssets($assets_path, '/assets');
+$include_assets = new \Tuleap\Layout\IncludeCoreAssets();
 
 $GLOBALS['HTML']->includeFooterJavascriptFile(
     $include_assets->getFileURL('site-admin-project-list.js')
@@ -43,13 +39,13 @@ $GLOBALS['HTML']->includeFooterJavascriptFile(
 //EXPORT-CSV
 if ($request->exist('export')) {
     //Validate group_name_search
-    $group_name_search = "";
-    $valid_group_name_search  = new Valid_String('group_name_search');
+    $group_name_search       = "";
+    $valid_group_name_search = new Valid_String('group_name_search');
     if ($request->valid($valid_group_name_search)) {
         $group_name_search = $request->get('group_name_search');
     }
     //Get status values
-    $status_values = array();
+    $status_values = [];
     if ($request->exist('status')) {
         $status_values = $request->get('status');
         if (! is_array($status_values)) {
@@ -57,19 +53,19 @@ if ($request->exist('export')) {
         }
     }
     if (in_array('ANY', $status_values)) {
-        $status_values = array();
+        $status_values = [];
     }
     //export user list in csv format
     $project_list_exporter = new Admin_ProjectListExporter();
     $project_list_csv      = $project_list_exporter->exportProjectList($group_name_search, $status_values);
     header('Content-Type: text/csv');
     header('Content-Disposition:attachment; filename=project_list.csv');
-    header('Content-Length:'.strlen($project_list_csv));
+    header('Content-Length:' . strlen($project_list_csv));
     echo $project_list_csv;
     exit;
 }
 
-$dao = new ProjectDao(CodendiDataAccess::instance());
+$dao    = new ProjectDao(CodendiDataAccess::instance());
 $offset = $request->getValidated('offset', 'uint', 0);
 if (! $offset || $offset < 0) {
     $offset = 0;
@@ -77,30 +73,30 @@ if (! $offset || $offset < 0) {
 $limit = 50;
 
 $group_name_search = "";
-$vGroupNameSearch = new Valid_String('group_name_search');
+$vGroupNameSearch  = new Valid_String('group_name_search');
 if ($request->valid($vGroupNameSearch)) {
     if ($request->exist('group_name_search')) {
         $group_name_search = $request->get('group_name_search');
     }
 }
 
-$status_values = array();
+$status_values = [];
 if ($request->exist('status')) {
     $status_values = $request->get('status');
     if (! is_array($status_values)) {
         $status_values = explode(',', $status_values);
     }
 } else {
-    $status_values = array('ANY');
+    $status_values = ['ANY'];
 }
 
 $dao_status_values = $status_values;
 if (in_array('ANY', $status_values)) {
-    $dao_status_values = array();
+    $dao_status_values = [];
 }
 
 //return projects matching given parameters
-$projects = $dao->searchProjectsWithNumberOfMembers(
+$projects          = $dao->searchProjectsWithNumberOfMembers(
     $offset,
     $limit,
     $dao_status_values,
@@ -110,7 +106,7 @@ $total_nb_projects = $dao->getFoundRows();
 
 if ($total_nb_projects == 1) {
     $row = $projects->getRow();
-    $GLOBALS['Response']->redirect('/admin/groupedit.php?group_id='.$row['group_id']);
+    $GLOBALS['Response']->redirect('/admin/groupedit.php?group_id=' . $row['group_id']);
 }
 
 $title = $Language->getText('admin_projectlist', 'project_list');
@@ -143,7 +139,7 @@ $project_list_presenter = new ProjectListPresenter(
 $admin_page = new AdminPageRenderer();
 $admin_page->renderAPresenter(
     $Language->getText('admin_projectlist', 'title'),
-    ForgeConfig::get('codendi_dir') .'/src/templates/admin/projects/',
+    ForgeConfig::get('codendi_dir') . '/src/templates/admin/projects/',
     'projectlist',
     $project_list_presenter
 );

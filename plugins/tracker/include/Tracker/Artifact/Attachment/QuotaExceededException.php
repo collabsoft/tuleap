@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2016. All rights reserved
+  * Copyright (c) Enalean, 2016 - Present. All rights reserved
   *
   * This file is a part of Tuleap.
   *
@@ -20,4 +20,6 @@
 
 namespace Tuleap\Tracker\Artifact\Attachment;
 
-class QuotaExceededException extends \Exception {}
+class QuotaExceededException extends \Exception
+{
+}

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Search_SearchPeople {
-    const NAME = 'people';
+class Search_SearchPeople
+{
+    public const NAME = 'people';
 
     /**
      * @var UserManager
@@ -27,11 +28,13 @@ class Search_SearchPeople {
     private $manager;
 
 
-    public function __construct(UserManager $manager) {
+    public function __construct(UserManager $manager)
+    {
         $this->manager = $manager;
     }
 
-    public function search(Search_SearchQuery $query, Search_SearchResults $search_results) {
+    public function search(Search_SearchQuery $query, Search_SearchResults $search_results)
+    {
         $user_collection = $this->manager->getPaginatedUsersByUsernameOrRealname(
             $query->getWords(),
             $query->getExact(),
@@ -64,8 +67,9 @@ class Search_SearchPeople {
         );
     }
 
-    private function getResultsPresenters(PaginatedUserCollection $user_collection) {
-        $users_presenters = array();
+    private function getResultsPresenters(PaginatedUserCollection $user_collection)
+    {
+        $users_presenters = [];
 
         foreach ($user_collection->getUsers() as $user) {
             $users_presenters[] = new Search_SearchPeopleResultPresenter($user);

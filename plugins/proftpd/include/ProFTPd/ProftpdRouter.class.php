@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -22,14 +22,16 @@ namespace Tuleap\ProFTPd;
 
 use HTTPRequest;
 
-class ProftpdRouter {
+class ProftpdRouter
+{
 
-    const DEFAULT_CONTROLLER = 'explorer';
-    const DEFAULT_ACTION     = 'index';
+    public const DEFAULT_CONTROLLER = 'explorer';
+    public const DEFAULT_ACTION     = 'index';
 
-    private $controllers = array();
+    private $controllers = [];
 
-    public function __construct(array $controllers) {
+    public function __construct(array $controllers)
+    {
         foreach ($controllers as $controller) {
             $this->controllers[$controller->getName()] = $controller;
         }
@@ -37,10 +39,10 @@ class ProftpdRouter {
 
     /**
      * Routes the request to the correct controller
-     * @param HTTPRequest $request
      * @return void
      */
-    public function route(HTTPRequest $request) {
+    public function route(HTTPRequest $request)
+    {
         if (! $request->get('controller') || ! $request->get('action')) {
             $this->useDefaultRoute($request);
             return;
@@ -55,7 +57,8 @@ class ProftpdRouter {
         }
     }
 
-    private function getControllerFromRequest(HTTPRequest $request) {
+    private function getControllerFromRequest(HTTPRequest $request)
+    {
         if (isset($this->controllers[$request->get('controller')])) {
             return $this->controllers[$request->get('controller')];
         } else {
@@ -63,7 +66,8 @@ class ProftpdRouter {
         }
     }
 
-    private function useDefaultRoute(HTTPRequest $request) {
+    private function useDefaultRoute(HTTPRequest $request)
+    {
         $action = self::DEFAULT_ACTION;
         $this->controllers[self::DEFAULT_CONTROLLER]->$action($this->getService($request), $request);
     }
@@ -71,19 +75,21 @@ class ProftpdRouter {
     /**
      * @return bool
      */
-    private function doesActionExist($controller, $action) {
+    private function doesActionExist($controller, $action)
+    {
         return method_exists($controller, $action);
     }
 
     /**
      * Retrieves the Proftpd Service instance matching the request group id.
      *
-     * @param HTTPRequest $request
      *
      * @return ServiceProFTPd
      */
-    private function getService(HTTPRequest $request) {
-        return $request->getProject()->getService('plugin_proftpd');
+    private function getService(HTTPRequest $request)
+    {
+        $service = $request->getProject()->getService('plugin_proftpd');
+        assert($service instanceof ServiceProFTPd);
+        return $service;
     }
 }
-?>

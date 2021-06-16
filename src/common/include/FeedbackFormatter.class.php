@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,29 +18,30 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class FeedbackFormatter {
+class FeedbackFormatter
+{
 
     /**
      * @return string html
      */
-    function format(array $logs) {
+    public function format(array $logs)
+    {
         $html      = '';
         $old_level = null;
         $hp        = Codendi_HTMLPurifier::instance();
-        foreach($logs as $log) {
-            if (!is_null($old_level) && $old_level != $log['level']) {
+        foreach ($logs as $log) {
+            if (! is_null($old_level) && $old_level != $log['level']) {
                 $html .= '</ul>';
             }
             if (is_null($old_level) || $old_level != $log['level']) {
                 $old_level = $log['level'];
-                $html .= '<ul class="feedback_'. $log['level'] .'">';
+                $html     .= '<ul class="feedback_' . $log['level'] . '">';
             }
-            $html .= '<li>'. $hp->purify($log['msg'], $log['purify']) .'</li>';
+            $html .= '<li>' . $hp->purify($log['msg'], $log['purify']) . '</li>';
         }
-        if (!is_null($old_level)) {
+        if (! is_null($old_level)) {
             $html .= '</ul>';
         }
         return $html;
     }
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -24,7 +24,7 @@
 
 namespace Tuleap\Velocity;
 
-use Tracker_Artifact;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class InvalidArtifactRepresentation
 {
@@ -43,10 +43,10 @@ class InvalidArtifactRepresentation
      */
     public $title;
 
-    public function build(Tracker_Artifact $artifact)
+    public function build(Artifact $artifact)
     {
         $this->xref     = $artifact->getXRef();
         $this->html_url = $artifact->getUri();
-        $this->title    = $artifact->getTitle();
+        $this->title    = $artifact->getTitle() ?? '';
     }
 }

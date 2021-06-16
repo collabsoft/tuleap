@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,8 +22,8 @@ namespace Tuleap\Svn;
 
 class SHA1CollisionDetector
 {
-    const SHA1COLLISIONDETECTOR_PATH = '/usr/bin/sha1collisiondetector';
-    const SUCCESS_EXIT_CODE          = 0;
+    public const SHA1COLLISIONDETECTOR_PATH = '/usr/bin/sha1collisiondetector';
+    public const SUCCESS_EXIT_CODE          = 0;
 
     /**
      * @return bool

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,6 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-require_once dirname(__FILE__).'/../../lib/autoload.php';
-
 /**
  * When you move an artifact from the release plan back to the product backlog and Submit the changes an error is generated
  *
@@ -33,7 +31,7 @@ class Regressions_MilestonesContentTest extends RestBase
         $epics    = $this->getArtifactIdsIndexedByTitle('pbi-6348', 'epic');
         $products = $this->getArtifactIdsIndexedByTitle('pbi-6348', 'product');
 
-        $this->getResponse($this->client->put('milestones/'.$releases['1.0'].'/content', null, json_encode([$epics['One Epic']])));
+        $this->getResponse($this->client->put('milestones/' . $releases['1.0'] . '/content', null, json_encode([$epics['One Epic']])));
 
         $this->assertEquals($this->getMilestoneContentIds($releases['1.0']), [$epics['One Epic']]);
         $this->assertEquals($this->getMilestoneContentIds($products['Widget 2']), [$epics['One Epic'], $epics['Another Epic']]);
@@ -52,7 +50,7 @@ class Regressions_MilestonesContentTest extends RestBase
 
     private function getIds($route)
     {
-        $ids = array();
+        $ids = [];
         foreach ($this->getResponse($this->client->get($route))->json() as $item) {
             $ids[] = $item['id'];
         }

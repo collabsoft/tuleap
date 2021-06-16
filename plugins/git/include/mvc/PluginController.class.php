@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -23,28 +23,26 @@
  *
  * This is a part of lite Model/View/Controler design pattern.
  *
- * @package Codendi-mvc
- * @author    guillaume storchi
- * @license   http://opensource.org/licenses/gpl-license.php GPL
  */
 
-class PluginController {
+abstract class PluginController
+{
 
     /**
      * List of PluginViews method name to execute
      * @var Array
      */
-    protected $views = array('header'=> array(), 'footer'=> array());
+    protected $views = ['header' => [], 'footer' => []];
     /**
      * List of PluginActions method name to execute
      * @var Array
      */
-    protected $actions = array();
+    protected $actions = [];
     /**
      * This array allows data storage and sharing between Actions and Views
      * @var Array
      */
-    protected $actionResultData = array('dummy'=>'dummy');
+    protected $actionResultData = ['dummy' => 'dummy'];
     /**
      * Logical actions, they allow one to control execution of user stories which usually call several PluginActions at one time
      * @var Array
@@ -54,33 +52,39 @@ class PluginController {
     /**
      * Boolean to choose to add default page header and footer in the response.
      *
-     * @var boolean
+     * @var bool
      */
     protected $default_page_rendering = true;
-    
-    public function __construct(UserManager $user_manager, Codendi_Request $request) {
-        $this->user             = $user_manager->getCurrentUser();
-        $this->request          = $request;
+    protected HTTPRequest $request;
+
+    public function __construct(UserManager $user_manager, HTTPRequest $request)
+    {
+        $this->user    = $user_manager->getCurrentUser();
+        $this->request = $request;
     }
 
-    public function getRequest() {
+    public function getRequest()
+    {
         return $this->request;
     }
 
-    public function getUser() {
+    public function getUser()
+    {
         return $this->user;
     }
     /**
      * Function called by process method
      */
-    public function request() {
+    public function request()
+    {
     }
 
     /**
      * Wrapper of global redirect method
      * @param String url
      */
-    public function redirect($url) {
+    public function redirect($url)
+    {
         $GLOBALS['HTML']->redirect($url);
     }
 
@@ -88,7 +92,8 @@ class PluginController {
      * Wrapper
      * @param String $msg
      */
-    public function addError($msg) {
+    public function addError($msg)
+    {
         $GLOBALS['Response']->addFeedback('error', $msg);
     }
 
@@ -96,7 +101,8 @@ class PluginController {
      * Wrapper
      * @param String $msg
      */
-    public function addWarn($msg) {
+    public function addWarn($msg)
+    {
         $GLOBALS['Response']->addFeedback('warning', $msg);
     }
 
@@ -104,16 +110,18 @@ class PluginController {
      * Wrapper
      * @param String $msg
      */
-    public function addInfo($msg) {
+    public function addInfo($msg)
+    {
         $GLOBALS['Response']->addFeedback('info', $msg);
-    }   
+    }
 
     /**
      * This function allows one to add action to control their execution
      * @see isAPermittedAction
      * @param Array $actions a list of action name
      */
-    public function setPermittedActions($actions) {
+    public function setPermittedActions($actions)
+    {
         $this->permittedActions = $actions;
     }
 
@@ -121,33 +129,32 @@ class PluginController {
      * Returns the array of actions
      * @return Array
      */
-    public function getPermittedActions() {
+    public function getPermittedActions()
+    {
         return $this->permittedActions;
     }
-    /**
-     *
-     * @param <type> $action 
-     */
-    public function addPermittedAction($action) {
+    public function addPermittedAction($action)
+    {
         $this->permittedActions[] = $action;
     }
     /**
      * This function is useful to control action execution in the controller, this kind of action is a logical view not a method of PluginAction class
      * One should use this to filter the 'action' parameter in the HTTP request (add, clone, del, help etc...)
      * @param String $actionName
-     * @return boolean
+     * @return bool
      */
-    public function isAPermittedAction($actionName) {
+    public function isAPermittedAction($actionName)
+    {
         return in_array($actionName, $this->permittedActions);
     }
 
     /**
      * Add actions result data
      * @see getData()
-     * @param <type> $data
      */
-    public function addData($data) {
-        if ( !empty($data) && is_array($data)) {
+    public function addData($data)
+    {
+        if (! empty($data) && is_array($data)) {
             $this->actionResultData = array_merge($this->actionResultData, $data);
         }
     }
@@ -156,32 +163,36 @@ class PluginController {
      * Gives data added during PluginAction methods (actions)
      * @return Array data
      */
-    public function getData() {
+    public function getData()
+    {
         return $this->actionResultData;
-    }    
+    }
 
-    public function addView($viewName, $params=array()) {
+    public function addView($viewName, $params = [])
+    {
         $this->views[$viewName] = $params;
     }
 
-    public function addAction($actionName, $params=array()) {
+    public function addAction($actionName, $params = [])
+    {
         $this->actions[$actionName] = $params;
     }
-    
+
     /**
      * This functions execute all views added to the actions class array ($this->views)
      * An action is a method of PluginViews class child, several can be added for one request
      * @TODO associate an action and a view in order to skip action call to provide data to a given view.(like Symfony framework component)
      * @return null
      */
-    function executeViews() {
+    public function executeViews()
+    {
         $wv = $this->instantiateView();
         //this allow to skip header
         if (! $this->isADownload() && $this->default_page_rendering) {
             $wv->display('header', $this->views['header']);
         }
-        foreach ($this->views as $viewName=>$viewParams) {
-            if ( $viewName != 'header' && $viewName != 'footer' ) {
+        foreach ($this->views as $viewName => $viewParams) {
+            if ($viewName != 'header' && $viewName != 'footer') {
                 $wv->display($viewName, $viewParams);
             }
         }
@@ -191,10 +202,7 @@ class PluginController {
         }
     }
 
-    protected function instantiateView()  {
-        $className = get_class($this).'Views';
-        return new $className($this);
-    }
+    abstract protected function instantiateView();
 
     /**
      * This functions execute all methods added to the actions class array ($this->actions)
@@ -202,18 +210,22 @@ class PluginController {
      * @TODO associate an action and a view in order to skip action call to provide data to a given view.(like Symfony framework component)
      * @return null
      */
-    function executeActions() {
-        if ( empty($this->actions) ) {
+    public function executeActions()
+    {
+        if (empty($this->actions)) {
             return false;
         }
-        $results       = array();
-        $className     = get_class($this).'Actions';
-        $wa            = $this->instantiateAction($className);
-        foreach ($this->actions as $name=>$params) {
+        $results   = [];
+        $className = static::class . 'Actions';
+        if (! class_exists($className)) {
+            throw new LogicException("$className does not exist");
+        }
+        $wa = $this->instantiateAction($className);
+        foreach ($this->actions as $name => $params) {
             $wa->process($name, $params);
         }
     }
-    
+
     /**
      * Instantiate an action based on a given name.
      *
@@ -221,16 +233,20 @@ class PluginController {
      *
      * @param string $action The name of the action
      *
+     * @psalm-param class-string $action
+     *
      * @return PluginActions
      */
-    protected function instantiateAction($action) {
+    protected function instantiateAction($action)
+    {
         return new $action($this);
     }
 
     /**
      * Render everything
      */
-    function process() {
+    public function process()
+    {
         $this->request();
         $this->executeActions();
         $this->executeViews();
@@ -238,10 +254,11 @@ class PluginController {
 
     /**
      * Sets whether the default page header and footer are added to the response
-     * 
-     * @param boolean $bool
+     *
+     * @param bool $bool
      */
-    protected function setDefaultPageRendering($bool) {
+    protected function setDefaultPageRendering($bool)
+    {
         $this->default_page_rendering = $bool;
     }
 

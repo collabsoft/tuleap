@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -25,7 +25,8 @@
 /**
  * I build a ugroup mapping
  */
-class Tracker_UgroupMappingBuilder {
+class Tracker_UgroupMappingBuilder
+{
 
     /** @var Tracker_UgroupPermissionsGoldenRetriever */
     private $permissions_retriever;
@@ -44,11 +45,12 @@ class Tracker_UgroupMappingBuilder {
     /**
      * @return int[] array(102 => 324, 106 => 325, <template_ugroup_id> => <target_ugroup_id>, …)
      */
-    public function getMapping(Tracker $template_tracker, Project $target_project) {
+    public function getMapping(Tracker $template_tracker, Project $target_project)
+    {
         $template_ugroups = $this->permissions_retriever->getListOfInvolvedStaticUgroups($template_tracker);
         $target_ugroups   = $this->ugroup_manager->getStaticUGroups($target_project);
 
-        $ugroups = array();
+        $ugroups = [];
         foreach ($template_ugroups as $template_ugroup) {
             foreach ($target_ugroups as $target_ugroup) {
                 if ($template_ugroup->getName() == $target_ugroup->getName()) {
@@ -60,4 +62,3 @@ class Tracker_UgroupMappingBuilder {
         return $ugroups;
     }
 }
-?>

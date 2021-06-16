@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,6 @@ use CSRFSynchronizerToken;
 use Feedback;
 use PermissionsNormalizer;
 use PermissionsNormalizerOverrideCollection;
-use Project;
 use ProjectHistoryDao;
 use TemplateRendererFactory;
 use Tracker;
@@ -34,8 +33,8 @@ use User_ForgeUserGroupFactory;
 
 class AdminController
 {
-    const WRITE_ACCESS = 'PLUGIN_TIMETRACKING_WRITE';
-    const READ_ACCESS  = 'PLUGIN_TIMETRACKING_READ';
+    public const WRITE_ACCESS = 'PLUGIN_TIMETRACKING_WRITE';
+    public const READ_ACCESS  = 'PLUGIN_TIMETRACKING_READ';
 
     /**
      * @var TrackerManager
@@ -111,7 +110,8 @@ class AdminController
 
         $tracker->displayAdminItemHeader(
             $this->tracker_manager,
-            'timetracking'
+            'timetracking',
+            dgettext('tuleap-timetracking', 'Time tracking')
         );
 
         $renderer->renderToPage(
@@ -122,35 +122,35 @@ class AdminController
         $tracker->displayFooter($this->tracker_manager);
     }
 
-    private function getReadersUGroupPresenters(Tracker $tracker)
+    private function getReadersUGroupPresenters(Tracker $tracker): array
     {
-        $user_groups      = $this->user_group_factory->getProjectUGroupsWithAdministratorAndMembers($tracker->getProject());
+        $user_groups      = $this->user_group_factory->getProjectUGroupsWithMembers($tracker->getProject());
         $selected_ugroups = $this->timetracking_ugroup_retriever->getReaderIdsForTracker($tracker);
 
-        $read_ugroups = array();
+        $read_ugroups = [];
         foreach ($user_groups as $ugroup) {
-            $read_ugroups[] = array(
+            $read_ugroups[] = [
                 'label'    => $ugroup->getName(),
                 'value'    => $ugroup->getId(),
                 'selected' => in_array($ugroup->getId(), $selected_ugroups)
-            );
+            ];
         }
 
         return $read_ugroups;
     }
 
-    private function getWritersUGroupPresenters(Tracker $tracker)
+    private function getWritersUGroupPresenters(Tracker $tracker): array
     {
-        $user_groups      = $this->user_group_factory->getProjectUGroupsWithAdministratorAndMembers($tracker->getProject());
+        $user_groups      = $this->user_group_factory->getProjectUGroupsWithMembers($tracker->getProject());
         $selected_ugroups = $this->timetracking_ugroup_retriever->getWriterIdsForTracker($tracker);
 
-        $write_ugroups = array();
+        $write_ugroups = [];
         foreach ($user_groups as $ugroup) {
-            $write_ugroups[] = array(
+            $write_ugroups[] = [
                 'label'    => $ugroup->getName(),
                 'value'    => $ugroup->getId(),
                 'selected' => in_array($ugroup->getId(), $selected_ugroups)
-            );
+            ];
         }
 
         return $write_ugroups;
@@ -238,7 +238,7 @@ class AdminController
     private function saveWriters(Tracker $tracker, $selected_write_ugroup)
     {
         $override_collection = new PermissionsNormalizerOverrideCollection();
-        $normalized_ids = $this->permissions_normalizer->getNormalizedUGroupIds(
+        $normalized_ids      = $this->permissions_normalizer->getNormalizedUGroupIds(
             $tracker->getProject(),
             $selected_write_ugroup,
             $override_collection
@@ -252,7 +252,7 @@ class AdminController
     private function saveReaders(Tracker $tracker, $selected_read_ugroup)
     {
         $override_collection = new PermissionsNormalizerOverrideCollection();
-        $normalized_ids = $this->permissions_normalizer->getNormalizedUGroupIds(
+        $normalized_ids      = $this->permissions_normalizer->getNormalizedUGroupIds(
             $tracker->getProject(),
             $selected_read_ugroup,
             $override_collection

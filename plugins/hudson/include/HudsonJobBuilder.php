@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,16 +21,16 @@
 namespace Tuleap\Hudson;
 
 use Http\Client\HttpAsyncClient;
-use Http\Message\RequestFactory;
 use HudsonJobURLFileException;
 use HudsonJobURLFileNotFoundException;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use SimpleXMLElement;
 
 class HudsonJobBuilder
 {
     /**
-     * @var RequestFactory
+     * @var RequestFactoryInterface
      */
     private $http_request_factory;
     /**
@@ -39,7 +39,7 @@ class HudsonJobBuilder
     private $http_client;
 
 
-    public function __construct(RequestFactory $http_request_factory, HttpAsyncClient $http_client)
+    public function __construct(RequestFactoryInterface $http_request_factory, HttpAsyncClient $http_client)
     {
         $this->http_request_factory = $http_request_factory;
         $this->http_client          = $http_client;
@@ -57,7 +57,7 @@ class HudsonJobBuilder
     }
 
     /**
-     * @param MinimalHudsonJob[]
+     * @param MinimalHudsonJob[] $minimal_hudson_jobs
      * @return HudsonJobLazyExceptionHandler[]
      */
     public function getHudsonJobsWithException(array $minimal_hudson_jobs)
@@ -101,6 +101,12 @@ class HudsonJobBuilder
      */
     private function getXMLContent(MinimalHudsonJob $minimal_hudson_job, ResponseInterface $http_response)
     {
+        if ($http_response->getStatusCode() === 404) {
+            throw new HudsonJobURLFileNotFoundException(
+                sprintf(dgettext('tuleap-hudson', 'File not found at URL: %1$s'), $minimal_hudson_job->getJobUrl())
+            );
+        }
+
         $previous_libxml_use_errors = libxml_use_internal_errors(true);
         $xmlobj                     = simplexml_load_string($http_response->getBody());
         libxml_use_internal_errors($previous_libxml_use_errors);
@@ -108,7 +114,7 @@ class HudsonJobBuilder
             return $xmlobj;
         }
         throw new HudsonJobURLFileException(
-            $GLOBALS['Language']->getText('plugin_hudson', 'job_url_file_error', [$minimal_hudson_job->getJobUrl()])
+            sprintf(dgettext('tuleap-hudson', 'Unable to read file at URL: %1$s'), $minimal_hudson_job->getJobUrl())
         );
     }
 }

@@ -1,24 +1,16 @@
 #
-# Copyright (c) Enalean SAS, Tuleap Team, 2011-2012. All rights reserved
+# Copyright (c) Enalean SAS, Tuleap Team, 2011 - Present. All rights reserved
 # Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
 # This file is licensed under the GNU General Public License version 2. See the file COPYING.
 #
 widget	close_title	Supprimer
 widget	maximize_title	Maximiser
 widget	minimize_title	Minimiser
-widget	rss_title	RSS
 widget	preferences_title	Préférences
 
 widget_add	already_used	Déjà utilisé
 
 widget_imageviewer	invalid_url	Seules les URLs http:// et https:// sont acceptées.
-
-widget_categ_label	forums	Forums
-widget_categ_label	frs	Files
-widget_categ_label	general	Général
-widget_categ_label	trackers	Outils de suivi
-widget_categ_label	scm	Gestion de code source
-widget_categ_label	wiki	Wiki
 
 widget_dashboard	updated	Votre <a href="$1">tableau de bord</a> a été modifié.
 
@@ -36,7 +28,6 @@ widget_description_project_latest_file_releases	description	Affiche la liste des
 widget_description_project_classification	description	Affiche la liste des catégories auxquelles le projet appartient.
 widget_description_project_description	description	Affiche la description du projet.
 widget_description_project_latest_news	description	Affiche les dix dernières annonces publiées par les membres du projet.
-widget_description_project_members	description	Affiche la liste des membres du projet.
 widget_description_project_public_areas	description	Affiche tous les services disponibles pour ce projet assortis d'informations complémentaires (comme par exemple le nombre d'artefact ouvert ou fermé). <br>Le rôle de cette liste est quasiment identique à celui du menu principal du projet situé en haut de la page à savoir fournir un accès rapide à chacun des services du projet.
 widget_description_project_latest_svn_commits	description	Affiche  la liste des derniers commits SVN du projet.
 widget_description_project_latest_cvs_commits	description	Affiche  la liste des derniers commits CVS du projet.

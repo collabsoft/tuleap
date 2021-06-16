@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -22,24 +22,20 @@
 /**
  * Response
  */
-class Response {
-    
+class Response
+{
+
     /**
      *
      * @var Feedback
      */
-    var $_feedback;
+    public $_feedback;
 
-    /**
-     *
-     * @var Tour[]
-     */
-    var $tours = array();
-    
     /**
     * Constructor
     */
-    public function __construct() {
+    public function __construct()
+    {
         $session_id = UserManager::instance()->getCurrentUser()->getSessionId();
         if ($session_id) {
             $dao = $this->getFeedbackDao();
@@ -54,50 +50,46 @@ class Response {
                 $dao->delete($session_id);
             }
         }
-        if (!$this->_feedback) {
+        if (! $this->_feedback) {
             $this->clearFeedback();
         }
     }
 
-    function addTour(Tuleap_Tour $tour) {
-        $this->tours[] = $tour;
-    }
-
-    /**
-     * @return Tuleap_Tour[]
-     */
-    function getTours() {
-        return $this->tours;
-    }
-
-    function addFeedback($level, $message,  $purify=CODENDI_PURIFIER_CONVERT_HTML) {
+    public function addFeedback($level, $message, $purify = CODENDI_PURIFIER_CONVERT_HTML)
+    {
         $this->_feedback->log($level, $message, $purify);
     }
-    
+
     /**
      * Only adds to the feedback if the messge doesn't already exist.
      */
-    function addUniqueFeedback($level, $message,  $purify=CODENDI_PURIFIER_CONVERT_HTML) { 
-        if(! strstr($this->getRawFeedback(), $message)) {
+    public function addUniqueFeedback($level, $message, $purify = CODENDI_PURIFIER_CONVERT_HTML)
+    {
+        if (! strstr($this->getRawFeedback(), $message)) {
             $this->_feedback->log($level, $message, $purify);
-         }
+        }
     }
-    
-    public function displayFeedback() {
+
+    public function displayFeedback()
+    {
         $this->_feedback->display();
     }
-    function feedbackHasWarningsOrErrors() {
+    public function feedbackHasWarningsOrErrors()
+    {
         return $this->_feedback->hasWarningsOrErrors();
     }
-    function feedbackHasErrors() {
+    public function feedbackHasErrors()
+    {
         return $this->_feedback->hasErrors();
     }
 
-    function getRawFeedback() {
+    public function getRawFeedback()
+    {
         return $this->_feedback->fetchAsPlainText();
     }
 
-    public function getAndClearRawFeedback() {
+    public function getAndClearRawFeedback()
+    {
         $feedback = $this->getRawFeedback();
         $this->clearFeedback();
         return $feedback;
@@ -106,11 +98,13 @@ class Response {
     /**
      * @return array of error messages
      */
-    function getFeedbackErrors() {
+    public function getFeedbackErrors()
+    {
         return $this->_feedback->fetchErrors();
     }
 
-    public function clearFeedback() {
+    public function clearFeedback()
+    {
         $this->_feedback = new Feedback();
     }
 
@@ -119,44 +113,55 @@ class Response {
         return $this->_feedback->clearErrors();
     }
 
-    private function getFeedbackDao() {
+    private function getFeedbackDao()
+    {
         return new FeedbackDao();
     }
 
-    function _serializeFeedback() {
+    public function _serializeFeedback()
+    {
         $dao        = $this->getFeedbackDao();
         $session_id = UserManager::instance()->getCurrentUser()->getSessionId();
         $dao->create($session_id, $this->_feedback->getLogs());
     }
 
-    public function sendStatusCode($code) {
-        header("HTTP/1.0 $code");
-        echo $this->getRawFeedback();
+    public function sendStatusCode($code)
+    {
+        \http_response_code($code);
     }
 
-    public function setContentType($content_type) {
+    public function setContentType($content_type)
+    {
         header('Content-type: ' . $content_type);
     }
 
-    public function sendJSON($content) {
+    public function sendJSON($content)
+    {
         $this->setContentType('application/json');
-        echo json_encode($content);
+        /**
+         * @psalm-taint-escape html
+         */
+        $json_content = json_encode($content, JSON_THROW_ON_ERROR);
+        echo $json_content;
     }
 
-    public function sendXMLAttachementFile($xml, $output_filename) {
-        header ('Content-Description: File Transfer');
-        header ('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-        header ('Content-Disposition: attachment; filename="'.$output_filename.'"');
-        header ('Content-Type: application/xml');
+    public function sendXMLAttachementFile($xml, $output_filename)
+    {
+        header('Content-Description: File Transfer');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        header('Content-Disposition: attachment; filename="' . $output_filename . '"');
+        header('Content-Type: application/xml');
 
         echo $xml;
     }
 
-    public function send401UnauthorizedHeader() {
+    public function send401UnauthorizedHeader()
+    {
         header('HTTP/1.0 401 Unauthorized', true, 401);
     }
 
-    public function send400JSONErrors($message) {
+    public function send400JSONErrors($message)
+    {
         header('Content-Type: application/json; charset=UTF-8', true);
         header('HTTP/1.0 400 Bad Request', true, 400);
         echo json_encode($message);

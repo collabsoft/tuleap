@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,13 +23,12 @@ namespace Tuleap\AgileDashboard\Widget;
 use AgileDashboard_KanbanFactory;
 use AgileDashboard_PermissionsManager;
 use TrackerFactory;
-use Tuleap\AgileDashboard\Kanban\TrackerReport\TrackerReportBuilder;
 use Tuleap\Dashboard\User\UserDashboardController;
 use UserManager;
 
 class MyKanban extends Kanban
 {
-    const NAME = 'plugin_agiledashboard_my_kanban';
+    public const NAME = 'plugin_agiledashboard_my_kanban';
 
     public function __construct(
         WidgetKanbanCreator $widget_kanban_creator,
@@ -39,7 +38,8 @@ class MyKanban extends Kanban
         TrackerFactory $tracker_factory,
         AgileDashboard_PermissionsManager $permissions_manager,
         WidgetKanbanConfigRetriever $widget_kanban_config_retriever,
-        WidgetKanbanConfigUpdater $widget_kanban_config_updater
+        WidgetKanbanConfigUpdater $widget_kanban_config_updater,
+        \Tracker_ReportFactory $tracker_report_factory
     ) {
         parent::__construct(
             self::NAME,
@@ -52,7 +52,8 @@ class MyKanban extends Kanban
             $tracker_factory,
             $permissions_manager,
             $widget_kanban_config_retriever,
-            $widget_kanban_config_updater
+            $widget_kanban_config_updater,
+            $tracker_report_factory
         );
     }
 }

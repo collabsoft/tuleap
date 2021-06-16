@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -23,13 +23,11 @@ namespace Tuleap\Dashboard\Widget;
 class DashboardWidgetRemoverInList
 {
     /**
-     * @param DashboardWidget $widget_to_update
-     * @param DashboardWidgetColumn $column
      * @return array
      */
     public function removeWidgetInWidgetsListColumn(DashboardWidget $widget_to_update, DashboardWidgetColumn $column)
     {
-        $widgets = array();
+        $widgets = [];
         foreach ($column->getWidgets() as $widget) {
             if ($widget->getId() !== $widget_to_update->getId()) {
                 $widgets[] = $widget;

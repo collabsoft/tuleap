@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,13 +20,12 @@
 
 namespace Tuleap\Dashboard\User;
 
-use ForgeConfig;
 use HTTPRequest;
 use Tuleap\Dashboard\Widget\WidgetDashboardController;
 
 class UserDashboardRouter
 {
-    const DASHBOARD_TYPE = 'user';
+    public const DASHBOARD_TYPE = 'user';
 
     /** @var UserDashboardController  */
     private $user_dashboard_controller;
@@ -45,7 +44,6 @@ class UserDashboardRouter
 
     /**
      * Routes the request to the correct controller
-     * @param HTTPRequest $request
      * @return void
      */
     public function route(HTTPRequest $request)

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,12 +20,12 @@
 
 namespace Tuleap\Tracker\REST;
 
-use \Tracker_FormElement_Field_List_Value;
-use Tuleap\Project\REST\UserGroupRepresentation;
+use Tracker_FormElement_Field_List_Value;
+use Tuleap\Project\REST\MinimalUserGroupRepresentation;
 use Tuleap\REST\JsonCast;
-use Project;
 
-class FieldListBindUGroupValueRepresentation {
+class FieldListBindUGroupValueRepresentation
+{
     /**
      * @var int
      */
@@ -37,13 +37,14 @@ class FieldListBindUGroupValueRepresentation {
     public $label;
 
     /**
-     * @var UserGroupRepresentation
+     * @var MinimalUserGroupRepresentation
      */
     public $ugroup_reference;
 
-    public function build(Tracker_FormElement_Field_List_Value $value, UserGroupRepresentation $ugroup_representation) {
+    public function build(Tracker_FormElement_Field_List_Value $value, MinimalUserGroupRepresentation $ugroup_representation)
+    {
         $this->id               = JsonCast::toInt($value->getId());
-        $this->label            = $value->getSoapValue();
+        $this->label            = $value->getAPIValue();
         $this->ugroup_reference = $ugroup_representation;
     }
 }

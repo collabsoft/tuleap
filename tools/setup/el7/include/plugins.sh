@@ -1,5 +1,5 @@
 _pluginGit() {
-    local -r git="/opt/rh/rh-git29/root/usr/bin/git"
+    local -r git="/opt/rh/rh-git218/root/usr/bin/git"
     local -r gitolite="/usr/bin/gitolite"
     local -r git_group="gitolite"
     local -r git_user="gitolite"
@@ -56,8 +56,8 @@ _pluginGit() {
         plugin_git_configured="true"
     fi
 
-    if ! $(_serviceIsActive sshd); then
-        _errorMessage "Start sshd service"
+    if ! $(${tuleapcfg} systemctl is-active sshd); then
+        _errorMessage "Please, start the SSHD service to continue"
         exit 1
     fi
 
@@ -100,19 +100,7 @@ _pluginGit() {
         plugin_git_configured="true"
     fi
 
-    ${awk} '{ gsub("# GROUPLIST_PGM", "GROUPLIST_PGM");
-              gsub(""'"ssh-authkeys"'"","#"'"ssh-authkeys"'",");
-              gsub("#0,#0,#0,7", "0007"); print}' \
-            ${tuleap_src_plugins}/git/etc/gitolite3.rc.dist > \
-            ${git_home}/.gitolite.rc
-    ${chown} ${git_user}:${git_group} ${git_home}/.gitolite.rc
-    ${chmod} 640 ${git_home}/.gitolite.rc
-
-    if [ ! -f "${git_home}/.profile" ]; then
-        ${printf} "source /opt/rh/rh-git29/enable" > ${git_home}/.profile
-        ${chown} ${git_user}:${git_group} ${git_home}/.profile
-        plugin_git_configured="true"
-    fi
+    ${tuleapcfg} site-deploy:gitolite3-config
 
     if [ ! -f "${tuleap_data}/gitolite/admin/conf/gitolite.conf" ]; then
         ${install} --group=${tuleap_unix_user} \
@@ -123,7 +111,7 @@ _pluginGit() {
         plugin_git_configured="true"
     fi
 
-    if ! ${su} --command '/opt/rh/rh-git29/root/usr/bin/git \
+    if ! ${su} --command '/opt/rh/rh-git218/root/usr/bin/git \
         --git-dir="/var/lib/tuleap/gitolite/admin/.git"  \
         cat-file -e origin/master:conf/gitolite.conf' \
         --login ${tuleap_unix_user}; then
@@ -141,31 +129,29 @@ _pluginGit() {
         plugin_git_configured="true"
     fi
 
-    if [ ! -f "${git_home}/.gitolite/hooks/common/post-receive-gitolite" ]; then
-        ${install} --group=${git_group} \
-                   --owner=${git_user} \
-                   --mode=755 \
-                   ${tuleap_src_plugins}/git/hooks/post-receive-gitolite \
-                   ${git_home}/.gitolite/hooks/common/post-receive-gitolite
+    if [ ! -L "${git_home}/.gitolite/hooks/common/post-receive" ]; then
+        ${ln} -s "${tuleap_src_plugins}/git/hooks/post-receive-gitolite" \
+            "${git_home}/.gitolite/hooks/common/post-receive"
         plugin_git_configured="true"
     fi
 
-    if [ -f "/usr/share/gitolite/hooks/common/post-receive" ]; then
-        ${install} --group=${git_group} \
-                   --owner=${git_user} \
-                   --mode=755 \
-                   ${tuleap_src_plugins}/git/hooks/post-receive-gitolite \
-                   /usr/share/gitolite/hooks/common/post-receivea
+    if ! $(${tuleapcfg} systemctl is-enabled tuleap-process-system-events-git.timer); then
+        ${tuleapcfg} systemctl enable "tuleap-process-system-events-git.timer"
         plugin_git_configured="true"
     fi
 
-    if ! $(_serviceIsEnabled tuleap-process-system-events-git.timer); then
-        _serviceEnable "tuleap-process-system-events-git.timer"
+    if ! $(${tuleapcfg} systemctl is-active tuleap-process-system-events-git.timer); then
+        ${tuleapcfg} systemctl start "tuleap-process-system-events-git.timer"
         plugin_git_configured="true"
     fi
 
-    if ! $(_serviceIsActive tuleap-process-system-events-git.timer); then
-        _serviceStart "tuleap-process-system-events-git.timer"
+    if ! $(${tuleapcfg} systemctl is-enabled tuleap-process-system-events-grokmirror.timer); then
+        ${tuleapcfg} systemctl enable "tuleap-process-system-events-grokmirror.timer"
+        plugin_git_configured="true"
+    fi
+
+    if ! $(${tuleapcfg} systemctl is-active tuleap-process-system-events-grokmirror.timer); then
+        ${tuleapcfg} systemctl start "tuleap-process-system-events-grokmirror.timer"
         plugin_git_configured="true"
     fi
 
@@ -178,23 +164,21 @@ _pluginGit() {
 }
 
 _pluginSVN() {
-    local -r httpd_conf="/etc/httpd/conf/httpd.conf"
-    local -r httpd_conf_ssl="/etc/httpd/conf.d/ssl.conf"
     local -r httpd_vhost="/etc/httpd/conf.d/tuleap-vhost.conf"
     local plugin_svn_configured="false"
 
     if ${grep} --quiet "%sys_dbauth_passwd%" "${tuleap_conf}/${local_inc}"; then
         if [ ${mysql_user:-NULL} != "NULL" ] && \
            [ ${mysql_password:-NULL} != "NULL" ]; then
-            dbauthuser_password=$(_setupRandomPassword)
-            _mysqlExecute "${mysql_user}" "${mysql_password:-NULL}" \
-                "$(_sqlDbauthuserPrivileges ${web_server_ip:-localhost} \
-                ${dbauthuser_password})"
-            ${sed} --in-place \
-                "s@sys_dbauth_passwd.*@sys_dbauth_passwd = '${dbauthuser_password}';@g" \
-                "${tuleap_conf}/${local_inc}"
-            _logPassword \
-                "MySQL dbauth user password (dbauthuser): ${dbauthuser_password}"
+            dbauthuser_password="$(_setupRandomPassword)"
+
+            ${tuleapcfg} setup:mysql-init \
+                --host="${mysql_server}" \
+                --admin-user="${mysql_user}" \
+                --admin-password="${mysql_password}" \
+                --db-name="${sys_db_name}" \
+                --nss-password="${dbauthuser_password}"
+
             plugin_svn_configured="true"
         else
             _errorMessage "You must enter your MySQL user and password"
@@ -215,37 +199,20 @@ _pluginSVN() {
         plugin_svn_configured="true"
     fi
 
-    if ! ${grep} --quiet "^User.*${tuleap_unix_user}" ${httpd_conf}; then
-        ${sed} --in-place "s@^User.*@User ${tuleap_unix_user}@g" ${httpd_conf}
-        plugin_svn_configured="true"
-    fi
-
-    if ! ${grep} --quiet "^Group.*${tuleap_unix_user}" ${httpd_conf}; then
-        ${sed} --in-place "s@^Group.*@Group ${tuleap_unix_user}@g" ${httpd_conf}
-        plugin_svn_configured="true"
-    fi
-
-    if ! ${grep} --quiet "Listen.*:8080" ${httpd_conf}; then
-        _phpConfigureModule "apache"
-        plugin_svn_configured="true"
-    fi
-
-    if [ -f ${httpd_conf_ssl} ] && \
-        ${grep} --quiet "SSLEngine.*on" ${httpd_conf_ssl}; then
-        ${sed} --in-place "s@^SSLEngine.*on@SSLEngine off@g" ${httpd_conf_ssl}
-        plugin_svn_configured="true"
-    fi
-
-    if ${grep} --quiet "^Listen" ${httpd_conf_ssl}; then
-        ${sed} --in-place "s@^Listen@#Listen@g" ${httpd_conf_ssl}
-        plugin_svn_configured="true"
-    fi
-
     if [ ${plugin_svn_configured} = "true" ]; then
-        _serviceRestart "httpd.service"
+        ${tuleapcfg} systemctl restart "httpd.service"
+        ${tuleapcfg} systemctl enable "httpd.service"
         _infoMessage "Plugin SVN is configured"
         plugins_configured+=('true')
     else
         _infoMessage "Plugin SVN is already configured"
     fi
+}
+
+_pluginMediawiki() {
+    ${tuleapcfg} setup:mysql-init \
+        --host="${mysql_server}" \
+        --admin-user="${mysql_user}" \
+        --admin-password="${mysql_password}" \
+        --mediawiki=per-project
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,17 +20,17 @@
 
 namespace Tuleap\Tracker\FormElement;
 
-use Logger;
+use Psr\Log\LoggerInterface;
 use TimePeriodWithoutWeekEnd;
 
 class ChartCachedDaysComparator
 {
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
 
-    public function __construct(Logger $logger)
+    public function __construct(LoggerInterface $logger)
     {
         $this->logger = $logger;
     }
@@ -61,7 +61,7 @@ class ChartCachedDaysComparator
     private function isTodayAWeekDayAndIsTodayBeforeTimePeriodEnd(TimePeriodWithoutWeekEnd $time_period_without_week_end)
     {
         return $time_period_without_week_end->isTodayWithinTimePeriod()
-            && $time_period_without_week_end->isNotWeekendDay($_SERVER['REQUEST_TIME']);
+            && TimePeriodWithoutWeekEnd::isNotWeekendDay($_SERVER['REQUEST_TIME']);
     }
 
     private function compareCachedDaysWhenLastDayIsAComputedValue($cache_days, $number_of_days_for_period)

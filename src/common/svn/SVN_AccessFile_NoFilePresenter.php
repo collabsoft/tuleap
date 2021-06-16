@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,13 +19,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class SVN_AccessFile_NoFilePresenter {
+class SVN_AccessFile_NoFilePresenter
+{
 
-    public function access_form_title() {
-        return $GLOBALS['Language']->getText('svn_admin_access_control','access_ctrl');
+    public function access_form_title()
+    {
+        return $GLOBALS['Language']->getText('svn_admin_access_control', 'access_ctrl');
     }
 
-    public function repo_not_created_label() {
-        return $GLOBALS['Language']->getText('svn_admin_access_control','not_created');
+    public function repo_not_created_label()
+    {
+        return $GLOBALS['Language']->getText('svn_admin_access_control', 'not_created');
     }
 }

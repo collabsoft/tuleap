@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ class AndFromWhere implements IProvideFromAndWhereSQLFragments
      */
     public function getFromAsString()
     {
-        return $this->left->getFromAsString() .' '. $this->right->getFromAsString();
+        return $this->left->getFromAsString() . ' ' . $this->right->getFromAsString();
     }
 
     /**

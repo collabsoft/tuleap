@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,37 +24,29 @@ use Tuleap\AgileDashboard\Milestone\Pane\Details\DetailsPaneInfo;
 /**
  * I build panes info for a Planning_Milestone
  */
-class AgileDashboard_PaneInfoFactory {
-
-    /** @var PFUser */
-    private $user;
-
+class AgileDashboard_PaneInfoFactory
+{
     /** @var AgileDashboard_Milestone_Pane_Planning_SubmilestoneFinder */
     private $submilestone_finder;
 
-    /** @var string */
-    private $theme_path;
-
     public function __construct(
-        PFUser $user,
-        AgileDashboard_Milestone_Pane_Planning_SubmilestoneFinder $submilestone_finder,
-        $theme_path
+        AgileDashboard_Milestone_Pane_Planning_SubmilestoneFinder $submilestone_finder
     ) {
-        $this->user                         = $user;
-        $this->submilestone_finder          = $submilestone_finder;
-        $this->theme_path                   = $theme_path;
+        $this->submilestone_finder = $submilestone_finder;
     }
 
-    public function getDetailsPaneInfo(Planning_Milestone $milestone) {
-        return new DetailsPaneInfo($milestone, $this->theme_path);
+    public function getDetailsPaneInfo(Planning_Milestone $milestone)
+    {
+        return new DetailsPaneInfo($milestone);
     }
 
-    public function getPlanningV2PaneInfo(Planning_Milestone $milestone) {
+    public function getPlanningV2PaneInfo(Planning_Milestone $milestone)
+    {
         $submilestone_tracker = $this->submilestone_finder->findFirstSubmilestoneTracker($milestone);
         if (! $submilestone_tracker) {
             return;
         }
 
-        return new PlanningV2PaneInfo($milestone, $this->theme_path, $submilestone_tracker);
+        return new PlanningV2PaneInfo($milestone, $submilestone_tracker);
     }
 }

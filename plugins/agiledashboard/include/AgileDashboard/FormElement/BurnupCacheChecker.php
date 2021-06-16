@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,7 @@
 namespace Tuleap\AgileDashboard\FormElement;
 
 use TimePeriodWithoutWeekEnd;
-use Tracker_Artifact;
+use Tuleap\Tracker\Artifact\Artifact;
 use Tuleap\Tracker\FormElement\ChartCachedDaysComparator;
 use Tuleap\Tracker\FormElement\ChartConfigurationValueChecker;
 
@@ -56,15 +56,16 @@ class BurnupCacheChecker
         $this->cache_days_comparator = $cache_days_comparator;
     }
 
-    public function isBurnupUnderCalculation(Tracker_Artifact $artifact, TimePeriodWithoutWeekEnd $time_period, \PFUser $user)
+    public function isBurnupUnderCalculation(Artifact $artifact, TimePeriodWithoutWeekEnd $time_period, \PFUser $user)
     {
         $is_burnup_under_calculation = false;
 
-        if ($this->isCacheCompleteForBurnup($artifact, $time_period, $user) === false
+        if (
+            $this->isCacheCompleteForBurnup($artifact, $time_period, $user) === false
         ) {
             $this->cache_generator->forceBurnupCacheGeneration($artifact);
             $is_burnup_under_calculation = true;
-        } else if ($this->cache_generator->isCacheBurnupAlreadyAsked($artifact)) {
+        } elseif ($this->cache_generator->isCacheBurnupAlreadyAsked($artifact)) {
             $is_burnup_under_calculation = true;
         }
 
@@ -72,7 +73,7 @@ class BurnupCacheChecker
     }
 
     private function isCacheCompleteForBurnup(
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         TimePeriodWithoutWeekEnd $time_period,
         \PFUser $user
     ) {

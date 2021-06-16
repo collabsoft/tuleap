@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,10 +22,18 @@ namespace Tuleap\OpenIDConnectClient\Login\Registration;
 
 use ForgeConfig;
 use PFUser;
+use User_UserStatusManager;
 use UserManager;
 
 class AutomaticUserRegistration
 {
+    /**
+     * OpenID Connect `userinfo` attribute to be used as `ldap_id` (for instance `preferred_username` for `sAMAccountName`)
+     *
+     * @tlp-config-key
+     */
+    public const CONFIG_LDAP_ATTRIBUTE = 'openidconnectclient_ldap_attribute';
+
     /**
      * @var UserManager
      */
@@ -42,13 +50,38 @@ class AutomaticUserRegistration
     }
 
     /**
-     * @return PFUser
      * @throws NotEnoughDataToRegisterUserException
      */
-    public function register(array $user_information)
+    public function canCreateAccount(array $user_information): bool
+    {
+        if (ForgeConfig::get(self::CONFIG_LDAP_ATTRIBUTE) !== false) {
+            if (! isset($user_information[ForgeConfig::get(self::CONFIG_LDAP_ATTRIBUTE)])) {
+                throw new NotEnoughDataToRegisterUserException(
+                    sprintf(
+                        '%s config is defined to %s however `userinfo` OIDC route only has: %s',
+                        self::CONFIG_LDAP_ATTRIBUTE,
+                        ForgeConfig::get(self::CONFIG_LDAP_ATTRIBUTE),
+                        implode(', ', array_keys($user_information)),
+                    )
+                );
+            }
+            return count($this->user_manager->getAllUsersByLdapID($user_information[ForgeConfig::get(self::CONFIG_LDAP_ATTRIBUTE)])) === 0;
+        }
+
+        if (! isset($user_information['email'])) {
+            throw new NotEnoughDataToRegisterUserException('No `email` in `userinfo`');
+        }
+
+        return count($this->user_manager->getAllUsersByEmail($user_information['email'])) === 0;
+    }
+
+    /**
+     * @throws NotEnoughDataToRegisterUserException
+     */
+    public function register(array $user_information): ?PFUser
     {
         if (! isset($user_information['email'])) {
-            throw new NotEnoughDataToRegisterUserException();
+            throw new NotEnoughDataToRegisterUserException('No `email` in `userinfo`');
         }
 
         $username = $this->username_generator->getUsername($user_information);
@@ -64,14 +97,24 @@ class AutomaticUserRegistration
         }
         $user->setStatus($this->getUserStatus());
         $user->setUnixStatus('S');
+        if (ForgeConfig::get(self::CONFIG_LDAP_ATTRIBUTE) !== false) {
+            if (! isset($user_information[ForgeConfig::get(self::CONFIG_LDAP_ATTRIBUTE)])) {
+                throw new NotEnoughDataToRegisterUserException(
+                    sprintf(
+                        '%s config is defined to %s however `userinfo` OIDC route only has: %s',
+                        self::CONFIG_LDAP_ATTRIBUTE,
+                        ForgeConfig::get(self::CONFIG_LDAP_ATTRIBUTE),
+                        implode(', ', array_keys($user_information)),
+                    )
+                );
+            }
+            $user->setLdapId($user_information[ForgeConfig::get(self::CONFIG_LDAP_ATTRIBUTE)]);
+        }
 
         return $this->user_manager->createAccount($user);
     }
 
-    /**
-     * @return string
-     */
-    private function getFullname(array $user_information)
+    private function getFullname(array $user_information): string
     {
         if (isset($user_information['name'])) {
             return $user_information['name'];
@@ -84,12 +127,9 @@ class AutomaticUserRegistration
         return $this->username_generator->getUsername($user_information);
     }
 
-    /**
-     * @return string
-     */
-    private function getUserStatus()
+    private function getUserStatus(): string
     {
-        if (ForgeConfig::get('sys_user_approval')) {
+        if (ForgeConfig::getInt(User_UserStatusManager::CONFIG_USER_REGISTRATION_APPROVAL) === 1) {
             return PFUser::STATUS_PENDING;
         }
 

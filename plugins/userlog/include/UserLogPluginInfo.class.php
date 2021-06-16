@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
  *
  * Originally written by Manuel VACELET, 2007.
@@ -23,14 +23,12 @@
  *
  */
 
-require_once('common/plugin/PluginInfo.class.php');
-require_once('UserLogPluginDescriptor.class.php');
+class UserLogPluginInfo extends PluginInfo
+{
 
-class UserLogPluginInfo extends PluginInfo {
-
-    public function __construct($plugin) {
+    public function __construct($plugin)
+    {
         parent::__construct($plugin);
         $this->setPluginDescriptor(new UserLogPluginDescriptor());
     }
-
 }

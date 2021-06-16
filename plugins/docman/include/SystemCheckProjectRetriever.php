@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,22 +18,25 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Docman_SystemCheckProjectRetriever {
+class Docman_SystemCheckProjectRetriever
+{
 
     /** @var Docman_SystemCheckDao */
     private $dao;
 
-    public function __construct(Docman_SystemCheckDao $dao) {
+    public function __construct(Docman_SystemCheckDao $dao)
+    {
         $this->dao = $dao;
     }
 
     /**
      * @return array
      */
-    public function getActiveProjectUnixNamesThatUseDocman() {
+    public function getActiveProjectUnixNamesThatUseDocman()
+    {
         $result = $this->dao->getActiveProjectUnixNamesThatUseDocman();
 
-        $project_shortnames = array();
+        $project_shortnames = [];
         while ($row = $result->getRow()) {
             $project_shortnames[] = $row['shortname'];
         }

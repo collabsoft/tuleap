@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -34,7 +34,8 @@ class PluginsAdministrationActions extends Actions
      */
     private $plugin_disabler_verifier;
 
-    public function __construct(&$controler, $view = null) {
+    public function __construct($controler)
+    {
         parent::__construct($controler);
         $this->plugin_manager           = PluginManager::instance();
         $this->dependency_solver        = new PluginDependencySolver($this->plugin_manager);
@@ -45,140 +46,140 @@ class PluginsAdministrationActions extends Actions
         );
     }
 
-    function available() {
+    public function available()
+    {
         $this->checkSynchronizerToken('/plugins/pluginsadministration/');
-        $request = HTTPRequest::instance();
+        $request     = HTTPRequest::instance();
         $plugin_data = $this->_getPluginFromRequest();
         if ($plugin_data) {
             $plugin_manager = $this->plugin_manager;
-            $dependencies = $this->dependency_solver->getUnmetAvailableDependencies($plugin_data['plugin']);
+            $dependencies   = $this->dependency_solver->getUnmetAvailableDependencies($plugin_data['plugin']);
             if ($dependencies) {
-                $error_msg = $GLOBALS['Language']->getText(
-                    'plugin_pluginsadministration',
-                    'error_unavail_dependency',
-                    array($plugin_data['plugin']->getName(), implode(', ', $dependencies))
-                );
+                $error_msg = sprintf(dgettext('tuleap-pluginsadministration', 'Unable to avail %1$s. Please avail the following plugins before: %2$s'), $plugin_data['plugin']->getName(), implode(', ', $dependencies));
                 $GLOBALS['Response']->addFeedback('error', $error_msg);
                 return;
             }
-            if (!$plugin_manager->isPluginAvailable($plugin_data['plugin'])) {
+            if (! $plugin_manager->isPluginAvailable($plugin_data['plugin'])) {
                 $plugin_manager->availablePlugin($plugin_data['plugin']);
-                $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_pluginsadministration', 'feedback_available', array($plugin_data['name'])));
+                $GLOBALS['Response']->addFeedback('info', sprintf(dgettext('tuleap-pluginsadministration', '%1$s is now available.'), $plugin_data['name']));
             }
         }
 
         if ($request->get('view') === 'properties') {
-            $GLOBALS['Response']->redirect('/plugins/pluginsadministration/?view=properties&plugin_id='.$request->get('plugin_id'));
+            $GLOBALS['Response']->redirect('/plugins/pluginsadministration/?view=properties&plugin_id=' . $request->get('plugin_id'));
         }
 
         $GLOBALS['Response']->redirect('/plugins/pluginsadministration/?view=installed');
     }
 
-    function install() {
+    public function install()
+    {
         $this->checkSynchronizerToken('/plugins/pluginsadministration/');
         $request = HTTPRequest::instance();
-        $name = $request->get('name');
+        $name    = $request->get('name');
         if ($name) {
             $plugin = $this->plugin_manager->installPlugin($name);
 
             if ($plugin) {
-                $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_pluginsadministration', 'feedback_installed'));
+                $GLOBALS['Response']->addFeedback('info', dgettext('tuleap-pluginsadministration', 'The plugin has been successfully installed'));
 
                 $post_install = $this->plugin_manager->getPostInstall($name);
                 if ($post_install) {
-                    $GLOBALS['Response']->addFeedback('info', '<pre>'.$post_install.'</pre>', CODENDI_PURIFIER_DISABLED);
+                    $GLOBALS['Response']->addFeedback('info', '<pre>' . $post_install . '</pre>', CODENDI_PURIFIER_DISABLED);
                 }
 
-                $GLOBALS['Response']->redirect('/plugins/pluginsadministration/?view=properties&plugin_id='.$plugin->getId());
+                $GLOBALS['Response']->redirect('/plugins/pluginsadministration/?view=properties&plugin_id=' . $plugin->getId());
             }
         }
 
         $GLOBALS['Response']->redirect('/plugins/pluginsadministration/?view=available');
     }
 
-    function unavailable() {
+    public function unavailable()
+    {
         $this->checkSynchronizerToken('/plugins/pluginsadministration/');
-        $request = HTTPRequest::instance();
+        $request     = HTTPRequest::instance();
         $plugin_data = $this->_getPluginFromRequest();
         if ($plugin_data && $this->plugin_disabler_verifier->canPluginBeDisabled($plugin_data['plugin'])) {
             $plugin_manager = $this->plugin_manager;
-            $dependencies = $this->dependency_solver->getAvailableDependencies($plugin_data['plugin']);
+            $dependencies   = $this->dependency_solver->getAvailableDependencies($plugin_data['plugin']);
             if ($dependencies) {
-                $error_msg = $GLOBALS['Language']->getText(
-                    'plugin_pluginsadministration',
-                    'error_avail_dependency',
-                    array($plugin_data['plugin']->getName(), implode(', ', $dependencies))
-                );
+                $error_msg = sprintf(dgettext('tuleap-pluginsadministration', 'Unable to unavail %1$s. Please unavail the following plugins before:  %2$s'), $plugin_data['plugin']->getName(), implode(', ', $dependencies));
                 $GLOBALS['Response']->addFeedback('error', $error_msg);
                 return;
             }
             if ($plugin_manager->isPluginAvailable($plugin_data['plugin'])) {
                 $plugin_manager->unavailablePlugin($plugin_data['plugin']);
-                $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_pluginsadministration', 'feedback_unavailable', array($plugin_data['name'])));
+                $GLOBALS['Response']->addFeedback('info', sprintf(dgettext('tuleap-pluginsadministration', '%1$s is now unavailable. Web space and CGI remain accessible!'), $plugin_data['name']));
             }
         }
 
         if ($request->get('view') === 'properties') {
-            $GLOBALS['Response']->redirect('/plugins/pluginsadministration/?view=properties&plugin_id='.$request->get('plugin_id'));
+            $GLOBALS['Response']->redirect('/plugins/pluginsadministration/?view=properties&plugin_id=' . $request->get('plugin_id'));
         }
 
         $GLOBALS['Response']->redirect('/plugins/pluginsadministration/?view=installed');
     }
 
-    function uninstall() {
+    public function uninstall()
+    {
         $this->checkSynchronizerToken('/plugins/pluginsadministration/');
         $plugin = $this->_getPluginFromRequest();
         if ($plugin && $this->plugin_disabler_verifier->canPluginBeDisabled($plugin['plugin'])) {
             $plugin_manager = $this->plugin_manager;
-            $uninstalled = $plugin_manager->uninstallPlugin($plugin['plugin']);
-            if (!$uninstalled) {
-                 $GLOBALS['Response']->addFeedback(Feedback::ERROR, $GLOBALS['Language']->getText('plugin_pluginsadministration', 'plugin_not_uninstalled', array($plugin['name'])));
+            $uninstalled    = $plugin_manager->uninstallPlugin($plugin['plugin']);
+            if (! $uninstalled) {
+                 $GLOBALS['Response']->addFeedback(Feedback::ERROR, sprintf(dgettext('tuleap-pluginsadministration', 'Plugin "%1$s" have not been uninstalled.'), $plugin['name']));
             } else {
-                 $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_pluginsadministration', 'plugin_uninstalled', array($plugin['name'])));
+                 $GLOBALS['Response']->addFeedback(Feedback::INFO, sprintf(dgettext('tuleap-pluginsadministration', 'Plugin "%1$s" have been uninstalled.'), $plugin['name']));
             }
         }
     }
 
     // Secure args: force each value to be an integer.
-    function _validateProjectList($usList) {
+    public function _validateProjectList($usList)
+    {
         $sPrjList = null;
-        $usList = trim(rtrim($usList));
-        if($usList) {
+        $usList   = trim(rtrim($usList));
+        if ($usList) {
             $usPrjList = explode(',', $usList);
-            $sPrjList = array_map('intval', $usPrjList);
+            $sPrjList  = array_map('intval', $usPrjList);
         }
         return $sPrjList;
     }
 
-    function _addAllowedProjects($prjList) {
-        $plugin = $this->_getPluginFromRequest();
+    public function _addAllowedProjects($prjList)
+    {
+        $plugin         = $this->_getPluginFromRequest();
         $plugin_manager = $this->plugin_manager;
         $plugin_manager->addProjectForPlugin($plugin['plugin'], $prjList);
     }
 
-    function _delAllowedProjects($prjList) {
-        $plugin = $this->_getPluginFromRequest();
+    public function _delAllowedProjects($prjList)
+    {
+        $plugin         = $this->_getPluginFromRequest();
         $plugin_manager = $this->plugin_manager;
         $plugin_manager->delProjectForPlugin($plugin['plugin'], $prjList);
     }
 
-    function _changePluginGenericProperties($properties) {
-        if(isset($properties['allowed_project'])) {
+    public function _changePluginGenericProperties($properties)
+    {
+        if (isset($properties['allowed_project'])) {
             $sPrjList = $this->_validateProjectList($properties['allowed_project']);
-            if($sPrjList !== null) {
+            if ($sPrjList !== null) {
                 $this->_addAllowedProjects($sPrjList);
             }
         }
-        if(isset($properties['disallowed_project'])) {
+        if (isset($properties['disallowed_project'])) {
             $sPrjList = $this->_validateProjectList($properties['disallowed_project']);
-            if($sPrjList !== null) {
+            if ($sPrjList !== null) {
                 $this->_delAllowedProjects($sPrjList);
             }
         }
-        if(isset($properties['prj_restricted'])) {
-            $plugin = $this->_getPluginFromRequest();
+        if (isset($properties['prj_restricted'])) {
+            $plugin         = $this->_getPluginFromRequest();
             $plugin_manager = $this->plugin_manager;
-            $resricted = ($properties['prj_restricted'] == 1 ? true : false);
+            $resricted      = ($properties['prj_restricted'] == 1 ? true : false);
             $plugin_manager->updateProjectPluginRestriction($plugin['plugin'], $resricted);
         }
     }
@@ -194,25 +195,24 @@ class PluginsAdministrationActions extends Actions
         if (! $plugin) {
             $GLOBALS['Response']->redirect('/plugins/pluginsadministration/');
         }
-        $plugin_properties_url = '/plugins/pluginsadministration/?view=properties&plugin_id='.urlencode($plugin['plugin']->getId());
+        $plugin_properties_url = '/plugins/pluginsadministration/?view=properties&plugin_id=' . urlencode($plugin['plugin']->getId());
         if (! $request->isPost()) {
             $GLOBALS['Response']->redirect($plugin_properties_url);
         }
         $this->checkSynchronizerToken($plugin_properties_url);
-        if($request->exist('gen_prop')) {
+        if ($request->exist('gen_prop')) {
             $this->_changePluginGenericProperties($request->get('gen_prop'));
         }
         $user_properties = $request->get('properties');
 
         if ($user_properties) {
-            $plug_info =& $plugin['plugin']->getPluginInfo();
-            $descs =& $plug_info->getPropertyDescriptors();
-            $keys  =& $descs->getKeys();
-            $iter  =& $keys->iterator();
-            $props = '';
-            while($iter->valid()) {
-                $key   =& $iter->current();
-                $desc  =& $descs->get($key);
+            $plug_info = $plugin['plugin']->getPluginInfo();
+            $descs     = $plug_info->getPropertyDescriptors();
+            $keys      = $descs->getKeys();
+            $iter      = $keys->iterator();
+            while ($iter->valid()) {
+                $key       = $iter->current();
+                $desc      = $descs->get($key);
                 $prop_name = $desc->getName();
                 if (isset($user_properties[$prop_name])) {
                     $val = $user_properties[$prop_name];
@@ -224,39 +224,41 @@ class PluginsAdministrationActions extends Actions
                 $iter->next();
             }
             $plug_info->saveProperties();
-            $GLOBALS['Response']->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_pluginsadministration', 'properties_updated'));
+            $GLOBALS['Response']->addFeedback(Feedback::INFO, dgettext('tuleap-pluginsadministration', 'Plugin properties have been successfully updated'));
         }
 
         $GLOBALS['Response']->redirect($plugin_properties_url);
     }
 
 
-    function _getPluginFromRequest() {
-        $return = false;
-        $request =& HTTPRequest::instance();
+    public function _getPluginFromRequest()
+    {
+        $return  = false;
+        $request = HTTPRequest::instance();
         if ($request->exist('plugin_id') && is_numeric($request->get('plugin_id'))) {
             $plugin_manager = $this->plugin_manager;
-            $plugin =& $plugin_manager->getPluginById($request->get('plugin_id'));
+            $plugin         = $plugin_manager->getPluginById($request->get('plugin_id'));
             if ($plugin) {
-                $plug_info  =& $plugin->getPluginInfo();
-                $descriptor =& $plug_info->getPluginDescriptor();
-                $name = $descriptor->getFullName();
+                $plug_info  = $plugin->getPluginInfo();
+                $descriptor = $plug_info->getPluginDescriptor();
+                $name       = $descriptor->getFullName();
                 if (strlen(trim($name)) === 0) {
                     $name = get_class($plugin);
                 }
-                $return = array();
-                $return['name'] = $name;
-                $return['plugin'] =& $plugin;
+                $return           = [];
+                $return['name']   = $name;
+                $return['plugin'] = $plugin;
             }
         }
         return $return;
     }
 
-    public function setPluginRestriction() {
-        $request                    = HTTPRequest::instance();
-        $plugin_id                  = $request->get('plugin_id');
-        $plugin_data                = $this->_getPluginFromRequest();
-        $all_allowed                = $request->get('all-allowed');
+    public function setPluginRestriction()
+    {
+        $request     = HTTPRequest::instance();
+        $plugin_id   = $request->get('plugin_id');
+        $plugin_data = $this->_getPluginFromRequest();
+        $all_allowed = $request->get('all-allowed');
 
         if ($plugin_data) {
             $plugin = $plugin_data['plugin'];
@@ -267,7 +269,6 @@ class PluginsAdministrationActions extends Actions
 
             if ($all_allowed) {
                 $this->unsetPluginRestricted($plugin);
-
             } else {
                 $this->setPluginRestricted($plugin);
             }
@@ -276,41 +277,45 @@ class PluginsAdministrationActions extends Actions
         }
     }
 
-    private function setPluginRestricted(Plugin $plugin) {
+    private function setPluginRestricted(Plugin $plugin)
+    {
         if ($this->getPluginResourceRestrictor()->setPluginRestricted($plugin)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText('plugin_pluginsadministration', 'plugin_allowed_project_set_restricted')
+                dgettext('tuleap-pluginsadministration', 'Now, only the allowed projects are able to use this plugin.')
             );
         } else {
             $this->sendProjectRestrictedError();
         }
     }
 
-    private function unsetPluginRestricted(Plugin $plugin) {
+    private function unsetPluginRestricted(Plugin $plugin)
+    {
         if ($this->getPluginResourceRestrictor()->unsetPluginRestricted($plugin)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText('plugin_pluginsadministration', 'plugin_allowed_project_unset_restricted')
+                dgettext('tuleap-pluginsadministration', 'All projects can now use this plugin.')
             );
         } else {
             $this->sendProjectRestrictedError();
         }
     }
 
-    private function sendProjectRestrictedError() {
+    private function sendProjectRestrictedError()
+    {
         $GLOBALS['Response']->addFeedback(
             Feedback::ERROR,
-            $GLOBALS['Language']->getText('plugin_pluginsadministration', 'plugin_allowed_project_restricted_error')
+            dgettext('tuleap-pluginsadministration', 'Something went wrong during the update of the plugin restriction status.')
         );
     }
 
-    public function updateAllowedProjectList() {
-        $request                    = HTTPRequest::instance();
-        $plugin_id                  = $request->get('plugin_id');
-        $plugin_data                = $this->_getPluginFromRequest();
-        $project_to_add             = $request->get('project-to-allow');
-        $project_ids_to_remove      = $request->get('project-ids-to-revoke');
+    public function updateAllowedProjectList()
+    {
+        $request               = HTTPRequest::instance();
+        $plugin_id             = $request->get('plugin_id');
+        $plugin_data           = $this->_getPluginFromRequest();
+        $project_to_add        = $request->get('project-to-allow');
+        $project_ids_to_remove = $request->get('project-ids-to-revoke');
 
         if ($plugin_data) {
             $plugin = $plugin_data['plugin'];
@@ -319,7 +324,6 @@ class PluginsAdministrationActions extends Actions
 
             if ($request->get('allow-project') && ! empty($project_to_add)) {
                 $this->allowProjectOnPlugin($plugin, $project_to_add);
-
             } elseif ($request->get('revoke-project') && ! empty($project_ids_to_remove)) {
                 $this->revokeProjectsFromPlugin($plugin, $project_ids_to_remove);
             }
@@ -328,13 +332,15 @@ class PluginsAdministrationActions extends Actions
         $this->redirectToPluginAdministration($plugin->getId());
     }
 
-    private function redirectToPluginAdministration($plugin_id) {
+    private function redirectToPluginAdministration($plugin_id)
+    {
         $GLOBALS['Response']->redirect(
             '/plugins/pluginsadministration/?view=restrict&plugin_id=' . $plugin_id
         );
     }
 
-    private function allowProjectOnPlugin(Plugin $plugin, $project_to_add) {
+    private function allowProjectOnPlugin(Plugin $plugin, $project_to_add)
+    {
         $project_manager            = ProjectManager::instance();
         $plugin_resource_restrictor = $this->getPluginResourceRestrictor();
         $project                    = $project_manager->getProjectFromAutocompleter($project_to_add);
@@ -342,41 +348,43 @@ class PluginsAdministrationActions extends Actions
         if ($project && $plugin_resource_restrictor->allowProjectOnPlugin($plugin, $project)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText('plugin_pluginsadministration', 'plugin_allowed_project_allow_project')
+                dgettext('tuleap-pluginsadministration', 'Submitted project can now use this plugin.')
             );
         } else {
             $this->sendUpdateProjectListError();
         }
-
     }
 
-    private function revokeProjectsFromPlugin(Plugin $plugin, $project_ids) {
+    private function revokeProjectsFromPlugin(Plugin $plugin, $project_ids)
+    {
         $plugin_resource_restrictor = $this->getPluginResourceRestrictor();
 
         if (count($project_ids) > 0 && $plugin_resource_restrictor->revokeProjectsFromPlugin($plugin, $project_ids)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText('plugin_pluginsadministration', 'plugin_allowed_project_revoke_projects')
+                dgettext('tuleap-pluginsadministration', 'Submitted projects will not be able to use this plugin.')
             );
         } else {
             $this->sendUpdateProjectListError();
         }
-
     }
 
-    private function sendUpdateProjectListError() {
+    private function sendUpdateProjectListError()
+    {
         $GLOBALS['Response']->addFeedback(
             Feedback::ERROR,
-            $GLOBALS['Language']->getText('plugin_pluginsadministration', 'plugin_allowed_project_update_project_list_error')
+            dgettext('tuleap-pluginsadministration', 'Something went wrong during the update of the allowed project list.')
         );
     }
 
-    private function checkSynchronizerToken($url) {
+    private function checkSynchronizerToken($url)
+    {
         $token = new CSRFSynchronizerToken($url);
         $token->check();
     }
 
-    private function getPluginResourceRestrictor() {
+    private function getPluginResourceRestrictor()
+    {
         return new PluginResourceRestrictor(
             new RestrictedPluginDao()
         );

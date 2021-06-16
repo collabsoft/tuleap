@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2016. All rights reserved
+ * Copyright (c) Enalean SAS 2016 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,9 +20,9 @@
 
 namespace Tuleap\Tracker\DAO;
 
-use Tracker_FormElement_Field_Value_FloatDao;
+use Tuleap\Tracker\FormElement\Field\FloatingPointNumber\FloatValueDao;
 
-class ComputedDao extends Tracker_FormElement_Field_Value_FloatDao
+class ComputedDao extends FloatValueDao
 {
     public function __construct()
     {
@@ -49,7 +49,7 @@ class ComputedDao extends Tracker_FormElement_Field_Value_FloatDao
     {
         $changeset_value_id = $this->da->escapeInt($changeset_value_id);
         $value              = $this->da->escapeFloat($value);
-        $sql = "REPLACE INTO tracker_changeset_value_computedfield_manual_value(changeset_value_id, value)
+        $sql                = "REPLACE INTO tracker_changeset_value_computedfield_manual_value(changeset_value_id, value)
                 VALUES ($changeset_value_id, $value)";
 
         return $this->update($sql);
@@ -59,7 +59,7 @@ class ComputedDao extends Tracker_FormElement_Field_Value_FloatDao
     {
         $from = $this->da->escapeInt($from);
         $to   = $this->da->escapeInt($to);
-        $sql = "INSERT INTO tracker_changeset_value_computedfield_manual_value(changeset_value_id, value)
+        $sql  = "INSERT INTO tracker_changeset_value_computedfield_manual_value(changeset_value_id, value)
                 SELECT $to, value
                 FROM tracker_changeset_value_computedfield_manual_value
                 WHERE changeset_value_id = $from";

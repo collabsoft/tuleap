@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,8 @@
 
 namespace Tuleap\ProFTPd\Admin;
 
-abstract class ACLBuilder {
+abstract class ACLBuilder
+{
 
     abstract public function getACL($http_user, $writers, $readers);
 
@@ -28,33 +29,38 @@ abstract class ACLBuilder {
 
     abstract protected function getACLWriters($label);
 
-    protected function getEffectiveACL($http_user, $writers, $readers) {
+    protected function getEffectiveACL($http_user, $writers, $readers)
+    {
         return implode(',', $this->getACLList($http_user, $writers, $readers));
     }
 
-    protected function getACLList($http_user, $writers, $readers) {
+    protected function getACLList($http_user, $writers, $readers)
+    {
         return array_filter(
-            array(
+            [
                 $this->getACLUserWriter($http_user),
                 $this->getACLGroupWriters($writers),
                 $this->getACLGroupReaders($readers)
-            )
+            ]
         );
     }
 
-    protected function getACLUserWriter($user) {
-        return "u:".$this->getACLWriters($user);
+    protected function getACLUserWriter($user)
+    {
+        return "u:" . $this->getACLWriters($user);
     }
 
-    protected function getACLGroupWriters($group) {
+    protected function getACLGroupWriters($group)
+    {
         if (trim($group)) {
-            return "g:".$this->getACLWriters($group);
+            return "g:" . $this->getACLWriters($group);
         }
     }
 
-    protected function getACLGroupReaders($group) {
+    protected function getACLGroupReaders($group)
+    {
         if (trim($group)) {
-            return "g:".$this->getACLReaders($group);
+            return "g:" . $this->getACLReaders($group);
         }
         return '';
     }

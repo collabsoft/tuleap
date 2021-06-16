@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 use Tuleap\Dashboard\User\UserDashboardController;
 use Tuleap\Hudson\HudsonJobBuilder;
@@ -61,16 +60,16 @@ class hudson_Widget_JobLastBuilds extends HudsonJobWidget
     {
         $title = '';
         if ($this->job) {
-            $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_lastbuilds', array($this->job->getName()));
+            $title .= sprintf(dgettext('tuleap-hudson', '%1$s Last Builds'), $this->job->getName());
         } else {
-            $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_lastbuilds');
+            $title .= sprintf(dgettext('tuleap-hudson', '%1$s Last Builds'), '');
         }
         return $title;
     }
 
     public function getDescription()
     {
-        return $GLOBALS['Language']->getText('plugin_hudson', 'widget_description_lastbuilds');
+        return dgettext('tuleap-hudson', 'Show the last builds for this job (last one, last successful, last failed) and the weather report. The trend is represented by a weather report (sun, thunder, etc.) meaning that the trend is good or not.');
     }
 
     public function loadContent($id)
@@ -88,7 +87,7 @@ class hudson_Widget_JobLastBuilds extends HudsonJobWidget
 
             if (array_key_exists($this->job_id, $jobs)) {
                 try {
-                    $used_job = $jobs[$this->job_id];
+                    $used_job  = $jobs[$this->job_id];
                     $this->job = $this->job_builder->getHudsonJob($used_job);
                 } catch (Exception $e) {
                     $this->job = null;
@@ -96,7 +95,6 @@ class hudson_Widget_JobLastBuilds extends HudsonJobWidget
             } else {
                 $this->job = null;
             }
-
         }
     }
 
@@ -113,21 +111,21 @@ class hudson_Widget_JobLastBuilds extends HudsonJobWidget
             $html .= '  <td>';
             $html .= '   <ul>';
             if ($job->hasBuilds()) {
-                $html .= ' <li>'.$GLOBALS['Language']->getText('plugin_hudson', 'last_build').' <a href="/plugins/hudson/?action=view_build&group_id='.$this->group_id.'&job_id='.$this->job_id.'&build_id='.$job->getLastBuildNumber().'"># '.$job->getLastBuildNumber().'</a></li>';
-                $html .= ' <li>'.$GLOBALS['Language']->getText('plugin_hudson', 'last_build_success').' <a href="/plugins/hudson/?action=view_build&group_id='.$this->group_id.'&job_id='.$this->job_id.'&build_id='.$job->getLastSuccessfulBuildNumber().'"># '.$job->getLastSuccessfulBuildNumber().'</a></li>';
-                $html .= ' <li>'.$GLOBALS['Language']->getText('plugin_hudson', 'last_build_failure').' <a href="/plugins/hudson/?action=view_build&group_id='.$this->group_id.'&job_id='.$this->job_id.'&build_id='.$job->getLastFailedBuildNumber().'"># '.$job->getLastFailedBuildNumber().'</a></li>';
+                $html .= ' <li>' . dgettext('tuleap-hudson', 'Last Build:') . ' <a href="/plugins/hudson/?action=view_build&group_id=' . $this->group_id . '&job_id=' . $this->job_id . '&build_id=' . $job->getLastBuildNumber() . '"># ' . $job->getLastBuildNumber() . '</a></li>';
+                $html .= ' <li>' . dgettext('tuleap-hudson', 'Last Success:') . ' <a href="/plugins/hudson/?action=view_build&group_id=' . $this->group_id . '&job_id=' . $this->job_id . '&build_id=' . $job->getLastSuccessfulBuildNumber() . '"># ' . $job->getLastSuccessfulBuildNumber() . '</a></li>';
+                $html .= ' <li>' . dgettext('tuleap-hudson', 'Last Failure:') . ' <a href="/plugins/hudson/?action=view_build&group_id=' . $this->group_id . '&job_id=' . $this->job_id . '&build_id=' . $job->getLastFailedBuildNumber() . '"># ' . $job->getLastFailedBuildNumber() . '</a></li>';
             } else {
-                $html .= ' <li>'. $GLOBALS['Language']->getText('plugin_hudson', 'widget_build_not_found') . '</li>';
+                $html .= ' <li>' . dgettext('tuleap-hudson', 'No build found for this job.') . '</li>';
             }
             $html .= '   </ul>';
             $html .= '  </td>';
             $html .= '  <td class="widget_lastbuilds_weather">';
-            $html .= $GLOBALS['Language']->getText('plugin_hudson', 'weather_report').'<img src="'.$job->getWeatherReportIcon().'" class="widget-lastbuilds-weather-img" />';
+            $html .= dgettext('tuleap-hudson', 'Weather Report:') . '<img src="' . $job->getWeatherReportIcon() . '" class="widget-lastbuilds-weather-img" />';
             $html .= '  </td>';
             $html .= ' </tr>';
             $html .= '</table>';
         } else {
-            $html .= $GLOBALS['Language']->getText('plugin_hudson', 'widget_job_not_found');
+            $html .= dgettext('tuleap-hudson', 'Job not found.');
         }
 
         return $html;

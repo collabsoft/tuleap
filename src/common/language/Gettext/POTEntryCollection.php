@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -30,7 +30,7 @@ class POTEntryCollection
     public function __construct($domain)
     {
         $this->domain  = $domain;
-        $this->entries = array();
+        $this->entries = [];
     }
 
     public function add($domain, POTEntry $entry)

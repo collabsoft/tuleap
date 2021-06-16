@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright Enalean (c) 2013 - 2018. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,10 +22,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_SubmitOverlayRenderer extends Tracker_Artifact_SubmitAbstractRenderer {
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\Artifact\Renderer\ListPickerIncluder;
+
+class Tracker_Artifact_SubmitOverlayRenderer extends Tracker_Artifact_SubmitAbstractRenderer
+{
 
     /**
-     * @var Tracker_Artifact
+     * @var Artifact
      */
     private $source_artifact;
 
@@ -39,13 +43,15 @@ class Tracker_Artifact_SubmitOverlayRenderer extends Tracker_Artifact_SubmitAbst
      */
     private $current_user;
 
-    public function __construct(Tracker $tracker, Tracker_Artifact $source_artifact, EventManager $event_manager, Tracker_IFetchTrackerSwitcher $tracker_switcher) {
+    public function __construct(Tracker $tracker, Artifact $source_artifact, EventManager $event_manager, Tracker_IFetchTrackerSwitcher $tracker_switcher)
+    {
         parent::__construct($tracker, $event_manager);
         $this->source_artifact  = $source_artifact;
         $this->tracker_switcher = $tracker_switcher;
     }
 
-    public function display(Codendi_Request $request, PFUser $current_user) {
+    public function display(Codendi_Request $request, PFUser $current_user)
+    {
         $this->current_user = $current_user;
 
         parent::display($request, $current_user);
@@ -58,26 +64,22 @@ class Tracker_Artifact_SubmitOverlayRenderer extends Tracker_Artifact_SubmitAbst
         );
     }
 
-    protected function displayHeader() {
+    protected function displayHeader()
+    {
         $GLOBALS['HTML']->overlay_header();
         $this->displayTrackerSwitcher($this->current_user);
+        ListPickerIncluder::includeListPickerAssets(HTTPRequest::instance(), $this->tracker->getId());
         echo $this->fetchSubmitInstructions();
     }
 
-    private function displayTrackerSwitcher(PFUser $current_user) {
+    private function displayTrackerSwitcher(PFUser $current_user)
+    {
         $project = null;
         if ($this->source_artifact) {
             $project = $this->source_artifact->getTracker()->getProject();
             $GLOBALS['Response']->addFeedback(
                 'warning',
-                $GLOBALS['Language']->getText(
-                    'plugin_tracker',
-                    'linked_to',
-                    array(
-                        $this->source_artifact->fetchDirectLinkToArtifact(),
-                        $this->tracker_switcher->fetchTrackerSwitcher($current_user, ' ', $project, $this->tracker),
-                    )
-                ),
+                sprintf(dgettext('tuleap-tracker', 'This artifact (of %2$s) will be linked to %1$s'), $this->source_artifact->fetchDirectLinkToArtifact(), $this->tracker_switcher->fetchTrackerSwitcher($current_user, ' ', $project, $this->tracker)),
                 CODENDI_PURIFIER_DISABLED
             );
         } else {
@@ -86,22 +88,24 @@ class Tracker_Artifact_SubmitOverlayRenderer extends Tracker_Artifact_SubmitAbst
         $GLOBALS['Response']->displayFeedback();
     }
 
-    private function fetchNewArtifactForm(Codendi_Request $request, PFUser $current_user) {
+    private function fetchNewArtifactForm(Codendi_Request $request, PFUser $current_user)
+    {
         $html = '';
 
-        $html .= '<input type="hidden" name="link-artifact-id" value="'. $this->source_artifact->getId() .'" />';
+        $html .= '<input type="hidden" name="link-artifact-id" value="' . $this->source_artifact->getId() . '" />';
         if ($request->get('immediate')) {
             $html .= '<input type="hidden" name="immediate" value="1" />';
         }
 
         $html .= $this->fetchFormElements($request, $current_user);
 
-        $html .= '<input class="btn btn-primary" type="submit" id="tracker_artifact_submit" value="'. $GLOBALS['Language']->getText('global', 'btn_submit') .'" />';
+        $html .= '<input class="btn btn-primary" type="submit" id="tracker_artifact_submit" value="' . $GLOBALS['Language']->getText('global', 'btn_submit') . '" />';
 
         return $html;
     }
 
-    protected function displayFooter() {
+    protected function displayFooter()
+    {
         $GLOBALS['HTML']->overlay_footer();
     }
 }

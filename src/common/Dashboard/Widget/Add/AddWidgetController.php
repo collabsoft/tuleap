@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,6 +25,7 @@ use DataAccessException;
 use Exception;
 use Feedback;
 use HTTPRequest;
+use Tuleap\Dashboard\Project\DisabledProjectWidgetsChecker;
 use Tuleap\Dashboard\Project\ProjectDashboardController;
 use Tuleap\Dashboard\User\UserDashboardController;
 use Tuleap\Dashboard\Widget\DashboardWidgetDao;
@@ -47,14 +48,21 @@ class AddWidgetController
      */
     private $creator;
 
+    /**
+     * @var DisabledProjectWidgetsChecker
+     */
+    private $disabled_project_widgets_checker;
+
     public function __construct(
         DashboardWidgetDao $dao,
         WidgetFactory $factory,
-        WidgetCreator $creator
+        WidgetCreator $creator,
+        DisabledProjectWidgetsChecker $disabled_project_widgets_checker
     ) {
-        $this->dao     = $dao;
-        $this->factory = $factory;
-        $this->creator = $creator;
+        $this->dao                              = $dao;
+        $this->factory                          = $factory;
+        $this->creator                          = $creator;
+        $this->disabled_project_widgets_checker = $disabled_project_widgets_checker;
     }
 
     public function display(HTTPRequest $request)
@@ -83,6 +91,15 @@ class AddWidgetController
             $this->checkThatDashboardBelongsToTheOwner($request, $dashboard_type, $dashboard_id);
             $widget = $this->factory->getInstanceByWidgetName($name);
 
+            if ($this->disabled_project_widgets_checker->isWidgetDisabled($widget, $dashboard_type) === true) {
+                $GLOBALS['Response']->addFeedback(
+                    Feedback::ERROR,
+                    _('The widget is disabled in project dashboard.')
+                );
+                $this->redirectToDashboard($request, $dashboard_id, $dashboard_type);
+                exit();
+            }
+
             if (! $widget->isUnique() || ! $this->isUniqueWidgetAlreadyAddedInDashboard($widget, $dashboard_id, $dashboard_type)) {
                 $this->creator->create(
                     $this->getOwnerIdByDashboardType($request, $dashboard_type),
@@ -103,10 +120,17 @@ class AddWidgetController
                 );
             }
         } catch (Exception $exception) {
-            $GLOBALS['Response']->addFeedback(
-                Feedback::ERROR,
-                _('An error occurred while trying to add the widget to the dashboard')
-            );
+            if ($exception->getMessage()) {
+                $GLOBALS['Response']->addFeedback(
+                    Feedback::ERROR,
+                    $exception->getMessage()
+                );
+            } else {
+                $GLOBALS['Response']->addFeedback(
+                    Feedback::ERROR,
+                    _('An error occurred while trying to add the widget to the dashboard')
+                );
+            }
         }
         $this->redirectToDashboard($request, $dashboard_id, $dashboard_type);
     }
@@ -123,13 +147,17 @@ class AddWidgetController
         array $used_widgets
     ) {
         $categories                 = $this->getWidgetsGroupedByCategories($dashboard_type);
-        $widgets_category_presenter = array();
+        $widgets_category_presenter = [];
 
         foreach ($categories as $category => $widgets) {
-            $widgets_presenter = array();
+            $widgets_presenter = [];
             foreach ($widgets as $widget) {
                 $widget = $this->factory->getInstanceByWidgetName($widget->id);
-                if ($widget && $widget->isAvailable()) {
+                if (
+                    $widget
+                    && $widget->isAvailable()
+                    && $this->disabled_project_widgets_checker->isWidgetDisabled($widget, $dashboard_type) === false
+                ) {
                     $widgets_presenter[] = new WidgetPresenter($widget, $widget->isUnique() && in_array($widget->getId(), $used_widgets));
                 }
             }
@@ -137,7 +165,7 @@ class AddWidgetController
         }
         $this->sortAlphabetically($widgets_category_presenter);
 
-        $GLOBALS['Response']->sendJSON(array('widgets_categories' => $widgets_category_presenter));
+        $GLOBALS['Response']->sendJSON(['widgets_categories' => $widgets_category_presenter]);
     }
 
     private function sortAlphabetically(array &$widgets_category_presenter)
@@ -148,7 +176,7 @@ class AddWidgetController
 
     private function sortCategoriesAlphabetically(array &$widgets_category_presenter)
     {
-        $general = $GLOBALS['Language']->getText('widget_categ_label', 'general');
+        $general = _('General');
 
         usort(
             $widgets_category_presenter,
@@ -180,12 +208,11 @@ class AddWidgetController
 
     private function getWidgetsGroupedByCategories($dashboard_type)
     {
-        $categories = array();
+        $categories = [];
         $widgets    = $this->factory->getWidgetsForOwnerType($dashboard_type);
-        foreach ($widgets as $widget_name) {
-            $widget = $this->factory->getInstanceByWidgetName($widget_name);
+        foreach ($widgets as $widget) {
             if ($widget && $widget->isAvailable()) {
-                $categories[$widget->getCategory()][$widget_name] = $widget;
+                $categories[$widget->getCategory()][$widget->getId()] = $widget;
             }
         }
 
@@ -193,7 +220,6 @@ class AddWidgetController
     }
 
     /**
-     * @param HTTPRequest $request
      * @param $dashboard_type
      * @param $dashboard_id
      */
@@ -208,7 +234,6 @@ class AddWidgetController
     }
 
     /**
-     * @param HTTPRequest $request
      * @param $dashboard_type
      * @return int
      */
@@ -249,23 +274,22 @@ class AddWidgetController
     }
 
     /**
-     * @param HTTPRequest $request
      * @param $dashboard_id
      * @param $dashboard_type
      */
     private function redirectToDashboard(HTTPRequest $request, $dashboard_id, $dashboard_type)
     {
         if ($dashboard_type === ProjectDashboardController::DASHBOARD_TYPE) {
-            $url = '/projects/' . $request->getProject()->getUnixName() .'/';
+            $url = '/projects/' . $request->getProject()->getUnixName() . '/';
         } else {
             $url = '/my/';
         }
 
         $GLOBALS['Response']->redirect(
             $url . '?' . http_build_query(
-                array(
+                [
                     'dashboard_id' => $dashboard_id
-                )
+                ]
             )
         );
     }
@@ -277,7 +301,7 @@ class AddWidgetController
      */
     private function getUsedWidgets($dashboard_id, $dashboard_type)
     {
-        $used_widgets = array();
+        $used_widgets = [];
         foreach ($this->dao->searchUsedWidgetsContentByDashboardId($dashboard_id, $dashboard_type) as $row) {
             $used_widgets[] = $row['name'];
         }

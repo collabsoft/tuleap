@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -36,7 +36,7 @@ class EqualComparisonFromWhereBuilder extends DescriptionFromWhereBuilder
             $matches_value = " = ''";
         } else {
             $matches_value      = " LIKE ?";
-            $where_parameters[] = '%' . DBFactory::getMainTuleapDB()->escapeLikeValue($value) . '%';
+            $where_parameters[] = '%' . DBFactory::getMainTuleapDBConnection()->getDB()->escapeLikeValue($value) . '%';
         }
 
         $from  = $this->getFrom();

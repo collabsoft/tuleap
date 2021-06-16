@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,9 @@ namespace Tuleap\Token\REST;
 use Rest_Token;
 use Tuleap\REST\JsonCast;
 
-class TokenRepresentation {
-    const ROUTE = 'tokens';
+class TokenRepresentation
+{
+    public const ROUTE = 'tokens';
 
     /**
      * @var int
@@ -40,9 +41,10 @@ class TokenRepresentation {
      */
     public $uri;
 
-    public function build(Rest_Token $token) {
+    public function build(Rest_Token $token)
+    {
         $this->user_id = JsonCast::toInt($token->getUserId());
         $this->token   = $token->getTokenValue();
-        $this->uri     = self::ROUTE.'/'.$this->token;
+        $this->uri     = self::ROUTE . '/' . $this->token;
     }
 }

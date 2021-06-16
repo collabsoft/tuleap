@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -30,7 +30,5 @@ class PluginDescriptor extends \PluginDescriptor
             false,
             dgettext('tuleap-prometheus_metrics', 'Exposes tuleap instrumentation for prometheus consumption')
         );
-
-        $this->setVersionFromFile(__DIR__ . '/../../VERSION');
     }
 }

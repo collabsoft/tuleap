@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Git_AdminRepositoryListForProjectPresenter {
+class Git_AdminRepositoryListForProjectPresenter
+{
 
     /** @var int */
     public $project_id;
@@ -28,9 +29,10 @@ class Git_AdminRepositoryListForProjectPresenter {
     public $project_name;
 
     /** @var array */
-    public $repositories = array();
+    public $repositories = [];
 
-    public function __construct($project_id, $project_name) {
+    public function __construct($project_id, $project_name)
+    {
         $this->project_id   = $project_id;
         $this->project_name = $project_name;
     }

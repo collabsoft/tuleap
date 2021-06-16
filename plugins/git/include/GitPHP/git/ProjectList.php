@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) 2010 Christopher Han
  *
  * This file is a part of Tuleap.
@@ -26,17 +26,11 @@ namespace Tuleap\Git\GitPHP;
  *
  * Project list singleton instance and factory
  *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Git
  */
 
 /**
  * ProjectList class
  *
- * @package GitPHP
- * @subpackage Git
  */
 class ProjectList
 {
@@ -59,7 +53,7 @@ class ProjectList
      * @access public
      * @static
      * @return mixed instance of projectlist
-     * @throws Exception if projectlist has not been instantiated yet
+     * @throws \Exception if projectlist has not been instantiated yet
      */
     public static function GetInstance() // @codingStandardsIgnoreLine
     {

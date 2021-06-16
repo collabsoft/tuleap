@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -43,7 +43,8 @@ class b201710161346_add_table_to_store_fulltext_of_comment extends ForgeUpgrade_
 
     public function postUp()
     {
-        if (! $this->db->tableNameExists('plugin_tracker_cross_tracker_report')
+        if (
+            ! $this->db->tableNameExists('plugin_tracker_cross_tracker_report')
             || ! $this->db->tableNameExists('tracker_changeset_comment_fulltext')
         ) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('a table is missing');

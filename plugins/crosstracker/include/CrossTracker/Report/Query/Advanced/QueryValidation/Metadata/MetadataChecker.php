@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -39,10 +39,6 @@ class MetadataChecker implements ICheckMetadataForAComparison
     }
 
     /**
-     * @param Metadata $metadata
-     * @param Comparison $comparison
-     * @param InvalidComparisonCollectorParameters $collector_parameters
-     * @param ComparisonChecker $checker
      * @throws InvalidQueryException
      */
     public function checkMetadataIsValid(

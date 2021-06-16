@@ -1,7 +1,7 @@
 <?php
-/*
+/**
  * Copyright (c) STMicroelectronics, 2008. All Rights Reserved.
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2008
  *
@@ -23,27 +23,31 @@
 
 use Tuleap\Mail\MailFilter;
 use Tuleap\Mail\MailLogger;
+use Tuleap\Project\ProjectAccessChecker;
+use Tuleap\Project\RestrictedUserCanAccessProjectVerifier;
 
-class Docman_ApprovalTableReviewerFactory {
-    var $table;
-    var $item;
-    var $reviewerCache;
-    var $err;
-    var $warn;
+class Docman_ApprovalTableReviewerFactory
+{
+    public $table;
+    public $item;
+    public $reviewerCache;
+    public $err;
+    public $warn;
     private $notificationManager = null;
 
-    function __construct($table, $item, $notificationManager = null) {
-        $this->table = $table;
-        $this->item  = $item;
+    public function __construct($table, $item, $notificationManager = null)
+    {
+        $this->table         = $table;
+        $this->item          = $item;
         $this->reviewerCache = null;
 
         // Cache of error messages
-        $this->err = array();
-        $this->err['db'] = array();
-        $this->err['perm'] = array();
-        $this->err['notreg'] = array();
-        $this->warn = array();
-        $this->warn['double'] = array();
+        $this->err            = [];
+        $this->err['db']      = [];
+        $this->err['perm']    = [];
+        $this->err['notreg']  = [];
+        $this->warn           = [];
+        $this->warn['double'] = [];
 
         $this->notificationManager = $notificationManager;
     }
@@ -51,11 +55,13 @@ class Docman_ApprovalTableReviewerFactory {
     /**
      * @return Docman_ApprovalTable
      */
-    public function getTable() {
+    public function getTable()
+    {
         return $this->table;
     }
 
-    function createReviewerFromRow($row) {
+    public function createReviewerFromRow($row)
+    {
         $reviewer = new Docman_ApprovalReviewer();
         $reviewer->initFromRow($row);
         return $reviewer;
@@ -69,34 +75,37 @@ class Docman_ApprovalTableReviewerFactory {
      * - table enabled.
      * - notification not disabled.
      */
-    function notifyReviewers() {
+    public function notifyReviewers()
+    {
         $res = false;
 
-        if($this->table !== null
-           && $this->table->isEnabled()
-           && $this->table->getNotification() != PLUGIN_DOCMAN_APPROVAL_NOTIF_DISABLED) {
-
+        if (
+            $this->table !== null
+            && $this->table->isEnabled()
+            && $this->table->getNotification() != PLUGIN_DOCMAN_APPROVAL_NOTIF_DISABLED
+        ) {
             $atsm = $this->_getApprovalTableNotificationCycle();
-            switch($this->table->getNotification()) {
-            case PLUGIN_DOCMAN_APPROVAL_NOTIF_ALLATONCE:
-                $res = $atsm->notifyAllAtOnce();
-                break;
-            case PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL:
-                $res = $atsm->notifyNextReviewer();
-                break;
-            default:
+            switch ($this->table->getNotification()) {
+                case PLUGIN_DOCMAN_APPROVAL_NOTIF_ALLATONCE:
+                    $res = $atsm->notifyAllAtOnce();
+                    break;
+                case PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL:
+                    $res = $atsm->notifyNextReviewer();
+                    break;
+                default:
             }
         }
         return $res;
     }
 
-    function appendReviewerList() {
-        if($this->table !== null) {
+    public function appendReviewerList()
+    {
+        if ($this->table !== null) {
             $dao = $this->_getDao();
             $dar = $dao->getReviewerList($this->table->getId());
             $dar->rewind();
-            while($dar->valid()) {
-                $row = $dar->current();
+            while ($dar->valid()) {
+                $row      = $dar->current();
                 $reviewer = $this->createReviewerFromRow($row);
                 $this->table->addReviewer($reviewer);
                 unset($reviewer);
@@ -110,15 +119,17 @@ class Docman_ApprovalTableReviewerFactory {
      *
      * It contains: all dynamic ugroups plus project members and admins.
      */
-    function getUgroupsAllowedForTable($groupId) {
-        $res = ugroup_db_get_existing_ugroups($groupId, array($GLOBALS['UGROUP_PROJECT_MEMBERS'],
-                                                              $GLOBALS['UGROUP_PROJECT_ADMIN']));
-        $ugroups = array();
-        while($row = db_fetch_array($res)) {
-            $r = array();
+    public function getUgroupsAllowedForTable($groupId)
+    {
+        /** @psalm-suppress DeprecatedFunction */
+        $res     = ugroup_db_get_existing_ugroups($groupId, [$GLOBALS['UGROUP_PROJECT_MEMBERS'],
+                                                              $GLOBALS['UGROUP_PROJECT_ADMIN']]);
+        $ugroups = [];
+        while ($row = db_fetch_array($res)) {
+            $r          = [];
             $r['value'] = $row['ugroup_id'];
-            $r['text'] = util_translate_name_ugroup($row['name']);
-            $ugroups[] = $r;
+            $r['text']  = \Tuleap\User\UserGroup\NameTranslator::getUserGroupDisplayKey((string) $row['name']);
+            $ugroups[]  = $r;
         }
 
         return $ugroups;
@@ -128,15 +139,16 @@ class Docman_ApprovalTableReviewerFactory {
      * Create reviewer from database.
      * This method update 'isReviewer' cache (see corresponding method)
      *
-     * @return Docman_ApprovalReviewer
+     * @return Docman_ApprovalReviewer|null
      */
-    function getReviewer($userId) {
+    public function getReviewer($userId)
+    {
         $reviewer = null;
-        $dao = $this->_getDao();
-        $dar = $dao->getReviewerById($this->table->getId(), $userId);
-        if($dar && !$dar->isError() && $dar->rowCount() == 1) {
-            $row = $dar->current();
-            $reviewer = $this->createReviewerFromRow($row);
+        $dao      = $this->_getDao();
+        $dar      = $dao->getReviewerById($this->table->getId(), $userId);
+        if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
+            $row                                      = $dar->current();
+            $reviewer                                 = $this->createReviewerFromRow($row);
             $this->reviewerCache[$row['reviewer_id']] = true;
         }
         return $reviewer;
@@ -145,10 +157,11 @@ class Docman_ApprovalTableReviewerFactory {
     /**
      * @return Docman_ApprovalReviewer[]
      */
-    public function getReviewerListForLatestVersion() {
-        $list = array();
+    public function getReviewerListForLatestVersion()
+    {
+        $list = [];
         if ($this->reviewerCache === null) {
-            $this->reviewerCache = array();
+            $this->reviewerCache = [];
 
             $dao = $this->_getDao();
             foreach ($dao->getReviewerList($this->table->getId()) as $row) {
@@ -165,18 +178,19 @@ class Docman_ApprovalTableReviewerFactory {
      * Return true if given userid is member of the current table or not.
      * There is a cache for this information (the membership of users).
      */
-    function isReviewer($userId) {
-        if($this->reviewerCache === null) {
+    public function isReviewer($userId)
+    {
+        if ($this->reviewerCache === null) {
             $dao = $this->_getDao();
             $dar = $dao->getReviewerList($this->table->getId());
             $dar->rewind();
-            while($dar->valid()) {
-                $row = $dar->current();
+            while ($dar->valid()) {
+                $row                                      = $dar->current();
                 $this->reviewerCache[$row['reviewer_id']] = true;
                 $dar->next();
             }
         }
-        if(isset($this->reviewerCache[$userId])) {
+        if (isset($this->reviewerCache[$userId])) {
             return true;
         }
         return false;
@@ -187,15 +201,16 @@ class Docman_ApprovalTableReviewerFactory {
      *
      * @access: private
      */
-    function _addUser($userId) {
-        $dPm = Docman_PermissionsManager::instance($this->item->getGroupId());
-        $um = $this->_getUserManager();
+    public function _addUser($userId)
+    {
+        $dPm  = Docman_PermissionsManager::instance($this->item->getGroupId());
+        $um   = $this->_getUserManager();
         $user = $um->getUserById($userId);
-        if($dPm->userCanRead($user, $this->item->getId())) {
-            if(!$this->isReviewer($user->getId())) {
-                $dao = $this->_getDao();
+        if ($dPm->userCanRead($user, $this->item->getId())) {
+            if (! $this->isReviewer($user->getId())) {
+                $dao   = $this->_getDao();
                 $added = $dao->addUser($this->table->getId(), $user->getId());
-                if($added) {
+                if ($added) {
                     $this->reviewerCache[$user->getId()] = true;
                     return true;
                 } else {
@@ -221,14 +236,15 @@ class Docman_ApprovalTableReviewerFactory {
      *   Codendi user.
      * @return int number of users added.
      */
-    function addUsers($userArray) {
+    public function addUsers($userArray)
+    {
         $nbUserAdded = 0;
-        foreach($userArray as $user) {
+        foreach ($userArray as $user) {
             $added = false;
-            $u = UserManager::instance()->findUser($user);
-            if($u) {
+            $u     = UserManager::instance()->findUser($user);
+            if ($u) {
                 $added = $this->_addUser($u->getId());
-                if($added) {
+                if ($added) {
                     $nbUserAdded++;
                 }
             } else {
@@ -241,27 +257,28 @@ class Docman_ApprovalTableReviewerFactory {
     /**
      * Add members of the given ugroup to the reviewer list.
      *
-     * @return true if at least one user was added to the list.
+     * @return bool true if at least one user was added to the list.
      */
-    function addUgroup($ugroupId) {
+    public function addUgroup($ugroupId)
+    {
         $nbUserAdded = 0;
-        $nbMembers = 0;
+        $nbMembers   = 0;
 
         $dao = $this->_getDao();
         $dar = $dao->getUgroupMembers($ugroupId, $this->item->getGroupId());
-        if($dar && !$dar->isError()) {
+        if ($dar && ! $dar->isError()) {
             $dar->rewind();
-            while($dar->valid()) {
+            while ($dar->valid()) {
                 $nbMembers++;
-                $row = $dar->current();
+                $row   = $dar->current();
                 $added = $this->_addUser($row['user_id']);
-                if($added) {
+                if ($added) {
                     $nbUserAdded++;
                 }
                 $dar->next();
             }
         }
-        if($nbUserAdded == $nbMembers) {
+        if ($nbUserAdded == $nbMembers) {
             return true;
         }
         return false;
@@ -270,7 +287,8 @@ class Docman_ApprovalTableReviewerFactory {
     /**
      * Update user rank in the reviewer list.
      */
-    function updateUser($userId, $rank) {
+    public function updateUser($userId, $rank)
+    {
         $dao = $this->_getDao();
         return $dao->updateUser($this->table->getId(), $userId, $rank);
     }
@@ -278,11 +296,12 @@ class Docman_ApprovalTableReviewerFactory {
     /**
      * Delete user from reviewer list.
      */
-    function delUser($userId) {
-        $dao = $this->_getDao();
+    public function delUser($userId)
+    {
+        $dao     = $this->_getDao();
         $deleted = $dao->delUser($this->table->getId(), $userId);
-        if($deleted) {
-            if(isset($this->reviewerCache[$userId])) {
+        if ($deleted) {
+            if (isset($this->reviewerCache[$userId])) {
                 unset($this->reviewerCache[$userId]);
             }
             return true;
@@ -293,7 +312,8 @@ class Docman_ApprovalTableReviewerFactory {
     /**
      * Delete all the member of the table
      */
-    function deleteTable() {
+    public function deleteTable()
+    {
         $dao = $this->_getDao();
         return $dao->truncateTable($this->table->getId());
     }
@@ -301,16 +321,19 @@ class Docman_ApprovalTableReviewerFactory {
     /**
      * Update user review.
      */
-    function updateReview($review) {
-        $dao = $this->_getDao();
-        $updated = $dao->updateReview($this->table->getId(),
-                                  $review->getId(),
-                                  $review->getReviewDate(),
-                                  $review->getState(),
-                                  $review->getComment(),
-                                  $review->getVersion());
+    public function updateReview($review)
+    {
+        $dao     = $this->_getDao();
+        $updated = $dao->updateReview(
+            $this->table->getId(),
+            $review->getId(),
+            $review->getReviewDate(),
+            $review->getState(),
+            $review->getComment(),
+            $review->getVersion()
+        );
         $this->table->addReviewer($review);
-        if($updated) {
+        if ($updated) {
             $atsm = $this->_getApprovalTableNotificationCycle();
             $atsm->reviewUpdated($review);
             return true;
@@ -318,18 +341,14 @@ class Docman_ApprovalTableReviewerFactory {
         return false;
     }
 
-    /**
-     *
-     */
-    function newTableCopy($newTableId) {
+    public function newTableCopy($newTableId)
+    {
         $dao = $this->_getDao();
         return $dao->copyReviews($this->table->getId(), $newTableId);
     }
 
-    /**
-     *
-     */
-    function newTableReset($newTableId) {
+    public function newTableReset($newTableId)
+    {
         $dao = $this->_getDao();
         return $dao->copyReviewers($this->table->getId(), $newTableId);
     }
@@ -337,20 +356,21 @@ class Docman_ApprovalTableReviewerFactory {
     /**
      * Return all the review where the user doesn't commit himself yet.
      */
-    /*static*/ function getAllPendingReviewsForUser($userId) {
-        $reviewsArray = array();
-        $dao = Docman_ApprovalTableReviewerFactory::_getDao();
-        $dar = $dao->getAllReviewsForUserByState($userId, PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET);
-        $docmanUrl = get_server_url().'/plugins/docman';
-        while($dar->valid()) {
-            $row = $dar->current();
-            $baseUrl = $docmanUrl.'/?group_id='.$row['group_id'];
-            $url = $baseUrl.'&action=details&section=approval&id='.$row['item_id'].'&review=1';
-            $reviewsArray[] = array('group' => $row['group_name'],
+    /*static*/ public function getAllPendingReviewsForUser($userId)
+    {
+        $reviewsArray = [];
+        $dao          = self::_getDao();
+        $dar          = $dao->getAllReviewsForUserByState($userId, PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET);
+        $docmanUrl    = HTTPRequest::instance()->getServerUrl() . '/plugins/docman';
+        while ($dar->valid()) {
+            $row            = $dar->current();
+            $baseUrl        = $docmanUrl . '/?group_id=' . $row['group_id'];
+            $url            = $baseUrl . '&action=details&section=approval&id=' . $row['item_id'] . '&review=1';
+            $reviewsArray[] = ['group' => $row['group_name'],
                                     'group_id' => $row['group_id'],
                                     'title' => $row['title'],
                                     'date'  => $row['date'],
-                                    'url'   => $url);
+                                    'url'   => $url];
             $dar->next();
         }
         return $reviewsArray;
@@ -360,66 +380,103 @@ class Docman_ApprovalTableReviewerFactory {
      * Return all the approval table not deleted and not closed where the user
      * is the table owner.
      */
-    /*static*/ function getAllApprovalTableForUser($userId) {
-        $reviewsArray = array();
-        $dao = Docman_ApprovalTableReviewerFactory::_getDao();
-        $dar = $dao->getAllApprovalTableForUser($userId);
-        $docmanUrl = get_server_url().'/plugins/docman';
-        while($dar->valid()) {
+    /*static*/ public function getAllApprovalTableForUser($userId)
+    {
+        $reviewsArray = [];
+        $dao          = self::_getDao();
+        $dar          = $dao->getAllApprovalTableForUser($userId);
+        $docmanUrl    = HTTPRequest::instance()->getServerUrl() . '/plugins/docman';
+        while ($dar->valid()) {
             $row = $dar->current();
 
             // Review URL
-            $baseUrl = $docmanUrl.'/?group_id='.$row['group_id'];
-            $url = $baseUrl.'&action=details&section=approval&id='.$row['item_id'];
+            $baseUrl = $docmanUrl . '/?group_id=' . $row['group_id'];
+            $url     = $baseUrl . '&action=details&section=approval&id=' . $row['item_id'];
 
             // Status
             $status = '';
-            if($row['status'] == PLUGIN_DOCMAN_APPROVAL_TABLE_ENABLED) {
+            if ($row['status'] == PLUGIN_DOCMAN_APPROVAL_TABLE_ENABLED) {
                 $approvalState = Docman_ApprovalTable::computeApprovalState($row);
-                if($approvalState !== null) {
-                    $status = $GLOBALS['Language']->getText('plugin_docman', 'approval_review_state_'.$approvalState);
+                if ($approvalState !== null) {
+                    switch ($approvalState) {
+                        case PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET:
+                            $status = dgettext('tuleap-docman', 'Not Yet');
+                            break;
+                        case PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED:
+                            $status = dgettext('tuleap-docman', 'Approved');
+                            break;
+                        case PLUGIN_DOCMAN_APPROVAL_STATE_REJECTED:
+                            $status = dgettext('tuleap-docman', 'Rejected');
+                            break;
+                        case PLUGIN_DOCMAN_APPROVAL_STATE_COMMENTED:
+                            $status = dgettext('tuleap-docman', 'Comment only');
+                            break;
+                        case PLUGIN_DOCMAN_APPROVAL_STATE_DECLINED:
+                            $status = dgettext('tuleap-docman', 'Will not review');
+                            break;
+                    }
                 }
             }
-            if($status == '') {
-                $status = $GLOBALS['Language']->getText('plugin_docman', 'details_approval_table_'.$row['status']);
+            if ($status == '') {
+                switch ($row['status']) {
+                    case PLUGIN_DOCMAN_APPROVAL_TABLE_DISABLED:
+                        $status = dgettext('tuleap-docman', 'Disabled');
+                        break;
+                    case PLUGIN_DOCMAN_APPROVAL_TABLE_ENABLED:
+                        $status = dgettext('tuleap-docman', 'Available');
+                        break;
+                    case PLUGIN_DOCMAN_APPROVAL_TABLE_CLOSED:
+                        $status = dgettext('tuleap-docman', 'Closed');
+                        break;
+                    case PLUGIN_DOCMAN_APPROVAL_TABLE_DELETED:
+                        $status = dgettext('tuleap-docman', 'Deleted');
+                        break;
+                }
             }
 
-            $reviewsArray[] = array('group' => $row['group_name'],
+            $reviewsArray[] = ['group' => $row['group_name'],
                                     'group_id' => $row['group_id'],
                                     'title' => $row['title'],
                                     'date'  => $row['date'],
                                     'url'   => $url,
-                                    'status' => $status);
+                                    'status' => $status];
             $dar->next();
         }
         return $reviewsArray;
     }
 
-    //
     // Class accessor
-    //
-
-    function _getDao() {
+    public function _getDao()
+    {
         $dao = new Docman_ApprovalTableReviewerDao(CodendiDataAccess::instance());
         return $dao;
     }
 
-    function _getMail()
+    public function _getMail()
     {
         return new Codendi_Mail();
     }
 
-    function _getUserManager() {
+    public function _getUserManager()
+    {
         $um = UserManager::instance();
         return $um;
     }
 
-    function _getApprovalTableNotificationCycle() {
+    public function _getApprovalTableNotificationCycle()
+    {
         $atsm = new Docman_ApprovalTableNotificationCycle(
             new MailNotificationBuilder(
                 new MailBuilder(
                     TemplateRendererFactory::build(),
-                    new MailFilter(UserManager::instance(), new URLVerification(), new MailLogger())
+                    new MailFilter(
+                        UserManager::instance(),
+                        new ProjectAccessChecker(
+                            new RestrictedUserCanAccessProjectVerifier(),
+                            EventManager::instance()
+                        ),
+                        new MailLogger()
+                    )
                 )
             )
         );
@@ -427,7 +484,7 @@ class Docman_ApprovalTableReviewerFactory {
         $atsm->setTable($this->table);
         $atsm->setItem($this->item);
 
-        $um = $this->_getUserManager();
+        $um    = $this->_getUserManager();
         $owner = $um->getUserById($this->table->getOwner());
         $atsm->setOwner($owner);
 
@@ -438,7 +495,8 @@ class Docman_ApprovalTableReviewerFactory {
         return $atsm;
     }
 
-    function setNotificationManager($notificationManager) {
+    public function setNotificationManager($notificationManager)
+    {
         $this->notificationManager = $notificationManager;
     }
 }

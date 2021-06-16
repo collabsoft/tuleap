@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All rights reserved
+ * Copyright (c) Enalean, 2018 - Present. All rights reserved
  * Copyright (c) STMicroelectronics, 2006. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2006
@@ -25,40 +25,39 @@
  * Folder is a transport object (aka container) used to share data between
  * Model/Controler and View layer of the application
  */
-class Docman_Icons {
-    var $images_path;
-    function __construct($images_path) {
+class Docman_Icons
+{
+    public $images_path;
+    public function __construct($images_path)
+    {
         $this->images_path = $images_path;
     }
-    
-    function getActionIcon($action) {
+
+    public function getActionIcon($action)
+    {
         switch ($action) {
-            case 'popup': 
-                return $this->images_path. 'popup.png';
-                break;
-            case 'newFolder': 
-                return $this->images_path. 'folder-new.png';
-                break;
-            case 'newDocument': 
-                return $this->images_path. 'document-new.png';
-                break;
-            case 'details': 
-                return $this->images_path. 'item-details.png';
-                break;
+            case 'popup':
+                return $this->images_path . 'popup.png';
+            case 'newFolder':
+                return $this->images_path . 'folder-new.png';
+            case 'newDocument':
+                return $this->images_path . 'document-new.png';
+            case 'details':
+                return $this->images_path . 'item-details.png';
             case 'show':
-                return $this->images_path. 'folder-show.png';
-                break;
+                return $this->images_path . 'folder-show.png';
             default:
                 break;
         }
     }
-    
-    function getIconForItem(&$item, $params = null) {
+
+    public function getIconForItem(&$item, $params = null)
+    {
         $icon = $this->images_path;
         if (isset($params['icon_width'])) {
                 $icon .= $params['icon_width'] . '/';
         }
-        switch(strtolower(get_class($item))) {
+        switch (strtolower(get_class($item))) {
             case 'docman_folder':
                 $icon .= 'folder';
                 if (isset($params['expanded']) && $params['expanded']) {
@@ -73,8 +72,8 @@ class Docman_Icons {
                 break;
             case 'docman_file':
             case 'docman_embeddedfile':
-                $v =& $item->getCurrentVersion();
-                $type = $v ? $v->getFiletype() : null;
+                $v     = $item->getCurrentVersion();
+                $type  = $v ? $v->getFiletype() : null;
                 $icon .= $this->getIconForMimeType($type);
                 break;
             case 'docman_empty':
@@ -89,8 +88,8 @@ class Docman_Icons {
     }
 
     /**
-    * 
-    * 
+    *
+    *
     * @see http://www.ltsw.se/knbase/internet/mime.htp
     * @see http://framework.openoffice.org/documentation/mimetypes/mimetypes.html
     * @see http://filext.com/
@@ -114,7 +113,8 @@ class Docman_Icons {
             case 'application':
                 $icon = 'binary';
                 if (isset($parts[1])) {
-                    switch($parts[1]) {
+                    switch ($parts[1]) {
+                        case 'gzip':
                         case 'zip':
                         case 'x-tar':
                         case 'x-java-archive':
@@ -182,21 +182,22 @@ class Docman_Icons {
         }
         return $icon;
     }
-    
-    function getFolderSpinner() {
+
+    public function getFolderSpinner()
+    {
         return $this->images_path . 'folder-spinner.gif';
     }
-    function getSpinner() {
+    public function getSpinner()
+    {
         return $this->images_path . 'spinner.gif';
     }
-    function getIcon($icon) {
+    public function getIcon($icon)
+    {
         return $this->images_path . $icon;
     }
 
-    function getThemeIcon($icon) {
-        return util_get_image_theme('ic/'.$icon);
+    public function getThemeIcon($icon)
+    {
+        return util_get_image_theme('ic/' . $icon);
     }
-
 }
-
-?>

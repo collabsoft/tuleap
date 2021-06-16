@@ -1,43 +1,50 @@
 <?php
-rcs_id('$Id: config.php,v 1.137 2005/08/06 14:31:10 rurban Exp $');
+/**
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 /*
  * NOTE: The settings here should probably not need to be changed.
  * The user-configurable settings have been moved to IniConfig.php
  * The run-time code has been moved to lib/IniConfig.php:fix_configs()
  */
- 
-if (!defined("LC_ALL")) {
-    // Backward compatibility (for PHP < 4.0.5)
-    if (!check_php_version(4,0,5)) {
-        define("LC_ALL",   "LC_ALL");
-        define("LC_CTYPE", "LC_CTYPE");
-    } else {
-        define("LC_ALL",   0);
-        define("LC_CTYPE", 2);
-    }
-}
-// debug flags: 
-define ('_DEBUG_VERBOSE',   1); // verbose msgs and add validator links on footer
-define ('_DEBUG_PAGELINKS', 2); // list the extraced pagelinks at the top of each pages
-define ('_DEBUG_PARSER',    4); // verbose parsing steps
-define ('_DEBUG_TRACE',     8); // test php memory usage, prints php debug backtraces
-define ('_DEBUG_INFO',     16);
-define ('_DEBUG_APD',      32);
-define ('_DEBUG_LOGIN',    64); // verbose login debug-msg (settings and reason for failure)
-define ('_DEBUG_SQL',     128);
 
-function isCGI() {
-    return (substr(php_sapi_name(),0,3) == 'cgi' and 
+if (! defined("LC_ALL")) {
+    define("LC_ALL", 0);
+    define("LC_CTYPE", 2);
+}
+// debug flags:
+define('_DEBUG_VERBOSE', 1); // verbose msgs and add validator links on footer
+define('_DEBUG_PAGELINKS', 2); // list the extraced pagelinks at the top of each pages
+define('_DEBUG_PARSER', 4); // verbose parsing steps
+define('_DEBUG_TRACE', 8); // test php memory usage, prints php debug backtraces
+define('_DEBUG_INFO', 16);
+define('_DEBUG_APD', 32);
+define('_DEBUG_LOGIN', 64); // verbose login debug-msg (settings and reason for failure)
+define('_DEBUG_SQL', 128);
+
+function isCGI()
+{
+    return (substr(php_sapi_name(), 0, 3) == 'cgi' and
             isset($_ENV['GATEWAY_INTERFACE']) and
-            @preg_match('/CGI/',$_ENV['GATEWAY_INTERFACE']));
+            @preg_match('/CGI/', $_ENV['GATEWAY_INTERFACE']));
 }
 
-// essential internal stuff
-if (check_php_version(5,3)) {
-    ini_set('magic_quotes_runtime', 0);
-}
-
-/** 
+/**
  * Browser Detection Functions
  *
  * Current Issues:
@@ -48,44 +55,60 @@ if (check_php_version(5,3)) {
  *  IE55 has problems with transparent PNG's
  * @author: ReiniUrban
  */
-function browserAgent() {
+function browserAgent()
+{
     static $HTTP_USER_AGENT = false;
-    if ($HTTP_USER_AGENT !== false) return $HTTP_USER_AGENT;
-    if (!$HTTP_USER_AGENT)
+    if ($HTTP_USER_AGENT !== false) {
+        return $HTTP_USER_AGENT;
+    }
+    if (! $HTTP_USER_AGENT) {
         $HTTP_USER_AGENT = @$_SERVER['HTTP_USER_AGENT'];
-    if (!$HTTP_USER_AGENT) // CGI
+    }
+    if (! $HTTP_USER_AGENT) { // CGI
         $HTTP_USER_AGENT = @$_ENV['HTTP_USER_AGENT'];
-    if (!$HTTP_USER_AGENT) // local CGI testing
+    }
+    if (! $HTTP_USER_AGENT) { // local CGI testing
         $HTTP_USER_AGENT = 'none';
+    }
     return $HTTP_USER_AGENT;
 }
-function browserDetect($match) {
+function browserDetect($match)
+{
     return strstr(browserAgent(), $match);
 }
 // returns a similar number for Netscape/Mozilla (gecko=5.0)/IE/Opera features.
-function browserVersion() {
-    if (strstr(browserAgent(),    "Mozilla/4.0 (compatible; MSIE"))
-        return (float) substr(browserAgent(),30);
-    elseif (strstr(browserAgent(),"Mozilla/5.0 (compatible; Konqueror/"))
-        return (float) substr(browserAgent(),36);
-    else
-        return (float) substr(browserAgent(),8);
+function browserVersion()
+{
+    if (strstr(browserAgent(), "Mozilla/4.0 (compatible; MSIE")) {
+        return (float) substr(browserAgent(), 30);
+    } elseif (strstr(browserAgent(), "Mozilla/5.0 (compatible; Konqueror/")) {
+        return (float) substr(browserAgent(), 36);
+    } else {
+        return (float) substr(browserAgent(), 8);
+    }
 }
-function isBrowserIE() {
+function isBrowserIE()
+{
     return (browserDetect('Mozilla/') and
             browserDetect('MSIE'));
 }
 
 // must omit display alternate stylesheets: konqueror 3.1.4
 // http://sourceforge.net/tracker/index.php?func=detail&aid=945154&group_id=6121&atid=106121
-function isBrowserKonqueror($version = false) {
-    if ($version) return browserDetect('Konqueror/') and browserVersion() >= $version;
+function isBrowserKonqueror($version = false)
+{
+    if ($version) {
+        return browserDetect('Konqueror/') and browserVersion() >= $version;
+    }
     return browserDetect('Konqueror/');
 }
 // MacOSX Safari has certain limitations. Need detection and patches.
 // * no <object>, only <embed>
-function isBrowserSafari($version = false) {
-    if ($version) return browserDetect('Safari/') and browserVersion() >= $version;
+function isBrowserSafari($version = false)
+{
+    if ($version) {
+        return browserDetect('Safari/') and browserVersion() >= $version;
+    }
     return browserDetect('Safari/');
 }
 
@@ -98,10 +121,11 @@ function isBrowserSafari($version = false) {
  * We should really check additionally if the i18n HomePage version is defined.
  * So must defer this to the request loop.
  */
-function guessing_lang ($languages=false) {
-    if (!$languages) {
-    	// make this faster
-    	$languages = array("en","de","es","fr","it","ja","zh","nl","sv");
+function guessing_lang($languages = false)
+{
+    if (! $languages) {
+        // make this faster
+        $languages = ["en", "de", "es", "fr", "it", "ja", "zh", "nl", "sv"];
         // ignore possible "_<territory>" and codeset "ja.utf8"
         /*
         require_once("lib/Theme.php");
@@ -121,25 +145,26 @@ function guessing_lang ($languages=false) {
         */
     }
 
-    if (isset($GLOBALS['request'])) // in fixup-dynamic-config there's no request yet
+    if (isset($GLOBALS['request'])) { // in fixup-dynamic-config there's no request yet
         $accept = $GLOBALS['request']->get('HTTP_ACCEPT_LANGUAGE');
-    elseif (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE']))
+    } elseif (! empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
         $accept = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+    }
 
     if ($accept) {
-        $lang_list = array();
-        $list = explode(",", $accept);
-        for ($i=0; $i<count($list); $i++) {
-            $pos = strchr($list[$i], ";") ;
+        $lang_list = [];
+        $list      = explode(",", $accept);
+        for ($i = 0; $i < count($list); $i++) {
+            $pos = strchr($list[$i], ";");
             if ($pos === false) {
                 // No Q it is only a locale...
                 $lang_list[$list[$i]] = 100;
             } else {
-                // Has a Q rating        
-                $q = explode(";",$list[$i]) ;
-                $loc = $q[0] ;
-                $q = explode("=",$q[1]) ;
-                $lang_list[$loc] = $q[1]*100 ;
+                // Has a Q rating
+                $q               = explode(";", $list[$i]);
+                $loc             = $q[0];
+                $q               = explode("=", $q[1]);
+                $lang_list[$loc] = $q[1] * 100;
             }
         }
 
@@ -148,19 +173,22 @@ function guessing_lang ($languages=false) {
 
         // compare with languages, ignoring sublang and charset
         foreach ($lang_list as $lang => $q) {
-            if (in_array($lang, $languages))
+            if (in_array($lang, $languages)) {
                 return $lang;
+            }
             // de_DE.iso8859-1@euro => de_DE.iso8859-1, de_DE, de
             // de-DE => de-DE, de
-            foreach (array('@', '.', '_') as $sep) {
-                if ( ($tail = strchr($lang, $sep)) ) {
+            foreach (['@', '.', '_'] as $sep) {
+                if (($tail = strchr($lang, $sep))) {
                     $lang_short = substr($lang, 0, -strlen($tail));
-                    if (in_array($lang_short, $languages))
+                    if (in_array($lang_short, $languages)) {
                         return $lang_short;
+                    }
                 }
             }
-            if ($pos = strchr($lang, "-") and in_array(substr($lang, 0, $pos), $languages))
+            if ($pos = strchr($lang, "-") and in_array(substr($lang, 0, $pos), $languages)) {
                 return substr($lang, 0, $pos);
+            }
         }
     }
     return $languages[0];
@@ -179,53 +207,62 @@ function guessing_lang ($languages=false) {
  * @see setlocale
  * [56ms]
  */
-function guessing_setlocale ($category, $locale) {
-    $alt = array('en' => array('C', 'en_US', 'en_GB', 'en_AU', 'en_CA', 'english'),
-                 'de' => array('de_DE', 'de_DE', 'de_DE@euro', 
-                               'de_AT@euro', 'de_AT', 'German_Austria.1252', 'deutsch', 
-                               'german', 'ge'),
-                 'es' => array('es_ES', 'es_MX', 'es_AR', 'spanish'),
-                 'nl' => array('nl_NL', 'dutch'),
-                 'fr' => array('fr_FR', 'français', 'french'),
-                 'it' => array('it_IT'),
-                 'sv' => array('sv_SE'),
-                 'ja.utf-8'  => array('ja_JP','ja_JP.utf-8','japanese'),
-                 'ja.euc-jp' => array('ja_JP','ja_JP.eucJP','japanese.euc'),
-                 'zh' => array('zh_TW', 'zh_CN'),
-                 );
-    if (!$locale or $locale=='C') { 
+function guessing_setlocale($category, $locale)
+{
+    $alt = ['en' => ['C', 'en_US', 'en_GB', 'en_AU', 'en_CA', 'english'],
+                 'de' => ['de_DE', 'de_DE', 'de_DE@euro',
+                               'de_AT@euro', 'de_AT', 'German_Austria.1252', 'deutsch',
+                               'german', 'ge'],
+                 'es' => ['es_ES', 'es_MX', 'es_AR', 'spanish'],
+                 'nl' => ['nl_NL', 'dutch'],
+                 'fr' => ['fr_FR', 'franï¿½ais', 'french'],
+                 'it' => ['it_IT'],
+                 'sv' => ['sv_SE'],
+                 'ja.utf-8'  => ['ja_JP','ja_JP.utf-8','japanese'],
+                 'ja.euc-jp' => ['ja_JP','ja_JP.eucJP','japanese.euc'],
+                 'zh' => ['zh_TW', 'zh_CN'],
+                 ];
+    if (! $locale or $locale == 'C') {
         // do the reverse: return the detected locale collapsed to our LANG
         $locale = setlocale($category, '');
         if ($locale) {
-            if (strstr($locale, '_')) list ($lang) = preg_split('/_/D', $locale);
-            else $lang = $locale;
-            if (strlen($lang) > 2) { 
+            if (strstr($locale, '_')) {
+                list ($lang) = preg_split('/_/D', $locale);
+            } else {
+                $lang = $locale;
+            }
+            if (strlen($lang) > 2) {
                 foreach ($alt as $try => $locs) {
                     if (in_array($locale, $locs) or in_array($lang, $locs)) {
-                    	//if (empty($GLOBALS['LANG'])) $GLOBALS['LANG'] = $try;
+                        //if (empty($GLOBALS['LANG'])) $GLOBALS['LANG'] = $try;
                         return $try;
                     }
                 }
             }
         }
     }
-    if (strlen($locale) == 2)
+    if (strlen($locale) == 2) {
         $lang = $locale;
-    else 
+    } else {
         list ($lang) = preg_split('/_/D', $locale);
-    if (!isset($alt[$lang]))
+    }
+    if (! isset($alt[$lang])) {
         return false;
-        
+    }
+
     foreach ($alt[$lang] as $try) {
-        if ($res = setlocale($category, $try. '.' . $GLOBALS['charset']))
+        if ($res = setlocale($category, $try . '.' . $GLOBALS['charset'])) {
             return $res;
-        if ($res = setlocale($category, $try))
+        }
+        if ($res = setlocale($category, $try)) {
             return $res;
-        foreach (array(".", '@', '_') as $sep) {
+        }
+        foreach ([".", '@', '_'] as $sep) {
             if ($i = strpos($try, $sep)) {
                 $try = substr($try, 0, $i);
-                if (($res = setlocale($category, $try)))
+                if (($res = setlocale($category, $try))) {
                     return $res;
+                }
             }
         }
     }
@@ -238,36 +275,27 @@ function guessing_setlocale ($category, $locale) {
 }
 
 // [99ms]
-function update_locale($loc) {
+function update_locale($loc)
+{
     // $LANG or DEFAULT_LANGUAGE is too less information, at least on unix for
     // setlocale(), for bindtextdomain() to succeed.
     $setlocale = guessing_setlocale(LC_ALL, $loc); // [56ms]
-    if (!$setlocale) { // system has no locale for this language, so gettext might fail
-        $setlocale = FileFinder::_get_lang();
+    if (! $setlocale) { // system has no locale for this language, so gettext might fail
+        $setlocale         = FileFinder::_get_lang();
         list ($setlocale,) = preg_split('/_/D', $setlocale, 2);
-        $setlocale = guessing_setlocale(LC_ALL, $setlocale); // try again
-        if (!$setlocale) $setlocale = $loc;
-    }
-    // Try to put new locale into environment (so any
-    // programs we run will get the right locale.)
-    if (!function_exists('bindtextdomain'))  {
-        // Reinitialize translation array.
-        global $locale;
-        $locale = array();
-        // do reinit to purge PHP's static cache [43ms]
-        if ( ($lcfile = FindLocalizedFile("LC_MESSAGES/phpwiki.php", 'missing_ok', 'reinit')) ) {
-            include($lcfile);
+        $setlocale         = guessing_setlocale(LC_ALL, $setlocale); // try again
+        if (! $setlocale) {
+            $setlocale = $loc;
         }
-    } else {
-        // If PHP is in safe mode, this is not allowed,
-        // so hide errors...
-        @putenv("LC_ALL=$setlocale");
-        @putenv("LANG=$loc");
-        @putenv("LANGUAGE=$loc");
     }
+    // If PHP is in safe mode, this is not allowed,
+    // so hide errors...
+    @putenv("LC_ALL=$setlocale");
+    @putenv("LANG=$loc");
+    @putenv("LANGUAGE=$loc");
 
     // To get the POSIX character classes in the PCRE's (e.g.
-    // [[:upper:]]) to match extended characters (e.g. GrüßGott), we have
+    // [[:upper:]]) to match extended characters (e.g. Grï¿½ï¿½Gott), we have
     // to set the locale, using setlocale().
     //
     // The problem is which locale to set?  We would like to recognize all
@@ -293,89 +321,22 @@ function update_locale($loc) {
     return $loc;
 }
 
-/** string pcre_fix_posix_classes (string $regexp)
-*
-* Older version (pre 3.x?) of the PCRE library do not support
-* POSIX named character classes (e.g. [[:alnum:]]).
-*
-* This is a helper function which can be used to convert a regexp
-* which contains POSIX named character classes to one that doesn't.
-*
-* All instances of strings like '[:<class>:]' are replaced by the equivalent
-* enumerated character class.
-*
-* Implementation Notes:
-*
-* Currently we use hard-coded values which are valid only for
-* ISO-8859-1.  Also, currently on the classes [:alpha:], [:alnum:],
-* [:upper:] and [:lower:] are implemented.  (The missing classes:
-* [:blank:], [:cntrl:], [:digit:], [:graph:], [:print:], [:punct:],
-* [:space:], and [:xdigit:] could easily be added if needed.)
-*
-* This is a hack.  I tried to generate these classes automatically
-* using ereg(), but discovered that in my PHP, at least, ereg() is
-* slightly broken w.r.t. POSIX character classes.  (It includes
-* "\xaa" and "\xba" in [:alpha:].)
-*
-* So for now, this will do.  --Jeff <dairiki@dairiki.org> 14 Mar, 2001
-*/
-function pcre_fix_posix_classes ($regexp) {
-    global $charset;
-    if (!isset($charset))
-        $charset = CHARSET; // get rid of constant. pref is dynamic and language specific
-    if (in_array($GLOBALS['LANG'], array('zh')))
-        $charset = 'utf-8';
-    if (strstr($GLOBALS['LANG'],'.utf-8'))
-        $charset = 'utf-8';
-    elseif (strstr($GLOBALS['LANG'],'.euc-jp'))
-        $charset = 'euc-jp';
-    elseif (in_array($GLOBALS['LANG'], array('ja')))
-        //$charset = 'utf-8';
-        $charset = 'euc-jp';
-
-    if (strtolower($charset) == 'utf-8') { // thanks to John McPherson
-        // until posix class names/pcre work with utf-8
-	if (preg_match('/[[:upper:]]/', '\xc4\x80'))
-            return $regexp;    
-        // utf-8 non-ascii chars: most common (eg western) latin chars are 0xc380-0xc3bf
-        // we currently ignore other less common non-ascii characters
-        // (eg central/east european) latin chars are 0xc432-0xcdbf and 0xc580-0xc5be
-        // and indian/cyrillic/asian languages
-        
-        // this replaces [[:lower:]] with utf-8 match (Latin only)
-        $regexp = preg_replace('/\[\[\:lower\:\]\]/','(?:[a-z]|\xc3[\x9f-\xbf]|\xc4[\x81\x83\x85\x87])',
-                               $regexp);
-        // this replaces [[:upper:]] with utf-8 match (Latin only)
-        $regexp = preg_replace('/\[\[\:upper\:\]\]/','(?:[A-Z]|\xc3[\x80-\x9e]|\xc4[\x80\x82\x84\x86])',
-                               $regexp);
-    } elseif (preg_match('/[[:upper:]]/', 'Ä')) {
-        // First check to see if our PCRE lib supports POSIX character
-        // classes.  If it does, there's nothing to do.
-        return $regexp;
-    }
-    static $classes = array(
-                            'alnum' => "0-9A-Za-z\xc0-\xd6\xd8-\xf6\xf8-\xff",
-                            'alpha' => "A-Za-z\xc0-\xd6\xd8-\xf6\xf8-\xff",
-                            'upper' => "A-Z\xc0-\xd6\xd8-\xde",
-                            'lower' => "a-z\xdf-\xf6\xf8-\xff"
-                            );
-    $keys = join('|', array_keys($classes));
-    return preg_replace("/\[:($keys):]/e", '$classes["\1"]', $regexp);
-}
-
-function deduce_script_name() {
-    $s = &$_SERVER;
+function deduce_script_name()
+{
+    $s      = &$_SERVER;
     $script = @$s['SCRIPT_NAME'];
     if (empty($script) or $script[0] != '/') {
         // Some places (e.g. Lycos) only supply a relative name in
         // SCRIPT_NAME, but give what we really want in SCRIPT_URL.
-        if (!empty($s['SCRIPT_URL']))
+        if (! empty($s['SCRIPT_URL'])) {
             $script = $s['SCRIPT_URL'];
+        }
     }
     return $script;
 }
 
-function IsProbablyRedirectToIndex () {
+function IsProbablyRedirectToIndex()
+{
     // This might be a redirect to the DirectoryIndex,
     // e.g. REQUEST_URI = /dir/?some_action got redirected
     // to SCRIPT_NAME = /dir/index.php
@@ -384,150 +345,31 @@ function IsProbablyRedirectToIndex () {
     // $SCRIPT_NAME, since pages appear at
     // e.g. /dir/index.php/HomePage.
 
-    $requri = preg_replace('/\?.*$/','',$_SERVER['REQUEST_URI']);
+    $requri = preg_replace('/\?.*$/', '', $_SERVER['REQUEST_URI']);
     $requri = preg_quote($requri, '%');
     return preg_match("%^${requri}[^/]*$%", $_SERVER['SCRIPT_NAME']);
 }
 
-// >= php-4.1.0
-if (!function_exists('array_key_exists')) { // lib/IniConfig.php, sqlite, adodb, ...
-    function array_key_exists($item, $array) {
-        return isset($array[$item]);
-    }
-}
-
-// => php-4.0.5
-if (!function_exists('is_scalar')) { // lib/stdlib.php:wikihash()
-    function is_scalar($x) {
-        return is_numeric($x) or is_string($x) or is_float($x) or is_bool($x); 
-    }
-}
-
-// => php-4.2.0. pear wants to break old php's! DB uses it now.
-if (!function_exists('is_a')) {
-    function is_a($item,$class) {
-        return isa($item,$class); 
-    }
-}
-
-// needed < php5
-// by bradhuizenga at softhome dot net from the php docs
-if (!function_exists('str_ireplace')) {
-  function str_ireplace($find, $replace, $string) {
-      if (!is_array($find)) $find = array($find);
-      if (!is_array($replace)) {
-          if (!is_array($find)) 
-              $replace = array($replace);
-          else {
-              // this will duplicate the string into an array the size of $find
-              $c = count($find);
-              $rString = $replace;
-              unset($replace);
-              for ($i = 0; $i < $c; $i++) {
-                  $replace[$i] = $rString;
-              }
-          }
-      }
-      foreach ($find as $fKey => $fItem) {
-          $between = explode(strtolower($fItem),strtolower($string));
-          $pos = 0;
-          foreach ($between as $bKey => $bItem) {
-              $between[$bKey] = substr($string,$pos,strlen($bItem));
-              $pos += strlen($bItem) + strlen($fItem);
-          }
-          $string = implode($replace[$fKey], $between);
-      }
-      return($string);
-  }
-}
-
 /**
- * safe php4 definition for clone.
- * php5 copies objects by reference, but we need to clone "deep copy" in some places.
- * (BlockParser)
- * We need to eval it as workaround for the php5 parser.
- * See http://www.acko.net/node/54
- */
-if (!check_php_version(5)) {
-    eval('
-    function clone($object) {
-      return $object;
-    }
-    ');
-}
-
-/** 
  * wordwrap() might crash between 4.1.2 and php-4.3.0RC2, fixed in 4.3.0
- * See http://bugs.php.net/bug.php?id=20927 and 
+ * See http://bugs.php.net/bug.php?id=20927 and
  * http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2002-1396
  * Improved version of wordwrap2() in the comments at http://www.php.net/wordwrap
  */
-function safe_wordwrap($str, $width=80, $break="\n", $cut=false) {
-    if (check_php_version(4,3))
-        return wordwrap($str, $width, $break, $cut);
-    elseif (!check_php_version(4,1,2))
-        return wordwrap($str, $width, $break, $cut);
-    else {
-        $len = strlen($str);
-        $tag = 0; $result = ''; $wordlen = 0;
-        for ($i = 0; $i < $len; $i++) {
-            $chr = $str[$i];
-            // don't break inside xml tags
-            if ($chr == '<') {
-                $tag++;
-            } elseif ($chr == '>') {
-                $tag--;
-            } elseif (!$tag) {
-                if (!function_exists('ctype_space')) {
-                    if (preg_match('/^\s$/', $chr))
-                        $wordlen = 0;
-                    else
-                        $wordlen++;
-                }
-                elseif (ctype_space($chr)) {
-                    $wordlen = 0;
-                } else {
-                    $wordlen++;
-                }
-            }
-            if ((!$tag) && ($wordlen) && (!($wordlen % $width))) {
-                $chr .= $break;
-            }
-            $result .= $chr;
-        }
-        return $result;
-        /*
-        if (isset($str) && isset($width)) {
-            $ex = explode(" ", $str); // wrong: must use preg_split \s+
-            $rp = array();
-            for ($i=0; $i<count($ex); $i++) {
-                // $word_array = preg_split('//', $ex[$i], -1, PREG_SPLIT_NO_EMPTY);
-                // delete #&& !is_numeric($ex[$i])# if you want force it anyway
-                if (strlen($ex[$i]) > $width && !is_numeric($ex[$i])) {
-                    $where = 0;
-                    $rp[$i] = "";
-                    for($b=0; $b < (ceil(strlen($ex[$i]) / $width)); $b++) {
-                        $rp[$i] .= substr($ex[$i], $where, $width).$break;
-                        $where += $width;
-                    }
-                } else {
-                    $rp[$i] = $ex[$i];
-                }
-            }
-            return implode(" ",$rp);
-        }
-        return $text;
-        */
-    }
+function safe_wordwrap($str, $width = 80, $break = "\n", $cut = false)
+{
+    return wordwrap($str, $width, $break, $cut);
 }
 
-function getUploadFilePath() {
-    return defined('PHPWIKI_DIR') 
-        ? PHPWIKI_DIR . "/uploads/" 
+function getUploadFilePath()
+{
+    return defined('PHPWIKI_DIR')
+        ? PHPWIKI_DIR . "/uploads/"
         : realpath(dirname(__FILE__) . "/../uploads/");
 }
-function getUploadDataPath() {
-  return SERVER_URL . ((substr(DATA_PATH,0,1)=='/') ? '' : "/") . DATA_PATH . '/uploads/'.GROUP_ID.'/';
+function getUploadDataPath()
+{
+    return SERVER_URL . ((substr(DATA_PATH, 0, 1) == '/') ? '' : "/") . DATA_PATH . '/uploads/' . GROUP_ID . '/';
 }
 
 // $Log: config.php,v $
@@ -703,8 +545,6 @@ function getUploadDataPath() {
 // more numeric pagename fixes.
 // fixed action=upload with merge conflict warnings.
 // charset changed from constant to global (dynamic utf-8 switching)
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -713,4 +553,3 @@ function getUploadDataPath() {
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

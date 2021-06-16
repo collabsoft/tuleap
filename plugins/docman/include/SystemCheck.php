@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,7 +23,8 @@
  *
  * @see Event::PROCCESS_SYSTEM_CHECK
  */
-class Docman_SystemCheck {
+class Docman_SystemCheck
+{
 
     /** @var Plugin */
     private $docman_plugin;
@@ -34,7 +35,7 @@ class Docman_SystemCheck {
     /** @var Backend */
     private $backend;
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
     /**
@@ -47,7 +48,7 @@ class Docman_SystemCheck {
         Docman_SystemCheckProjectRetriever $retriever,
         Backend $backend,
         PluginConfigChecker $config_checker,
-        Logger $logger
+        \Psr\Log\LoggerInterface $logger
     ) {
         $this->retriever      = $retriever;
         $this->docman_plugin  = $docman_plugin;
@@ -56,7 +57,8 @@ class Docman_SystemCheck {
         $this->logger         = $logger;
     }
 
-    public function process() {
+    public function process()
+    {
         $this->checkIncFolderAndFileOwnership();
 
         foreach ($this->retriever->getActiveProjectUnixNamesThatUseDocman() as $project_unix_name) {
@@ -72,19 +74,22 @@ class Docman_SystemCheck {
         return true;
     }
 
-    private function checkIncFolderAndFileOwnership() {
-       $this->config_checker->checkFolder($this->docman_plugin);
-       $this->config_checker->checkIncFile($this->getIncFile());
+    private function checkIncFolderAndFileOwnership()
+    {
+        $this->config_checker->checkFolder($this->docman_plugin);
+        $this->config_checker->checkIncFile($this->getIncFile());
     }
 
-    private function getIncFile() {
+    private function getIncFile()
+    {
         return $this->docman_plugin->getPluginEtcRoot() . '/docman.inc';
     }
 
     /**
      * @throws Docman_FolderNotCreatedException
      */
-    private function createFolderWithRightAccessRights($folder_path, $project_unix_name) {
+    private function createFolderWithRightAccessRights($folder_path, $project_unix_name)
+    {
         if (! mkdir($folder_path)) {
             throw new Docman_FolderNotCreatedException("Folder $folder_path not created");
         }
@@ -96,7 +101,8 @@ class Docman_SystemCheck {
         $this->logger->info("Docman root folder for project $project_unix_name created");
     }
 
-    private function getDocmanRootPath() {
-        return $this->docman_plugin->getPluginInfo()->getPropertyValueForName('docman_root').'/';
+    private function getDocmanRootPath()
+    {
+        return $this->docman_plugin->getPluginInfo()->getPropertyValueForName('docman_root') . '/';
     }
 }

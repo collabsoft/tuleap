@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2013 - 2017. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -25,9 +25,8 @@
 use Tuleap\Svn\SHA1CollisionDetector;
 
 try {
-    require_once 'pre.php';
-    require_once 'common/reference/ReferenceManager.class.php';
-    require_once 'common/svn/SVN_Hooks.class.php';
+    /** @psalm-suppress MissingFile This file is deployed under /usr/lib/tuleap/, an absolute path is needed */
+    require_once '/usr/share/tuleap/src/www/include/pre.php';
 
     $repository = $argv[1];
     $txn        = $argv[2];
@@ -41,13 +40,13 @@ try {
         new SVN_Svnlook(),
         new SVN_Immutable_Tags_Handler(new SVN_Immutable_Tags_DAO()),
         new SHA1CollisionDetector(),
-        new BackendLogger()
+        BackendLogger::getDefaultLogger()
     );
     $hook->assertCommitMessageIsValid($repository, $commit_message);
     $hook->assertCommitToTagIsAllowed($repository, $txn);
     $hook->assertCommitDoesNotContainSHA1Collision($repository, $txn);
     exit(0);
 } catch (Exception $exeption) {
-    fwrite (STDERR, $exeption->getMessage());
+    fwrite(STDERR, $exeption->getMessage());
     exit(1);
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,7 +29,7 @@ class CreateTestUser
     private $login;
 
     /**
-     * CreateTestUser constructor.
+     *
      * @param $firstname
      * @param $lastname
      * @param $email
@@ -41,8 +41,8 @@ class CreateTestUser
     {
         $this->email = trim($email);
 
-        $realname = trim($firstname).' '.trim($lastname);
-        $valid = new \Valid_RealNameFormat();
+        $realname = trim($firstname) . ' ' . trim($lastname);
+        $valid    = new \Valid_RealNameFormat();
         if (! $valid->validate($realname)) {
             throw new Exception\InvalidRealNameException("Invalid realname $realname");
         }
@@ -65,7 +65,7 @@ class CreateTestUser
     public function generateXML()
     {
         $this->assertEmailUnique();
-        $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><users />');
+        $xml  = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><users />');
         $user = $xml->addChild('user');
         $user->addChild('id', 101);
         $this->addCData($user, 'username', $this->getUserName());
@@ -78,7 +78,10 @@ class CreateTestUser
     private function addCData(\SimpleXMLElement $node, $name, $value)
     {
         $parent = $node->addChild($name);
-        $dom = dom_import_simplexml($parent);
+        $dom    = dom_import_simplexml($parent);
+        if ($dom->ownerDocument === null) {
+            return;
+        }
         $dom->appendChild($dom->ownerDocument->createCDATASection($value));
     }
 

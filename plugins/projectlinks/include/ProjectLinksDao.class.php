@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  * Copyright (c) STMicroelectronics, 2009. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2009
@@ -30,26 +30,28 @@ class ProjectLinksDao extends DataAccessObject
 
     /**
      * Search all links of a given type
-     * 
-     * @param Integer $linkTypeId
+     *
+     * @param int $linkTypeId
      * @return DataAccessResult
      */
-    function searchLinksByType($linkTypeId) {
-        $sql = 'SELECT rel.*, g.group_name'.
-               ' FROM plugin_projectlinks_relationship rel'.
-               '  JOIN groups g ON (g.group_id = rel.target_group_id)'.
-               ' WHERE link_type_id = '.db_ei($linkTypeId).
+    public function searchLinksByType($linkTypeId)
+    {
+        $sql = 'SELECT rel.*, g.group_name' .
+               ' FROM plugin_projectlinks_relationship rel' .
+               '  JOIN groups g ON (g.group_id = rel.target_group_id)' .
+               ' WHERE link_type_id = ' . db_ei($linkTypeId) .
                ' ORDER BY g.group_name';
         return $this->retrieve($sql);
     }
-    
+
     /**
      * Search all the links from $groupId project to other prjs.
-     
-     * @param  Integer $groupId Group id
+
+     * @param int $groupId Group id
      * @return DataAccessResult
      */
-    function searchForwardLinks($groupId) {
+    public function searchForwardLinks($groupId)
+    {
         $sql = 'SELECT name AS link_name, type, groups.group_id,
                   group_name, unix_group_name, uri_plus, link_id, creation_date,
                   master_group_id, target_group_id, link_type.link_type_id
@@ -58,7 +60,7 @@ class ProjectLinksDao extends DataAccessObject
                     USING (link_type_id)
                   INNER JOIN groups
                     ON (groups.group_id = rel.target_group_id)
-                WHERE master_group_id = '.db_ei($groupId).'
+                WHERE master_group_id = ' . db_ei($groupId) . '
                   AND status = "A"
                 ORDER BY name, type, group_name';
         return $this->retrieve($sql);
@@ -66,11 +68,12 @@ class ProjectLinksDao extends DataAccessObject
 
     /**
      * Search all the links that point to $groupId project
-     * 
-     * @param  Integer $groupId Group id
+     *
+     * @param int $groupId Group id
      * @return DataAccessResult
      */
-    function searchBackLinks($groupId) {
+    public function searchBackLinks($groupId)
+    {
         $sql = 'SELECT reverse_name AS link_name, type, groups.group_id,
                   group_name, unix_group_name, uri_plus, link_id, creation_date,
                   master_group_id, target_group_id,  link_type.link_type_id
@@ -79,7 +82,7 @@ class ProjectLinksDao extends DataAccessObject
                     USING (link_type_id)
                   INNER JOIN groups
                     ON (groups.group_id = rel.master_group_id)
-                WHERE target_group_id = '.db_ei($groupId).'
+                WHERE target_group_id = ' . db_ei($groupId) . '
                   AND status = "A"
             ORDER BY name, type, group_name';
         return $this->retrieve($sql);
@@ -88,32 +91,31 @@ class ProjectLinksDao extends DataAccessObject
     /**
      * Return true if there are links from or toward this project or if there is
      * at least one link type defined in the project.
-     * 
-     * @param Integer $groupId
-     * 
-     * @return Boolean
+     *
+     * @param int $groupId
+     *
+     * @return bool
      */
-    function projectUsesProjectLinks($groupId) {
-        $sql = 'SELECT NULL'.
-               ' FROM plugin_projectlinks_link_type'.
-               ' WHERE group_id = '.$groupId.
+    public function projectUsesProjectLinks($groupId)
+    {
+        $sql = 'SELECT NULL' .
+               ' FROM plugin_projectlinks_link_type' .
+               ' WHERE group_id = ' . $groupId .
                ' LIMIT 1';
         $dar = $this->retrieve($sql);
-        if ($dar && !$dar->isError() && $dar->rowCount() == 1) {
+        if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
             return true;
         } else {
-            $sql = 'SELECT NULL'.
-                   ' FROM plugin_projectlinks_relationship'.
-                   ' WHERE target_group_id = '.$groupId.
-                   ' OR master_group_id = '.$groupId.
+            $sql = 'SELECT NULL' .
+                   ' FROM plugin_projectlinks_relationship' .
+                   ' WHERE target_group_id = ' . $groupId .
+                   ' OR master_group_id = ' . $groupId .
                    ' LIMIT 1';
             $dar = $this->retrieve($sql);
-            if ($dar && !$dar->isError() && $dar->rowCount() == 1) {
+            if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
                 return true;
             }
         }
         return false;
     }
 }
-
-?>

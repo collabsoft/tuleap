@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,26 +18,31 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_ChangesetJsonFormatter {
+class Tracker_Artifact_ChangesetJsonFormatter
+{
     private $renderer;
 
-    public function __construct(TemplateRenderer $renderer) {
-       $this->renderer = $renderer;
+    public function __construct(TemplateRenderer $renderer)
+    {
+        $this->renderer = $renderer;
     }
 
-    public function format(Tracker_Artifact_Changeset $changeset) {
-        return array(
+    public function format(Tracker_Artifact_Changeset $changeset, PFUser $current_user)
+    {
+        return [
             'id'           => $changeset->getId(),
             'submitted_by' => $changeset->getSubmittedBy(),
-            'submitted_on' => date('c', $changeset->getSubmittedOn()),
+            'submitted_on' => date('c', (int) $changeset->getSubmittedOn()),
             'email'        => $changeset->getEmail(),
-            'html'         => $this->getChangeContentForJson($changeset),
+            'html'         => $this->getChangeContentForJson($changeset, $current_user),
+        ];
+    }
+
+    protected function getChangeContentForJson(Tracker_Artifact_Changeset $changeset, PFUser $current_user)
+    {
+        return $this->renderer->renderToString(
+            'changeset-popup',
+            new Tracker_Artifact_ChangesetJsonPresenter($changeset, $current_user)
         );
     }
-
-    protected function getChangeContentForJson(Tracker_Artifact_Changeset $changeset) {
-        return $this->renderer->renderToString('changeset-popup', new Tracker_Artifact_ChangesetJsonPresenter($changeset));
-    }
 }
-
-?>

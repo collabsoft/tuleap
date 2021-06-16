@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,17 +21,19 @@
 namespace Tuleap\Git\GitViews\RepoManagement\Pane;
 
 use Codendi_Request;
+use EventManager;
 use GitRepository;
 use TemplateRendererFactory;
+use Tuleap\CSRFSynchronizerTokenPresenter;
 use Tuleap\Git\GitPresenters\RepositoryPaneNotificationPresenter;
-use EventManager;
-use Tuleap\Git\Notifications\CollectionOfUserToBeNotifiedPresenterBuilder;
 use Tuleap\Git\Notifications\CollectionOfUgroupToBeNotifiedPresenterBuilder;
+use Tuleap\Git\Notifications\CollectionOfUserToBeNotifiedPresenterBuilder;
+use Tuleap\Layout\IncludeAssets;
 
 class Notification extends Pane
 {
 
-    const ID = 'mail';
+    public const ID = 'mail';
 
     /**
      * @var CollectionOfUserToBeNotifiedPresenterBuilder
@@ -50,7 +52,7 @@ class Notification extends Pane
         CollectionOfUgroupToBeNotifiedPresenterBuilder $group_to_be_notified_builder
     ) {
         parent::__construct($repository, $request);
-        $this->user_to_be_notified_builder = $user_to_be_notified_builder;
+        $this->user_to_be_notified_builder  = $user_to_be_notified_builder;
         $this->group_to_be_notified_builder = $group_to_be_notified_builder;
     }
 
@@ -67,7 +69,7 @@ class Notification extends Pane
      */
     public function getTitle()
     {
-        return $GLOBALS['Language']->getText('plugin_git', 'admin_mail');
+        return dgettext('tuleap-git', 'Notifications');
     }
 
     /**
@@ -78,10 +80,11 @@ class Notification extends Pane
         $users  = $this->user_to_be_notified_builder->getCollectionOfUserToBeNotifiedPresenter($this->repository);
         $groups = $this->group_to_be_notified_builder->getCollectionOfUgroupToBeNotifiedPresenter($this->repository);
 
-        $renderer = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR).'/templates/settings');
+        $renderer = TemplateRendererFactory::build()->getRenderer(dirname(GIT_BASE_DIR) . '/templates/settings');
         $html     = $renderer->renderToString(
             'notifications',
             new RepositoryPaneNotificationPresenter(
+                CSRFSynchronizerTokenPresenter::fromToken($this->csrf_token()),
                 $this->repository,
                 $this->getIdentifier(),
                 $users,
@@ -89,8 +92,8 @@ class Notification extends Pane
             )
         );
         $html    .= $this->getPluginNotifications();
-        $GLOBALS['Response']->includeFooterJavascriptFile('/scripts/tuleap/user-and-ugroup-autocompleter.js');
-        $GLOBALS['Response']->includeFooterJavascriptFile(GIT_BASE_URL .'/scripts/admin-notifications.js');
+        $assets   = new IncludeAssets(__DIR__ . "/../../../../../../src/www/assets/git", "/assets/git");
+        $GLOBALS['Response']->includeFooterJavascriptFile($assets->getFileURL('repo-admin-notifications.js'));
 
         return $html;
     }
@@ -98,11 +101,11 @@ class Notification extends Pane
     private function getPluginNotifications()
     {
         $output = '';
-        EventManager::instance()->processEvent(GIT_ADDITIONAL_NOTIFICATIONS, array(
+        EventManager::instance()->processEvent(GIT_ADDITIONAL_NOTIFICATIONS, [
             'request'    => $this->request,
             'repository' => $this->repository,
             'output'     => &$output,
-        ));
+        ]);
 
         return $output;
     }

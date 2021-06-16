@@ -27,15 +27,17 @@
 *
 * @abstract
 */
-/* abstract */ class ArtifactRule {
-    
-    var $id;
-    var $group_artifact_id;
-    var $source_field;
-    var $target_field;
-    var $source_value;
-    
-    function __construct($id, $group_artifact_id, $source_field, $source_value, $target_field) {
+/* abstract */ class ArtifactRule
+{
+
+    public $id;
+    public $group_artifact_id;
+    public $source_field;
+    public $target_field;
+    public $source_value;
+
+    public function __construct($id, $group_artifact_id, $source_field, $source_value, $target_field)
+    {
         $this->id                = $id;
         $this->group_artifact_id = $group_artifact_id;
         $this->source_field      = $source_field;
@@ -43,4 +45,3 @@
         $this->target_field      = $target_field;
     }
 }
-?>

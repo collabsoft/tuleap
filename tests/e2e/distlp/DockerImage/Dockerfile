@@ -1,6 +1,6 @@
 # Need glibc here (so not alpine) otherwise we face an iconv error with nette/utils dependency
 # https://github.com/nette/utils/issues/109
-FROM fedora:28
+FROM fedora:33
 
 RUN dnf install -y \
     php \
@@ -14,5 +14,6 @@ RUN dnf install -y \
     git \
     python \
     bzip2 \
+    sqlite \
     && \
     dnf clean all \

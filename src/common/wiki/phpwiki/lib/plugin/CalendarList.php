@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: CalendarList.php,v 1.9 2006/05/14 17:40:31 rurban Exp $');
 
 /**
@@ -22,105 +23,117 @@ rcs_id('$Id: CalendarList.php,v 1.9 2006/05/14 17:40:31 rurban Exp $');
  */
 
 // if not defined in config.ini
-if (!defined('PLUGIN_CALENDARLIST_ORDER'))	
-  define('PLUGIN_CALENDARLIST_ORDER',	'normal');
-if (!defined('PLUGIN_CALENDARLIST_NEXT_N_DAYS'))
-  define('PLUGIN_CALENDARLIST_NEXT_N_DAYS','');
-if (!defined('PLUGIN_CALENDARLIST_NEXT_N'))	
-  define('PLUGIN_CALENDARLIST_NEXT_N',	 '');
-if (!defined('PLUGIN_CALENDARLIST_LAST_N_DAYS'))
-  define('PLUGIN_CALENDARLIST_LAST_N_DAYS','');
-if (!defined('PLUGIN_CALENDARLIST_LAST_N'))	
-  define('PLUGIN_CALENDARLIST_LAST_N',	 '');
+if (! defined('PLUGIN_CALENDARLIST_ORDER')) {
+    define('PLUGIN_CALENDARLIST_ORDER', 'normal');
+}
+if (! defined('PLUGIN_CALENDARLIST_NEXT_N_DAYS')) {
+    define('PLUGIN_CALENDARLIST_NEXT_N_DAYS', '');
+}
+if (! defined('PLUGIN_CALENDARLIST_NEXT_N')) {
+    define('PLUGIN_CALENDARLIST_NEXT_N', '');
+}
+if (! defined('PLUGIN_CALENDARLIST_LAST_N_DAYS')) {
+    define('PLUGIN_CALENDARLIST_LAST_N_DAYS', '');
+}
+if (! defined('PLUGIN_CALENDARLIST_LAST_N')) {
+    define('PLUGIN_CALENDARLIST_LAST_N', '');
+}
 
 /**
- * This is a list of calendar appointments. 
+ * This is a list of calendar appointments.
  * Same arguments as Calendar, so no one is confused
  * Uses <dl><dd>DATE<dt>page contents...
- * Derived from Calendar.php by Martin Norb‰ck <martin@safelogic.se>
+ * Derived from Calendar.php by Martin Norb√§ck <martin@safelogic.se>
  *
  * Insert this plugin into your Calendar page, for example in:
  *     WikiUser/Calendar
  * Add the line: <?plugin CalendarList ?>
  *
  */
-class WikiPlugin_CalendarList
-extends WikiPlugin
+class WikiPlugin_CalendarList extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return _("CalendarList");
     }
 
-    function getDescription () {
+    public function getDescription()
+    {
         return _("CalendarList");
     }
 
-    function getDefaultArguments() {
-        return array('prefix'       => '[pagename]',
+    public function getDefaultArguments()
+    {
+        return ['prefix'       => '[pagename]',
                      'date_format'  => '%Y-%m-%d',
-                     'order' 	    => PLUGIN_CALENDARLIST_ORDER, // normal or reverse (report sequence)
+                     'order'         => PLUGIN_CALENDARLIST_ORDER, // normal or reverse (report sequence)
                      'year'         => '',
                      'month'        => '',
                      'month_offset' => 0,
                      //support ranges: next n days/events
-                     'next_n_days'  => PLUGIN_CALENDARLIST_NEXT_N_DAYS,	// one or the other, not both
-                     'next_n'	    => PLUGIN_CALENDARLIST_NEXT_N,
+                     'next_n_days'  => PLUGIN_CALENDARLIST_NEXT_N_DAYS,    // one or the other, not both
+                     'next_n'        => PLUGIN_CALENDARLIST_NEXT_N,
                      // last n days/entries:
-                     'last_n_days'  => PLUGIN_CALENDARLIST_LAST_N_DAYS,	// one or the other, not both
-                     'last_n'	    => PLUGIN_CALENDARLIST_LAST_N,
+                     'last_n_days'  => PLUGIN_CALENDARLIST_LAST_N_DAYS,    // one or the other, not both
+                     'last_n'        => PLUGIN_CALENDARLIST_LAST_N,
 
                      'month_format' => '%B, %Y',
                      'wday_format'  => '%a',
-                     'start_wday'   => '0');
+                     'start_wday'   => '0'];
     }
 
     /**
-     * return links (static only as of action=edit) 
+     * return links (static only as of action=edit)
      *
      * @param string $argstr The plugin argument string.
      * @param string $basepage The pagename the plugin is invoked from.
      * @return array List of pagenames linked to (or false).
      */
-    function getWikiPageLinks ($argstr, $basepage) {
-        if (isset($this->_links)) 
+    public function getWikiPageLinks($argstr, $basepage)
+    {
+        if (isset($this->_links)) {
             return $this->_links;
-        else {
-            global $request;	
+        } else {
+            global $request;
             $this->run($request->_dbi, $argstr, $request, $basepage);
             return $this->_links;
         }
     }
 
-    function _count_events($dbi, $n = 7, $direction = 1) {
-        //	This is used by the last_n/next_n options to determine the date that
-        //	accounts for the number of N events in the past/future.
-        //	RETURNS: date of N-th event or the last item found
-        $args = &$this->args;				// gather the args array
-        $timeTMP = time();				// start with today's date
-        $t = $timeTMP;					// init the control date variable to now
-        
-        for ($i=0; $i<=180; $i++) {			// loop thru 180 days, past or future
-            $date_string = strftime($args['date_format'], $t);
+    public function _count_events($dbi, $n = 7, $direction = 1)
+    {
+        //    This is used by the last_n/next_n options to determine the date that
+        //    accounts for the number of N events in the past/future.
+        //    RETURNS: date of N-th event or the last item found
+        $args    = &$this->args;                // gather the args array
+        $timeTMP = time();                // start with today's date
+        $t       = $timeTMP;                    // init the control date variable to now
+
+        for ($i = 0; $i <= 180; $i++) {            // loop thru 180 days, past or future
+            $date_string   = strftime($args['date_format'], $t);
             $page_for_date = $args['prefix'] . SUBPAGE_SEPARATOR . $date_string;
             if ($dbi->isWikiPage($page_for_date)) { // if this date has any comments/events
-                $timeTMP = $t;			    //  capture the date of this event for return
-                if ($n-- <= 0) break;		    //  if we reached the limit, return the date
+                $timeTMP = $t;                //  capture the date of this event for return
+                if ($n-- <= 0) {
+                    break; //  if we reached the limit, return the date
+                }
             }
-            $t += 24 * 3600 * $direction;	    // advance one day back or forward
+            $t += 24 * 3600 * $direction;        // advance one day back or forward
         }
-        
+
         // return the date of the N-th or last, most past/future event in the range
         return $timeTMP;
     }
 
-    function _date($dbi, $time) {
-        $args = &$this->args;
+    public function _date($dbi, $time)
+    {
+        $args        = &$this->args;
         $date_string = strftime($args['date_format'], $time);
 
         $page_for_date = $args['prefix'] . SUBPAGE_SEPARATOR . $date_string;
-        $t = localtime($time, 1);
+        $t             = localtime($time, 1);
 
-        $td = HTML::td(array('align' => 'center'));
+        $td = HTML::td(['align' => 'center']);
 
         if ($dbi->isWikiPage($page_for_date)) {
             // Extract the page contents for this date
@@ -128,33 +141,35 @@ extends WikiPlugin
             $r = $p->getCurrentRevision();
             $c = $r->getContent();
             include_once('lib/BlockParser.php');
-            $content = TransformText(implode("\n", $c), $r->get('markup'));
-            $link = HTML::a(array('class' => 'cal-hide',
-                                  'href'  => WikiURL($page_for_date,
-                                                     array('action' => 'edit')),
-                                  'title' => sprintf(_("Edit %s"), $page_for_date)),
-                            $date_string);
+            $content        = TransformText(implode("\n", $c), $r->get('markup'));
+            $link           = HTML::a(
+                [
+                    'class' => 'cal-hide',
+                    'href' => WikiURL($page_for_date, ['action' => 'edit']),
+                    'title' => sprintf(_("Edit %s"), $page_for_date)
+                ],
+                $date_string
+            );
             $this->_links[] = $page_for_date;
-            $a = array(HTML::dt($link), HTML::dd($content));
+            $a              = [HTML::dt($link), HTML::dd($content)];
         } else {
-            $a = array();
+            $a = [];
         }
         return $a;
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
-        $this->args = $this->getArgs($argstr, $request);
-        $args       = &$this->args;
-        $this->_links = array();
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
+        $this->args   = $this->getArgs($argstr, $request);
+        $args         = &$this->args;
+        $this->_links = [];
 
         // default to this month
         $now = localtime(time() + 3600 * $request->getPref('timeOffset'), 1);
-        foreach ( array('month' => $now['tm_mon'] + 1,
-                        'year'  => $now['tm_year'] + 1900)
-                  as $param => $dflt ) {
-
-            if (!($args[$param] = intval($args[$param])))
-                $args[$param]   = $dflt;
+        foreach (['month' => $now['tm_mon'] + 1, 'year'  => $now['tm_year'] + 1900] as $param => $dflt) {
+            if (! ($args[$param] = intval($args[$param]))) {
+                $args[$param] = $dflt;
+            }
         }
 
         // ***************************************************
@@ -162,50 +177,62 @@ extends WikiPlugin
         // determine start date
         if ($args['last_n_days']) {
             // n days ago (should not be affected by month or month_offset)
-            $start = mktime(0, 0, 0, // h, m, s
-                            $now['tm_mon'] + 1, // month (1-12)
-                            $now['tm_mday'] - $args['last_n_days'], // days prior
-                            $now['tm_year'] + 1900);
-        }
-        elseif ($args['last_n']) {
+            $start = mktime(
+                0,
+                0,
+                0,
+                $now['tm_mon'] + 1, // month (1-12)
+                $now['tm_mday'] - $args['last_n_days'], // days prior
+                $now['tm_year'] + 1900
+            );
+        } elseif ($args['last_n']) {
             // get date for last nth event
             $start = $this->_count_events($dbi, $args['last_n'], -1);
-        }
-        else {
+        } else {
             // start of requested month
-            $start = mktime(0, 0, 0, // h, m, s
-                            $args['month'] + $args['month_offset'], // month (1-12)
-                            1, // days prior
-                            $args['year']);
+            $start = mktime(
+                0,
+                0,
+                0,
+                $args['month'] + $args['month_offset'], // month (1-12)
+                1, // days prior
+                $args['year']
+            );
         }
 
         // determine end date
         if ($args['next_n_days']) {
             // n days from now (should not be affected by month or month_offset)
-            $end = mktime(23, 59, 59, // h, m, s
-                            $now['tm_mon'] + 1, // month (1-12)
-                            $now['tm_mday'] + $args['next_n_days'], // days prior
-                            $now['tm_year'] + 1900);
-        }
-        elseif ($args['last_n']) {
+            $end = mktime(
+                23,
+                59,
+                59,
+                $now['tm_mon'] + 1, // month (1-12)
+                $now['tm_mday'] + $args['next_n_days'], // days prior
+                $now['tm_year'] + 1900
+            );
+        } elseif ($args['last_n']) {
             // get date for next nth event
             $end = $this->_count_events($dbi, $args['next_n'], 1);
-        }
-        else {
+        } else {
             // trick to get last day of requested month
-            $end = mktime(0, 0, -1, // h, m, s
-                            $args['month'] + 1 + $args['month_offset'], // month (1-12)
-                            1, // days prior
-                            $args['year']);
+            $end = mktime(
+                0,
+                0,
+                -1,
+                $args['month'] + 1 + $args['month_offset'],
+                1, // days prior
+                $args['year']
+            );
         }
 
         // switch values for reverse order
         $step = 24 * 3600;
         if ($args['order'] == 'reverse') {
             $time_tmp = $start;
-            $start = $end;
-            $end = $time_tmp;
-            $step *= -1;
+            $start    = $end;
+            $end      = $time_tmp;
+            $step    *= -1;
         }
 
         // style tag on wiki description but not in here
@@ -215,14 +242,12 @@ extends WikiPlugin
         for ($i = $start; ($step > 0) ? $i < $end : $i > $end; $i += $step) {
             $cal->pushContent($this->_date($dbi, $i));
         }
-        //	end of Plugin CalendarList display logic
+        //    end of Plugin CalendarList display logic
         // ***************************************************
 
         return $cal;
     }
-};
-
-
+}
 // $Log: CalendarList.php,v $
 // Revision 1.9  2006/05/14 17:40:31  rurban
 // Patch #1232730 by banjo
@@ -258,15 +283,13 @@ extends WikiPlugin
 //
 // Revision 1.2  2004/02/17 12:11:36  rurban
 // added missing 4th basepage arg at plugin->run() to almost all plugins. This caused no harm so far,
-//	because it was silently dropped on normal usage. However on plugin internal ->run invocations it failed.
-//	(InterWikiSearch, IncludeSiteMap, ...)
+//    because it was silently dropped on normal usage. However on plugin internal ->run invocations it failed.
+//    (InterWikiSearch, IncludeSiteMap, ...)
 //
 // Revision 1.1  2003/11/18 19:06:03  carstenklapp
 // New plugin to be used in conjunction with the Calendar plugin.
 // Upgraded to use SUBPAGE_SEPARATOR for subpages. SF patch tracker
 // submission 565369.
-//
-
 
 // For emacs users
 // Local Variables:
@@ -276,4 +299,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

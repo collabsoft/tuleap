@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Permission_PermissionManager {
+class Tracker_Permission_PermissionManager
+{
 
-    public function save(Tracker_Permission_PermissionRequest $request, Tracker_Permission_PermissionSetter $permission_setter) {
+    public function save(Tracker_Permission_PermissionRequest $request, Tracker_Permission_PermissionSetter $permission_setter)
+    {
         $tracker = $permission_setter->getTracker();
 
         if ($this->checkPermissionValidity($request, $tracker)) {
@@ -28,14 +30,15 @@ class Tracker_Permission_PermissionManager {
 
             EventManager::instance()->processEvent(
                 TRACKER_EVENT_TRACKER_PERMISSIONS_CHANGE,
-                array(
+                [
                     'tracker' => $tracker,
-                )
+                ]
             );
         }
     }
 
-    private function getChainOfResponsability() {
+    private function getChainOfResponsability()
+    {
         $anonymous_command  = new Tracker_Permission_ChainOfResponsibility_PermissionsOfAnonymous();
         $registered_command = new Tracker_Permission_ChainOfResponsibility_PermissionsOfRegistered();
         $ugroup_command     = new Tracker_Permission_ChainOfResponsibility_PermissionsOfAllGroups();
@@ -46,18 +49,12 @@ class Tracker_Permission_PermissionManager {
         return $anonymous_command;
     }
 
-    private function checkPermissionValidity(Tracker_Permission_PermissionRequest $request, Tracker $tracker) {
+    private function checkPermissionValidity(Tracker_Permission_PermissionRequest $request, Tracker $tracker)
+    {
         if ($request->containsPermissionType(Tracker_Permission_Command::PERMISSION_ASSIGNEE) != null && $tracker->getContributorField() === null) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText(
-                    'plugin_tracker_admin_permissions',
-                    'no_assignee_semantic',
-                    array(
-                        TRACKER_BASE_URL . '/?'.  http_build_query(array('func' => 'admin-semantic', 'tracker' => $tracker->getId())),
-                        $GLOBALS['Language']->getText('plugin_tracker_admin_semantic','contributor_label')
-                    )
-                ),
+                sprintf(dgettext('tuleap-tracker', 'You should set a <a href="%1$s">%2$s semantic</a> before defining \'assigned to group\' permission'), TRACKER_BASE_URL . '/?' .  http_build_query(['func' => 'admin-semantic', 'tracker' => $tracker->getId()]), dgettext('tuleap-tracker', 'Contributor/assignee')),
                 CODENDI_PURIFIER_DISABLED
             );
             return false;

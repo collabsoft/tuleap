@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -118,7 +118,7 @@ class UgroupsToNotifyDao extends DataAccessObject
     {
         return $this->updateNotificationUgroups(
             $project_id,
-            array(ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED),
+            [ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED],
             ProjectUGroup::PROJECT_MEMBERS
         );
     }
@@ -127,7 +127,7 @@ class UgroupsToNotifyDao extends DataAccessObject
     {
         return $this->updateNotificationUgroups(
             $project_id,
-            array(ProjectUGroup::AUTHENTICATED),
+            [ProjectUGroup::AUTHENTICATED],
             ProjectUGroup::REGISTERED
         );
     }

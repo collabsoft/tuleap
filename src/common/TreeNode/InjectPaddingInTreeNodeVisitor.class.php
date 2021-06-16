@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,44 +20,47 @@
 
 require_once 'GetStateVisitor.class.php';
 
-class TreeNode_InjectPaddingInTreeNodeVisitor extends TreeNode_GetStateVisitor {
+class TreeNode_InjectPaddingInTreeNodeVisitor extends TreeNode_GetStateVisitor
+{
 
-    private static $state_classes = array(
+    private static $state_classes = [
         TreeNode_GetStateVisitor::STATE_BLANK => 'tree-blank',
         TreeNode_GetStateVisitor::STATE_NODE  => 'tree-node',
         TreeNode_GetStateVisitor::STATE_PIPE  => 'tree-pipe',
         TreeNode_GetStateVisitor::STATE_LAST  => 'tree-last',
-    );
+    ];
 
     /**
-     * @var boolean
+     * @var bool
      */
     private $collapsable;
 
-    public function __construct($collapsable = false) {
+    public function __construct($collapsable = false)
+    {
         $this->collapsable = $collapsable;
     }
 
-    protected function setChildState(TreeNode $child, $state) {
+    protected function setChildState(TreeNode $child, $state)
+    {
         parent::setChildState($child, $state);
-        $data = $child->getData();
+        $data                 = $child->getData();
         $data['tree-padding'] = $this->convertStateToDivs($child, $state);
         $child->setData($data);
     }
 
-    private function convertStateToDivs(TreeNode $node, $state) {
-        $html = '';
+    private function convertStateToDivs(TreeNode $node, $state)
+    {
+        $html     = '';
         $template = '<div class="%s" %s>&nbsp;</div>';
         foreach ($state as $state_id) {
             $id    = '';
             $class = self::$state_classes[$state_id];
             if ($this->collapsable && $node->hasChildren() && ($state_id == self::STATE_LAST || $state_id == self::STATE_NODE)) {
                 $class .= ' tree-collapsable';
-                $id = 'id="tree-node-'. $node->getId() .'"';
+                $id     = 'id="tree-node-' . $node->getId() . '"';
             }
             $html .= sprintf($template, $class, $id);
         }
         return $html;
     }
 }
-?>

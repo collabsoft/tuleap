@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -33,10 +33,6 @@ class NotificationsForProjectMemberCleaner
      */
     private $item_factory;
     /**
-     * @var UsersToNotifyDao
-     */
-    private $users_to_notify_dao;
-    /**
      * @var Docman_NotificationsManager
      */
     private $notifications_manager;
@@ -48,11 +44,9 @@ class NotificationsForProjectMemberCleaner
     public function __construct(
         Docman_ItemFactory $item_factory,
         Docman_NotificationsManager $notifications_manager,
-        UserManager $user_manager,
-        UsersToNotifyDao $users_to_notify_dao
+        UserManager $user_manager
     ) {
         $this->item_factory          = $item_factory;
-        $this->users_to_notify_dao   = $users_to_notify_dao;
         $this->notifications_manager = $notifications_manager;
         $this->user_manager          = $user_manager;
     }
@@ -80,9 +74,9 @@ class NotificationsForProjectMemberCleaner
         }
     }
 
-    public function cleanNotificationsAfterProjectVisibilityChange(Project $project, $new_access)
+    public function cleanNotificationsAfterProjectVisibilityChange(Project $project, string $new_access): void
     {
-        if ($new_access !== Project::ACCESS_PRIVATE) {
+        if ($new_access !== Project::ACCESS_PRIVATE && $new_access !== Project::ACCESS_PRIVATE_WO_RESTRICTED) {
             return;
         }
 
@@ -95,6 +89,9 @@ class NotificationsForProjectMemberCleaner
         if ($dar && ! $dar->isError()) {
             foreach ($dar as $row) {
                 $user = $this->user_manager->getUserById($row['user_id']);
+                if ($user === null) {
+                    continue;
+                }
                 if (! $user->isMember($project->getID())) {
                     $this->notifications_manager->removeUser($row['user_id'], $row['item_id'], $row['type']);
                 }

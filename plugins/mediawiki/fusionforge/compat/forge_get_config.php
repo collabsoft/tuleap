@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-function forge_get_config($key, $scope = 'core') {
-    $conf_variables_mapping = array(
+function forge_get_config($key, $scope = 'core')
+{
+    $conf_variables_mapping = [
         'web_host'          => 'sys_default_domain',
         'forge_name'        => 'sys_name',
         //'lists_host'        => 'sys_lists_host',
@@ -28,12 +29,12 @@ function forge_get_config($key, $scope = 'core') {
         'database_user'     => 'sys_dbuser',
         'database_name'     => 'sys_dbname',
         'database_password' => 'sys_dbpasswd',
-    );
+    ];
     if (isset($conf_variables_mapping[$key])) {
         $key = $conf_variables_mapping[$key];
-    } else if ($scope !== 'core') {
+    } elseif ($scope !== 'core') {
         $plugin_manager = PluginManager::instance();
-        $plugin = $plugin_manager->getPluginByName($scope);
+        $plugin         = $plugin_manager->getPluginByName($scope);
         if (! $plugin || ! $plugin_manager->isPluginAvailable($plugin)) {
             return null;
         }

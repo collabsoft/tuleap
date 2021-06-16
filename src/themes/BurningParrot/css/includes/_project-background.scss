@@ -1,0 +1,245 @@
+/**
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+@use '../../../../themes/common/css/project-background/background' with ($project-background-images-path: '../../common/images/project-background/');
+@use 'sass:map';
+@use 'global-variables';
+
+@import "../../../common/css/project-background/project-background";
+
+@each $identifier, $definition in background.$definitions {
+    .project-admin-background-preview-#{$identifier} {
+        background: linear-gradient(var(--tlp-theme-dark-background-color-transparent-70), var(--tlp-theme-dark-background-color-transparent-70)), map-get($definition, "image-1680px"), linear-gradient(map-get($definition, "color"), map-get($definition, "color"));
+        background-size: map-get($definition, "size");
+    }
+}
+
+.project-with-background {
+    .project-administration-title {
+        @include background.project-background-title-header-typography();
+        margin: 0;
+        padding: var(--tlp-medium-spacing) var(--tlp-medium-spacing) var(--tlp-title-spacing);
+    }
+
+    .dashboard-project-title {
+        @include background.project-background-title-header-typography();
+    }
+
+    .dashboard-project-header-trovecat-icon {
+        @include background.project-background-title-header-typography();
+    }
+
+    .dashboard-project-header-trovecat {
+        @include background.project-background-title-header-typography();
+        font-weight: 500;
+    }
+
+    .main-project-tabs > .tlp-tabs {
+        @include background.background-for-links();
+        box-shadow: none;
+
+        > .tlp-tab {
+            padding: calc(var(--tlp-medium-spacing) - 2px) var(--tlp-large-spacing) var(--tlp-medium-spacing);
+            border: 0;
+            border-top: 2px solid transparent;
+            color: var(--tlp-ui-white);
+
+            &:hover,
+            &:focus,
+            &.tlp-tab-active {
+                @include background.background-for-links();
+                border-top-color: var(--tlp-ui-white);
+            }
+
+            &:hover > .tlp-tab-menu,
+            &:focus > .tlp-tab-menu {
+                bottom: 0;
+            }
+        }
+    }
+
+    .breadcrumb,
+    .breadcrumb-link,
+    #dashboard-tabs-dropdown-trigger {
+        @include background.project-background-title-header-typography();
+    }
+
+    .breadcrumb-dropdown-item,
+    .breadcrumb-dropdown-section-title {
+        text-shadow: initial;
+    }
+
+    .breadcrumb-item:not(.breadcrumb-item-disabled):hover > .breadcrumb-link,
+    .breadcrumb-item:not(.breadcrumb-item-disabled):focus-within > .breadcrumb-link {
+        @include background.background-for-links();
+        color: var(--tlp-ui-white);
+    }
+
+    .breadcrumb-switchable:hover > .breadcrumb-link::after,
+    .breadcrumb-switchable:focus-within > .breadcrumb-link::after {
+        color: var(--tlp-ui-white);
+    }
+
+    .breadcrumb-project-privacy-icon {
+        &.fa-lock,
+        &.fa-tlp-lock-plus-r {
+            background: var(--tlp-ui-white);
+            color: var(--tlp-theme-dark-background-color);
+        }
+
+        &.fa-lock-open,
+        &.fa-tlp-unlock-plus-r {
+            @include background.background-for-links();
+            color: var(--tlp-ui-white);
+        }
+    }
+
+    .breadcrumb-project-privacy-icon-with-flags {
+        @include background.background-for-links();
+        color: var(--tlp-ui-white);
+
+        > .fas {
+            background: none;
+            color: var(--tlp-ui-white);
+        }
+    }
+
+    .project-administration-content,
+    .dashboard-widgets-container {
+        background: var(--tlp-theme-background-color);
+    }
+
+    .dashboard-project-header-members,
+    .dashboard-project-header-access {
+        border-color: var(--tlp-ui-white);
+        background: var(--tlp-ui-white-transparent-80);
+    }
+}
+
+#project-admin-background-error,
+#project-admin-background-success {
+    padding: var(--tlp-medium-spacing) var(--tlp-medium-spacing) 0;
+}
+
+.project-admin-background-feedback-hidden {
+    display: none;
+}
+
+.project-admin-background-list {
+    display: grid;
+    grid-gap: var(--tlp-medium-spacing) var(--tlp-medium-spacing);
+    grid-template-columns: 1fr 1fr;
+
+    @media screen and (max-width: 900px) {
+        grid-template-columns: 1fr;
+    }
+
+    @media screen and (min-width: 1600px) {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}
+
+.project-admin-background {
+    position: relative;
+    height: 150px;
+
+    &:hover {
+        .project-admin-background-author {
+            opacity: 1;
+        }
+    }
+}
+
+.project-admin-background-radio {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+
+    &:focus + .project-admin-background-card,
+    &:checked + .project-admin-background-card {
+        border-color: var(--tlp-theme-color);
+    }
+}
+
+.project-admin-background-card {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--tlp-small-spacing);
+    height: 100%;
+}
+
+.project-admin-background-author {
+    position: absolute;
+    bottom: var(--tlp-medium-spacing);
+    width: calc(100% - (2 * var(--tlp-medium-spacing) + 2px));
+    padding: var(--tlp-small-spacing);
+    transition: opacity 300ms ease-in-out;
+    opacity: 0;
+    background: var(--tlp-theme-dark-background-color-transparent-30);
+    color: var(--tlp-ui-white);
+    font-size: 0.75rem;
+}
+
+.project-admin-background-preview {
+    flex-grow: 1;
+    border-radius: var(--tlp-card-radius);
+}
+
+.project-admin-background-preview-0 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tlp-theme-background-color);
+    color: var(--tlp-ui-dimmed);
+    font-size: 0.875rem;
+}
+
+#project-admin-background-submit-section.pinned {
+    margin: 40px 0 0;
+
+    > .project-admin-background-submit-button-container {
+        position: fixed;
+        bottom: 0;
+        left: global-variables.$sidebar-expanded-width;
+        width: calc(100% - #{global-variables.$sidebar-expanded-width});
+        padding: var(--tlp-large-spacing);
+        animation: footerAppear ease-out 150ms;
+        border-top: 0;
+        background: var(--tlp-ui-white-transparent-10);
+        box-shadow: 0 -1px 2px 0 rgba(0, 0, 0, 0.1);
+        text-align: center;
+        @keyframes footerAppear {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+    }
+}
+
+.sidebar-collapsed #project-admin-background-submit-section.pinned > .project-admin-background-submit-button-container {
+    left: global-variables.$sidebar-collapsed-width;
+    width: calc(100% - #{global-variables.$sidebar-collapsed-width});
+}

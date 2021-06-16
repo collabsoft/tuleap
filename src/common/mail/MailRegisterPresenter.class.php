@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class MailRegisterPresenter extends MailOutlinePresenter {
+class MailRegisterPresenter extends MailOutlinePresenter
+{
 
     public $section_one;
     public $section_two;
@@ -27,7 +28,7 @@ class MailRegisterPresenter extends MailOutlinePresenter {
     public $login;
 
     public function __construct(
-        $logo_url,
+        string $logo_url,
         $title,
         $section_one,
         $section_two,
@@ -39,11 +40,10 @@ class MailRegisterPresenter extends MailOutlinePresenter {
         $login
     ) {
         parent::__construct($logo_url, $title, $thanks, $signature, $color_logo);
-        $this->section_one          = $section_one;
-        $this->section_two          = $section_two;
-        $this->section_after_login  = $section_after_login;
-        $this->help                 = $help;
-        $this->login                = $login;
+        $this->section_one         = $section_one;
+        $this->section_two         = $section_two;
+        $this->section_after_login = $section_after_login;
+        $this->help                = $help;
+        $this->login               = $login;
     }
 }
-?>

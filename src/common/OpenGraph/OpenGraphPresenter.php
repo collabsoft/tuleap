@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,6 @@
 
 namespace Tuleap\OpenGraph;
 
-use ForgeConfig;
 use ThemeVariantColor;
 
 class OpenGraphPresenter
@@ -39,10 +38,10 @@ class OpenGraphPresenter
             $this->properties[] = new OpenGraphPropertyPresenter('description', $description);
         }
 
-        $color = ThemeVariantColor::buildFromDefaultVariant();
+        $color              = ThemeVariantColor::buildFromDefaultVariant();
         $this->properties[] = new OpenGraphPropertyPresenter(
             'image',
-            \HTTPRequest::instance()->getServerUrl() . '/themes/common/images/opengraph/'. $color->getName() .'.png'
+            \HTTPRequest::instance()->getServerUrl() . '/themes/common/images/opengraph/' . $color->getName() . '.png'
         );
     }
 }

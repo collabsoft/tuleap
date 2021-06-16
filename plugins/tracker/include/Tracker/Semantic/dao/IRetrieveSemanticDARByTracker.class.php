@@ -1,6 +1,6 @@
 <?php
 /**
-* Copyright Enalean (c) 2013. All rights reserved.
+* Copyright Enalean (c) 2013 - Present. All rights reserved.
 * Tuleap and Enalean names and logos are registrated trademarks owned by
 * Enalean SAS. All other trademarks or names are properties of their respective
 * owners.
@@ -21,15 +21,16 @@
 * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
 */
 
-interface Tracker_Semantic_IRetrieveSemanticDARByTracker {
+interface Tracker_Semantic_IRetrieveSemanticDARByTracker
+{
 
     /**
      * Return the dar of semantics for a given tracker
      *
      * @param int $tracker_id The tracker id
      *
-     * @return DataAccessResult — collection of array('field_id' => …)
+     * @return false|DataAccessResult — collection of array('field_id' => …)
+     * @psalm-ignore-falsable-return
      */
     public function searchByTrackerId($tracker_id);
-
 }

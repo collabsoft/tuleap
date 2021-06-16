@@ -7,12 +7,12 @@
 >
     <div class="tlp-modal-header">
         <h1 class="tlp-modal-title" id="delete-dashboard-modal-label">
-            <i class="fa fa-trash-o tlp-modal-title-icon"></i>
+            <i class="far fa-trash-alt tlp-modal-title-icon"></i>
             {{ delete_dashboard_label }}
         </h1>
-        <div class="tlp-modal-close" data-dismiss="modal" aria-label="{{ close }}">
+        <button class="tlp-modal-close" type="button" data-dismiss="modal" aria-label="{{ close }}">
             ×
-        </div>
+        </button>
     </div>
     <div class="tlp-modal-body">
         <input type="hidden" name="dashboard-id" value="{{ id }}">
@@ -27,8 +27,8 @@
         <button type="button" class="tlp-button-danger tlp-button-outline tlp-modal-action" data-dismiss="modal">
             {{ cancel }}
         </button>
-        <button type="submit" class="tlp-button-danger tlp-modal-action">
-            <i class="fa fa-trash-o tlp-button-icon"></i> {{ delete_dashboard_label }}
+        <button type="submit" class="tlp-button-danger tlp-modal-action" data-test="dashboard-confirm-delete-button">
+            <i class="far fa-trash-alt tlp-button-icon"></i> {{ delete_dashboard_label }}
         </button>
     </div>
 </form>

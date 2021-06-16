@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,13 +23,15 @@ namespace Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature;
 
 use Tracker_FormElement_Field_ArtifactLink;
 
-class NatureIsChildPresenter extends NaturePresenter {
+class NatureIsChildPresenter extends NaturePresenter
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct(
             Tracker_FormElement_Field_ArtifactLink::NATURE_IS_CHILD,
-            $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', '_is_child_forward'),
-            $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', '_is_child_reverse'),
+            dgettext('tuleap-tracker', 'Child'),
+            dgettext('tuleap-tracker', 'Parent'),
             true
         );
 

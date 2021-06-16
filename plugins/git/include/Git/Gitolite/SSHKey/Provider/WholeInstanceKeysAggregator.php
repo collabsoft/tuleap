@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -36,7 +36,7 @@ class WholeInstanceKeysAggregator implements IProvideKey
     }
 
     /**
-     * @return \Tuleap\Git\Gitolite\SSHKey\Key;
+     * @return \Tuleap\Git\Gitolite\SSHKey\Key
      */
     public function current()
     {

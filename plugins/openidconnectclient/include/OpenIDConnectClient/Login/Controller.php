@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,33 +21,28 @@
 namespace Tuleap\OpenIDConnectClient\Login;
 
 use Feedback;
+use Psr\Log\LoggerInterface;
 use Tuleap\OpenIDConnectClient\AccountLinker\UnlinkedAccountDataAccessException;
 use Tuleap\OpenIDConnectClient\AccountLinker\UnlinkedAccountManager;
 use Tuleap\OpenIDConnectClient\Authentication\Flow;
 use Tuleap\OpenIDConnectClient\Authentication\FlowResponse;
 use Tuleap\OpenIDConnectClient\Login\Registration\AutomaticUserRegistration;
-use Tuleap\OpenIDConnectClient\Login\Registration\NotEnoughDataToRegisterUserException;
-use Tuleap\OpenIDConnectClient\Provider\ProviderManager;
 use Tuleap\OpenIDConnectClient\UserMapping\UserMapping;
 use Tuleap\OpenIDConnectClient\UserMapping\UserMappingDataAccessException;
 use Tuleap\OpenIDConnectClient\UserMapping\UserMappingManager;
 use Tuleap\OpenIDConnectClient\UserMapping\UserMappingNotFoundException;
 use Exception;
+use Tuleap\User\SessionNotCreatedException;
 use User_LoginException;
-use SessionNotCreatedException;
 use UserNotActiveException;
 use UserManager;
 
-class Controller {
+class Controller
+{
     /**
      * @var UserManager
      */
     private $user_manager;
-
-    /**
-     * @var ProviderManager
-     */
-    private $provider_manager;
 
     /**
      * @var UserMappingManager
@@ -68,37 +63,50 @@ class Controller {
      * @var Flow
      */
     private $flow;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+    /**
+     * @var array
+     */
+    private $session_storage;
 
     public function __construct(
         UserManager $user_manager,
-        ProviderManager $provider_manager,
         UserMappingManager $user_mapping_manager,
         UnlinkedAccountManager $unlinked_account_manager,
         AutomaticUserRegistration $automatic_user_registration,
-        Flow $flow
+        Flow $flow,
+        LoggerInterface $logger,
+        array &$session_storage
     ) {
         $this->user_manager                = $user_manager;
-        $this->provider_manager            = $provider_manager;
         $this->user_mapping_manager        = $user_mapping_manager;
         $this->unlinked_account_manager    = $unlinked_account_manager;
         $this->automatic_user_registration = $automatic_user_registration;
         $this->flow                        = $flow;
+        $this->logger                      = $logger;
+        $this->session_storage             =& $session_storage;
     }
 
-    public function login($return_to, $login_time) {
-        require_once('account.php');
+    public function login(\HTTPRequest $request, $return_to, $login_time)
+    {
+        require_once __DIR__ . '/../../../../../src/www/include/account.php';
         $this->checkIfUserAlreadyLogged($return_to);
 
         try {
-            $flow_response = $this->flow->process();
+            $flow_response = $this->flow->process($request);
         } catch (Exception $ex) {
+            $this->logger->error($ex->getMessage());
+            $this->logger->debug($ex->getTraceAsString());
             $this->redirectAfterFailure(
-                $GLOBALS['Language']->getText('plugin_openidconnectclient', 'invalid_request')
+                dgettext('tuleap-openidconnectclient', 'Request seems invalid, please retry')
             );
         }
 
-        $provider          = $flow_response->getProvider();
-        $user_identifier   = $flow_response->getUserIdentifier();
+        $provider        = $flow_response->getProvider();
+        $user_identifier = $flow_response->getUserIdentifier();
 
         try {
             $user_mapping = $this->user_mapping_manager->getByProviderAndIdentifier(
@@ -111,14 +119,16 @@ class Controller {
         }
     }
 
-    private function checkIfUserAlreadyLogged($return_to) {
+    private function checkIfUserAlreadyLogged($return_to)
+    {
         $user = $this->user_manager->getCurrentUser();
-        if($user->isLoggedIn()) {
-            \account_redirect_after_login($return_to);
+        if ($user->isLoggedIn()) {
+            \account_redirect_after_login($user, $return_to);
         }
     }
 
-    private function openSession(UserMapping $user_mapping, $return_to, $login_time) {
+    private function openSession(UserMapping $user_mapping, ?string $return_to, $login_time)
+    {
         $user = $this->user_manager->getUserById($user_mapping->getUserId());
         try {
             $this->user_manager->openSessionForUser($user);
@@ -134,18 +144,23 @@ class Controller {
         } catch (UserMappingDataAccessException $ex) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::WARN,
-                $GLOBALS['Language']->getText('plugin_openidconnectclient', 'unexpected_error')
+                dgettext('tuleap-openidconnectclient', 'An error occurred, please retry')
             );
         }
-        \account_redirect_after_login($return_to);
+        \account_redirect_after_login($user, $return_to ?? '');
     }
 
-    private function redirectAfterFailure($message) {
+    /**
+     * @psalm-return never-return
+     */
+    private function redirectAfterFailure($message): void
+    {
         $GLOBALS['Response']->addFeedback(
             Feedback::ERROR,
             $message
         );
         $GLOBALS['Response']->redirect('/');
+        exit();
     }
 
     private function dealWithUnregisteredUser(FlowResponse $flow_response, $login_time)
@@ -155,18 +170,25 @@ class Controller {
             $this->redirectToLinkAnUnknowAccount($flow_response);
         }
 
-        $user_information = $flow_response->getUserInformations();
-        if (count($this->user_manager->getAllUsersByEmail($user_information['email'])) > 0) {
-            $this->redirectToLinkAnUnknowAccount($flow_response);
-        }
-
         $user_identifier = $flow_response->getUserIdentifier();
         try {
+            $user_information = $flow_response->getUserInformations();
+            if (! $this->automatic_user_registration->canCreateAccount($user_information)) {
+                $this->redirectToLinkAnUnknowAccount($flow_response);
+            }
             $user = $this->automatic_user_registration->register($user_information);
+            if (! $user) {
+                $this->logger->error('Impossible to create new user account');
+                $this->redirectAfterFailure(
+                    dgettext('tuleap-openidconnectclient', 'An error occurred, please retry')
+                );
+            }
             $this->user_mapping_manager->create($user->getId(), $provider->getId(), $user_identifier, $login_time);
         } catch (Exception $ex) {
+            $this->logger->error($ex->getMessage());
+            $this->logger->debug($ex->getTraceAsString());
             $this->redirectAfterFailure(
-                $GLOBALS['Language']->getText('plugin_openidconnectclient', 'unexpected_error')
+                dgettext('tuleap-openidconnectclient', 'An error occurred, please retry')
             );
         }
 
@@ -177,29 +199,30 @@ class Controller {
 
         $GLOBALS['Response']->addFeedback(
             Feedback::INFO,
-            $GLOBALS['Language']->getText('plugin_openidconnectclient', 'registered_waiting_for_admin')
+            dgettext('tuleap-openidconnectclient', 'Your account have been created but needs to be approved by an administrator')
         );
         $GLOBALS['Response']->redirect('/');
     }
 
-    private function redirectToLinkAnUnknowAccount(FlowResponse $flow_response) {
-        $provider          = $flow_response->getProvider();
-        $user_identifier   = $flow_response->getUserIdentifier();
+    private function redirectToLinkAnUnknowAccount(FlowResponse $flow_response)
+    {
+        $provider        = $flow_response->getProvider();
+        $user_identifier = $flow_response->getUserIdentifier();
         try {
-            $unlinked_account  = $this->unlinked_account_manager->create($provider->getId(), $user_identifier);
+            $unlinked_account = $this->unlinked_account_manager->create($provider->getId(), $user_identifier);
         } catch (UnlinkedAccountDataAccessException $ex) {
             $this->redirectAfterFailure(
-                $GLOBALS['Language']->getText('plugin_openidconnectclient', 'unexpected_error')
+                dgettext('tuleap-openidconnectclient', 'An error occurred, please retry')
             );
         }
 
-        $query_parameters = array(
+        $this->session_storage[\openidconnectclientPlugin::SESSION_LINK_ID_KEY] = $unlinked_account->getId();
+        $query_parameters                                                       = [
             'action'    => 'link',
-            'link_id'   => $unlinked_account->getId(),
             'return_to' => $flow_response->getReturnTo(),
-        );
-        $user_informations = $flow_response->getUserInformations();
-        foreach (array('name', 'nickname', 'email', 'zoneinfo') as $query_parameter) {
+        ];
+        $user_informations                                                      = $flow_response->getUserInformations();
+        foreach (['name', 'nickname', 'email', 'zoneinfo'] as $query_parameter) {
             if (isset($user_informations[$query_parameter])) {
                 $query_parameters[$query_parameter] = $user_informations[$query_parameter];
             }

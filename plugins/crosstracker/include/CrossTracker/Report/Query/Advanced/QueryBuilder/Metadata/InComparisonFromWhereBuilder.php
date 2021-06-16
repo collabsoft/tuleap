@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,6 @@
 namespace Tuleap\CrossTracker\Report\Query\Advanced\QueryBuilder\Metadata;
 
 use Tracker;
-use Tuleap\AgileDashboard\Semantic\SemanticDone;
 use Tuleap\CrossTracker\Report\Query\Advanced\AllowedMetadata;
 use Tuleap\CrossTracker\Report\Query\IProvideParametrizedFromAndWhereSQLFragments;
 use Tuleap\Tracker\Report\Query\Advanced\Grammar\Comparison;
@@ -49,8 +48,6 @@ class InComparisonFromWhereBuilder implements FromWhereBuilder
     }
 
     /**
-     * @param Metadata $metadata
-     * @param Comparison $comparison
      * @param Tracker[] $trackers
      * @return IProvideParametrizedFromAndWhereSQLFragments
      */
@@ -59,13 +56,10 @@ class InComparisonFromWhereBuilder implements FromWhereBuilder
         switch ($metadata->getName()) {
             case AllowedMetadata::SUBMITTED_BY:
                 return $this->submitted_by_builder->getFromWhere($metadata, $comparison, $trackers);
-                break;
             case AllowedMetadata::LAST_UPDATE_BY:
                 return $this->last_update_by_builder->getFromWhere($metadata, $comparison, $trackers);
-                break;
             case AllowedMetadata::ASSIGNED_TO:
                 return $this->assigned_to_builder->getFromWhere($metadata, $comparison, $trackers);
-                break;
         }
     }
 }

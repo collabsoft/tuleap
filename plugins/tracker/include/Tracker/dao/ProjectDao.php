@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,26 +22,26 @@ namespace Tuleap\Tracker\dao;
 
 use PFUser;
 use Project;
-use TrackerManager;
 use Tuleap\DB\DataAccessObject;
+use Tuleap\Tracker\Admin\GlobalAdmin\GlobalAdminPermissionsChecker;
 
 class ProjectDao extends DataAccessObject
 {
     /**
-     * @var TrackerManager
+     * @var GlobalAdminPermissionsChecker
      */
-    private $tracker_manager;
+    private $permissions_checker;
 
-    public function __construct(TrackerManager $tracker_manager)
+    public function __construct(GlobalAdminPermissionsChecker $permissions_checker)
     {
         parent::__construct();
 
-        $this->tracker_manager = $tracker_manager;
+        $this->permissions_checker = $permissions_checker;
     }
 
     public function searchProjectsForREST(PFUser $user, $limit, $offset)
     {
-        if ($user->isSuperUser() || $this->tracker_manager->userCanAdminAllProjectTrackers($user)) {
+        if ($this->permissions_checker->doesUserHaveTrackerGlobalAdminRightsOnTheWholePlatform($user)) {
             return $this->runQueryWithAllProjects($limit, $offset);
         } else {
             return $this->runQueryWithFilteredProjects($user, $limit, $offset);
@@ -68,12 +68,12 @@ class ProjectDao extends DataAccessObject
                       JOIN user_group USING (group_id)
                     WHERE status = 'A'
                       AND group_id > 100
-                      AND (access != ?
+                      AND (access NOT IN (?, ?)
                         OR user_group.user_id = ?)
                     ORDER BY group_id ASC
                     LIMIT ?
                     OFFSET ?";
 
-        return $this->getDB()->run($sql, Project::ACCESS_PRIVATE, $user->getId(), $limit, $offset);
+        return $this->getDB()->run($sql, Project::ACCESS_PRIVATE, Project::ACCESS_PRIVATE_WO_RESTRICTED, $user->getId(), $limit, $offset);
     }
 }

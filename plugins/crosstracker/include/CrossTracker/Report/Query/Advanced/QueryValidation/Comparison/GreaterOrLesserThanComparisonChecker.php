@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -33,23 +33,19 @@ use Tuleap\Tracker\Report\Query\Advanced\InvalidFields\Date\DateToStringExceptio
 
 abstract class GreaterOrLesserThanComparisonChecker extends ComparisonChecker
 {
-    const OPERATOR = '';
-
     /**
-     * @param Metadata $metadata
-     * @param Comparison $comparison
      * @throws InvalidQueryException
      */
     public function checkComparisonIsValid(Metadata $metadata, Comparison $comparison)
     {
         if (! in_array($metadata->getName(), AllowedMetadata::DATES)) {
-            throw new OperatorNotAllowedForMetadataException($metadata, static::OPERATOR);
+            throw new OperatorNotAllowedForMetadataException($metadata, $this->getOperator());
         }
 
         try {
             $comparison->getValueWrapper()->accept($this, new MetadataValueWrapperParameters($metadata));
         } catch (DateToEmptyStringException $e) {
-            throw new EmptyStringComparisonException($metadata, static::OPERATOR);
+            throw new EmptyStringComparisonException($metadata, $this->getOperator());
         } catch (DateToStringException $e) {
             throw new ToStringComparisonException($metadata, $comparison->getValueWrapper()->getValue());
         }

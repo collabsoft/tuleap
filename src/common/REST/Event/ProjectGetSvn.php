@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,12 +26,12 @@ use Tuleap\REST\v1\SvnRepositoryRepresentationBase;
 
 class ProjectGetSvn implements Dispatchable
 {
-    const NAME = 'rest_project_get_svn';
+    public const NAME = 'rest_project_get_svn';
 
     /**
      * @var SvnRepositoryRepresentationBase[]
      */
-    private $repositories_representations = array();
+    private $repositories_representations = [];
 
     /**
      * @var int
@@ -114,7 +114,7 @@ class ProjectGetSvn implements Dispatchable
     }
 
     /**
-     * @param array
+     * @param array $repositories_representations
      */
     public function addRepositoriesRepresentations($repositories_representations)
     {
@@ -122,7 +122,7 @@ class ProjectGetSvn implements Dispatchable
     }
 
     /**
-     * @param int
+     * @param int $total_repositories
      */
     public function addTotalRepositories($total_repositories)
     {

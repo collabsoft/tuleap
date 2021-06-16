@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics 2012. All rights reserved
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,38 +19,44 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\SVN\DiskUsage\Collector as SVNCollector;
-use Tuleap\SVN\DiskUsage\Retriever as SVNRetriever;
-use Tuleap\CVS\DiskUsage\Retriever as CVSRetriever;
-use Tuleap\CVS\DiskUsage\Collector as CVSCollector;
-use Tuleap\CVS\DiskUsage\FullHistoryDao;
-
-require_once 'Statistics_ProjectQuotaDao.class.php';
+use Tuleap\Statistics\DiskUsage\Subversion\Collector as SVNCollector;
+use Tuleap\Statistics\DiskUsage\Subversion\Retriever as SVNRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Retriever as CVSRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Collector as CVSCollector;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\FullHistoryDao;
 
 /**
  * Management of custom quota by project
  */
-class ProjectQuotaManager {
+class ProjectQuotaManager
+{
 
     /**
      * The Projects dao used to fetch data
+     *
+     * @var Statistics_ProjectQuotaDao
      */
     protected $dao;
 
     /**
      * ProjectManager instance
+     *
+     * @var ProjectManager
      */
     protected $pm;
 
     /**
      * Statistics_DiskUsageManager instance
+     *
+     * @var Statistics_DiskUsageManager
      */
     protected $diskUsageManager;
 
     /**
      * ProjectQuotaManager constructor
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->dao = $this->getDao();
         $this->pm  = ProjectManager::instance();
 
@@ -73,42 +79,45 @@ class ProjectQuotaManager {
     /**
      * Retrieve the authorized disk quota for a project
      *
-     * @param Integer $group_id The ID of the project we are looking for its quota
+     * @param int $group_id The ID of the project we are looking for its quota
      *
-     * @return String
+     * @return int
      */
-    private function getProjectAuthorizedQuota($group_id) {
+    public function getProjectAuthorizedQuota($group_id)
+    {
         $quota = $this->getProjectCustomQuota($group_id);
         if (empty($quota)) {
             $quota = $this->getDefaultQuota();
         }
-        return $quota;
+        return $this->convertQuotaToGiB($quota);
     }
 
     /**
      * Convert a given quota size in bi to Gib
      *
-     * @param Integer $size The quota size in bi
+     * @param int $size The quota size in bi
      *
      * @return Float
      */
-    private function convertQuotaToGiB($size) {
+    private function convertQuotaToGiB($size)
+    {
         return $size * 1024 * 1024 * 1024;
     }
 
     /**
      * Check if a given project is overquota given it
      *
-     * @param Integer $current_size The current disk size of the project in bi
-     * @param Integer $allowed_size The allowed disk size of the project in bi
+     * @param int $current_size The current disk size of the project in bi
+     * @param int $allowed_size The allowed disk size of the project in bi
      *
-     * @return Boolean
+     * @return bool
      */
-    private function isProjectOverQuota($current_size, $allowed_size) {
-        if (!empty($current_size) && ($current_size > $allowed_size)) {
-            return True;
+    private function isProjectOverQuota($current_size, $allowed_size)
+    {
+        if (! empty($current_size) && ($current_size > $allowed_size)) {
+            return true;
         }
-        return False;
+        return false;
     }
 
     /**
@@ -119,14 +128,14 @@ class ProjectQuotaManager {
         $usage_output          = new Statistics_DiskUsageOutput($this->diskUsageManager);
         $over_quota_disk_space = $current_size - $allowed_size;
         $exceed_percent        = round(($over_quota_disk_space / $allowed_size), 2) * 100;
-        $projectRow            = array(
+        $projectRow            = [
             'project_unix_name'  => $project->getUnixNameMixedCase(),
-            'project_name'       => $project->getUnconvertedPublicName(),
+            'project_name'       => $project->getPublicName(),
             'project_id'         => $project->getGroupId(),
             'exceed'             => $exceed_percent . '%',
             'disk_quota'         => $usage_output->sizeReadable($allowed_size),
             'current_disk_space' => $usage_output->sizeReadable($current_size),
-        );
+        ];
 
         return $projectRow;
     }
@@ -137,11 +146,10 @@ class ProjectQuotaManager {
     public function getProjectsOverQuota()
     {
         $all_groups         = $this->fetchProjects();
-        $exceeding_projects = array();
+        $exceeding_projects = [];
         foreach ($all_groups as $key => $group) {
-            $quota        = $this->getProjectAuthorizedQuota($group['group_id']);
             $current_size = $this->diskUsageManager->returnTotalProjectSize($group['group_id']);
-            $allowed_size = $this->convertQuotaToGiB($quota);
+            $allowed_size = $this->getProjectAuthorizedQuota($group['group_id']);
             if ($this->isProjectOverQuota($current_size, $allowed_size)) {
                 $project                  = $this->pm->getProject($group['group_id']);
                 $exceeding_projects[$key] = $this->getProjectOverQuotaRow($project, $current_size, $allowed_size);
@@ -151,7 +159,8 @@ class ProjectQuotaManager {
         return $exceeding_projects;
     }
 
-    private function fetchProjects() {
+    private function fetchProjects()
+    {
         return $this->diskUsageManager->_getDao()->searchAllGroups();
     }
 
@@ -160,12 +169,13 @@ class ProjectQuotaManager {
      *
      * @param int $groupId ID of the project we want to retrieve its custom quota
      *
-     * @return Integer
+     * @return int|null
      */
-    public function getProjectCustomQuota($groupId) {
+    public function getProjectCustomQuota($groupId)
+    {
         $allowedQuota = null;
-        $res = $this->dao->getProjectCustomQuota($groupId);
-        if ($res && !$res->isError() && $res->rowCount() == 1) {
+        $res          = $this->dao->getProjectCustomQuota($groupId);
+        if ($res && ! $res->isError() && $res->rowCount() == 1) {
             $row          = $res->getRow();
             $allowedQuota = $row[Statistics_ProjectQuotaDao::REQUEST_SIZE];
         }
@@ -177,17 +187,18 @@ class ProjectQuotaManager {
      *
      * @param String  $project    Project for which quota will be customized
      * @param String  $requester  User that asked for the custom quota
-     * @param Integer $quota      Quota to be set for the project
+     * @param int $quota Quota to be set for the project
      * @param String  $motivation Why the custom quota was requested
      *
      * @return Void
      */
-    public function addQuota($project, $requester, $quota, $motivation) {
+    public function addQuota($project, $requester, $quota, $motivation)
+    {
         $maxQuota = $this->getMaximumQuota();
         if (empty($project)) {
-            $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_statistics', 'invalid_project'));
+            $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-statistics', 'Invalid project'));
         } elseif (empty($quota)) {
-            $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_statistics', 'invalid_quota', $maxQuota));
+            $GLOBALS['Response']->addFeedback('error', sprintf(dgettext('tuleap-statistics', 'Quota must be between 1 and %1$s Gb'), $maxQuota));
         } else {
             $project = $this->pm->getProjectFromAutocompleter($project);
             if ($project) {
@@ -201,18 +212,18 @@ class ProjectQuotaManager {
                     $userId = $user->getId();
                 }
                 if ($quota > $maxQuota) {
-                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_statistics', 'invalid_quota', $maxQuota));
+                    $GLOBALS['Response']->addFeedback('error', sprintf(dgettext('tuleap-statistics', 'Quota must be between 1 and %1$s Gb'), $maxQuota));
                 } else {
                     if ($this->dao->addException($project->getGroupID(), $userId, $quota, $motivation)) {
                         $historyDao = new ProjectHistoryDao(CodendiDataAccess::instance());
                         $historyDao->groupAddHistory("add_custom_quota", $quota, $project->getGroupID());
-                        $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_statistics', 'quota_added', array($project->getPublicName(), $quota)));
+                        $GLOBALS['Response']->addFeedback('info', sprintf(dgettext('tuleap-statistics', 'Quota for project "%1$s" is now %2$s GB'), $project->getPublicName(), $quota));
                     } else {
-                        $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_statistics', 'add_error'));
+                        $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-statistics', 'An error occurred when adding the entry'));
                     }
                 }
             } else {
-                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_statistics', 'no_project'));
+                $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-statistics', 'Project not found'));
             }
         }
     }
@@ -222,9 +233,10 @@ class ProjectQuotaManager {
      *
      * @return int
      */
-    public function getDefaultQuota() {
+    public function getDefaultQuota()
+    {
         $quota = intval($this->diskUsageManager->getProperty('allowed_quota'));
-        if (!$quota) {
+        if (! $quota) {
             $quota = 5;
         }
         return $quota;
@@ -235,34 +247,35 @@ class ProjectQuotaManager {
      *
      * @return int
      */
-    public function getMaximumQuota() {
+    public function getMaximumQuota()
+    {
         $maxQuota = intval($this->diskUsageManager->getProperty('maximum_quota'));
-        if (!$maxQuota) {
+        if (! $maxQuota) {
             $maxQuota = 50;
         }
         return $maxQuota;
     }
 
-    public function deleteCustomQuota(Project $project) {
+    public function deleteCustomQuota(Project $project)
+    {
         $defaultQuota = $this->diskUsageManager->getProperty('allowed_quota');
         $historyDao   = new ProjectHistoryDao(CodendiDataAccess::instance());
         if ($this->dao->deleteCustomQuota($project->getId())) {
             $historyDao->groupAddHistory("restore_default_quota", intval($defaultQuota), $project->getId());
-            $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('plugin_statistics', 'quota_deleted', $project->getUnconvertedPublicName()));
+            $GLOBALS['Response']->addFeedback('info', sprintf(dgettext('tuleap-statistics', 'Quota deleted for %1$s'), $project->getPublicName()));
         } else {
-            $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_statistics', 'delete_error'));
+            $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-statistics', 'An error occurred when deleting entries'));
         }
     }
 
     /**
      * @return Statistics_ProjectQuotaDao
      */
-    public function getDao() {
-        if (!isset($this->dao)) {
+    public function getDao()
+    {
+        if (! isset($this->dao)) {
             $this->dao = new Statistics_ProjectQuotaDao();
         }
         return $this->dao;
     }
 }
-
-?>

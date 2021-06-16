@@ -20,71 +20,98 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Docman_ApprovalReviewer {
-    var $reviewerId;
-    var $rank;
-    var $reviewDate;
-    var $state;
-    var $comment;
-    var $version;
+class Docman_ApprovalReviewer
+{
+    public $reviewerId;
+    public $rank;
+    public $reviewDate;
+    public $state;
+    public $comment;
+    public $version;
 
-    function __construct() {
+    public function __construct()
+    {
         $this->reviewerId = null;
-        $this->rank = null;
+        $this->rank       = null;
         $this->reviewDate = null;
-        $this->state = null;
-        $this->comment = null;
-        $this->version = null;
+        $this->state      = null;
+        $this->comment    = null;
+        $this->version    = null;
     }
 
-    function setId($v) {
+    public function setId($v)
+    {
         $this->reviewerId = $v;
     }
-    function getId() {
+    public function getId()
+    {
         return $this->reviewerId;
     }
 
-    function setRank($v) {
+    public function setRank($v)
+    {
         $this->rank = $v;
     }
-    function getRank() {
+    public function getRank()
+    {
         return $this->rank;
     }
 
-    function setReviewDate($v) {
+    public function setReviewDate($v)
+    {
         $this->reviewDate = $v;
     }
-    function getReviewDate() {
+    public function getReviewDate()
+    {
         return $this->reviewDate;
     }
 
-    function setState($v) {
+    public function setState($v)
+    {
         $this->state = $v;
     }
-    function getState() {
+    public function getState()
+    {
         return $this->state;
     }
 
-    function setComment($v) {
+    public function setComment($v)
+    {
         $this->comment = $v;
     }
-    function getComment() {
+    public function getComment()
+    {
         return $this->comment;
     }
 
-    function setVersion($v) {
+    public function setVersion($v)
+    {
         $this->version = $v;
     }
-    function getVersion() {
+    public function getVersion()
+    {
         return $this->version;
     }
 
-    function initFromRow($row) {
-        if(isset($row['reviewer_id'])) $this->reviewerId = $row['reviewer_id'];
-        if(isset($row['rank'])) $this->rank = $row['rank'];
-        if(isset($row['date'])) $this->reviewDate = $row['date'];
-        if(isset($row['state'])) $this->state = $row['state'];
-        if(isset($row['comment'])) $this->comment = $row['comment'];
-        if(isset($row['version'])) $this->version = $row['version'];
+    public function initFromRow($row)
+    {
+        if (isset($row['reviewer_id'])) {
+            $this->reviewerId = $row['reviewer_id'];
+        }
+        if (isset($row['rank'])) {
+            $this->rank = $row['rank'];
+        }
+        if (isset($row['date'])) {
+            $this->reviewDate = $row['date'];
+        }
+        if (isset($row['state'])) {
+            $this->state = $row['state'];
+        }
+        if (isset($row['comment'])) {
+            $this->comment = $row['comment'];
+        }
+        if (isset($row['version'])) {
+            $this->version = $row['version'];
+        }
     }
 }

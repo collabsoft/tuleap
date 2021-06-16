@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2011, 2012, 2013, 2014. All rights reserved.
+ * Copyright Enalean (c) 2011, 2012, 2013, 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -26,7 +26,8 @@
  * There is no type hinting on constructor to avoid having to load LDAP plugin
  * when usage of Git plugin without Gerrit
  */
-class Git_Driver_Gerrit_User {
+class Git_Driver_Gerrit_User
+{
     /**
      * @var LDAP_User
      */
@@ -35,29 +36,34 @@ class Git_Driver_Gerrit_User {
     /**
      * @param LDAP_User $ldap_user
      */
-    public function __construct(/*no type*/$ldap_user) {
+    public function __construct(/*no type*/$ldap_user)
+    {
         $this->ldap_user = $ldap_user;
     }
 
     /**
      * @return String
      */
-    public function getSSHUserName() {
+    public function getSSHUserName()
+    {
         return $this->ldap_user->getUid();
     }
 
     /**
      * @return String
      */
-    public function getWebUserName() {
+    public function getWebUserName()
+    {
         return $this->ldap_user->getUid();
     }
 
-    public function getRealName() {
+    public function getRealName()
+    {
         return $this->ldap_user->getRealName();
     }
 
-    public function getEmail() {
+    public function getEmail()
+    {
         return $this->ldap_user->getEmail();
     }
 }

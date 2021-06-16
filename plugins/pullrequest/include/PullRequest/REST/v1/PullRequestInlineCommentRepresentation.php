@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,13 @@
 
 namespace Tuleap\PullRequest\REST\v1;
 
-use Tuleap\User\REST\MinimalUserRepresentation ;
+use Tuleap\User\REST\MinimalUserRepresentation;
 use Tuleap\REST\JsonCast;
 use Codendi_HTMLPurifier;
 
+/**
+ * @psalm-immutable
+ */
 class PullRequestInlineCommentRepresentation
 {
     /**
@@ -46,12 +49,23 @@ class PullRequestInlineCommentRepresentation
      */
     public $content;
 
-    public function __construct($unidiff_offset, $user, $post_date, $content, $project_id)
+    /**
+     * @var string {@type string}
+     */
+    public $position;
+
+    public function __construct($unidiff_offset, $user, $post_date, $content, $project_id, $position)
     {
         $this->unidiff_offset = $unidiff_offset;
         $this->user           = $user;
         $this->post_date      = JsonCast::toDate($post_date);
-        $purifier             = Codendi_HTMLPurifier::instance();
-        $this->content        = $purifier->purify($content, CODENDI_PURIFIER_LIGHT, $project_id);
+        $this->content        = self::getPurifiedContent($content, $project_id);
+        $this->position       = $position;
+    }
+
+    private static function getPurifiedContent(string $content, int $project_id): string
+    {
+        $purifier = Codendi_HTMLPurifier::instance();
+        return $purifier->purify($content, CODENDI_PURIFIER_LIGHT, $project_id);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -36,7 +36,7 @@ class PasswordConfigurationDAO extends DataAccessObject
             $this->getDB()->run('DELETE FROM password_configuration');
             $this->getDB()->insert(
                 'password_configuration',
-                ['breached_password_enabled'=> $is_breached_password_enabled]
+                ['breached_password_enabled' => $is_breached_password_enabled]
             );
         } catch (\PDOException $ex) {
             $this->getDB()->rollBack();

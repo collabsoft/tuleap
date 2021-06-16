@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,41 +18,54 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_ChangesetJsonPresenter {
+class Tracker_Artifact_ChangesetJsonPresenter
+{
+    /**
+     * @var string
+     * @psalm-readonly
+     */
+    public $purified_time;
+
     /** @var Tracker_Artifact_Changeset */
     private $changeset;
+    /**
+     * @var PFUser
+     */
+    private $current_user;
 
-    public function __construct(Tracker_Artifact_Changeset $changeset) {
-        $this->changeset = $changeset;
+    public function __construct(Tracker_Artifact_Changeset $changeset, \PFUser $current_user)
+    {
+        $this->changeset     = $changeset;
+        $this->current_user  = $current_user;
+        $this->purified_time = DateHelper::relativeDateInlineContext((int) $this->changeset->getSubmittedOn(), $this->current_user);
     }
 
-    public function author_updated() {
+    public function author_updated()
+    {
         $user_str = UserHelper::instance()->getDisplayNameFromUserId($this->changeset->getSubmittedBy());
-        return $GLOBALS['Language']->getText('plugin_tracker', 'artifact_update_popup_title', array($user_str));
+        return sprintf(dgettext('tuleap-tracker', '%1$s has just updated the artifact'), (string) $user_str);
     }
 
-    public function time() {
-        return DateHelper::timeAgoInWords($this->changeset->getSubmittedOn());
-    }
-
-    public function there_are_comments_and_diff() {
+    public function there_are_comments_and_diff()
+    {
         return $this->changeset->getComment() && $this->changeset->diffToPrevious();
     }
 
-    public function comment() {
+    public function comment()
+    {
         $comment = $this->changeset->getComment();
         if ($comment) {
-            return $comment->fetchFollowUp();
+            return $comment->fetchFollowUp($this->current_user);
         }
     }
 
-    public function diff() {
+    public function diff()
+    {
         return $this->changeset->diffToPrevious();
     }
 
-    public function got_it() {
-        return $GLOBALS['Language']->getText('plugin_tracker', 'artifact_update_popup_got_it');
+    public function got_it()
+    {
+        return dgettext('tuleap-tracker', 'OK, got it!');
     }
 }
-
-?>

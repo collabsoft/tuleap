@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,13 +23,16 @@
  *
  * @note I should be called by root user
  */
-class BackendService {
+class BackendService
+{
 
-    public function start() {
+    public function start()
+    {
         (new \Tuleap\System\ServiceControl())->execute('tuleap', 'start');
     }
 
-    public function stop() {
+    public function stop()
+    {
         (new \Tuleap\System\ServiceControl())->execute('tuleap', 'stop');
     }
 }

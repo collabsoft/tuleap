@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,68 +21,157 @@
 
 namespace Tuleap\HudsonGit\Hook;
 
-use Tuleap\HudsonGit\PollingResponseFactory;
-use Http_Client;
-use Http_ClientException;
+use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+use Tuleap\HudsonGit\Hook\JenkinsTuleapBranchSourcePluginHook\JenkinsTuleapPluginHookPayload;
+use Tuleap\HudsonGit\Hook\JenkinsTuleapBranchSourcePluginHook\JenkinsTuleapPluginHookResponse;
+use Tuleap\HudsonGit\PollingResponse;
 use Tuleap\Jenkins\JenkinsCSRFCrumbRetriever;
 
 class JenkinsClient
 {
+    private const NOTIFY_URL       = '/git/notifyCommit';
+    private const NOTIFY_HOOK_TYPE = 'pushGitNotifications';
 
-    private static $NOTIFY_URL = '/git/notifyCommit';
-
-    /**
-     * @var PollingResponseFactory
-     */
-    private $response_factory;
+    private const TULEAP_HOOK_URL  = '/tuleap-hook/';
+    private const TULEAP_HOOK_TYPE = 'pushJenkinsTuleapPluginNotification';
 
     /**
-     * @var Http_Client
+     * @var ClientInterface
      */
-    private $http_curl_client;
+    private $http_client;
+    /**
+     * @var RequestFactoryInterface
+     */
+    private $request_factory;
     /**
      * @var JenkinsCSRFCrumbRetriever
      */
     private $csrf_crumb_retriever;
-
     /**
-     * @param Http_Client $http_curl_client Any instance of Http_Client
+     * @var StreamFactoryInterface
      */
+    private $stream_factory;
+    /**
+     * @var JenkinsTuleapPluginHookPayload
+     */
+    private $jenkins_tuleap_plugin_payload;
+
     public function __construct(
-        Http_Client $http_curl_client,
-        PollingResponseFactory $response_factory,
-        JenkinsCSRFCrumbRetriever $csrf_crumb_retriever
+        ClientInterface $http_client,
+        RequestFactoryInterface $request_factory,
+        JenkinsCSRFCrumbRetriever $csrf_crumb_retriever,
+        JenkinsTuleapPluginHookPayload $jenkins_tuleap_plugin_payload,
+        StreamFactoryInterface $stream_factory
     ) {
-        $this->http_curl_client     = $http_curl_client;
-        $this->response_factory     = $response_factory;
-        $this->csrf_crumb_retriever = $csrf_crumb_retriever;
+        $this->http_client                   = $http_client;
+        $this->request_factory               = $request_factory;
+        $this->csrf_crumb_retriever          = $csrf_crumb_retriever;
+        $this->stream_factory                = $stream_factory;
+        $this->jenkins_tuleap_plugin_payload = $jenkins_tuleap_plugin_payload;
     }
 
-    public function pushGitNotifications($server_url, $repository_url)
+    /**
+     * @throws UnableToLaunchBuildException
+     */
+    public function pushGitNotifications($server_url, $repository_url, ?string $commit_reference): PollingResponse
     {
         $csrf_crumb_header = $this->csrf_crumb_retriever->getCSRFCrumbHeader($server_url);
 
-        $push_url = $server_url . self::$NOTIFY_URL . '?url=' . urlencode($repository_url);
+        if (mb_substr($server_url, -1) === '/') {
+            $server_url = mb_substr($server_url, 0, -1);
+        }
+        $parameters = [
+            'url' => $repository_url,
+        ];
+        if ($commit_reference) {
+            $parameters['sha1'] = $commit_reference;
+        }
+        $push_url = $server_url . self::NOTIFY_URL . '?' . http_build_query($parameters);
 
-        $options  = array(
-            CURLOPT_SSL_VERIFYPEER  => true,
-            CURLOPT_POST            => true,
-            CURLOPT_HEADER          => true,
-            CURLOPT_URL             => $push_url,
-            CURLOPT_HTTPHEADER      => array($csrf_crumb_header)
+        $request = $this->request_factory->createRequest('POST', $push_url);
+
+        $crumb_header_split = explode(':', $csrf_crumb_header);
+        if (count($crumb_header_split) === 2) {
+            [$crumb_header_name, $crumb_header_value] = $crumb_header_split;
+            $request                                  = $request->withHeader($crumb_header_name, $crumb_header_value);
+        }
+        $response = $this->sendRequestToJenkinsServer($request, $push_url, self::NOTIFY_HOOK_TYPE);
+
+        return new PollingResponse(
+            $response->getBody()->getContents(),
+            $response->getHeader('Triggered')
+        );
+    }
+
+    /**
+     * @throws UnableToLaunchBuildException
+     */
+    public function pushJenkinsTuleapPluginNotification(string $jenkins_server_url): JenkinsTuleapPluginHookResponse
+    {
+        $csrf_crumb_header = $this->csrf_crumb_retriever->getCSRFCrumbHeader($jenkins_server_url);
+
+        if (mb_substr($jenkins_server_url, -1) === '/') {
+            $jenkins_server_url = mb_substr($jenkins_server_url, 0, -1);
+        }
+
+        $jenkins_tuleap_plugin_hook = $jenkins_server_url . self::TULEAP_HOOK_URL;
+
+        $request = $this->request_factory->createRequest('POST', $jenkins_tuleap_plugin_hook);
+
+        $request = $this->addCrumbHeader($request, $csrf_crumb_header);
+        $request = $request->withHeader('Content-Type', 'application/x-www-form-urlencoded');
+        $request = $request->withBody(
+            $this->stream_factory->createStream(
+                json_encode($this->jenkins_tuleap_plugin_payload->getPayload())
+            )
         );
 
-        $this->http_curl_client->addOptions($options);
+        $response = $this->sendRequestToJenkinsServer($request, $jenkins_tuleap_plugin_hook, self::TULEAP_HOOK_TYPE);
 
-        try {
-            $this->http_curl_client->doRequest();
+        return new JenkinsTuleapPluginHookResponse(
+            $response->getStatusCode(),
+            $response->getBody()->getContents()
+        );
+    }
 
-            $response     = $this->http_curl_client->getLastResponse();
-            $header_size  = $this->http_curl_client->getInfo(CURLINFO_HEADER_SIZE);
-
-            return $this->response_factory->buildResponseFormCurl($response, $header_size);
-        } catch (Http_ClientException $exception) {
-            throw new UnableToLaunchBuildException('pushGitNotifications: ' . $push_url . '; Message: ' . $exception->getMessage());
+    private function addCrumbHeader(RequestInterface $request, string $csrf_crumb_header): RequestInterface
+    {
+        $crumb_header_split = explode(':', $csrf_crumb_header);
+        if (count($crumb_header_split) === 2) {
+            [$crumb_header_name, $crumb_header_value] = $crumb_header_split;
+            return $request->withHeader($crumb_header_name, $crumb_header_value);
         }
+        return $request;
+    }
+
+    /**
+     * @throws UnableToLaunchBuildException
+     */
+    private function sendRequestToJenkinsServer(
+        RequestInterface $request,
+        string $webhook_url,
+        string $webhook_type
+    ): ResponseInterface {
+        try {
+            $response = $this->http_client->sendRequest($request);
+        } catch (ClientExceptionInterface $e) {
+            throw new UnableToLaunchBuildException(
+                $webhook_type . ': ' . $webhook_url . '; Message: ' . $e->getMessage()
+            );
+        }
+
+        $status_code = $response->getStatusCode();
+        if ($status_code !== 200) {
+            throw new UnableToLaunchBuildException(
+                $webhook_type . ': ' . $webhook_url . '; Response: ' .
+                $status_code . ' ' . $response->getBody()
+            );
+        }
+        return $response;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,9 +19,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class MilestoneReportCriterionDao extends DataAccessObject {
+class MilestoneReportCriterionDao extends DataAccessObject
+{
 
-    public function save($report_id, $milestone_id) {
+    public function save($report_id, $milestone_id)
+    {
         $report_id    = $this->da->escapeInt($report_id);
         $milestone_id = $this->da->escapeInt($milestone_id);
 
@@ -31,7 +33,8 @@ class MilestoneReportCriterionDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function delete($report_id) {
+    public function delete($report_id)
+    {
         $report_id = $this->da->escapeInt($report_id);
 
         $sql = "DELETE FROM plugin_agiledashboard_criteria
@@ -40,7 +43,8 @@ class MilestoneReportCriterionDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function searchByReportId($report_id) {
+    public function searchByReportId($report_id)
+    {
         $report_id = $this->da->escapeInt($report_id);
 
         $sql = "SELECT milestone_id
@@ -49,6 +53,19 @@ class MilestoneReportCriterionDao extends DataAccessObject {
 
         return $this->retrieve($sql);
     }
-}
 
-?>
+    public function updateAllUnplannedValueToAnyInProject(int $project_id): void
+    {
+        $project_id      = $this->da->escapeInt($project_id);
+        $unplanned_value = $this->da->escapeInt(AgileDashboard_Milestone_MilestoneReportCriterionProvider::UNPLANNED);
+
+        $sql = "DELETE plugin_agiledashboard_criteria.*
+                FROM plugin_agiledashboard_criteria
+                    INNER JOIN tracker_report ON (plugin_agiledashboard_criteria.report_id = tracker_report.id)
+                    INNER JOIN tracker ON (tracker_report.tracker_id = tracker.id)
+                WHERE plugin_agiledashboard_criteria.milestone_id = $unplanned_value
+                    AND tracker.group_id = $project_id";
+
+        $this->update($sql);
+    }
+}

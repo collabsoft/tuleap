@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ class ForSubmittedBy implements ListReadOnlyConditionBuilder
 
     private function getUsersIdByUserNames($values)
     {
-        $users_id = array();
+        $users_id = [];
         foreach ($values as $value) {
             $users_id[] = $this->user_manager->getUserByUserName($value)->getId();
         }

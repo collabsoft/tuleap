@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,64 +20,98 @@
 namespace Tuleap\REST;
 
 use Luracast\Restler\Restler;
+use Tuleap\InviteBuddy\REST\v1\InvitationsResource;
 use Tuleap\JWT\REST\JWTRepresentation;
+use Tuleap\JWT\REST\v1\JWTResource;
 use Tuleap\Label\REST\LabelRepresentation;
-use \Tuleap\Project\REST\ProjectRepresentation;
-use \Tuleap\Token\REST\TokenRepresentation;
-use \Tuleap\Project\REST\UserGroupRepresentation;
-use \Tuleap\User\REST\UserRepresentation;
-use \Tuleap\REST\v1\PhpWikiPageRepresentation;
-use \Tuleap\User\REST\v1\UserMembershipRepresentation;
+use Tuleap\PhpWiki\REST\v1\PhpWikiResource;
+use Tuleap\Platform\Banner\REST\v1\BannerResource;
+use Tuleap\Project\REST\ProjectRepresentation;
+use Tuleap\Project\REST\UserGroupRepresentation;
+use Tuleap\Project\REST\v1\ServiceRepresentation;
+use Tuleap\Project\REST\v1\ServiceResource;
+use Tuleap\Project\REST\v1\UserGroupResource;
+use Tuleap\REST\v1\ProjectFieldRepresentation;
+use Tuleap\REST\v1\ProjectFieldsResource;
+use Tuleap\SystemEvent\REST\v1\SystemEventResource;
+use Tuleap\Token\REST\TokenRepresentation;
+use Tuleap\Token\REST\v1\TokenResource;
+use Tuleap\User\AccessKey\REST\AccessKeyResource;
+use Tuleap\User\REST\UserRepresentation;
+use Tuleap\REST\v1\PhpWikiPageRepresentation;
+use Tuleap\User\REST\v1\UserMembershipRepresentation;
 use Tuleap\SystemEvent\REST\v1\SystemEventRepresentation;
-use \Tuleap\Project\REST\ProjectResourceReference;
-use \Project;
+use Tuleap\Project\REST\ProjectResourceReference;
+use Project;
+use Tuleap\User\REST\v1\UserMembershipResource;
+use Tuleap\User\REST\v1\UserResource;
 
 /**
  * Inject core resources into restler
  */
-class ResourcesInjector {
+class ResourcesInjector
+{
 
-    public function populate(Restler $restler) {
-        $restler->addAPIClass('\\Tuleap\\Project\\REST\\ProjectResource',   ProjectRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\Token\\REST\\TokenResource',       TokenRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\Project\\REST\\UserGroupResource', UserGroupRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\User\\REST\\UserResource',         UserRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\User\\REST\\v1\\UserMembershipResource', UserMembershipRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\PhpWiki\\REST\\v1\\PhpWikiResource',  PhpWikiPageRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\JWT\\REST\\v1\\JWTResource',  JWTRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\SystemEvent\\REST\\v1\\SystemEventResource',  SystemEventRepresentation::ROUTE);
+    public function populate(Restler $restler)
+    {
+        $restler->addAPIClass('\\Tuleap\\Project\\REST\\ProjectResource', ProjectRepresentation::ROUTE);
+        $restler->addAPIClass(TokenResource::class, TokenRepresentation::ROUTE);
+        $restler->addAPIClass(UserGroupResource::class, UserGroupRepresentation::ROUTE);
+        $restler->addAPIClass(UserResource::class, UserRepresentation::ROUTE);
+        $restler->addAPIClass(UserMembershipResource::class, UserMembershipRepresentation::ROUTE);
+        $restler->addAPIClass(ProjectFieldsResource::class, ProjectFieldRepresentation::ROUTE);
+        $restler->addAPIClass(PhpWikiResource::class, PhpWikiPageRepresentation::ROUTE);
+        $restler->addAPIClass(JWTResource::class, JWTRepresentation::ROUTE);
+        $restler->addAPIClass(SystemEventResource::class, SystemEventRepresentation::ROUTE);
+        $restler->addAPIClass(AccessKeyResource::class, AccessKeyResource::ROUTE);
+        $restler->addAPIClass(ServiceResource::class, ServiceRepresentation::ROUTE);
+        $restler->addAPIClass(InvitationsResource::class, InvitationsResource::ROUTE);
+        $restler->addAPIClass(BannerResource::class, BannerResource::ROUTE);
     }
 
     public function declareProjectResources(array &$resources, Project $project)
     {
+        $this->declareProjectServicesResource($resources, $project);
         $this->declareProjectUserGroupResource($resources, $project);
         $this->declarePhpWikiResource($resources, $project);
         $this->declareHeartbeatResource($resources, $project);
         $this->declareLabelsResource($resources, $project);
     }
 
-    private function declareHeartbeatResource(array &$resources, Project $project) {
+    private function declareProjectServicesResource(array &$resources, Project $project): void
+    {
+        $resource_reference = new ProjectResourceReference();
+        $resource_reference->build($project, ServiceRepresentation::ROUTE);
+
+        $resources[] = $resource_reference;
+    }
+
+    private function declareHeartbeatResource(array &$resources, Project $project)
+    {
         $resource_reference = new ProjectResourceReference();
         $resource_reference->build($project, 'heartbeats');
 
         $resources[] = $resource_reference;
     }
 
-    private function declareProjectUserGroupResource(array &$resources, Project $project) {
+    private function declareProjectUserGroupResource(array &$resources, Project $project)
+    {
         $resource_reference = new ProjectResourceReference();
         $resource_reference->build($project, UserGroupRepresentation::ROUTE);
 
         $resources[] = $resource_reference;
     }
 
-    private function declarePhpWikiResource(array &$resources, Project $project) {
+    private function declarePhpWikiResource(array &$resources, Project $project)
+    {
         $resource_reference = new ProjectResourceReference();
         $resource_reference->build($project, PhpWikiPageRepresentation::ROUTE);
 
         $resources[] = $resource_reference;
     }
 
-    private function declareLabelsResource(array &$resources, Project $project) {
+    private function declareLabelsResource(array &$resources, Project $project)
+    {
         $resource_reference = new ProjectResourceReference();
         $resource_reference->build($project, LabelRepresentation::ROUTE);
 

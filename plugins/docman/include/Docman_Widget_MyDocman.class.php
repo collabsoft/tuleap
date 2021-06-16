@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2017. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,12 +19,17 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
+use Tuleap\Layout\CssAssetCollection;
+use Tuleap\Layout\IncludeAssets;
+
+require_once __DIR__ . '/../../../src/www/my/my_utils.php';
+
 /**
  * Docman_Widget_MyDocman
  */
 class Docman_Widget_MyDocman extends Widget
 {
-    var $pluginPath;
+    public $pluginPath;
 
     public function __construct($pluginPath)
     {
@@ -32,23 +37,25 @@ class Docman_Widget_MyDocman extends Widget
         $this->pluginPath = $pluginPath;
     }
 
-    function getTitle() {
-        return $GLOBALS['Language']->getText('plugin_docman', 'my_reviews');
+    public function getTitle()
+    {
+        return dgettext('tuleap-docman', 'Documents under review');
     }
 
-    function getContent() {
-        $html = '';
+    public function getContent()
+    {
+        $html  = '';
         $html .= '<script type="text/javascript">';
         $html .= "
         function plugin_docman_approval_toggle(what, save) {
             if ($(what).visible()) {
-                $(what+'_icon').src = '". util_get_dir_image_theme() ."pointer_right.png';
+                $(what+'_icon').src = '" . util_get_dir_image_theme() . "pointer_right.png';
                 $(what).hide();
                 if (save) {
                     new Ajax.Request('/plugins/docman/?action='+what+'&hide=1');
                 }
             } else {
-                $(what+'_icon').src = '". util_get_dir_image_theme() ."pointer_down.png';
+                $(what+'_icon').src = '" . util_get_dir_image_theme() . "pointer_down.png';
                 $(what).show();
                 if (save) {
                     new Ajax.Request('/plugins/docman/?action='+what+'&hide=0');
@@ -62,45 +69,46 @@ class Docman_Widget_MyDocman extends Widget
         return $html;
     }
 
-    private function _getReviews($reviewer = true) {
-        $hp = Codendi_HTMLPurifier::instance();
+    private function _getReviews($reviewer = true)
+    {
+        $hp   = Codendi_HTMLPurifier::instance();
         $html = '';
 
-        $content_html_id = 'plugin_docman_approval_'. ($reviewer ? 'reviewer' : 'requester');
+        $content_html_id = 'plugin_docman_approval_' . ($reviewer ? 'reviewer' : 'requester');
         $html           .= '<div style="font-weight:bold;" class="my-document-under-review">';
 
         if ($reviewer) {
-            $html .= $GLOBALS['Language']->getText('plugin_docman', 'my_reviews_reviewer');
+            $html .= dgettext('tuleap-docman', 'Reviewer');
         } else {
-            $html .= $GLOBALS['Language']->getText('plugin_docman', 'my_reviews_requester');
+            $html .= dgettext('tuleap-docman', 'Requester');
         }
         $html .= '</div>';
-        $html .= '<div id="'. $content_html_id .'">';
+        $html .= '<div id="' . $content_html_id . '">';
 
         $um   = UserManager::instance();
         $user = $um->getCurrentUser();
 
-        if($reviewer) {
+        if ($reviewer) {
             $reviewsArray = Docman_ApprovalTableReviewerFactory::getAllPendingReviewsForUser($user->getId());
         } else {
             $reviewsArray = Docman_ApprovalTableReviewerFactory::getAllApprovalTableForUser($user->getId());
         }
 
-        if(count($reviewsArray) > 0) {
+        if (count($reviewsArray) > 0) {
             $request = HTTPRequest::instance();
             // Get hide arguments
-            $hideItemId = (int) $request->get('hide_item_id');
+            $hideItemId   = (int) $request->get('hide_item_id');
             $hideApproval = null;
-            if($request->exist('hide_plugin_docman_approval')) {
+            if ($request->exist('hide_plugin_docman_approval')) {
                 $hideApproval = (int) $request->get('hide_plugin_docman_approval');
             }
 
             $prevGroupId = -1;
-            $hideNow = false;
-            $i = 0;
+            $hideNow     = false;
+            $i           = 0;
 
             $html .= '<table class="tlp-table">';
-            foreach($reviewsArray as $review) {
+            foreach ($reviewsArray as $review) {
                 if ($review['group_id'] != $prevGroupId) {
                     list($hideNow, $count_diff, $hideUrl) =
                         my_hide_url(
@@ -111,8 +119,8 @@ class Docman_Widget_MyDocman extends Widget
                             $hideApproval,
                             $request->get('dashboard_id')
                         );
-                    $docmanUrl = $this->pluginPath . '/?group_id=' . $review['group_id'];
-                    $docmanHref = '<a href="' . $docmanUrl . '">' . $review['group'] . '</a>';
+                    $docmanUrl                            = $this->pluginPath . '/?group_id=' . $review['group_id'];
+                    $docmanHref                           = '<a href="' . $docmanUrl . '">' . $hp->purify($review['group']) . '</a>';
 
                     if ($reviewer) {
                         $colspan = 2;
@@ -121,18 +129,18 @@ class Docman_Widget_MyDocman extends Widget
                     }
                     $html .= '<tr class="boxitem"><td colspan="' . $colspan . '">';
                     $html .= '<strong>' . $hideUrl . $docmanHref . '</strong></td></tr>';
-                    $i    = 0;
+                    $i     = 0;
                 }
 
-                if(!$hideNow) {
-                    $html .= '<tr class="'. util_get_alt_row_color($i++).'">';
+                if (! $hideNow) {
+                    $html .= '<tr class="' . util_get_alt_row_color($i++) . '">';
                     // Document
                     $html .= '<td align="left">';
-                    $html .= '<a href="'.$review['url'].'">'. $hp->purify($review['title'], CODENDI_PURIFIER_CONVERT_HTML) .'</a>';
+                    $html .= '<a href="' . $review['url'] . '">' . $hp->purify($review['title'], CODENDI_PURIFIER_CONVERT_HTML) . '</a>';
                     $html .= '</td>';
 
                     // For requester, precise the status
-                    if(!$reviewer) {
+                    if (! $reviewer) {
                         $html .= '<td align="right">';
                         $html .= $review['status'];
                         $html .= '</td>';
@@ -140,7 +148,7 @@ class Docman_Widget_MyDocman extends Widget
 
                     // Date
                     $html .= '<td align="right">';
-                    $html .= util_timestamp_to_userdateformat($review['date'], true);
+                    $html .=  DateHelper::formatForLanguage($GLOBALS['Language'], $review['date'], true);
                     $html .= '</td>';
                 }
 
@@ -150,16 +158,16 @@ class Docman_Widget_MyDocman extends Widget
             }
             $html .= '</table>';
         } else {
-            if($reviewer) {
-                $html .= $GLOBALS['Language']->getText('plugin_docman', 'my_no_review');
+            if ($reviewer) {
+                $html .= dgettext('tuleap-docman', 'No document under review.');
             } else {
-                $html .= $GLOBALS['Language']->getText('plugin_docman', 'my_no_request');
+                $html .= dgettext('tuleap-docman', 'No review requested.');
             }
         }
         $html .= '</div>';
-        if (user_get_preference('hide_plugin_docman_approval_'. ($reviewer ? 'reviewer' : 'requester'))) {
+        if (user_get_preference('hide_plugin_docman_approval_' . ($reviewer ? 'reviewer' : 'requester'))) {
             $html .= '<script type="text/javascript">';
-            $html .= "document.observe('dom:loaded', function() 
+            $html .= "document.observe('dom:loaded', function()
                 {
                     plugin_docman_approval_toggle('$content_html_id', false);
                 }
@@ -168,15 +176,18 @@ class Docman_Widget_MyDocman extends Widget
         }
         return $html;
     }
-    function isAjax() {
+    public function isAjax()
+    {
         return true;
     }
-    function getCategory() {
-        return 'plugin_docman';
+    public function getCategory()
+    {
+        return dgettext('tuleap-docman', 'Document manager');
     }
 
-    function getDescription() {
-        return $GLOBALS['Language']->getText('plugin_docman','widget_description_my_docman');
+    public function getDescription()
+    {
+        return dgettext('tuleap-docman', 'List the documents under review.');
     }
 
     public function getAjaxUrl($owner_id, $owner_type, $dashboard_id)
@@ -189,6 +200,13 @@ class Docman_Widget_MyDocman extends Widget
 
         return $ajax_url;
     }
-}
 
-?>
+    public function getStylesheetDependencies(): CssAssetCollection
+    {
+        $theme_include_assets = new IncludeAssets(
+            __DIR__ . '/../../../src/www/assets/docman/',
+            '/assets/docman'
+        );
+        return new CssAssetCollection([new \Tuleap\Layout\CssAssetWithoutVariantDeclinaisons($theme_include_assets, 'burningparrot-style')]);
+    }
+}

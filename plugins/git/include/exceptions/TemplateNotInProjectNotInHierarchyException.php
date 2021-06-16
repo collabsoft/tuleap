@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2013. All rights reserved
+ * Copyright (c) Enalean, 2013 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,6 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class Git_TemplateNotInProjectHierarchyException extends Exception {
+class Git_TemplateNotInProjectHierarchyException extends Exception implements \Tuleap\Request\CodeIsAValidHTTPStatus
+{
+    public function __construct(string $message)
+    {
+        parent::__construct($message, 404);
+    }
 }
-?>

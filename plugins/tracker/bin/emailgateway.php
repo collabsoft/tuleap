@@ -1,7 +1,7 @@
-#!/usr/share/codendi/src/utils/php-launcher.sh
+#!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2014-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,16 +23,16 @@ use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfig;
 use Tuleap\Tracker\Artifact\MailGateway\MailGatewayConfigDao;
 use Tuleap\Tracker\Artifact\MailGateway\MailGatewayFilter;
 
-require 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
-$fd = fopen("php://stdin", "r");
+$fd       = fopen("php://stdin", "r");
 $raw_mail = "";
-while (!feof($fd)) {
+while (! feof($fd)) {
     $raw_mail .= fread($fd, 1024);
 }
 fclose($fd);
 
-$logger = new BackendLogger();
+$logger = BackendLogger::getDefaultLogger();
 $logger->info("Entering email gateway");
 
 $recipient_factory                 = Tracker_Artifact_MailGateway_RecipientFactory::build();
@@ -46,19 +46,17 @@ $incoming_message_insecure_builder = new Tracker_Artifact_IncomingMessageInsecur
     $tracker_factory,
     $artifact_factory
 );
-$incoming_message_factory = new Tracker_Artifact_MailGateway_IncomingMessageFactory(
+$incoming_message_factory          = new Tracker_Artifact_MailGateway_IncomingMessageFactory(
     $tracker_config,
     $incoming_message_token_builder,
     $incoming_message_insecure_builder
 );
-$incoming_mail_dao = new Tracker_Artifact_Changeset_IncomingMailDao();
+$incoming_mail_dao                 = new Tracker_Artifact_Changeset_IncomingMailDao();
 
-$parser              = new Tracker_Artifact_MailGateway_Parser();
 $citation_stripper   = new Tracker_Artifact_MailGateway_CitationStripper();
 $notifier            = new Tracker_Artifact_MailGateway_Notifier();
 $filter              = new MailGatewayFilter();
 $mailgateway_builder = new Tracker_Artifact_MailGateway_MailGatewayBuilder(
-    $parser,
     $incoming_message_factory,
     $citation_stripper,
     $notifier,
@@ -69,10 +67,11 @@ $mailgateway_builder = new Tracker_Artifact_MailGateway_MailGatewayBuilder(
     $logger,
     $filter
 );
-$mailgateway = $mailgateway_builder->build($raw_mail);
+$incoming_mail       = new \Tuleap\Tracker\Artifact\MailGateway\IncomingMail($raw_mail);
+$mailgateway         = $mailgateway_builder->build($incoming_mail);
 
 try {
-    $mailgateway->process($raw_mail);
+    $mailgateway->process($incoming_mail);
 } catch (Exception $e) {
     $logger->error($e->getMessage());
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,9 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Search_SearchTrackerV3 {
-    const NAME = 'tracker';
+class Search_SearchTrackerV3
+{
+    public const NAME = 'tracker';
 
     /**
      * @var ArtifactDao
@@ -27,14 +28,13 @@ class Search_SearchTrackerV3 {
     private $dao;
 
 
-    public function __construct(ArtifactDao $dao) {
+    public function __construct(ArtifactDao $dao)
+    {
         $this->dao = $dao;
     }
 
-    public function search(Search_SearchQuery $query, Search_SearchResults $search_results) {
-        include_once('www/tracker/include/ArtifactTypeHtml.class.php');
-        include_once('www/tracker/include/ArtifactHtml.class.php');
-
+    public function search(Search_SearchQuery $query, Search_SearchResults $search_results)
+    {
         $project = $query->getProject();
         if ($project->isError()) {
             return;
@@ -46,22 +46,20 @@ class Search_SearchTrackerV3 {
         $atid     = $query->getTrackerV3Id();
 
         ob_start();
-        //
         //      Create the ArtifactType object
-        //
         $ath = new ArtifactTypeHtml($project, $atid);
-        if (!$ath || !is_object($ath)) {
+        if (! $ath || ! is_object($ath)) {
             exit_error($GLOBALS['Language']->getText('global', 'error'), $GLOBALS['Language']->getText('global', 'error'));
         }
         if ($ath->isError()) {
             exit_error($GLOBALS['Language']->getText('global', 'error'), $ath->getErrorMessage());
         }
         // Check if this tracker is valid (not deleted)
-        if (!$ath->isValid()) {
+        if (! $ath->isValid()) {
             exit_error($GLOBALS['Language']->getText('global', 'error'), $GLOBALS['Language']->getText('global', 'error'));
         }
 
-        $results = $this->dao->searchGlobalPaginated($words, $exact, $offset, $atid, UserManager::instance()->getCurrentUser()->getUgroups($group_id, $atid), $query->getNumberOfResults());
+        $results       = $this->dao->searchGlobalPaginated($words, $exact, $offset, $atid, UserManager::instance()->getCurrentUser()->getUgroups($group_id, $atid), $query->getNumberOfResults());
         $rows_returned = $this->dao->foundRows();
 
         $art_displayed = 0;
@@ -71,29 +69,33 @@ class Search_SearchTrackerV3 {
             // Create field factory
             $art_field_fact = new ArtifactFieldFactory($ath);
 
-            echo '<H3>' . $GLOBALS['Language']->getText('search_index', 'search_res', array(htmlentities(stripslashes($words), ENT_QUOTES, 'UTF-8'), $rows_returned)) . "</H3><P>\n";
+            echo '<H3>' . $GLOBALS['Language']->getText('search_index', 'search_res', [htmlentities(stripslashes($words), ENT_QUOTES, 'UTF-8'), $rows_returned]) . "</H3><P>\n";
 
-            $title_arr = array();
+            $title_arr = [];
 
             $summary_field = $art_field_fact->getFieldFromName("summary");
-            if ($summary_field->userCanRead($group_id, $atid))
+            if ($summary_field->userCanRead($group_id, $atid)) {
                 $title_arr[] = $GLOBALS['Language']->getText('search_index', 'artifact_summary');
+            }
             $submitted_field = $art_field_fact->getFieldFromName("submitted_by");
-            if ($submitted_field->userCanRead($group_id, $atid))
+            if ($submitted_field->userCanRead($group_id, $atid)) {
                 $title_arr[] = $GLOBALS['Language']->getText('search_index', 'submitted_by');
+            }
             $date_field = $art_field_fact->getFieldFromName("open_date");
-            if ($date_field->userCanRead($group_id, $atid))
+            if ($date_field->userCanRead($group_id, $atid)) {
                 $title_arr[] = $GLOBALS['Language']->getText('search_index', 'date');
+            }
             $status_field = $art_field_fact->getFieldFromName("status_id");
-            if ($status_field->userCanRead($group_id, $atid))
+            if ($status_field->userCanRead($group_id, $atid)) {
                 $title_arr[] = $GLOBALS['Language']->getText('global', 'status');
+            }
 
             echo html_build_list_table_top($title_arr);
 
             echo "\n";
 
-
-            $rows = 0;
+            $purifier = Codendi_HTMLPurifier::instance();
+            $rows     = 0;
             foreach ($results as $arr) {
                 $rows++;
                 $curArtifact = new Artifact($ath, $arr['artifact_id']);
@@ -103,18 +105,22 @@ class Search_SearchTrackerV3 {
                     $status = $GLOBALS['Language']->getText('global', 'open');
                 }
                 // Only display artifacts that the user is allowed to see
-                if ($curArtifact->userCanView(user_getid())) {
+                if ($curArtifact->userCanView()) {
                     print "\n<TR class=\"" . html_get_alt_row_color($art_displayed) . "\">";
-                    if ($summary_field->userCanRead($group_id, $atid))
-                        print "<TD><A HREF=\"/tracker/?group_id=$group_id&func=detail&atid=$atid&aid="
-                                . $arr['artifact_id'] . "\"><IMG SRC=\"" . util_get_image_theme('msg.png') . "\" BORDER=0 HEIGHT=12 WIDTH=10> "
-                                . $arr['summary'] . "</A></TD>";
-                    if ($submitted_field->userCanRead($group_id, $atid))
-                        print "<TD>" . $arr['user_name'] . "</TD>";
-                    if ($date_field->userCanRead($group_id, $atid))
+                    if ($summary_field->userCanRead($group_id, $atid)) {
+                        print "<TD><A HREF=\"/tracker/?group_id=" . $purifier->purify(urlencode($group_id)) . "&func=detail&atid=" . $purifier->purify(urlencode($atid)) . "&aid="
+                                . $purifier->purify($arr['artifact_id']) . "\"><IMG SRC=\"" . util_get_image_theme('msg.png') . "\" BORDER=0 HEIGHT=12 WIDTH=10> "
+                                . $purifier->purify($arr['summary']) . "</A></TD>";
+                    }
+                    if ($submitted_field->userCanRead($group_id, $atid)) {
+                        print "<TD>" . $purifier->purify($arr['user_name']) . "</TD>";
+                    }
+                    if ($date_field->userCanRead($group_id, $atid)) {
                         print "<TD>" . format_date($GLOBALS['Language']->getText('system', 'datefmt'), $arr['open_date']) . "</TD>";
-                    if ($status_field->userCanRead($group_id, $atid))
-                        print "<TD>" . $status . "</TD>";
+                    }
+                    if ($status_field->userCanRead($group_id, $atid)) {
+                        print "<TD>" . $purifier->purify($status) . "</TD>";
+                    }
                     print "</TR>";
                     $art_displayed++;
                     if ($art_displayed > $query->getNumberOfResults()) {
@@ -132,28 +138,30 @@ class Search_SearchTrackerV3 {
         return new Search_SearchTrackerV3ResultPresenter(ob_get_clean());
     }
 
-    public function getFacets(Project $project) {
+    public function getFacets(Project $project)
+    {
         $trackers_v3 = $this->getTrackersV3ForProject($project);
-        $facets      = array();
+        $facets      = [];
 
         foreach ($trackers_v3 as $tracker_v3) {
-            $facets[] = array(
+            $facets[] = [
                 'title'                => $tracker_v3->getName(),
-                'extra-parameters'     => array(
+                'extra-parameters'     => [
                     'key'   => 'data-atid',
                     'value' => $tracker_v3->getID()
-                )
-            );
+                ]
+            ];
         }
 
         return new Search_SearchTypePresenter(
-            Search_SearchTrackerV3::NAME,
+            self::NAME,
             $GLOBALS['Language']->getText('project_admin_editservice', 'service_tracker_lbl_key'),
             $facets
         );
     }
 
-    private function getTrackersv3ForProject(Project $project) {
+    private function getTrackersv3ForProject(Project $project)
+    {
         $artifact_type_factory = new ArtifactTypeFactory($project);
 
         return $artifact_type_factory->getArtifactTypes();

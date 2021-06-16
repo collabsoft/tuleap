@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean 2015 - 2018. All rights reserved
+ * Copyright (c) Enalean 2015 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,32 +19,32 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Docman\Notifications\UsersToNotifyDao;
+use Tuleap\Docman\ExternalLinks\ILinkUrlProvider;
 use Tuleap\Docman\Notifications\NotifiedPeopleRetriever;
-use Tuleap\Docman\Notifications\UgroupsUpdater;
 use Tuleap\Docman\Notifications\UGroupsRetriever;
-use Tuleap\Docman\Notifications\UsersUpdater;
+use Tuleap\Docman\Notifications\UgroupsUpdater;
 use Tuleap\Docman\Notifications\UsersRetriever;
+use Tuleap\Docman\Notifications\UsersToNotifyDao;
+use Tuleap\Docman\Notifications\UsersUpdater;
 
 class Docman_NotificationsManager
 {
-    const MESSAGE_MODIFIED        = 'modified';
-    const MESSAGE_NEWVERSION      = 'new_version';
-    const MESSAGE_WIKI_NEWVERSION = 'new_wiki_version';
+    public const MESSAGE_MODIFIED        = 'modified';
+    public const MESSAGE_NEWVERSION      = 'new_version';
+    public const MESSAGE_WIKI_NEWVERSION = 'new_wiki_version';
 
-    var $_listeners;
-    var $_feedback;
-    var $_item_factory;
+    public $_listeners;
+    public $_feedback;
+    public $_item_factory;
     /** @var array */
     private $notifications;
-    var $_url;
 
     /**
      * @var Project
      */
-    var $project;
+    public $project;
 
-    var $_group_name;
+    public $_group_name;
 
     /**
      * @var MailBuilder
@@ -78,10 +78,14 @@ class Docman_NotificationsManager
      * @var UgroupsUpdater
      */
     private $ugroups_updater;
+    /**
+     * @var ILinkUrlProvider
+     */
+    protected $url_provider;
 
     public function __construct(
         Project $project,
-        $url,
+        ILinkUrlProvider $url_provider,
         $feedback,
         MailBuilder $mail_builder,
         UsersToNotifyDao $users_to_notify_dao,
@@ -92,11 +96,10 @@ class Docman_NotificationsManager
         UgroupsUpdater $ugroups_updater
     ) {
         $this->project       = $project;
-        $this->_url          = $url;
-        $this->_listeners    = array();
+        $this->_listeners    = [];
         $this->_feedback     = $feedback;
         $this->_item_factory = $this->_getItemFactory();
-        $this->notifications = array();
+        $this->notifications = [];
         $this->mail_builder  = $mail_builder;
         if ($project && ! $project->isError()) {
             $this->_group_name = $project->getPublicName();
@@ -107,21 +110,27 @@ class Docman_NotificationsManager
         $this->notified_people_retriever = $notified_people_retriever;
         $this->users_updater             = $users_updater;
         $this->ugroups_updater           = $ugroups_updater;
+        $this->url_provider              = $url_provider;
     }
 
-    function _getItemFactory() {
+    public function _getItemFactory()
+    {
         return new Docman_ItemFactory();
     }
-    function _getUserManager() {
+    public function _getUserManager()
+    {
         return UserManager::instance();
     }
-    function _getPermissionsManager() {
+    public function _getPermissionsManager()
+    {
         return Docman_PermissionsManager::instance($this->project->getID());
     }
-    function _getDocmanPath() {
+    public function _getDocmanPath()
+    {
         return new Docman_Path();
     }
-    function somethingHappen($event, $params) {
+    public function somethingHappen($event, $params)
+    {
         $um             = $this->_getUserManager();
         $params['path'] = $this->_getDocmanPath();
         $users          = $this->notified_people_retriever->getNotifiedUsers(
@@ -129,7 +138,7 @@ class Docman_NotificationsManager
             $this->_getListeningUsersItemId($params)
         );
         if ($users) {
-            while($users->valid()) {
+            while ($users->valid()) {
                 $u    = $users->current();
                 $user = $um->getUserById($u['user_id']);
                 if ($user->isActive() || $user->isRestricted()) {
@@ -142,21 +151,24 @@ class Docman_NotificationsManager
             }
         }
     }
-    function _getListeningUsersItemId($params) {
+    public function _getListeningUsersItemId($params)
+    {
         return $params['item']->getId();
     }
 
-    function sendNotifications($event, $params) {
+    public function sendNotifications($event, $params)
+    {
         $success = true;
-        foreach($this->notifications as $notification) {
+        foreach ($this->notifications as $notification) {
             $success &= $this->mail_builder->buildAndSendEmail($this->project, $notification, new MailEnhancer());
         }
-        if (!$success) {
+        if (! $success) {
             $this->_feedback->log('warning', 'Error when sending some notifications.');
         }
     }
 
-    /* protected */ function _getType() {
+    /* protected */ public function _getType()
+    {
         return PLUGIN_DOCMAN_NOTIFICATION;
     }
 
@@ -176,19 +188,20 @@ class Docman_NotificationsManager
     */
     public function getListeningUsers(Docman_Item $item)
     {
-        $users = array();
+        $users = [];
         return $this->users_retriever->getListeningUsers($item, $users, PLUGIN_DOCMAN_NOTIFICATION);
     }
 
     public function getListeningUGroups(Docman_Item $item)
     {
-        $ugroups = array();
+        $ugroups = [];
         return $this->ugroups_retriever->getListeningUGroups($item, $ugroups, PLUGIN_DOCMAN_NOTIFICATION);
     }
 
-    function _buildMessage($event, $params, $user) {
+    public function _buildMessage($event, $params, $user)
+    {
         $type = '';
-        switch($event) {
+        switch ($event) {
             case 'plugin_docman_event_edit':
             case 'plugin_docman_event_metadata_update':
                 $type = self::MESSAGE_MODIFIED;
@@ -214,14 +227,15 @@ class Docman_NotificationsManager
         );
     }
 
-    protected function _addMessage(PFUser $to, $subject, $msg, $link) {
-        if (!isset($this->notifications[$msg])) {
-            $subject = '['. util_unconvert_htmlspecialchars($this->_group_name) .' - Documents] '. $subject;
+    protected function _addMessage(PFUser $to, $subject, $msg, $link)
+    {
+        if (! isset($this->notifications[$msg])) {
+            $subject = '[' . $this->_group_name . ' - Documents] ' . $subject;
 
             $this->notifications[$msg] = new Notification(
-                array(),
+                [],
                 $subject,
-                nl2br($msg),
+                Codendi_HTMLPurifier::instance()->purify($msg, CODENDI_PURIFIER_BASIC),
                 $msg,
                 $link,
                 'Documents'
@@ -230,21 +244,22 @@ class Docman_NotificationsManager
         $this->notifications[$msg]->addEmail($to->getEmail());
     }
 
-    protected function getMessageLink($type, $params) {
-        if($this->project->getTruncatedEmailsUsage()) {
-            return $this->_url.'&action=details&id='. $params['item']->getId().'&section=history';
+    protected function getMessageLink($type, $params)
+    {
+        if ($this->project->getTruncatedEmailsUsage()) {
+            return $this->url_provider->getHistoryUrl($params['item']);
         }
 
-        switch($type) {
+        switch ($type) {
             case self::MESSAGE_MODIFIED:
             case self::MESSAGE_NEWVERSION:
-                $link = $this->_url .'&action=details&id='. $params['item']->getId();
+                $link = $this->url_provider->getDetailsLinkUrl($params['item']);
                 break;
             case self::MESSAGE_WIKI_NEWVERSION:
                 $link = $params['url'];
                 break;
             default:
-                $link = $this->_url;
+                $link = $this->url_provider->getPluginLinkUrl();
                 break;
         }
         return $link;
@@ -259,7 +274,8 @@ class Docman_NotificationsManager
      *
      * @return Docman_Item
      */
-    function _getMonitoredItemForUser($user, $item) {
+    public function _getMonitoredItemForUser($user, $item)
+    {
         $listeners = $this->getListeningUsers($item);
         foreach ($listeners as $userId => $item) {
             if ($user->getId() == $userId) {
@@ -269,27 +285,35 @@ class Docman_NotificationsManager
         return $item;
     }
 
-    function _getMessageForUser($user, $message_type, $params) {
+    public function _getMessageForUser($user, $message_type, $params)
+    {
         $msg = '';
-        switch($message_type) {
+        switch ($message_type) {
             case self::MESSAGE_MODIFIED:
             case self::MESSAGE_NEWVERSION:
-                $msg .= $params['path']->get($params['item']) .' '.$GLOBALS['Language']->getText('plugin_docman', 'notif_modified_by').' '. $user->getRealName() .".\n";
-                $msg .= $this->getMessageLink($message_type, $params) ."\n";
+                $msg .=
+                    sprintf(
+                        dgettext('tuleap-docman', '%s has been modified by %s.'),
+                        $params['path']->get($params['item']),
+                        $user->getRealName()
+                    ) . "\n";
+                $msg .= $this->getMessageLink($message_type, $params) . "\n";
                 break;
             case self::MESSAGE_WIKI_NEWVERSION:
-                $msg .= $GLOBALS['Language']->getText('plugin_docman', 'notif_wiki_new_version', $params['wiki_page']).' ' . $user->getRealName() . ".\n";
+                $msg .= sprintf(
+                    dgettext('tuleap-docman', "New version of %s wiki page was created by %s."),
+                    $params['wiki_page'],
+                    $user->getRealName()
+                ) . "\n";
                 $msg .= $this->getMessageLink($message_type, $params) . "\n";
                 break;
             default:
-                $msg .= $GLOBALS['Language']->getText('plugin_docman', 'notif_something_happen');
+                $msg .= dgettext('tuleap-docman', 'Something happen!');
                 break;
         }
-        $msg .= "\n\n--------------------------------------------------------------------\n";
-        $msg .= $GLOBALS['Language']->getText('plugin_docman', 'notif_footer_message')."\n";
-        $msg .= $GLOBALS['Language']->getText('plugin_docman', 'notif_footer_message_link')."\n";
         $monitoredItem = $this->_getMonitoredItemForUser($user, $params['item']);
-        $msg .= $this->_url .'&action=details&section=notifications&id='. $monitoredItem->getId();
+        $msg          .= $this->getMonitoringInformation($monitoredItem);
+
         return $msg;
     }
 
@@ -300,9 +324,10 @@ class Docman_NotificationsManager
      * @param $groupId
      * @param $userId
      *
-     * @return Boolean
+     * @return DataAccessResult|false
      */
-    function listAllMonitoredItems($groupId, $userId = null) {
+    public function listAllMonitoredItems($groupId, $userId = null)
+    {
         return $this->users_to_notify_dao->searchDocmanMonitoredItems($groupId, $userId);
     }
 
@@ -374,5 +399,32 @@ class Docman_NotificationsManager
     private function doesNotificationConcernAUGroup($user_id, $item_id, $type)
     {
         return $this->ugroups_retriever->doesNotificationExistByUGroupAndItemId($user_id, $item_id, $type);
+    }
+
+    protected function getMonitoringInformation(Docman_Item $monitored_item): string
+    {
+        $message  = "\n\n--------------------------------------------------------------------\n";
+        $message .= dgettext(
+            'tuleap-docman',
+            "You are receiving this message because you are monitoring this item."
+        );
+        $message .= "\n";
+        $message .= dgettext(
+            'tuleap-docman',
+            "To stop monitoring, please visit:"
+        );
+        $message .= "\n";
+        $message .= $this->getUrlProvider()->getNotificationLinkUrl($monitored_item);
+
+        return $message;
+    }
+
+    /**
+     * protected for testing purpose
+     * @return ILinkUrlProvider
+     */
+    protected function getUrlProvider()
+    {
+        return $this->url_provider;
     }
 }

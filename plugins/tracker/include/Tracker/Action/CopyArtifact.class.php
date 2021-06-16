@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2014, Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Action_CopyArtifact {
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\Artifact\XMLImport\TrackerNoXMLImportLoggedConfig;
+use Tuleap\Tracker\FormElement\Field\File\CreatedFileURLMapping;
+
+class Tracker_Action_CopyArtifact
+{
 
     /**
      * @var Tracker_XML_Importer_ArtifactImportedMapping
@@ -89,31 +94,39 @@ class Tracker_Action_CopyArtifact {
         PFUser $current_user
     ) {
         if (! $this->tracker->userCanSubmitArtifact($current_user)) {
-            $this->logsErrorAndRedirectToTracker('plugin_tracker_admin', 'access_denied');
+            $this->logsErrorAndRedirectToTracker(
+                dgettext('tuleap-tracker', 'Access denied. You don\'t have permissions to perform this action.')
+            );
             return;
         }
         $from_artifact = $this->artifact_factory->getArtifactByIdUserCanView($current_user, $request->get('from_artifact_id'));
         if (! $from_artifact || $from_artifact->getTracker() !== $this->tracker) {
-            $this->logsErrorAndRedirectToTracker('plugin_tracker_include_type', 'error_missing_param');
+            $this->logsErrorAndRedirectToTracker(
+                dgettext('tuleap-tracker', 'Missing Parameters')
+            );
             return;
         }
 
         $from_changeset = $from_artifact->getChangeset($request->get('from_changeset_id'));
         if (! $from_changeset) {
-            $this->logsErrorAndRedirectToTracker('plugin_tracker_include_type', 'error_missing_param');
+            $this->logsErrorAndRedirectToTracker(
+                dgettext('tuleap-tracker', 'Missing Parameters')
+            );
             return;
         }
 
         $submitted_values = $request->get('artifact');
         if (! is_array($submitted_values)) {
-            $this->logsErrorAndRedirectToTracker('plugin_tracker_include_type', 'error_missing_param');
+            $this->logsErrorAndRedirectToTracker(
+                dgettext('tuleap-tracker', 'Missing Parameters')
+            );
             return;
         }
 
         try {
             $this->processCopy($from_changeset, $current_user, $submitted_values);
         } catch (Tracker_XML_Exporter_TooManyChildrenException $exception) {
-            $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_tracker_artifact', 'copy_too_many_children', array(Tracker_XML_ChildrenCollector::MAX)));
+            $GLOBALS['Response']->addFeedback('error', sprintf(dgettext('tuleap-tracker', 'The artifact has too many children (limit is set to %1$s).'), Tracker_XML_ChildrenCollector::MAX));
             $this->redirectToArtifact($from_artifact);
         }
     }
@@ -123,6 +136,7 @@ class Tracker_Action_CopyArtifact {
         PFUser $current_user,
         array $submitted_values
     ) {
+        $current_time  = (new DateTimeImmutable())->setTimestamp($_SERVER['REQUEST_TIME']);
         $xml_artifacts = $this->getXMLRootNode();
 
         $xml_artifacts = $this->xml_exporter->exportSnapshotWithoutComments(
@@ -137,16 +151,14 @@ class Tracker_Action_CopyArtifact {
             $xml_artifacts->artifact,
             $submitted_values,
             $current_user,
-            $_SERVER['REQUEST_TIME']
+            $current_time->getTimestamp()
         );
 
         $this->children_xml_exporter->exportChildren($xml_artifacts);
 
-        if(count($xml_artifacts->artifact) < 1) {
+        if (count($xml_artifacts->artifact) < 1) {
             $this->logsErrorAndRedirectToTracker(
-                'plugin_tracker',
-                'error_create_copy',
-                $from_changeset->getArtifact()->getId()
+                sprintf(dgettext('tuleap-tracker', 'An error occured while creating a copy of the artifact #%1$s.'), $from_changeset->getArtifact()->getId())
             );
             return;
         }
@@ -154,17 +166,15 @@ class Tracker_Action_CopyArtifact {
         $xml_field_mapping = new TrackerXmlFieldsMapping_InSamePlatform();
 
         $no_child = count($xml_artifacts->artifact) == 1;
-        if($no_child) {
+        if ($no_child) {
             $this->removeArtLinksValueNodeFromXML($xml_artifacts);
         }
 
-        $new_artifacts = $this->importBareArtifacts($xml_artifacts);
+        $new_artifacts = $this->importBareArtifacts($current_user, $current_time, $xml_artifacts);
 
-        if($new_artifacts == null) {
+        if ($new_artifacts == null) {
             $this->logsErrorAndRedirectToTracker(
-                'plugin_tracker',
-                'error_create_copy',
-                $from_changeset->getArtifact()->getId()
+                sprintf(dgettext('tuleap-tracker', 'An error occured while creating a copy of the artifact #%1$s.'), $from_changeset->getArtifact()->getId())
             );
             return;
         }
@@ -175,14 +185,23 @@ class Tracker_Action_CopyArtifact {
     }
 
     /**
-     * @return Tracker_Artifact[] or null in case of error
+     * @return Artifact[] or null in case of error
      */
-    private function importBareArtifacts(SimpleXMLElement $xml_artifacts) {
-        $new_artifacts = array();
+    private function importBareArtifacts(
+        PFUser $current_user,
+        DateTimeImmutable $imported_at,
+        SimpleXMLElement $xml_artifacts
+    ) {
+        $new_artifacts = [];
         foreach ($xml_artifacts->children() as $xml_artifact) {
-            $tracker = $this->tracker_factory->getTrackerById((int) $xml_artifact['tracker_id']);
-            $artifact = $this->xml_importer->importBareArtifact($tracker, $xml_artifact);
-            if(!$artifact) {
+            $tracker            = $this->tracker_factory->getTrackerById((int) $xml_artifact['tracker_id']);
+            $config             = new \Tuleap\Project\XML\Import\ImportConfig();
+            $tracker_xml_config = new \Tuleap\Tracker\Artifact\XMLImport\TrackerXmlImportConfig(
+                $current_user,
+                $imported_at
+            );
+            $artifact           = $this->xml_importer->importBareArtifact($tracker, $xml_artifact, $config, $tracker_xml_config);
+            if (! $artifact) {
                 return null;
             } else {
                 $new_artifacts[] = $artifact;
@@ -192,8 +211,9 @@ class Tracker_Action_CopyArtifact {
         return $new_artifacts;
     }
 
-    private function importChangesets(SimpleXMLElement $xml_artifacts, array $new_artifacts, TrackerXmlFieldsMapping_InSamePlatform $xml_field_mapping) {
-        $extraction_path   = '';
+    private function importChangesets(SimpleXMLElement $xml_artifacts, array $new_artifacts, TrackerXmlFieldsMapping_InSamePlatform $xml_field_mapping)
+    {
+        $extraction_path = '';
         foreach (iterator_to_array($xml_artifacts->artifact, false) as $i => $xml_artifact) {
             $tracker = $this->tracker_factory->getTrackerById((int) $xml_artifact['tracker_id']);
             $tracker->getWorkflow()->disable();
@@ -202,40 +222,44 @@ class Tracker_Action_CopyArtifact {
                 $xml_artifact,
                 $extraction_path,
                 $xml_field_mapping,
-                $this->artifacts_imported_mapping);
-            $this->xml_importer->importChangesets($new_artifacts[$i], $xml_artifact, $fields_data_builder);
+                $this->artifacts_imported_mapping
+            );
+            $config              = new \Tuleap\Project\XML\Import\ImportConfig();
+            $this->xml_importer->importChangesets(
+                $new_artifacts[$i],
+                $xml_artifact,
+                $fields_data_builder,
+                $config,
+                new CreatedFileURLMapping(),
+                new \Tuleap\Tracker\XML\Importer\ImportedChangesetMapping(),
+                new TrackerNoXMLImportLoggedConfig()
+            );
         }
     }
 
     private function addSummaryCommentChangeset(
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         PFUser $user,
         Tracker_Artifact_Changeset $from_changeset
     ) {
         $original_artifact = $from_changeset->getArtifact();
         $comment           = $this->logger->getAllLogs();
-        $comment[]         = $GLOBALS['Language']->getText(
-            'plugin_tracker_artifact',
-            'copy_artifact_finished',
-            array(
-                $original_artifact->getTracker()->getItemName(),
-                $original_artifact->getId()
-            )
-        );
-        $artifact->createNewChangesetWhitoutRequiredValidation(
-            array(),
-            implode("\n",$comment),
+        $comment[]         = sprintf(dgettext('tuleap-tracker', 'Copy of %1$s #%2$s is finished.'), $original_artifact->getTracker()->getItemName(), $original_artifact->getId());
+        $artifact->createNewChangesetWithoutRequiredValidation(
+            [],
+            implode("\n", $comment),
             $user,
             true,
             Tracker_Artifact_Changeset_Comment::TEXT_COMMENT
         );
     }
 
-    private function removeArtLinksValueNodeFromXML(SimpleXMLElement &$xml_artifacts) {
+    private function removeArtLinksValueNodeFromXML(SimpleXMLElement &$xml_artifacts)
+    {
         $xml_artifact = $xml_artifacts->artifact[0];
         foreach ($xml_artifact->changeset as $xml_changeset) {
             foreach ($xml_changeset->field_change as $xml_field_change) {
-                if($xml_field_change['type'] == 'art_link') {
+                if ($xml_field_change['type'] == 'art_link') {
                     $dom = dom_import_simplexml($xml_field_change);
                     foreach ($dom->childNodes as $child_node) {
                         $dom->removeChild($child_node);
@@ -245,31 +269,28 @@ class Tracker_Action_CopyArtifact {
         }
     }
 
-    private function redirectToTracker() {
+    private function redirectToTracker()
+    {
         $url = TRACKER_BASE_URL . '/?tracker=' . $this->tracker->getId();
         $GLOBALS['Response']->redirect($url);
     }
 
-    private function redirectToArtifact(Tracker_Artifact $artifact) {
+    private function redirectToArtifact(Artifact $artifact)
+    {
         $url = TRACKER_BASE_URL . '/?aid=' . $artifact->getId();
         $GLOBALS['Response']->redirect($url);
     }
 
-    private function getXMLRootNode() {
+    private function getXMLRootNode()
+    {
         $xml = '<?xml version="1.0" encoding="UTF-8"?><artifacts />';
 
         return new SimpleXMLElement($xml);
     }
 
-    private function logsErrorAndRedirectToTracker(
-        $language_first_key,
-        $language_second_key,
-        $language_params = array()
-    ) {
-        $GLOBALS['Response']->addFeedback(
-            Feedback::ERROR,
-            $GLOBALS['Language']->getText($language_first_key, $language_second_key, $language_params)
-        );
+    private function logsErrorAndRedirectToTracker($message)
+    {
+        $GLOBALS['Response']->addFeedback(Feedback::ERROR, $message);
         $this->redirectToTracker();
     }
 }

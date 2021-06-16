@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
  *
  * This file is a part of Tuleap.
@@ -25,10 +25,8 @@ namespace Tuleap\Git\GitPHP;
 /**
  * Commit class
  *
- * @package GitPHP
- * @subpackage Git
  */
-class Blob extends FilesystemObject implements GitObjectType
+class Blob extends FilesystemObject
 {
 
     /**
@@ -65,16 +63,7 @@ class Blob extends FilesystemObject implements GitObjectType
      *
      * @access protected
      */
-    protected $history = array();
-
-    /**
-     * historyRead
-     *
-     * Stores whether the history has been read
-     *
-     * @access protected
-     */
-    protected $historyRead = false;
+    protected $history = [];
 
     /**
      * blame
@@ -83,7 +72,7 @@ class Blob extends FilesystemObject implements GitObjectType
      *
      * @access protected
      */
-    protected $blame = array();
+    protected $blame = [];
 
     /**
      * blameRead
@@ -103,7 +92,7 @@ class Blob extends FilesystemObject implements GitObjectType
      * @param mixed $project the project
      * @param string $hash object hash
      * @return mixed blob object
-     * @throws Exception exception on invalid hash
+     * @throws \Exception exception on invalid hash
      */
     public function __construct($project, $hash)
     {
@@ -116,12 +105,12 @@ class Blob extends FilesystemObject implements GitObjectType
      * Gets the blob data
      *
      * @access public
-     * @param boolean $explode true to explode data into an array of lines
+     * @param bool $explode true to explode data into an array of lines
      * @return string blob data
      */
     public function GetData($explode = false) // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -142,7 +131,7 @@ class Blob extends FilesystemObject implements GitObjectType
     private function ReadData() // @codingStandardsIgnoreLine
     {
         $this->dataRead = true;
-        $this->data = $this->GetProject()->GetObject($this->hash);
+        $this->data     = $this->GetProject()->GetObject($this->hash);
     }
 
     /**
@@ -153,34 +142,40 @@ class Blob extends FilesystemObject implements GitObjectType
      * @access public
      * @static
      * @param string $octMode octal mode
-     * @param boolean $local true if caller wants localized type
+     * @param bool $local true if caller wants localized type
      * @return string file type
      */
     public static function FileType($octMode, $local = false) // @codingStandardsIgnoreLine
     {
         $mode = octdec($octMode);
+        if ($mode === 57344) {
+            if ($local) {
+                return dgettext('tuleap-git', 'submodule');
+            }
+            return 'submodule';
+        }
         if (($mode & 0x4000) == 0x4000) {
             if ($local) {
-                return __('directory');
+                return dgettext("gitphp", 'directory');
             } else {
                 return 'directory';
             }
         } elseif (($mode & 0xA000) == 0xA000) {
             if ($local) {
-                return __('symlink');
+                return dgettext("gitphp", 'symlink');
             } else {
                 return 'symlink';
             }
         } elseif (($mode & 0x8000) == 0x8000) {
             if ($local) {
-                return __('file');
+                return dgettext("gitphp", 'file');
             } else {
                 return 'file';
             }
         }
 
         if ($local) {
-            return __('unknown');
+            return dgettext("gitphp", 'unknown');
         } else {
             return 'unknown';
         }
@@ -192,7 +187,7 @@ class Blob extends FilesystemObject implements GitObjectType
      * Gets the blob size
      *
      * @access public
-     * @return integer size
+     * @return int size
      */
     public function GetSize() // @codingStandardsIgnoreLine
     {
@@ -200,7 +195,7 @@ class Blob extends FilesystemObject implements GitObjectType
             return $this->size;
         }
 
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -213,33 +208,11 @@ class Blob extends FilesystemObject implements GitObjectType
      * Sets the blob size
      *
      * @access public
-     * @param integer $size size
+     * @param int $size size
      */
     public function SetSize($size) // @codingStandardsIgnoreLine
     {
         $this->size = $size;
-    }
-
-    /**
-     * IsBinary
-     *
-     * Tests if this blob is a binary file
-     *
-     * @access public
-     * @return boolean true if binary file
-     */
-    public function IsBinary() // @codingStandardsIgnoreLine
-    {
-        if (!$this->dataRead) {
-            $this->ReadData();
-        }
-
-        $data = $this->data;
-        if (strlen($this->data) > 8000) {
-            $data = substr($data, 0, 8000);
-        }
-
-        return strpos($data, chr(0)) !== false;
     }
 
     /**
@@ -248,7 +221,7 @@ class Blob extends FilesystemObject implements GitObjectType
      * Get the file mimetype
      *
      * @access public
-     * @param boolean $short true to only the type group
+     * @param bool $short true to only the type group
      * @return string mime
      */
     public function FileMime($short = false) // @codingStandardsIgnoreLine
@@ -256,14 +229,10 @@ class Blob extends FilesystemObject implements GitObjectType
         $mime = $this->FileMime_Fileinfo();
 
         if (empty($mime)) {
-            $mime = $this->FileMime_File();
-        }
-
-        if (empty($mime)) {
             $mime = $this->FileMime_Extension();
         }
 
-        if ((!empty($mime)) && $short) {
+        if ((! empty($mime)) && $short) {
             $mime = strtok($mime, '/');
         }
 
@@ -280,26 +249,21 @@ class Blob extends FilesystemObject implements GitObjectType
      */
     private function FileMime_Fileinfo() // @codingStandardsIgnoreLine
     {
-        if (!function_exists('finfo_buffer')) {
+        if (! function_exists('finfo_buffer')) {
             return '';
         }
 
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
-        if (!$this->data) {
+        if (! $this->data) {
             return '';
         }
 
         $mime = '';
 
-        $magicdb = Config::GetInstance()->GetValue('magicdb', null);
-        if (empty($magicdb)) {
-            $magicdb = '/usr/share/misc/magic';
-        }
-
-        $finfo = @finfo_open(FILEINFO_MIME, $magicdb);
+        $finfo = @finfo_open(FILEINFO_MIME);
         if ($finfo) {
             $mime = finfo_buffer($finfo, $this->data, FILEINFO_MIME);
             if ($mime && strpos($mime, '/')) {
@@ -311,48 +275,6 @@ class Blob extends FilesystemObject implements GitObjectType
         }
 
         return $mime;
-    }
-
-    /**
-     * FileMime_File
-     *
-     * Get the file mimetype using file command
-     *
-     * @access private
-     * @return string mimetype
-     */
-    private function FileMime_File() // @codingStandardsIgnoreLine
-    {
-        if (!$this->dataRead) {
-            $this->ReadData();
-        }
-
-        if (!$this->data) {
-            return '';
-        }
-
-        $descspec = array(
-            0 => array('pipe', 'r'),
-            1 => array('pipe', 'w')
-        );
-
-        $proc = proc_open('file -b --mime -', $descspec, $pipes);
-        if (is_resource($proc)) {
-            fwrite($pipes[0], $this->data);
-            fclose($pipes[0]);
-            $mime = stream_get_contents($pipes[1]);
-            fclose($pipes[1]);
-            proc_close($proc);
-
-            if ($mime && strpos($mime, '/')) {
-                if (strpos($mime, ';')) {
-                    $mime = strtok($mime, ';');
-                }
-                return $mime;
-            }
-        }
-
-        return '';
     }
 
     /**
@@ -373,20 +295,17 @@ class Blob extends FilesystemObject implements GitObjectType
 
         $dotpos = strrpos($file, '.');
         if ($dotpos !== false) {
-            $file = substr($file, $dotpos+1);
+            $file = substr($file, $dotpos + 1);
         }
         switch ($file) {
             case 'jpg':
             case 'jpeg':
             case 'jpe':
                 return 'image/jpeg';
-                break;
             case 'gif':
                 return 'image/gif';
-                break;
             case 'png':
                 return 'image/png';
-                break;
         }
 
         return '';
@@ -397,42 +316,37 @@ class Blob extends FilesystemObject implements GitObjectType
      *
      * Gets the history of this file
      *
-     * @access public
+     * @param int $count number of entries to get
+     * @param int $skip  number of entries to skip
+     *
      * @return array array of filediff changes
      */
-    public function GetHistory() // @codingStandardsIgnoreLine
+    public function GetPaginatedHistory($count = PHP_INT_MAX, $skip = 0) // @codingStandardsIgnoreLine
     {
-        if (!$this->historyRead) {
-            $this->ReadHistory();
-        }
-
-        return $this->history;
-    }
-
-    /**
-     * ReadHistory
-     *
-     * Reads the file history
-     *
-     * @access private
-     */
-    private function ReadHistory() // @codingStandardsIgnoreLine
-    {
-        $this->historyRead = true;
+        $this->history = [];
 
         $exe = new GitExe($this->GetProject());
 
-        $args = array();
+        $args   = [];
+        $args[] = '--max-count=' . escapeshellarg($count);
+        $args[] = '--skip=' . escapeshellarg($skip);
         if (isset($this->commit)) {
             $args[] = $this->commit->GetHash();
         } else {
             $args[] = 'HEAD';
         }
+        $args[] = '--';
+        $args[] = escapeshellarg($this->GetPath());
+
+        $revlist = $exe->Execute(GitExe::REV_LIST, $args);
+        $hasmore = substr_count($revlist, "\n") >= $count;
+
         $args[] = '|';
         $args[] = $exe->GetBinary();
         $args[] = '--git-dir=' . escapeshellarg($this->GetProject()->GetPath());
         $args[] = GitExe::DIFF_TREE;
         $args[] = '-r';
+        $args[] = '--root';
         $args[] = '--stdin';
         $args[] = '--';
         $args[] = escapeshellarg($this->GetPath());
@@ -443,7 +357,7 @@ class Blob extends FilesystemObject implements GitObjectType
         foreach ($historylines as $line) {
             if (preg_match('/^([0-9a-fA-F]{40})/', $line, $regs)) {
                 $commit = $this->GetProject()->GetCommit($regs[1]);
-            } elseif ($commit) {
+            } elseif (isset($commit)) {
                 try {
                     $history = new FileDiff($this->GetProject(), $line);
                     $history->SetCommit($commit);
@@ -453,6 +367,15 @@ class Blob extends FilesystemObject implements GitObjectType
                 unset($commit);
             }
         }
+
+        return [$this->history, $hasmore];
+    }
+
+    public function GetHistory() // @codingStandardsIgnoreLine
+    {
+        list($history,) = $this->GetPaginatedHistory(PHP_INT_MAX, 0);
+
+        return $history; //for legacy gitphp view
     }
 
     /**
@@ -465,7 +388,7 @@ class Blob extends FilesystemObject implements GitObjectType
      */
     public function GetBlame() // @codingStandardsIgnoreLine
     {
-        if (!$this->blameRead) {
+        if (! $this->blameRead) {
             $this->ReadBlame();
         }
 
@@ -485,9 +408,10 @@ class Blob extends FilesystemObject implements GitObjectType
 
         $exe = new GitExe($this->GetProject());
 
-        $args = array();
+        $args   = [];
         $args[] = '-s';
         $args[] = '-l';
+        $args[] = '--root';
         if ($this->commit) {
             $args[] = escapeshellarg($this->commit->GetHash());
         } else {
@@ -502,8 +426,8 @@ class Blob extends FilesystemObject implements GitObjectType
         foreach ($blamelines as $line) {
             if (preg_match('/^([0-9a-fA-F]{40})(\s+.+)?\s+([0-9]+)\)/', $line, $regs)) {
                 if ($regs[1] != $lastcommit) {
-                    $this->blame[(int)($regs[3])] = $this->GetProject()->GetCommit($regs[1]);
-                    $lastcommit = $regs[1];
+                    $this->blame[(int) ($regs[3])] = $this->GetProject()->GetCommit($regs[1]);
+                    $lastcommit                    = $regs[1];
                 }
             }
         }
@@ -515,10 +439,15 @@ class Blob extends FilesystemObject implements GitObjectType
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function isBlob()
     {
-        return  true;
+        return true;
+    }
+
+    public function isSubmodule()
+    {
+        return false;
     }
 }

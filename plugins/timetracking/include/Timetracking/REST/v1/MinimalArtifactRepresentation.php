@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018-Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -24,12 +24,15 @@
 
 namespace Tuleap\Timetracking\REST\v1;
 
-use Tracker_Artifact;
 use Tuleap\REST\JsonCast;
+use Tuleap\Tracker\Artifact\Artifact;
 
+/**
+ * @psalm-immutable
+ */
 class MinimalArtifactRepresentation
 {
-    const ROUTE = 'artifacts';
+    public const ROUTE = 'artifacts';
 
     /**
      * @var int
@@ -60,15 +63,32 @@ class MinimalArtifactRepresentation
      */
     public $submission_date;
 
-    public function build(Tracker_Artifact $artifact)
-    {
-        $this->id   = JsonCast::toInt($artifact->getId());
-        $this->uri  = self::ROUTE . '/' . $this->id;
-        $this->xref = $artifact->getXRef();
+    private function __construct(
+        int $id,
+        string $xref,
+        string $html_url,
+        string $title,
+        string $badge_color,
+        string $submission_date
+    ) {
+        $this->id              = $id;
+        $this->uri             = self::ROUTE . '/' . $this->id;
+        $this->xref            = $xref;
+        $this->html_url        = $html_url;
+        $this->title           = $title;
+        $this->badge_color     = $badge_color;
+        $this->submission_date = $submission_date;
+    }
 
-        $this->html_url        = $artifact->getUri();
-        $this->title           = $artifact->getTitle();
-        $this->badge_color     = $artifact->getTracker()->getNormalizedColor();
-        $this->submission_date = JsonCast::toDate($artifact->getSubmittedOn());
+    public static function build(Artifact $artifact): self
+    {
+        return new self(
+            JsonCast::toInt($artifact->getId()),
+            $artifact->getXRef(),
+            $artifact->getUri(),
+            $artifact->getTitle() ?? '',
+            $artifact->getTracker()->getColor()->getName(),
+            JsonCast::toDate($artifact->getSubmittedOn())
+        );
     }
 }

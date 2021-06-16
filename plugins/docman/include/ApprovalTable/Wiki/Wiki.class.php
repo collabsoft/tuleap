@@ -20,31 +20,39 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Docman_ApprovalTableWiki extends Docman_ApprovalTableVersionned {
-    var $itemId = null;
-    var $wikiVersionId = null;
+class Docman_ApprovalTableWiki extends Docman_ApprovalTableVersionned
+{
+    public $itemId        = null;
+    public $wikiVersionId = null;
 
-    function setItemId($v) {
+    public function setItemId($v)
+    {
         $this->itemId = $v;
     }
 
-    function getItemId() {
+    public function getItemId()
+    {
         return $this->itemId;
     }
 
-    function setWikiVersionId($v) {
+    public function setWikiVersionId($v)
+    {
         $this->wikiVersionId = $v;
         $this->versionNumber = $v;
     }
 
-    function getWikiVersionId() {
+    public function getWikiVersionId()
+    {
         return $this->wikiVersionId;
     }
 
-    function initFromRow($row) {
+    public function initFromRow($row)
+    {
         parent::initFromRow($row);
-        if(isset($row['item_id'])) $this->itemId = $row['item_id'];
-        if(isset($row['wiki_version_id'])) {
+        if (isset($row['item_id'])) {
+            $this->itemId = $row['item_id'];
+        }
+        if (isset($row['wiki_version_id'])) {
             $this->wikiVersionId = $row['wiki_version_id'];
             $this->versionNumber = $row['wiki_version_id'];
         }

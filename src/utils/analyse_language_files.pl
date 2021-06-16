@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 #
-# Codendi
+# Tuleap
+# Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
 # Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
 # http://www.codendi.com
 #
@@ -72,7 +73,7 @@ push @files,"$source_dir/www/users";
 my $position = 0;
 chomp $position;
 foreach my $case (@files) {
-    if ($case =~/\/common\/error\/Error_PermissionDenied.class.php/ ) {
+    if ($case =~/\/common\/Error\/Error_PermissionDenied.class.php/ ) {
         last;
     }
     $position++;
@@ -207,7 +208,7 @@ foreach my $my_tab_dir (@lang_tab_dir) {
 
 }
 
-
+my $exit_code = 0;
 
 print "\nReport:\n";
 print "*******\n";
@@ -224,8 +225,11 @@ foreach my $lang (keys %missing_keys_array) {
   print "  ".$unused_keys_array{$lang}." \tunused keys\n";
   print "  ".$incorrect_keys_array{$lang}." \tincorrect keys\n";
   print "  -> $percent% complete\n";
+  if ($duplicate_keys_array{$lang} ne 0 || $missing_keys_array{$lang} ne 0 || $incorrect_keys_array{$lang} ne 0) {
+    $exit_code = 1;
+  }
 }
-exit 0;
+exit $exit_code;
 
 foreach my $key1 (keys %keys) {
   foreach my $key2 (keys %{ $keys{"$key1"}}) {

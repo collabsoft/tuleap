@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,13 @@
 
 namespace Tuleap\AgileDashboard\REST\v1;
 
-use \Exception;
+use Exception;
 
-class SubMilestoneDoesNotExistException extends Exception {
+class SubMilestoneDoesNotExistException extends Exception
+{
 
-    public function __construct($milestone_id) {
+    public function __construct($milestone_id)
+    {
         parent::__construct('SubMilestone ' . $milestone_id . ' does not exist.');
     }
 }

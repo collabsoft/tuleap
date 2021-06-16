@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,8 +23,8 @@ namespace Tuleap\Trove;
 
 class TroveCatCollectionPresenter
 {
-    public $categories           = array();
-    public $has_categories       = false;
+    public $categories     = [];
+    public $has_categories = false;
 
     public function __construct(array $categories)
     {

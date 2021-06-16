@@ -18,40 +18,39 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'WebDAV_Request.class.php';
-
 use Tuleap\FRS\FRSPermissionManager;
-use Tuleap\FRS\FRSPermissionDao;
-use Tuleap\FRS\FRSPermissionFactory;
 
 /**
  * This class contains methods used in WebDAV plugin
  */
-class WebDAVUtils {
+class WebDAVUtils
+{
 
     protected static $instance;
 
     /**
      * Instance of docman plugin
-     * 
+     *
      * @var DocmanPlugin
      */
     protected $docmanPlugin;
 
     /**
-     * We don't permit an explicit call of the constructor! (like $utils = new WebDAVUtils())
-     *
-     * @return void
+     * @var Docman_PermissionsManager[]
      */
-    private function __construct() {
-    }
+    private $docman_permission_manager = [];
+    /**
+     * @var Docman_ItemFactory
+     */
+    private $docman_item_factory;
 
     /**
      * We don't permit cloning the singleton (like $webdavutils = clone $utils)
      *
      * @return void
      */
-    private function __clone() {
+    private function __clone()
+    {
     }
 
     /**
@@ -59,13 +58,22 @@ class WebDAVUtils {
      *
      * @return WebDAVUtils
      */
-    public static function getInstance() {
-
+    public static function getInstance()
+    {
         if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance;
+    }
 
+    public static function setInstance(WebDAVUtils $instance)
+    {
+        self::$instance = $instance;
+    }
+
+    public static function clearInstance()
+    {
+        self::$instance = null;
     }
 
    /**
@@ -75,13 +83,12 @@ class WebDAVUtils {
      *
      * @return String
      */
-    function convertName($name) {
-
+    public function convertName($name)
+    {
         $name = str_replace('%', '%25', $name);
         $name = str_replace('/', '%2F', $name);
         $name = str_replace('|', '&#124;', $name);
         return $name;
-
     }
 
     /**
@@ -91,7 +98,8 @@ class WebDAVUtils {
      *
      * @return String
      */
-    function unconvertHTMLSpecialChars($name) {
+    public function unconvertHTMLSpecialChars($name)
+    {
         return util_unconvert_htmlspecialchars($this->convertName($name));
     }
 
@@ -102,13 +110,12 @@ class WebDAVUtils {
      *
      * @return String
      */
-    function retrieveName($name) {
-
+    public function retrieveName($name)
+    {
         $name = str_replace('%2F', '/', $name);
         $name = str_replace('%25', '%', $name);
         $name = str_replace('&#124;', '|', $name);
         return $name;
-
     }
 
     /**
@@ -116,24 +123,21 @@ class WebDAVUtils {
      */
     protected function getFRSPermissionManager()
     {
-        return new FRSPermissionManager(
-            new FRSPermissionDao(),
-            new FRSPermissionFactory(new FRSPermissionDao())
-        );
+        return FRSPermissionManager::build();
     }
 
     /**
      * Tests if the user is Superuser, project admin or File release admin
      *
      * @param PFUser $user
-     * @param Integer $groupId
+     * @param int $project_id
      *
-     * @return Boolean
+     * @return bool
      */
-    function userIsAdmin($user, $project_id)
+    public function userIsAdmin($user, $project_id)
     {
         $permission_manager = $this->getFRSPermissionManager();
-        $project = $this->getProjectManager()->getProject($project_id);
+        $project            = $this->getProjectManager()->getProject($project_id);
 
         return ($user->isSuperUser() || $permission_manager->isAdmin($project, $user));
     }
@@ -142,16 +146,15 @@ class WebDAVUtils {
      * Tests if the user is Superuser, or File release admin
      *
      * @param PFUser $user
-     * @param Integer $groupId
+     * @param int $project_id
      *
-     * @return Boolean
+     * @return bool
      */
-    function userCanWrite($user, $project_id)
+    public function userCanWrite($user, $project_id)
     {
         $permission_manager = $this->getFRSPermissionManager();
-        $project = $this->getProjectManager()->getProject($project_id);
+        $project            = $this->getProjectManager()->getProject($project_id);
         return $this->isWriteEnabled() && ($user->isSuperUser() || $permission_manager->isAdmin($project, $user));
-
     }
 
     /**
@@ -159,11 +162,10 @@ class WebDAVUtils {
      *
      * @return ProjectManager
      */
-    public function getProjectManager() {
-
+    public function getProjectManager()
+    {
         $pm = ProjectManager::instance();
         return $pm;
-
     }
 
     /**
@@ -171,10 +173,9 @@ class WebDAVUtils {
      *
      * @return FRSPackageFactory
      */
-    function getPackageFactory() {
-
+    public function getPackageFactory()
+    {
         return new FRSPackageFactory();
-
     }
 
     /**
@@ -182,10 +183,9 @@ class WebDAVUtils {
      *
      * @return FRSReleaseFactory
      */
-    function getReleaseFactory() {
-
+    public function getReleaseFactory()
+    {
         return new FRSReleaseFactory();
-
     }
 
     /**
@@ -193,10 +193,9 @@ class WebDAVUtils {
      *
      * @return FRSFileFactory
      */
-    function getFileFactory() {
-
+    public function getFileFactory()
+    {
         return new FRSFileFactory();
-
     }
 
     /**
@@ -204,39 +203,39 @@ class WebDAVUtils {
      *
      * @return PermissionsManager
      */
-    function getPermissionsManager() {
-
-        $pm = & PermissionsManager::instance();
-        return $pm;
-
+    public function getPermissionsManager()
+    {
+        return PermissionsManager::instance();
     }
 
     /**
      * Returns event manager instance
-     * 
+     *
      * @return EventManager
      */
-    function getEventManager() {
+    public function getEventManager()
+    {
         return EventManager::instance();
     }
 
-    function getIncomingFileSize($name) {
-        return PHP_BigFile::getSize($GLOBALS['ftp_incoming_dir'].'/'.$name);
+    public function getIncomingFileSize($name)
+    {
+        return PHP_BigFile::getSize(ForgeConfig::get('ftp_incoming_dir') . '/' . $name);
     }
 
-    function getIncomingFileMd5Sum($file) {
+    public function getIncomingFileMd5Sum($file)
+    {
         return PHP_BigFile::getMd5Sum($file);
     }
 
-    /**
-     * Returns an instance of PermissionsManager
-     *
-     * @param Project $project Used project
-     *
-     * @return Docman_PermissionsManager
-     */
-    function getDocmanPermissionsManager($project) {
-        return Docman_PermissionsManager::instance($project->getGroupId());
+    public function getDocmanPermissionsManager(Project $project): Docman_PermissionsManager
+    {
+        return $this->docman_permission_manager[$project->getID()] ?? Docman_PermissionsManager::instance($project->getGroupId());
+    }
+
+    public function setDocmanPermissionsManager(\Project $project, Docman_PermissionsManager $permissions_manager): void
+    {
+        $this->docman_permission_manager[$project->getID()] = $permissions_manager;
     }
 
     /**
@@ -244,8 +243,17 @@ class WebDAVUtils {
      *
      * @return Docman_ItemFactory
      */
-    function getDocmanItemFactory() {
+    public function getDocmanItemFactory()
+    {
+        if ($this->docman_item_factory) {
+            return $this->docman_item_factory;
+        }
         return new Docman_ItemFactory();
+    }
+
+    public function setDocmanItemFactory(Docman_ItemFactory $factory): void
+    {
+        $this->docman_item_factory = $factory;
     }
 
     /**
@@ -253,7 +261,8 @@ class WebDAVUtils {
      *
      * @return Docman_VersionFactory
      */
-    function getVersionFactory() {
+    public function getVersionFactory()
+    {
         return new Docman_VersionFactory();
     }
 
@@ -262,7 +271,8 @@ class WebDAVUtils {
      *
      * @return String
      */
-    function getDocmanRoot() {
+    public function getDocmanRoot()
+    {
         $pluginManager = PluginManager::instance();
         $p             = $pluginManager->getPluginByName('docman');
         $info          = $p->getPluginInfo();
@@ -274,16 +284,18 @@ class WebDAVUtils {
      *
      * @return Docman_FileStorage
      */
-    function getFileStorage() {
+    public function getFileStorage()
+    {
         return new Docman_FileStorage($this->getDocmanRoot());
     }
 
     /**
      * Tells if write acces is enabled or not for the WebDAV plugin
      *
-     * @return Boolean
+     * @return bool
      */
-    function isWriteEnabled() {
+    public function isWriteEnabled()
+    {
         $pluginManager = PluginManager::instance();
         $p             = $pluginManager->getPluginByName('webdav');
         $info          = $p->getPluginInfo();
@@ -292,19 +304,19 @@ class WebDAVUtils {
 
     /**
      * Use Docman MVC model to perform webdav actions
-     * 
-     * @param WebDAV_Request $request
+     *
      */
-    function processDocmanRequest(WebDAV_Request $request) {
-        if (!$this->docmanPlugin) {
-            $pluginMgr = PluginManager::instance();
+    public function processDocmanRequest(WebDAV_Request $request)
+    {
+        if (! $this->docmanPlugin) {
+            $pluginMgr          = PluginManager::instance();
             $this->docmanPlugin = $pluginMgr->getPluginByName('docman');
-            if (!$this->docmanPlugin || ($this->docmanPlugin && !$pluginMgr->isPluginAvailable($this->docmanPlugin))) {
+            if (! $this->docmanPlugin || ($this->docmanPlugin && ! $pluginMgr->isPluginAvailable($this->docmanPlugin))) {
                 throw new WebDAVExceptionServerError($GLOBALS['Language']->getText('plugin_webdav_common', 'plugin_not_available'));
             }
         }
         $GLOBALS['Response'] = new WebDAV_Response();
-        $controller = new WebDAV_DocmanController($this->docmanPlugin, $request);
+        $controller          = new WebDAV_DocmanController($this->docmanPlugin, $request);
         $controller->process();
 
         if ($GLOBALS['Response']->feedbackHasErrors()) {
@@ -313,5 +325,3 @@ class WebDAVUtils {
         }
     }
 }
-
-?>

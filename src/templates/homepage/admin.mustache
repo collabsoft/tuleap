@@ -8,30 +8,6 @@
         {{> csrf_token_input }}
     {{/ csrf_token }}
 
-    {{^ use_standard_homepage }}
-    <section class="tlp-pane">
-        <div class="tlp-pane-container">
-            <div class="tlp-pane-header">
-                <h1 class="tlp-pane-title">
-                    <i class="fa fa-desktop tlp-pane-title-icon"></i> {{ standard_title }}
-                </h1>
-            </div>
-            <section class="tlp-pane-section">
-                <p class="tlp-text-warning">{{ use_standard_homepage_help }}</p>
-
-                <div class="tlp-form-element">
-                    <label class="tlp-label" for="use_standard_homepage">{{ use_standard_homepage_label }}</label>
-                    <div class="tlp-switch">
-                        <input type="checkbox" id="use_standard_homepage" name="use_standard_homepage" value="1" class="tlp-switch-checkbox" {{# use_standard_homepage }}checked="checked"{{/ use_standard_homepage }}>
-                        <label for="use_standard_homepage" class="tlp-switch-button" aria-hidden>{{ use_standard_homepage_label }}</label>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </section>
-    {{/ use_standard_homepage }}
-
-    {{# use_standard_homepage }}
     <section class="tlp-pane">
         <div class="tlp-pane-container">
             <div class="tlp-pane-header">
@@ -98,6 +74,46 @@
                     {{/ headlines }}
                 </div>
             </section>
+            <section class="tlp-pane-section">
+                <h2 class="tlp-pane-subtitle">{{# gettext }}Platform statistics{{/ gettext }}</h2>
+                <label class="tlp-label" for="use_statistics_homepage">
+                    {{# gettext }}Display platform statistics on home page.{{/ gettext}}
+                </label>
+                <div class="tlp-switch">
+                    <input type="checkbox"
+                           id="use_statistics_homepage"
+                           name="use_statistics_homepage"
+                           class="tlp-switch-checkbox"
+                        {{# display_statistics_on_home_page }} checked {{/display_statistics_on_home_page}}
+                    >
+                    <label for="use_statistics_homepage" class="tlp-switch-button">
+                        {{# gettext }}Display platform statistics on home page.{{/ gettext }}
+                    </label>
+                </div>
+            </section>
+
+            <section class="tlp-pane-section">
+                <h2 class="tlp-pane-subtitle">{{# gettext }}Site news{{/ gettext }}</h2>
+                {{# warn_local_inc }}
+                    <div class="tlp-alert-warning">
+                        {{# gettext }}You still have <code>$sys_display_homepage_news</code> variable defined in local.inc. It's now stored in DB, you should remove it from the file to avoid confusion.{{/ gettext }}
+                    </div>
+                {{/ warn_local_inc }}
+                <label class="tlp-label" for="use_news_homepage">
+                    {{# gettext }}Display site news on home page.{{/ gettext}}
+                </label>
+                <div class="tlp-switch">
+                    <input type="checkbox"
+                           id="use_news_homepage"
+                           name="use_news_homepage"
+                           class="tlp-switch-checkbox"
+                        {{# display_news_on_home_page }} checked {{/display_news_on_home_page}}
+                    >
+                    <label for="use_news_homepage" class="tlp-switch-button">
+                        {{# gettext }}Display site news on home page.{{/ gettext }}
+                    </label>
+                </div>
+            </section>
 
             <section class="tlp-pane-section tlp-pane-section-submit">
                 <button type="submit" class="tlp-button-primary">
@@ -106,5 +122,4 @@
             </section>
         </div>
     </section>
-    {{/ use_standard_homepage }}
 </form>

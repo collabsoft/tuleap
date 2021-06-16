@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,13 +26,16 @@ use DataAccessException;
 use Feedback;
 use HTTPRequest;
 use Project;
+use Tuleap\Layout\CssAssetCollection;
+use Tuleap\Layout\CssAssetWithoutVariantDeclinaisons;
 use Tuleap\Layout\IncludeAssets;
 use Tuleap\Project\Label\LabelDao;
+use Tuleap\Project\MappingRegistry;
 use Widget;
 
 class ProjectLabeledItems extends Widget
 {
-    const NAME = 'projectlabeleditems';
+    public const NAME = 'projectlabeleditems';
 
     /**
      * @var ProjectLabelBuilder
@@ -69,10 +72,10 @@ class ProjectLabeledItems extends Widget
         parent::__construct(self::NAME);
 
         $this->renderer = \TemplateRendererFactory::build()->getRenderer(
-            LABEL_BASE_DIR . '/templates/widgets'
+            __DIR__ . '/../../../templates/widgets'
         );
 
-        $this->dao = new Dao();
+        $this->dao                      = new Dao();
         $this->labels_retriever         = new ProjectLabelRetriever(new LabelDao());
         $this->project_data_validator   = new ProjectLabelRequestDataValidator();
         $this->config_retriever         = new ProjectLabelConfigRetriever(new ProjectLabelConfigDao());
@@ -101,7 +104,7 @@ class ProjectLabeledItems extends Widget
         return Codendi_HTMLPurifier::instance()->purify(
             $this->renderer->renderToString(
                 'project-labeled-items-config',
-                array('labels' => $config_labels)
+                ['labels' => $config_labels]
             ),
             CODENDI_PURIFIER_FULL
         );
@@ -146,7 +149,7 @@ class ProjectLabeledItems extends Widget
 
     public function getInstallPreferences()
     {
-        $selected_labels = array();
+        $selected_labels = [];
         $project_id      = $this->getProject()->getID();
 
         return $this->renderer->renderToString(
@@ -170,13 +173,13 @@ class ProjectLabeledItems extends Widget
         $this->content_id = $this->dao->create();
     }
 
-    public function updatePreferences(&$request)
+    public function updatePreferences(Codendi_Request $request)
     {
         $project_labels = $this->getProjectAllLabelsPresenter();
         $this->storeLabelsConfiguration($request, $project_labels);
     }
 
-    private function storeLabelsConfiguration(HTTPRequest $request, $project_labels)
+    private function storeLabelsConfiguration(Codendi_Request $request, $project_labels)
     {
         try {
             $this->project_data_validator->validateDataFromRequest($request, $project_labels);
@@ -242,15 +245,29 @@ class ProjectLabeledItems extends Widget
         $this->dao->removeLabelByContentId($id);
     }
 
-    public function getJavascriptDependencies()
+    public function getJavascriptDependencies(): array
     {
-        $labeled_items_include_assets = new IncludeAssets(
-            LABEL_BASE_DIR . '/www/assets',
-            LABEL_BASE_URL . '/assets'
-        );
+        $labeled_items_include_assets = $this->getAssets();
+        return [
+            [
+                'file' => $labeled_items_include_assets->getFileURL('widget-project-labeled-items.js'),
 
-        return array(
-            array('file' => $labeled_items_include_assets->getFileURL('widget-project-labeled-items.js'))
+            ], [
+                'file' => $labeled_items_include_assets->getFileURL('configure-widget.js')
+            ]
+        ];
+    }
+
+    public function getStylesheetDependencies(): CssAssetCollection
+    {
+        return new CssAssetCollection([new CssAssetWithoutVariantDeclinaisons($this->getAssets(), 'style')]);
+    }
+
+    private function getAssets(): IncludeAssets
+    {
+        return new IncludeAssets(
+            __DIR__ . '/../../../../../src/www/assets/label',
+            '/assets/label'
         );
     }
 
@@ -265,12 +282,13 @@ class ProjectLabeledItems extends Widget
     public function cloneContent(
         Project $template_project,
         Project $new_project,
-        $template_content_id,
+        $id,
         $owner_id,
-        $owner_type
+        $owner_type,
+        MappingRegistry $mapping_registry
     ) {
         $this->storeContentId();
-        $this->duplicateContent($template_project, $new_project, $template_content_id);
+        $this->duplicateContent($template_project, $new_project, $id);
 
         return $this->content_id;
     }

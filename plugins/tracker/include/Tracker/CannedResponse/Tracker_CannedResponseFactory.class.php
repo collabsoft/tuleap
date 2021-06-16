@@ -19,32 +19,35 @@
  */
 
 
-class Tracker_CannedResponseFactory {
-    
+class Tracker_CannedResponseFactory
+{
+
     /**
      * Constructor
      */
-    protected function __construct() {
+    protected function __construct()
+    {
     }
-    
+
     /**
      * Hold an instance of the class
      */
     protected static $instance;
-    
+
     /**
      * The singleton method
      *
-     * @return Tracker_ResponseFactory An instance of canned response factory
+     * @return self An instance of canned response factory
      */
-    public static function instance() {
-        if (!isset(self::$instance)) {
-            $c = __CLASS__;
-            self::$instance = new $c;
+    public static function instance()
+    {
+        if (! isset(self::$instance)) {
+            $c              = self::class;
+            self::$instance = new $c();
         }
         return self::$instance;
     }
-    
+
     /**
      * Build a CannedResponse instance
      *
@@ -52,57 +55,63 @@ class Tracker_CannedResponseFactory {
      *
      * @return Tracker_CannedResponse
      */
-    public function getInstanceFromRow($row) {
-        return new Tracker_CannedResponse($row['id'],
-                                          $row['tracker'],
-                                          $row['title'],
-                                          $row['body']);
+    public function getInstanceFromRow($row)
+    {
+        return new Tracker_CannedResponse(
+            $row['id'],
+            $row['tracker'],
+            $row['title'],
+            $row['body']
+        );
     }
-    
+
     /**
      * Build a canned response from a xml snippet
-     * 
+     *
      * @param SimpleXMLElement $xml the xml snippet describing a canned response
-     * 
+     *
      * @return Tracker_CannedResponse
      */
-    public function getInstanceFromXML($xml) {
-        return new Tracker_CannedResponse(0, null, (string)$xml->title, (string)$xml->body);
+    public function getInstanceFromXML($xml)
+    {
+        return new Tracker_CannedResponse(0, null, (string) $xml->title, (string) $xml->body);
     }
-    
+
     /**
      * Get the canned responses related to a tracker
-     * 
+     *
      * @param Tracker $tracker the tracker
      *
      * @return array
      */
-    public function getCannedResponses($tracker) {
-        $responses = array();
+    public function getCannedResponses($tracker)
+    {
+        $responses = [];
         foreach ($this->getDao()->searchByTrackerId($tracker->id) as $row) {
-            $row['tracker'] = $tracker;
+            $row['tracker']        = $tracker;
             $responses[$row['id']] = $this->getInstanceFromRow($row);
         }
         return $responses;
     }
-    
+
     /**
      * Get a canned response for a tracker
      *
      * @param Tracker $tracker the tracker
      * @param int     $id      the id of the canned response
      *
-     * @return CannedResponse or null if not found
+     * @return Tracker_CannedResponse|null or null if not found
      */
-    public function getCannedResponse($tracker, $id) {
+    public function getCannedResponse($tracker, $id)
+    {
         $response = null;
         if ($row = $this->getDao()->searchById($tracker->id, $id)->getRow()) {
             $row['tracker'] = $tracker;
-            $response = $this->getInstanceFromRow($row);
+            $response       = $this->getInstanceFromRow($row);
         }
         return $response;
     }
-    
+
     /**
      * Create a canned response
      *
@@ -112,10 +121,11 @@ class Tracker_CannedResponseFactory {
      *
      * @return int the id of the canned response. False if error
      */
-    public function create($tracker, $title, $body) {
+    public function create($tracker, $title, $body)
+    {
         return $this->getDao()->create($tracker->id, $title, $body);
     }
-    
+
     /**
      * Update the canned response
      *
@@ -124,31 +134,33 @@ class Tracker_CannedResponseFactory {
      * @param string  $title   The new title
      * @param string  $body    The new body
      *
-     * @return boolean true if success, false otherwise
+     * @return bool true if success, false otherwise
      */
-    public function update($id, $tracker, $title, $body) {
+    public function update($id, $tracker, $title, $body)
+    {
         $ok = false;
         if ($canned = $this->getCannedResponse($tracker, $id)) {
             if (trim($title) && trim($body)) {
                 $canned->title = trim($title);
                 $canned->body  = $body;
-                $ok = $this->getDao()->save($canned);
+                $ok            = $this->getDao()->save($canned);
             }
         }
         return $ok;
     }
-    
+
     /**
      * Delete a CannedResponse
      *
      * @param int $id the id of the canned response to delete
      *
-     * @return boolean true if success
+     * @return bool true if success
      */
-    public function delete($id) {
+    public function delete($id)
+    {
         return $this->getDao()->delete($id);
     }
-    
+
     /**
      * Duplicate all canned responses of tracker $from_tracker_id into $to_tracker_id
      *
@@ -157,46 +169,53 @@ class Tracker_CannedResponseFactory {
      *
      * @return void
      */
-    public function duplicate($from_tracker_id, $to_tracker_id) {
-        $tf = $this->getTrackerFactory();
+    public function duplicate($from_tracker_id, $to_tracker_id)
+    {
+        $tf           = $this->getTrackerFactory();
         $from_tracker = $tf->getTrackerById($from_tracker_id);
-        $to_tracker = $tf->getTrackerById($to_tracker_id);
+        if ($from_tracker === null) {
+            throw new RuntimeException('Tracker does not exist');
+        }
+        $to_tracker            = $tf->getTrackerById($to_tracker_id);
         $from_canned_responses = $this->getCannedResponses($from_tracker);
         foreach ($from_canned_responses as $from_canned_response) {
+            if ($to_tracker === null) {
+                throw new RuntimeException('Tracker does not exist');
+            }
             $this->create($to_tracker, $from_canned_response->getTitle(), $from_canned_response->getBody());
         }
     }
-    
+
     /**
      * Save a CannedResponse object
-     * 
+     *
      * @param int                    $trackerId the id of the tracker
      * @param Tracker_CannedResponse $response  the object to save
      *
      * @return int the id of the new CannedResponse
      */
-    public function saveObject($trackerId, $response) {
+    public function saveObject($trackerId, $response)
+    {
         return $this->getDao()->create($trackerId, $response->title, $response->body);
     }
-    
+
     /**
      * Get the CannedResponse dao
      *
      * @return Tracker_CannedResponseDao
      */
-    protected function getDao() {
+    protected function getDao()
+    {
         return new Tracker_CannedResponseDao();
     }
-    
+
     /**
      * Get the Tracker Factory
      *
      * @return TrackerFactory An instance of tracker Factory
      */
-    public function getTrackerFactory() {
+    public function getTrackerFactory()
+    {
         return TrackerFactory::instance();
     }
-
 }
-
-?>

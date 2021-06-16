@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,9 +20,13 @@
 ?>
 <h3 class="footer-section-title">Tuleap</h3>
 <p class="footer-paragraph">
-    Tuleap, 100% open source agile and software development tool. <a href="https://www.tuleap.org" target="_blank" rel="noreferrer">www.tuleap.org</a>.
+    Tuleap, 100% open source agile and software development tool. <a href="https://www.tuleap.org/?utm_source=forge&utm_medium=forge&utm_campaign=forge">www.tuleap.org</a>.
 </p>
 <p class="footer-paragraph">
-    <?= $GLOBALS['Language']->getText('global', 'powered_by'); ?> version <?= $version ?>
-    <br><?= $GLOBALS['Language']->getText('global', 'copyright'); ?>.
+    <a href="https://www.tuleap.org/?utm_source=forge&utm_medium=forge&utm_campaign=forge">
+        <?php echo $version ?>
+    </a>
+    <?php if ($GLOBALS['Language']->hasText('global', 'copyright')) { ?>
+        <br><?php echo $GLOBALS['Language']->getOverridableText('global', 'copyright'); ?>.
+    <?php } ?>
 </p>

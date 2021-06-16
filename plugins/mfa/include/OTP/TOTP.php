@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use ParagonIE\ConstantTime\Hex;
 
 class TOTP
 {
-    const TIME_ZERO = 0;
+    public const TIME_ZERO = 0;
 
     /**
      * @var TOTPMode
@@ -79,32 +79,11 @@ class TOTP
      */
     private function getCounterValue(\DateTimeImmutable $time)
     {
-        $value = self::intdiv($time->getTimestamp() - self::TIME_ZERO, $this->totp_mode->getTimeStep());
+        $value = intdiv($time->getTimestamp() - self::TIME_ZERO, $this->totp_mode->getTimeStep());
 
         $hexadecimal_value = str_pad(dechex($value), 16, '0', STR_PAD_LEFT);
 
         return Hex::decode($hexadecimal_value);
-    }
-
-    /**
-     * @see https://secure.php.net/manual/fr/function.intdiv.php
-     *
-     * @return int
-     */
-    private static function intdiv($dividend, $divisor)
-    {
-        if (function_exists('intdiv')) {
-            return intdiv($dividend, $divisor);
-        }
-
-        if ($divisor === 0) {
-            throw new \RuntimeException('Division by zero');
-        }
-        if ($divisor === -1 && $dividend === ~PHP_INT_MAX) {
-            throw new \RuntimeException('Arithmetic error');
-        }
-
-        return ($dividend - ($dividend % $divisor)) / $divisor;
     }
 
     /**

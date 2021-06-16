@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -33,8 +33,8 @@ class PermissionsOnArtifactUGroupRetriever
         array $value,
         Tracker_FormElement_Field_PermissionsOnArtifact $field
     ) {
-        if ($field->isRequired() === false) {
-            $value['u_groups'] = array();
+        if ($field->isRequired() === true && ! isset($value['u_groups'])) {
+            $value['u_groups'] = [];
         }
 
         return $value;
@@ -47,7 +47,7 @@ class PermissionsOnArtifactUGroupRetriever
         $value
     ) {
         if (is_array($value) === false) {
-            $value['u_groups'] = array();
+            $value = ['u_groups' => []];
         }
 
         return $value;

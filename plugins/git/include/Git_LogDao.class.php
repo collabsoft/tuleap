@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ class Git_LogDao extends \Tuleap\DB\DataAccessObject
     public function getLastPushForRepository($repositoryId)
     {
         $sql = 'SELECT log.*
-                FROM plugin_git_log log 
+                FROM plugin_git_log log
                 WHERE repository_id = ?
                 ORDER BY push_date DESC
                 LIMIT 1';
@@ -35,7 +35,7 @@ class Git_LogDao extends \Tuleap\DB\DataAccessObject
     public function getLastPushForRepositories($repository_ids)
     {
         $ids_condition = EasyStatement::open()->in('?*', $repository_ids);
-        $sql = "SELECT repository_id, push_date
+        $sql           = "SELECT repository_id, push_date
                 FROM plugin_git_log
                 WHERE repository_id IN ($ids_condition)";
         return $this->getDB()->safeQuery($sql, $ids_condition->values());
@@ -44,14 +44,14 @@ class Git_LogDao extends \Tuleap\DB\DataAccessObject
     /**
      * Return the last pushes of a given repository grouped by week
      *
-     * @param Integer $repositoryId Id of the repository
-     * @param Integer $week         Number of the week
-     * @param Integer $year         Year corresponding to the week
+     * @param int $repositoryId Id of the repository
+     * @param int $week Number of the week
+     * @param int $year Year corresponding to the week
      *
      */
     public function getRepositoryPushesByWeek($repositoryId, $week, $year)
     {
-        $sql          = 'SELECT COUNT(*) AS pushes,
+        $sql = 'SELECT COUNT(*) AS pushes,
                              repository_id AS repo,
                              WEEK(FROM_UNIXTIME(push_date), 3) AS week,
                              YEAR(FROM_UNIXTIME(push_date)) AS year,
@@ -68,10 +68,10 @@ class Git_LogDao extends \Tuleap\DB\DataAccessObject
     /**
      * Obtain last git pushes performed by the given user
      *
-     * @param Integer $userId Id of the user
-     * @param Integer $repoId Id of the git repository
-     * @param Integer $offset Offset of the search
-     * @param Integer $date   Date from which we start collecting logs
+     * @param int $userId Id of the user
+     * @param int $repoId Id of the git repository
+     * @param int $offset Offset of the search
+     * @param int $date Date from which we start collecting logs
      *
      * @return array
      */
@@ -110,14 +110,14 @@ class Git_LogDao extends \Tuleap\DB\DataAccessObject
     /**
      * Obtain repositories containing git pushes by a user in the last given period
      *
-     * @param Integer $userId Id of the user
-     * @param Integer $date   Date from which we start collecting repostories with pushes
+     * @param int $userId Id of the user
+     * @param int $date Date from which we start collecting repostories with pushes
      *
      * @return DataAccessResult
      */
     public function getLastPushesRepositories($userId, $date)
     {
-        $sql = "SELECT DISTINCT(r.repository_id), g.group_name, r.repository_name, r.repository_namespace, g.group_id
+        $sql = "SELECT DISTINCT(r.repository_id), g.group_name, g.unix_group_name, r.repository_name, r.repository_namespace, g.group_id
                 FROM plugin_git_log l
                 JOIN plugin_git r ON l.repository_id = r.repository_id
                 JOIN groups g ON g.group_id = r.project_id
@@ -142,12 +142,22 @@ class Git_LogDao extends \Tuleap\DB\DataAccessObject
         return $this->getDB()->single($sql, [$project_id, $date]) > 0;
     }
 
+    public function hasRepositories(int $project_id): bool
+    {
+        $sql = "SELECT COUNT(*)
+                FROM plugin_git
+                WHERE project_id = ?
+                  AND repository_deletion_date  = '0000-00-00 00:00:00'";
+
+        return $this->getDB()->single($sql, [$project_id]) > 0;
+    }
+
     /**
      * Count all Git pushes for the given period
      *
      * @param String  $startDate Period start date
      * @param String  $endDate   Period end date
-     * @param Integer $projectId Id of the project we want to retrieve its git stats
+     * @param int $projectId Id of the project we want to retrieve its git stats
      *
      * @return array
      */
@@ -160,10 +170,10 @@ class Git_LogDao extends \Tuleap\DB\DataAccessObject
             $filter->andWith('project_id = ?', $projectId);
         }
         $sql = "SELECT DATE_FORMAT(FROM_UNIXTIME(push_date), '%M') AS month,
-                    YEAR(FROM_UNIXTIME(push_date)) AS year, 
+                    YEAR(FROM_UNIXTIME(push_date)) AS year,
                     COUNT(*) AS pushes_count,
-                    COUNT(DISTINCT(repository_id)) AS repositories, 
-                    SUM(commits_number) AS commits_count, 
+                    COUNT(DISTINCT(repository_id)) AS repositories,
+                    SUM(commits_number) AS commits_count,
                     COUNT(DISTINCT(user_id)) AS users
                 FROM plugin_git_log JOIN plugin_git USING(repository_id)
                 WHERE $filter
@@ -187,5 +197,27 @@ class Git_LogDao extends \Tuleap\DB\DataAccessObject
                 LIMIT ?";
 
         return $this->getDB()->run($sql, $project_id, $nb_max);
+    }
+
+
+    public function countGitPush()
+    {
+        $sql = "SELECT count(*) as nb
+                FROM plugin_git_log";
+
+        $res = $this->getDB()->single($sql);
+
+        return $res;
+    }
+
+    public function countGitPushAfter($timestamp)
+    {
+        $sql = "SELECT count(*)
+                FROM plugin_git_log
+                WHERE push_date > ?";
+
+        $res = $this->getDB()->single($sql, [$timestamp]);
+
+        return $res;
     }
 }

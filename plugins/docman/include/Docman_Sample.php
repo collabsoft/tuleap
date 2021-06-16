@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,12 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Statistics\Frequencies\GraphDataBuilder\Sample;
+
 /**
  * @see Statisticts plugin
  */
-class Docman_Sample extends Sample {
+class Docman_Sample extends Sample
+{
 
-    function __construct() {
+    public function __construct()
+    {
         $this->field = 'time';
         $this->table = 'plugin_docman_log';
         parent::__construct();

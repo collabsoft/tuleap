@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,17 +21,13 @@
  *
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/gitPlugin.php';
 
-use Tuleap\Git\Gitolite\Gitolite3LogParser;
-use Tuleap\Git\Gitolite\GitoliteFileLogsDao;
-use Tuleap\Git\Gitolite\VersionDetector;
-use Tuleap\Git\History\Dao;
-use Tuleap\Git\RemoteServer\Gerrit\HttpUserValidator;
 
 $console    = new Log_ConsoleLogger();
-$logger     = new GitBackendLogger();
-$broker_log = new BrokerLogger(array($logger, $console));
+$logger     = \BackendLogger::getDefaultLogger(GitPlugin::LOG_IDENTIFIER);
+$broker_log = new BrokerLogger([$logger, $console]);
 
 $broker_log->info("Starting transfer from plugin_git_full_history to plugin_git_log_read_daily");
 

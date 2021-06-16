@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Statistics_Event {
+class Statistics_Event
+{
 
     /**
      * Get the entries to display in statistics/frequence
@@ -26,7 +27,7 @@ class Statistics_Event {
      * Output:
      *  'entries' => array of label indexed by character ex: ('docdl' => 'Legacy document viewed')
      */
-    const FREQUENCE_STAT_ENTRIES = 'plugin_statistics_frequence_stat_entries';
+    public const FREQUENCE_STAT_ENTRIES = 'plugin_statistics_frequence_stat_entries';
 
     /**
      * Get the statistics/frequence sample for the given character
@@ -37,5 +38,5 @@ class Statistics_Event {
      * Output:
      *  'sample' => instance of Sample
      */
-    const FREQUENCE_STAT_SAMPLE = 'plugin_statistics_frequence_stat_sample';
+    public const FREQUENCE_STAT_SAMPLE = 'plugin_statistics_frequence_stat_sample';
 }

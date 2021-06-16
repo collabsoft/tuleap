@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,9 +21,24 @@
 class Git_RemoteServer_GerritServerPresenter
 {
 
-    public $warning_no_possible_go_back;
+    public $id;
+    public $host;
+    public $http_port;
+    public $ssh_port;
+    public $replication_key;
+    public $use_ssl;
+    public $login;
+    public $identity_file;
+    public $use_gerrit_2_5;
+    public $is_used;
+    public $http_password;
+    public $replication_password;
+    public $replication_key_ellipsis_value;
+    public $edit_title;
+    public $delete_title;
+    public $purified_delete_desc;
 
-    public function __construct(Git_RemoteServer_GerritServer $server, $is_used)
+    public function __construct(Git_RemoteServer_GerritServer $server, bool $is_used)
     {
         $this->id                             = $server->getId();
         $this->host                           = $server->getHost();
@@ -33,44 +48,19 @@ class Git_RemoteServer_GerritServerPresenter
         $this->use_ssl                        = $server->usesSSL();
         $this->login                          = $server->getLogin();
         $this->identity_file                  = $server->getIdentityFile();
-        $this->use_gerrit_2_5                 = $server->getGerritVersion() === Git_RemoteServer_GerritServer::DEFAULT_GERRIT_VERSION;
-        $this->use_gerrit_2_8                 = $server->getGerritVersion() !== Git_RemoteServer_GerritServer::DEFAULT_GERRIT_VERSION;
+        $this->use_gerrit_2_5                 = $server->getGerritVersion() === Git_RemoteServer_GerritServer::GERRIT_VERSION_2_5;
         $this->is_used                        = $is_used;
         $this->http_password                  = $server->getHTTPPassword();
         $this->replication_password           = $server->getReplicationPassword();
-        $this->is_digest                      = $server->getAuthType() === Git_RemoteServer_GerritServer::AUTH_TYPE_DIGEST;
-        $this->is_basic                       = $server->getAuthType() === Git_RemoteServer_GerritServer::AUTH_TYPE_BASIC;
-        $this->replication_key_ellipsis_value = substr($this->replication_key, 0, 40).'...'.substr($this->replication_key, -40);
+        $this->replication_key_ellipsis_value = substr($this->replication_key, 0, 40) . '...' . substr($this->replication_key, -40);
 
+        $this->edit_title   = sprintf(dgettext('tuleap-git', 'Edit %1$s'), $server->getHost());
+        $this->delete_title = sprintf(dgettext('tuleap-git', 'Delete %1$s'), $server->getHost());
 
-        $this->edit_title           = $GLOBALS['Language']->getText('plugin_git', 'edit_gerrit_title', $server->getHost());
-        $this->delete_title         = $GLOBALS['Language']->getText('plugin_git', 'delete_gerrit_title', $server->getHost());
-
-        $this->warning_no_possible_go_back  = $GLOBALS['Language']->getText('plugin_git', 'warning_no_possible_go_back');
         $this->purified_delete_desc = Codendi_HTMLPurifier::instance()->purify(
-            $GLOBALS['Language']->getText('plugin_git', 'delete_gerrit_desc', $server->getHost()),
+            sprintf(dgettext('tuleap-git', 'Wow, wait a minute. You are about to delete the <b>%1$s</b> server. Please confirm your action.'), $server->getHost()),
             CODENDI_PURIFIER_LIGHT
         );
-    }
-
-    public function gerrit_version_2_5_checked()
-    {
-        return $this->use_gerrit_2_5 ? 'checked' : '';
-    }
-
-    public function gerrit_version_2_8_checked()
-    {
-        return $this->use_gerrit_2_8 ? 'checked' : '';
-    }
-
-    public function auth_type_digest_checked()
-    {
-        return $this->is_digest ? 'checked' : '';
-    }
-
-    public function auth_type_basic_checked()
-    {
-        return $this->is_basic ? 'checked' : '';
     }
 
     public function use_ssl_checked()

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,23 +21,30 @@ namespace Tuleap\AgileDashboard\REST\v1\Kanban;
 
 use Luracast\Restler\RestException;
 
-class KanbanAddRepresentation {
+/**
+ * @psalm-immutable
+ */
+class KanbanAddRepresentation
+{
     /**
-     * @var {@type array}
+     * @var array {@type int}
+     * @psalm-var int[]
      */
     public $ids;
 
     /**
      * @throws RestException
      */
-    public function checkFormat() {
+    public function checkFormat()
+    {
         $this->isArrayOfInt('ids');
         if (count($this->ids) == 0) {
             throw new RestException(400, "invalid value specified for `ids`. Expected: array of integers");
         }
     }
 
-    private function isArrayOfInt($name) {
+    private function isArrayOfInt($name)
+    {
         if (! is_array($this->$name)) {
             throw new RestException(400, "invalid value specified for `$name`. Expected: array of integers");
         }

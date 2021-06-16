@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use User_ForgeUserGroupPermission;
 
 class MediawikiAdminAllProjects extends User_ForgeUserGroupPermission
 {
-    const ID = 3;
+    public const ID = 3;
 
     public function getId()
     {
@@ -33,11 +33,11 @@ class MediawikiAdminAllProjects extends User_ForgeUserGroupPermission
 
     public function getName()
     {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'permission_delegation_name');
+        return dgettext('tuleap-mediawiki', 'Global Mediawiki Administrator');
     }
 
     public function getDescription()
     {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'permission_delegation_description');
+        return dgettext('tuleap-mediawiki', 'This permission grants mediawiki administration rights for each mediawiki of every project');
     }
 }

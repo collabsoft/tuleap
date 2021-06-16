@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,22 +20,23 @@
 
 namespace Tuleap\OpenIDConnectClient\Login;
 
-use Tuleap\OpenIDConnectClient\Authentication\Flow;
 use Tuleap\OpenIDConnectClient\Provider\ProviderManager;
 
-class ConnectorPresenterBuilder {
+class ConnectorPresenterBuilder
+{
     /**
      * @var ProviderManager
      */
     private $provider_manager;
     /**
-     * @var Flow
+     * @var LoginURLGenerator
      */
-    private $flow;
+    private $login_url_generator;
 
-    public function __construct(ProviderManager $provider_manager, Flow $flow) {
-        $this->provider_manager = $provider_manager;
-        $this->flow             = $flow;
+    public function __construct(ProviderManager $provider_manager, LoginURLGenerator $login_url_generator)
+    {
+        $this->provider_manager    = $provider_manager;
+        $this->login_url_generator = $login_url_generator;
     }
 
     /**
@@ -56,22 +57,19 @@ class ConnectorPresenterBuilder {
         return new SpecificLoginPresenter($providers_authorization_request_uri);
     }
 
-    /**
-     * @return array
-     */
-    private function getProvidersWithRequestUri($return_to)
+    private function getProvidersWithRequestUri(?string $return_to): array
     {
-        $providers                           = $this->provider_manager->getProvidersUsableToLogIn();
-        $providers_authorization_request_uri = array();
-        foreach($providers as $provider) {
-            $providers_authorization_request_uri[] = array(
+        $providers                   = $this->provider_manager->getProvidersUsableToLogIn();
+        $providers_login_request_uri = [];
+        foreach ($providers as $provider) {
+            $providers_login_request_uri[] = [
                 'name'                      => $provider->getName(),
                 'icon'                      => $provider->getIcon(),
                 'color'                     => $provider->getColor(),
-                'authorization_request_uri' => $this->flow->getAuthorizationRequestUri($provider, $return_to)
-            );
+                'login_request_uri'         => $this->login_url_generator->getLoginURL($provider, $return_to),
+            ];
         }
 
-        return $providers_authorization_request_uri;
+        return $providers_login_request_uri;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,28 +21,24 @@
 
 namespace Tuleap\AgileDashboard\REST\v1;
 
+use PFUser;
+use Planning_Milestone;
+use Tracker_ArtifactFactory;
 use Tracker_FormElement_Field_ArtifactLink;
-use \Tracker_FormElementFactory;
-use \Tracker_ArtifactFactory;
-use \Planning_Milestone;
-use \PFUser;
-use Tuleap\Tracker\REST\v1\ArtifactLinkUpdater;
+use Tuleap\Tracker\FormElement\Field\ArtifactLink\ArtifactLinkUpdater;
 
-class MilestoneContentUpdater {
-
-    /** @var Tracker_FormElementFactory */
-    private $form_element_factory;
-
+class MilestoneContentUpdater
+{
     /** @var Tracker_ArtifactFactory */
     private $artifact_factory;
 
     /** @var ArtifactLinkUpdater */
     private $artifactlink_updater;
 
-    public function __construct(Tracker_FormElementFactory $form_element_factory, ArtifactLinkUpdater $artifactlink_updater) {
-        $this->form_element_factory     = $form_element_factory;
-        $this->artifact_factory         = Tracker_ArtifactFactory::instance();
-        $this->artifactlink_updater     = $artifactlink_updater;
+    public function __construct(ArtifactLinkUpdater $artifactlink_updater)
+    {
+        $this->artifact_factory     = Tracker_ArtifactFactory::instance();
+        $this->artifactlink_updater = $artifactlink_updater;
     }
 
     /**
@@ -53,7 +49,8 @@ class MilestoneContentUpdater {
      * @param Planning_Milestone $milestone            The milestone
      *
      */
-    public function updateMilestoneContent(array $linked_artifact_ids, PFUser $current_user, Planning_Milestone $milestone) {
+    public function updateMilestoneContent(array $linked_artifact_ids, PFUser $current_user, Planning_Milestone $milestone)
+    {
         $this->artifactlink_updater->update(
             $linked_artifact_ids,
             $milestone->getArtifact(),
@@ -66,7 +63,8 @@ class MilestoneContentUpdater {
         );
     }
 
-    public function appendElementToMilestoneBacklog($linked_artifact_id, PFUser $current_user, Planning_Milestone $milestone) {
+    public function appendElementToMilestoneBacklog($linked_artifact_id, PFUser $current_user, Planning_Milestone $milestone)
+    {
         $linked_artifact_ids = $this->artifactlink_updater->getElementsAlreadyLinkedToArtifact(
             $milestone->getArtifact(),
             $current_user

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,8 +20,11 @@
 
 namespace Tuleap\OpenIDConnectClient\UserMapping;
 
-
-class UserMappingUsage {
+/**
+ * @psalm-immutable
+ */
+class UserMappingUsage
+{
 
     private $user_mapping_id;
     private $provider_icon;
@@ -38,9 +41,8 @@ class UserMappingUsage {
         $provider_icon,
         $is_unique_authentication_endpoint,
         $user_id,
-        $last_used
-    )
-    {
+        int $last_used
+    ) {
         $this->user_mapping_id                   = $user_mapping_id;
         $this->provider_id                       = $provider_id;
         $this->provider_name                     = $provider_name;
@@ -55,23 +57,28 @@ class UserMappingUsage {
         return $this->user_mapping_id;
     }
 
-    public function getProviderId() {
+    public function getProviderId()
+    {
         return $this->provider_id;
     }
 
-    public function getProviderName() {
+    public function getProviderName()
+    {
         return $this->provider_name;
     }
 
-    public function getProviderIcon() {
+    public function getProviderIcon()
+    {
         return $this->provider_icon;
     }
 
-    public function getUserId() {
+    public function getUserId()
+    {
         return $this->user_id;
     }
 
-    public function getLastUsage() {
+    public function getLastUsage(): int
+    {
         return $this->last_used;
     }
 

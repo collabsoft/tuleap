@@ -20,23 +20,23 @@
 
 namespace Tuleap\HudsonSvn;
 
-use Tuleap\Svn\Commit\CommitInfo;
-use Tuleap\Svn\Repository\Repository;
+use Tuleap\SVN\Commit\CommitInfo;
+use Tuleap\SVN\Repository\Repository;
 
 class BuildParams
 {
-    const BUILD_PARAMETER_PROJECT    = "Project";
-    const BUILD_PARAMETER_USER       = "User";
-    const BUILD_PARAMETER_REPOSITORY = "Repository";
-    const BUILD_PARAMETER_PATH       = "Path";
+    public const BUILD_PARAMETER_PROJECT    = "Project";
+    public const BUILD_PARAMETER_USER       = "User";
+    public const BUILD_PARAMETER_REPOSITORY = "Repository";
+    public const BUILD_PARAMETER_PATH       = "Path";
 
     public function getAdditionalSvnParameters(Repository $repository, CommitInfo $commit_info)
     {
-        return array(
+        return [
             self::BUILD_PARAMETER_PROJECT    => $repository->getProject()->getUnixName(),
             self::BUILD_PARAMETER_USER       => $commit_info->getUser(),
             self::BUILD_PARAMETER_REPOSITORY => $repository->getName(),
             self::BUILD_PARAMETER_PATH       => implode("\n", $commit_info->getChangedDirectories())
-        );
+        ];
     }
 }

@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,11 +21,10 @@
 /**
  * Provides the information necessary to connect to a distant machine using ssh.
  */
-interface Git_Driver_Gerrit_RemoteSSHConfig {
-    function getSSHPort();
-    function getHost();
-    function getLogin();
-    function getIdentityFile();
+interface Git_Driver_Gerrit_RemoteSSHConfig
+{
+    public function getSSHPort();
+    public function getHost();
+    public function getLogin();
+    public function getIdentityFile();
 }
-
-?>

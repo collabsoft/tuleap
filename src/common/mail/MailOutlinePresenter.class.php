@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class MailOutlinePresenter {
-
+class MailOutlinePresenter
+{
+    /**
+     * @var string
+     */
     public $logo_url;
     public $title;
     public $thanks;
@@ -27,17 +30,16 @@ class MailOutlinePresenter {
     public $color_logo;
 
     public function __construct(
-        $logo_url,
+        string $logo_url,
         $title,
         $thanks,
         $signature,
         $color_logo
     ) {
-        $this->logo_url             = $logo_url;
-        $this->title                = $title;
-        $this->thanks               = $thanks;
-        $this->signature            = $signature;
-        $this->color_logo           = $color_logo;
+        $this->logo_url   = $logo_url;
+        $this->title      = $title;
+        $this->thanks     = $thanks;
+        $this->signature  = $signature;
+        $this->color_logo = $color_logo;
     }
 }
-?>

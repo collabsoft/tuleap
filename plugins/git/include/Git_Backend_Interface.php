@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,15 +19,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-interface Git_Backend_Interface {
-    const GIT_ROOT_PATH = '/var/lib/codendi/gitroot/';
+interface Git_Backend_Interface
+{
+    public const GIT_ROOT_PATH = '/var/lib/codendi/gitroot/';
 
     /**
      * Verify if the repository as already some content within
      *
      * @see    plugins/git/include/Git_Backend_Interface::isInitialized()
      * @param  GitRepository $repository
-     * @return Boolean
+     * @return bool
      */
     public function isInitialized(GitRepository $respository);
 
@@ -36,14 +37,13 @@ interface Git_Backend_Interface {
      *
      * @see    plugins/git/include/Git_Backend_Interface::isCreated()
      * @param  GitRepository $repository
-     * @return Boolean
+     * @return bool
      */
     public function isCreated(GitRepository $respository);
 
     /**
      * Return URL to access the respository for remote git commands
      *
-     * @param  GitRepository $repository
      * @return array
      */
     public function getAccessURL(GitRepository $repository);
@@ -57,7 +57,7 @@ interface Git_Backend_Interface {
 
     /**
      * Verify if given name is not already reserved on filesystem
-     * 
+     *
      * @return bool
      */
     public function isNameAvailable($newName);
@@ -77,7 +77,7 @@ interface Git_Backend_Interface {
      * @param PFUser          $user       The user to test
      * @param GitRepository $repository The repository to test
      *
-     * @return Boolean
+     * @return bool
      */
     public function userCanRead($user, $repository);
 
@@ -85,8 +85,8 @@ interface Git_Backend_Interface {
      * Update list of people notified by post-receive-email hook
      *
      * @param GitRepository $repository
-     * 
-     * @return Boolean
+     *
+     * @return bool
      */
     public function changeRepositoryMailingList($repository);
 
@@ -94,8 +94,8 @@ interface Git_Backend_Interface {
      * Change post-receive-email hook mail prefix
      *
      * @param GitRepository $repository
-     * 
-     * @return Boolean
+     *
+     * @return bool
      */
     public function changeRepositoryMailPrefix($repository);
 
@@ -105,42 +105,38 @@ interface Git_Backend_Interface {
      * @param Project $project The project to rename
      * @param string  $newName The new name of the project
      *
-     * @return true if success, false otherwise
+     * @return bool true if success, false otherwise
      */
     public function renameProject(Project $project, $newName);
 
     /**
      * Check if repository can be deleted
      *
-     * @return Boolean
+     * @return bool
      */
     public function canBeDeleted(GitRepository $repository);
 
     /**
      * Perform logical deletion repository in DB
      *
-     * @param GitRepository $repository
      */
     public function markAsDeleted(GitRepository $repository);
 
     /**
      * Physically delete a repository already marked for deletion
      *
-     * @param GitRepository $repository
      */
     public function delete(GitRepository $repository);
 
     /**
      * Purge archived repository
      *
-     * @param GitRepository $repository
      */
     public function deleteArchivedRepository(GitRepository $repository);
 
     /**
      * Move the archived gitolite repositories to the archiving area before purge
      *
-     * @param GitRepository $repository
      */
     public function archiveBeforePurge(GitRepository $repository);
 }

@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2015. All Rights Reserved.
+  * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
   *
   * This file is a part of Tuleap.
   *
@@ -18,7 +18,8 @@
   * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 
-class ForgeAccess_AdminRouter {
+class ForgeAccess_AdminRouter
+{
 
     /**
      * @var Codendi_Request
@@ -38,7 +39,8 @@ class ForgeAccess_AdminRouter {
         $this->request    = $request;
     }
 
-    public function route() {
+    public function route()
+    {
         if (! $this->request->getCurrentUser()->isSuperUser()) {
             $this->controller->notSiteAdmin($this->request);
         } elseif ($this->request->get('update')) {

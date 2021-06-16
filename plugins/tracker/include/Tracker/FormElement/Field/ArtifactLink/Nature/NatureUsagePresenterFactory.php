@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -40,7 +40,7 @@ class NatureUsagePresenterFactory
      */
     public function getNaturesUsagePresenters(array $natures)
     {
-        $natures_usage_by_shortname = array();
+        $natures_usage_by_shortname = [];
         foreach ($natures as $nature) {
             $natures_usage_by_shortname[$nature->shortname] =  new NatureUsagePresenter(
                 $nature,

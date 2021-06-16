@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2014. All rights reserved
+ * Copyright (c) Enalean, 2013 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,4 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class GitRepoNotFoundException  extends Exception {}
+class GitRepoNotFoundException extends Exception implements \Tuleap\Request\CodeIsAValidHTTPStatus
+{
+    public function __construct(string $message = '')
+    {
+        parent::__construct($message, 404);
+    }
+}

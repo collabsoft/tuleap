@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,12 +22,12 @@ namespace Tuleap\Templating\Mustache;
 
 class GettextHelper
 {
-    const GETTEXT   = 'gettext';
-    const NGETTEXT  = 'ngettext';
-    const DGETTEXT  = 'dgettext';
-    const DNGETTEXT = 'dngettext';
+    public const GETTEXT   = 'gettext';
+    public const NGETTEXT  = 'ngettext';
+    public const DGETTEXT  = 'dgettext';
+    public const DNGETTEXT = 'dngettext';
 
-    private static $gettext_cache = array();
+    private static $gettext_cache = [];
 
     /**
      * @var GettextSectionContentTransformer
@@ -43,8 +43,8 @@ class GettextHelper
     {
         $translated_formatted_text = $this->getGettextValueFromCache($text);
         if ($translated_formatted_text === null) {
-            $parts                     = $this->splitTextInParts($text);
-            $string                    = $this->shift($text, $parts);
+            $parts  = $this->splitTextInParts($text);
+            $string = $this->shift($text, $parts);
 
             $translated_text           = gettext($string);
             $translated_formatted_text = $this->getFormattedText($translated_text, $parts);
@@ -62,7 +62,7 @@ class GettextHelper
 
         $translated_text = ngettext($msgid1, $msgid2, $n);
 
-        return $this->getFormattedText($translated_text, $parts, array($n));
+        return $this->getFormattedText($translated_text, $parts, [$n]);
     }
 
     public function dgettext($text)
@@ -91,7 +91,7 @@ class GettextHelper
 
         $translated_text = dngettext($domain, $msgid1, $msgid2, $n);
 
-        return $this->getFormattedText($translated_text, $parts, array($n));
+        return $this->getFormattedText($translated_text, $parts, [$n]);
     }
 
     private function splitTextInParts($text)
@@ -114,7 +114,7 @@ class GettextHelper
         );
     }
 
-    private function getFormattedText($translated_text, $parts, $default_vsprintf_args = array())
+    private function getFormattedText($translated_text, $parts, $default_vsprintf_args = [])
     {
         $args = $default_vsprintf_args;
         if ($parts) {
@@ -124,19 +124,13 @@ class GettextHelper
         return vsprintf($translated_text, $args);
     }
 
-    /**
-     * @return string|null
-     */
-    private function getGettextValueFromCache($text)
+    private function getGettextValueFromCache(string $text): ?string
     {
-        if (isset(self::$gettext_cache[$text])) {
-            return self::$gettext_cache[$text];
-        }
-        return null;
+        return self::$gettext_cache[setlocale(LC_MESSAGES, '0')][$text] ?? null;
     }
 
-    private function cacheGettextValue($text, $value)
+    private function cacheGettextValue(string $text, string $value): void
     {
-        self::$gettext_cache[$text] = $value;
+        self::$gettext_cache[setlocale(LC_MESSAGES, '0')][$text] = $value;
     }
 }

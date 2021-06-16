@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,13 +19,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class MediawikiDao extends DataAccessObject {
+class MediawikiDao extends DataAccessObject
+{
 
-    const DEDICATED_DATABASE_PREFIX = 'plugin_mediawiki_';
-    const DEDICATED_DATABASE_TABLE_PREFIX = 'mw';
+    public const DEDICATED_DATABASE_PREFIX       = 'plugin_mediawiki_';
+    public const DEDICATED_DATABASE_TABLE_PREFIX = 'mw';
 
-    private $database_name = array();
-    private $table_prefix = array();
+    private $database_name = [];
+    private $table_prefix  = [];
 
     /**
      * @var string
@@ -43,60 +44,83 @@ class MediawikiDao extends DataAccessObject {
         return $this->getMediawikiDatabaseName($project, false) !== false;
     }
 
-    public function getMediawikiPagesNumberOfAProject(Project $project) {
+    public function getMediawikiPagesNumberOfAProject(Project $project)
+    {
         $group_id = $this->da->escapeInt($project->getID());
 
         $sql = "SELECT $group_id AS group_id, COUNT(1) AS result
-                FROM ".$this->getTableName($project, 'page');
+                FROM " . $this->getTableName($project, 'page');
 
-        return $this->retrieve($sql)->getRow();
+        $result = $this->retrieve($sql);
+
+        if ($result === false) {
+            return ['result' => 0];
+        }
+
+        return $result->getRow();
     }
 
-    public function getModifiedMediawikiPagesNumberOfAProjectBetweenStartDateAndEndDate(Project $project, $start_date, $end_date) {
-        $group_id      = $this->da->escapeInt($project->getID());
+    public function getModifiedMediawikiPagesNumberOfAProjectBetweenStartDateAndEndDate(Project $project, $start_date, $end_date)
+    {
+        $group_id = $this->da->escapeInt($project->getID());
 
-        $start_date    = date("YmdHis", strtotime($start_date));
-        $end_date      = date("YmdHis", strtotime($end_date));
+        $start_date = date("YmdHis", strtotime($start_date));
+        $end_date   = date("YmdHis", strtotime($end_date));
 
         $sql = "SELECT $group_id AS group_id, COUNT(1) AS result
-                FROM " .$this->getTableName($project, 'page'). "
+                FROM " . $this->getTableName($project, 'page') . "
                 WHERE
                     page_touched >= $start_date
                     AND
                     page_touched <= $end_date
                ";
 
-        return $this->retrieve($sql)->getRow();
+        $result = $this->retrieve($sql);
+
+        if ($result === false) {
+            return ['result' => 0];
+        }
+
+        return $result->getRow();
     }
 
-    public function getCreatedPagesNumberSinceStartDate(Project $project, $start_date) {
-        $group_id      = $this->da->escapeInt($project->getID());
+    public function getCreatedPagesNumberSinceStartDate(Project $project, $start_date)
+    {
+        $group_id = $this->da->escapeInt($project->getID());
 
-        $start_date    = date("YmdHis", strtotime($start_date));
+        $start_date = date("YmdHis", strtotime($start_date));
 
         $sql = "SELECT $group_id AS group_id, COUNT(1) AS result
-                FROM " .$this->getTableName($project, 'revision'). "
+                FROM " . $this->getTableName($project, 'revision') . "
                 WHERE
                     rev_parent_id=0
                     AND
                     rev_timestamp >= $start_date
                ";
 
-        return $this->retrieve($sql)->getRow();
+        $result = $this->retrieve($sql);
+
+        if ($result === false) {
+            return ['result' => 0];
+        }
+
+        return $result->getRow();
     }
 
-    public function getMediawikiGroupsForUser(PFUser $user, Project $project) {
-        $user_name     = $this->da->quoteSmart($this->getMediawikiUserName($user->getUnixName()));
+    public function getMediawikiGroupsForUser(PFUser $user, Project $project)
+    {
+        $user_name = $this->da->quoteSmart($this->getMediawikiUserName($user->getUnixName()));
 
         $sql = "SELECT ug_group
-                FROM " .$this->getTableName($project, 'user_groups'). "
-                    INNER JOIN " .$this->getTableName($project, 'user'). " ON " .$this->getTableName($project, 'user'). ".user_id = " .$this->getTableName($project, 'user_groups'). ".ug_user
+                FROM " . $this->getTableName($project, 'user_groups') . "
+                    INNER JOIN " . $this->getTableName($project, 'user') . " ON " . $this->getTableName($project, 'user') . ".user_id = " . $this->getTableName($project, 'user_groups') . ".ug_user
                 WHERE user_name = $user_name";
 
         return $this->retrieve($sql);
     }
 
-    public function removeUser(PFUser $user, Project $project) {
+    public function removeUser(PFUser $user, Project $project)
+    {
         $user_id         = $this->getMediawikiUserId($user, $project);
         $escaped_user_id = $this->da->escapeInt($user_id);
 
@@ -107,21 +131,23 @@ class MediawikiDao extends DataAccessObject {
         $this->removeAllUserGroups($project, $escaped_user_id);
 
         $sql = "DELETE
-                FROM " .$this->getTableName($project, 'user'). "
+                FROM " . $this->getTableName($project, 'user') . "
                 WHERE user_id = $escaped_user_id";
 
         return $this->update($sql);
     }
 
-    private function removeAllUserGroups(Project $project, $escaped_user_id) {
+    private function removeAllUserGroups(Project $project, $escaped_user_id)
+    {
         $sql = "DELETE
-                FROM " .$this->getTableName($project, 'user_groups'). "
+                FROM " . $this->getTableName($project, 'user_groups') . "
                 WHERE ug_user = $escaped_user_id";
 
         return $this->update($sql);
     }
 
-    public function removeAdminsGroupsForUser(PFUser $user, Project $project) {
+    public function removeAdminsGroupsForUser(PFUser $user, Project $project)
+    {
         $user_id         = $this->getMediawikiUserId($user, $project);
         $escaped_user_id = $this->da->escapeInt($user_id);
 
@@ -130,41 +156,43 @@ class MediawikiDao extends DataAccessObject {
         }
 
          $sql = "DELETE
-                 FROM " .$this->getTableName($project, 'user_groups'). "
+                 FROM " . $this->getTableName($project, 'user_groups') . "
                  WHERE ug_user = $escaped_user_id
                    AND ug_group IN ('bureaucrat', 'sysop')";
 
         return $this->update($sql);
     }
 
-    public function renameUser(Project $project, $old_user_name, $new_user_name) {
+    public function renameUser(Project $project, $old_user_name, $new_user_name)
+    {
         $old_user_name = $this->da->quoteSmart($this->getMediawikiUserName($old_user_name));
         $new_user_name = $this->da->quoteSmart($this->getMediawikiUserName($new_user_name));
 
-        $sql = "UPDATE " .$this->getTableName($project, 'user'). "
+        $sql = "UPDATE " . $this->getTableName($project, 'user') . "
                 SET user_name = $new_user_name
                 WHERE user_name = $old_user_name";
 
         $this->update($sql);
 
-        $sql = "UPDATE " .$this->getTableName($project, 'recentchanges'). "
+        $sql = "UPDATE " . $this->getTableName($project, 'recentchanges') . "
                 SET rc_user_text = $new_user_name
                 WHERE rc_user_text = $old_user_name";
 
         $this->update($sql);
 
-        $sql = "UPDATE " .$this->getTableName($project, 'revision'). "
+        $sql = "UPDATE " . $this->getTableName($project, 'revision') . "
                 SET rev_user_text = $new_user_name
                 WHERE rev_user_text = $old_user_name";
 
         return $this->update($sql);
     }
 
-    private function getMediawikiUserId(PFUser $user, Project $project) {
-        $user_name     = $this->da->quoteSmart($this->getMediawikiUserName($user->getUnixName()));
+    private function getMediawikiUserId(PFUser $user, Project $project)
+    {
+        $user_name = $this->da->quoteSmart($this->getMediawikiUserName($user->getUnixName()));
 
         $sql = "SELECT user_id
-                FROM " .$this->getTableName($project, 'user'). "
+                FROM " . $this->getTableName($project, 'user') . "
                 WHERE user_name = $user_name";
 
         $data = $this->retrieve($sql)->getRow();
@@ -176,7 +204,8 @@ class MediawikiDao extends DataAccessObject {
         return $data['user_id'];
     }
 
-    public function getMediawikiUserGroupMapping(Project $project) {
+    public function getMediawikiUserGroupMapping(Project $project)
+    {
         $group_id = $this->da->escapeInt($project->getID());
 
         $sql = "SELECT ugroup_id, mw_group_name
@@ -186,9 +215,10 @@ class MediawikiDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function addMediawikiUserGroupMapping(Project $project, $unchecked_mw_group_name, $unchecked_param_ugroup_id) {
-        $group_id = $this->da->escapeInt($project->getID());
-        $ugroup_id = $this->da->escapeInt($unchecked_param_ugroup_id);
+    public function addMediawikiUserGroupMapping(Project $project, $unchecked_mw_group_name, $unchecked_param_ugroup_id)
+    {
+        $group_id      = $this->da->escapeInt($project->getID());
+        $ugroup_id     = $this->da->escapeInt($unchecked_param_ugroup_id);
         $mw_group_name = $this->da->quoteSmart($unchecked_mw_group_name);
 
         $sql = "INSERT INTO plugin_mediawiki_ugroup_mapping (group_id, mw_group_name, ugroup_id)
@@ -196,9 +226,10 @@ class MediawikiDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function removeMediawikiUserGroupMapping(Project $project, $unchecked_mw_group_name, $unchecked_ugroup_id) {
-        $group_id = $this->da->quoteSmart($project->getID());
-        $ugroup_id = $this->da->escapeInt($unchecked_ugroup_id);
+    public function removeMediawikiUserGroupMapping(Project $project, $unchecked_mw_group_name, $unchecked_ugroup_id)
+    {
+        $group_id      = $this->da->quoteSmart($project->getID());
+        $ugroup_id     = $this->da->escapeInt($unchecked_ugroup_id);
         $mw_group_name = $this->da->quoteSmart($unchecked_mw_group_name);
 
         $sql = "DELETE FROM plugin_mediawiki_ugroup_mapping
@@ -206,7 +237,8 @@ class MediawikiDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function getMediawikiGroupsMappedForUGroups(PFUser $user, Project $project) {
+    public function getMediawikiGroupsMappedForUGroups(PFUser $user, Project $project)
+    {
         $group_id   = $this->da->escapeInt($project->getID());
         $ugroup_ids = $this->da->escapeIntImplode($user->getUgroups($project->getID(), null));
 
@@ -218,7 +250,8 @@ class MediawikiDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function getAllMediawikiGroups($project) {
+    public function getAllMediawikiGroups($project)
+    {
         $group_id = $this->da->escapeInt($project->getID());
 
         $sql = "SELECT DISTINCT tuleap_mwgroups.real_name
@@ -228,7 +261,8 @@ class MediawikiDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function deleteUserGroup($group_id, $ugroup_id) {
+    public function deleteUserGroup($group_id, $ugroup_id)
+    {
         $group_id  = $this->da->escapeInt($group_id);
         $ugroup_id = $this->da->escapeInt($ugroup_id);
 
@@ -241,46 +275,50 @@ class MediawikiDao extends DataAccessObject {
     /**
      * Reset all user permissions for a given database according to mapping
      *
-     * @param Project $project
-     * @return boolean
+     * @return bool
      */
-    public function resetUserGroups(Project $project) {
-        $group_id      = $this->da->escapeInt($project->getID());
+    public function resetUserGroups(Project $project)
+    {
+        $group_id = $this->da->escapeInt($project->getID());
 
-        $this->update("TRUNCATE TABLE " .$this->getTableName($project, 'user_groups'));
+        $this->update("TRUNCATE TABLE " . $this->getTableName($project, 'user_groups'));
         return $this->feedMediawikiUserGroupsWithTuleapMapping($project, $group_id, 0);
     }
 
-    public function resetUserGroupsForUser(PFUser $user, Project $project) {
-        $group_id       = $this->da->escapeInt($project->getID());
-        $forge_user_id  = $this->da->escapeInt($user->getId());
-        $user_name      = $this->da->quoteSmart($this->getMediawikiUserName($user->getUnixName()));
+    public function resetUserGroupsForUser(PFUser $user, Project $project)
+    {
+        $group_id      = $this->da->escapeInt($project->getID());
+        $forge_user_id = $this->da->escapeInt($user->getId());
+        $user_name     = $this->da->quoteSmart($this->getMediawikiUserName($user->getUnixName()));
 
         $this->deleteUserGroupsForUser($project, $user_name);
         $this->feedMediawikiUserGroupsWithTuleapMapping($project, $group_id, $forge_user_id);
     }
 
-    private function deleteUserGroupsForUser(Project $project, $user_name) {
-        return $this->update("DELETE " .$this->getTableName($project, 'user_groups'). "
-                              FROM " .$this->getTableName($project, 'user_groups'). "
-                                JOIN " .$this->getTableName($project, 'user'). " ON (" .$this->getTableName($project, 'user'). ".user_id = " .$this->getTableName($project, 'user_groups'). ".ug_user)
-                              WHERE " .$this->getTableName($project, 'user'). ".user_name = $user_name");
+    private function deleteUserGroupsForUser(Project $project, $user_name)
+    {
+        return $this->update("DELETE " . $this->getTableName($project, 'user_groups') . "
+                              FROM " . $this->getTableName($project, 'user_groups') . "
+                                JOIN " . $this->getTableName($project, 'user') . " ON (" . $this->getTableName($project, 'user') . ".user_id = " . $this->getTableName($project, 'user_groups') . ".ug_user)
+                              WHERE " . $this->getTableName($project, 'user') . ".user_name = $user_name");
     }
 
-    private function feedMediawikiUserGroupsWithTuleapMapping(Project $project, $group_id, $forge_user_id) {
+    private function feedMediawikiUserGroupsWithTuleapMapping(Project $project, $group_id, $forge_user_id)
+    {
         $sql = "
-            INSERT INTO " .$this->getTableName($project, 'user_groups'). "(ug_user, ug_group)
-                  (".$this->getSQLMediawikiGroupsThatMatchStaticGroups($project, $group_id, $forge_user_id).")
-            UNION (".$this->getSQLMediawikiGroupsThatMatchProjectAdmins($project, $group_id, $forge_user_id).")
-            UNION (".$this->getSQLMediawikiGroupsThatMatchProjectMembers($project, $group_id, $forge_user_id).")
-            UNION (".$this->getSQLMediawikiGroupsThatMatchRegisteredUsers($project, $group_id, $forge_user_id).")
-            UNION (".$this->getSQLMediawikiGroupsThatMatchAnonymousUsers($project, $group_id, $forge_user_id).")";
+            INSERT INTO " . $this->getTableName($project, 'user_groups') . "(ug_user, ug_group)
+                  (" . $this->getSQLMediawikiGroupsThatMatchStaticGroups($project, $group_id, $forge_user_id) . ")
+            UNION (" . $this->getSQLMediawikiGroupsThatMatchProjectAdmins($project, $group_id, $forge_user_id) . ")
+            UNION (" . $this->getSQLMediawikiGroupsThatMatchProjectMembers($project, $group_id, $forge_user_id) . ")
+            UNION (" . $this->getSQLMediawikiGroupsThatMatchRegisteredUsers($project, $group_id, $forge_user_id) . ")
+            UNION (" . $this->getSQLMediawikiGroupsThatMatchAnonymousUsers($project, $group_id, $forge_user_id) . ")";
         return $this->update($sql);
     }
 
-    private function getSQLMediawikiGroupsThatMatchStaticGroups(Project $project, $group_id, $forge_user_id) {
+    private function getSQLMediawikiGroupsThatMatchStaticGroups(Project $project, $group_id, $forge_user_id)
+    {
         $mwuser = $this->getTableName($project, 'user');
-        $sql = "SELECT $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
+        $sql    = "SELECT $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
                 FROM $mwuser
                     JOIN user ON (user.user_name = REPLACE($mwuser.user_name, ' ', '_'))
                     JOIN ugroup_user ON (ugroup_user.user_id = user.user_id)
@@ -293,9 +331,10 @@ class MediawikiDao extends DataAccessObject {
         return $sql;
     }
 
-    private function getSQLMediawikiGroupsThatMatchProjectAdmins(Project $project, $group_id, $forge_user_id) {
+    private function getSQLMediawikiGroupsThatMatchProjectAdmins(Project $project, $group_id, $forge_user_id)
+    {
         $mwuser = $this->getTableName($project, 'user');
-        $sql = "SELECT  $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
+        $sql    = "SELECT  $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
                 FROM $mwuser
                     JOIN user ON (user.user_name = REPLACE($mwuser.user_name, ' ', '_'))
                     JOIN user_group ON (user_group.user_id = user.user_id and user_group.group_id = $group_id)
@@ -307,9 +346,10 @@ class MediawikiDao extends DataAccessObject {
         return $sql;
     }
 
-    private function getSQLMediawikiGroupsThatMatchProjectMembers(Project $project, $group_id, $forge_user_id) {
+    private function getSQLMediawikiGroupsThatMatchProjectMembers(Project $project, $group_id, $forge_user_id)
+    {
         $mwuser = $this->getTableName($project, 'user');
-        $sql = "SELECT $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
+        $sql    = "SELECT $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
                 FROM $mwuser
                     JOIN user ON (user.user_name = REPLACE($mwuser.user_name, ' ', '_'))
                     JOIN user_group ON (user_group.user_id = user.user_id and user_group.group_id = $group_id)
@@ -321,9 +361,10 @@ class MediawikiDao extends DataAccessObject {
         return $sql;
     }
 
-    private function getSQLMediawikiGroupsThatMatchRegisteredUsers(Project $project, $group_id, $forge_user_id) {
+    private function getSQLMediawikiGroupsThatMatchRegisteredUsers(Project $project, $group_id, $forge_user_id)
+    {
         $mwuser = $this->getTableName($project, 'user');
-        $sql = "SELECT $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
+        $sql    = "SELECT $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
                 FROM $mwuser
                     JOIN user ON (user.user_name = REPLACE($mwuser.user_name, ' ', '_'))
                     LEFT JOIN user_group ON (user_group.user_id = user.user_id and user_group.group_id = $group_id)
@@ -336,9 +377,10 @@ class MediawikiDao extends DataAccessObject {
         return $sql;
     }
 
-    private function getSQLMediawikiGroupsThatMatchAnonymousUsers(Project $project, $group_id, $forge_user_id) {
+    private function getSQLMediawikiGroupsThatMatchAnonymousUsers(Project $project, $group_id, $forge_user_id)
+    {
         $mwuser = $this->getTableName($project, 'user');
-        $sql = "SELECT $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
+        $sql    = "SELECT $mwuser.user_id, tuleap_mwgroups.real_name AS ug_name
                 FROM $mwuser
                     JOIN user ON (user.user_name = REPLACE($mwuser.user_name, ' ', '_'))
                     LEFT JOIN user_group ON (user_group.user_id = user.user_id and user_group.group_id = $group_id)
@@ -359,18 +401,20 @@ class MediawikiDao extends DataAccessObject {
      * This behaviour is define in LocalSettings.php with User::newFromName($username);
      *
      */
-    private function getMediawikiUserName($user_name) {
+    private function getMediawikiUserName($user_name)
+    {
         $user_name_with_first_char_uppercase = ucfirst($user_name);
 
-        return str_replace ('_', ' ', $user_name_with_first_char_uppercase);
+        return str_replace('_', ' ', $user_name_with_first_char_uppercase);
     }
 
-    public function getTableName(Project $project, $table_name)
+    private function getTableName(Project $project, $table_name): string
     {
-        return $this->getMediawikiDatabaseName($project) . '.' .$this->getMediawikiTableNamePrefix($project) . $table_name;
+        return $this->da->quoteSmartSchema($this->getMediawikiDatabaseName($project)) . '.' . $this->da->quoteSmartSchema($this->getMediawikiTableNamePrefix($project) . $table_name);
     }
 
-    public function getMediawikiTableNamePrefix(Project $project) {
+    public function getMediawikiTableNamePrefix(Project $project)
+    {
         if (! isset($this->table_prefix[$project->getID()])) {
             if ($this->getMediawikiDatabaseName($project) == $this->central_database) {
                 $this->table_prefix[$project->getID()] = $this->getTableNamePrefixInCentralDb($project);
@@ -383,10 +427,11 @@ class MediawikiDao extends DataAccessObject {
 
     private function getTableNamePrefixInCentralDb(Project $project)
     {
-        return 'mw_'.$project->getID().'_';
+        return 'mw_' . $project->getID() . '_';
     }
 
-    public function getMediawikiDatabaseName(Project $project, $return_default = true) {
+    public function getMediawikiDatabaseName(Project $project, $return_default = true)
+    {
         if (! isset($this->database_name[$project->getID()])) {
             $project_id = $this->da->escapeInt($project->getID());
 
@@ -397,7 +442,7 @@ class MediawikiDao extends DataAccessObject {
                 $this->database_name[$project->getID()] = $name['database_name'];
             } elseif ($return_default) {
                 //old behaviour
-                $this->database_name[$project->getID()] = str_replace ('-', '_', self::DEDICATED_DATABASE_PREFIX . $project->getUnixName());
+                $this->database_name[$project->getID()] = str_replace('-', '_', self::DEDICATED_DATABASE_PREFIX . $project->getUnixName());
             } else {
                 $this->database_name[$project->getID()] = false;
             }
@@ -411,8 +456,8 @@ class MediawikiDao extends DataAccessObject {
         if ($this->central_database) {
             return $this->central_database;
         } else {
-            $db_name = self::DEDICATED_DATABASE_PREFIX.$project->getID();
-            if ($this->update('CREATE DATABASE '.$db_name)) {
+            $db_name = self::DEDICATED_DATABASE_PREFIX . $project->getID();
+            if ($this->update('CREATE DATABASE ' . $this->da->quoteSmartSchema($db_name))) {
                 return $db_name;
             }
             throw new Exception("Unable to create database $db_name");
@@ -427,7 +472,8 @@ class MediawikiDao extends DataAccessObject {
         return self::DEDICATED_DATABASE_TABLE_PREFIX;
     }
 
-    public function addDatabase($schema, $project_id) {
+    public function addDatabase($schema, $project_id)
+    {
         $project_id = $this->da->escapeInt($project_id);
         $schema     = $this->da->quoteSmart($schema);
 
@@ -437,12 +483,14 @@ class MediawikiDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function clearPageCacheForProject(Project $project) {
-        $sql = "DELETE FROM ".$this->getTableName($project, 'objectcache');
+    public function clearPageCacheForProject(Project $project)
+    {
+        $sql = "DELETE FROM " . $this->getTableName($project, 'objectcache');
         return $this->update($sql);
     }
 
-    public function updateDatabaseName($project_id, $db_name) {
+    public function updateDatabaseName($project_id, $db_name)
+    {
         $project_id = $this->da->escapeInt($project_id);
 
         $sql = "DELETE FROM plugin_mediawiki_database WHERE project_id = $project_id";
@@ -457,25 +505,25 @@ class MediawikiDao extends DataAccessObject {
      *
      * @return string | false
      */
-    public function findSchemaForExistingProject(Project $project) {
+    public function findSchemaForExistingProject(Project $project)
+    {
         if ($this->hasTablesInCentralDatabase($project)) {
             return $this->central_database;
         }
 
-        $dbname_with_id   = str_replace ('-', '_', self::DEDICATED_DATABASE_PREFIX . $project->getID());
-        $dbname_with_name = str_replace ('-', '_', self::DEDICATED_DATABASE_PREFIX . $project->getUnixName());
+        $dbname_with_id   = str_replace('-', '_', self::DEDICATED_DATABASE_PREFIX . $project->getID());
+        $dbname_with_name = str_replace('-', '_', self::DEDICATED_DATABASE_PREFIX . $project->getUnixName());
 
         $dbname_with_id   = $this->da->quoteSmart($dbname_with_id);
         $dbname_with_name = $this->da->quoteSmart($dbname_with_name);
 
-
-        $sql  = "SELECT SCHEMA_NAME AS 'name' FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = $dbname_with_id";
+        $sql = "SELECT SCHEMA_NAME AS 'name' FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = $dbname_with_id";
         $row = $this->retrieveFirstRow($sql);
         if ($row) {
             return $row['name'];
         }
 
-        $sql  = "SELECT SCHEMA_NAME AS 'name' FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = $dbname_with_name";
+        $sql = "SELECT SCHEMA_NAME AS 'name' FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = $dbname_with_name";
         $row = $this->retrieveFirstRow($sql);
         if ($row) {
             return $row['name'];
@@ -501,7 +549,8 @@ class MediawikiDao extends DataAccessObject {
         return false;
     }
 
-    public function getCompatibilityViewUsage($project_id) {
+    public function getCompatibilityViewUsage($project_id)
+    {
         $project_id = $this->da->escapeInt($project_id);
 
         $sql = "SELECT enable_compatibility_view FROM plugin_mediawiki_admin_options WHERE project_id = $project_id";
@@ -512,11 +561,12 @@ class MediawikiDao extends DataAccessObject {
     /**
      *
      * @param int $project_id
-     * @param bool $enable_compatibility_view
-     * @return boolean true if success
+     * @param 0|1 $enable_compatibility_view
+     * @return bool true if success
      */
-    public function updateCompatibilityViewOption($project_id, $enable_compatibility_view) {
-        $project_id = $this->da->escapeInt($project_id);
+    public function updateCompatibilityViewOption($project_id, $enable_compatibility_view)
+    {
+        $project_id                = $this->da->escapeInt($project_id);
         $enable_compatibility_view = $this->da->escapeInt($enable_compatibility_view);
 
         $sql = "INSERT INTO plugin_mediawiki_admin_options (project_id, enable_compatibility_view)
@@ -527,7 +577,8 @@ class MediawikiDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function getAccessControl($project_id, $access) {
+    public function getAccessControl($project_id, $access)
+    {
         $project_id = $this->da->escapeInt($project_id);
         $access     = $this->da->quoteSmart($access);
 
@@ -556,7 +607,8 @@ class MediawikiDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function saveAccessControl($project_id, $access, array $ugroup_ids) {
+    public function saveAccessControl($project_id, $access, array $ugroup_ids)
+    {
         $this->da->startTransaction();
 
         if (! $this->deleteAllAccessControlForProject($project_id, $access)) {
@@ -570,7 +622,8 @@ class MediawikiDao extends DataAccessObject {
         return $this->da->commit();
     }
 
-    private function deleteAllAccessControlForProject($project_id, $access) {
+    private function deleteAllAccessControlForProject($project_id, $access)
+    {
         $project_id = $this->da->escapeInt($project_id);
         $access     = $this->da->quoteSmart($access);
 
@@ -581,7 +634,8 @@ class MediawikiDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    private function insertNewAccessControlForProject($project_id, $access, array $ugroup_ids) {
+    private function insertNewAccessControlForProject($project_id, $access, array $ugroup_ids)
+    {
         $project_id = $this->da->escapeInt($project_id);
         $access     = $this->da->quoteSmart($access);
         $result     = true;
@@ -598,31 +652,36 @@ class MediawikiDao extends DataAccessObject {
         return $result;
     }
 
-    public function disableAnonymousRegisteredAuthenticated($project_id) {
+    public function disableAnonymousRegisteredAuthenticated($project_id)
+    {
         return $this->updateAccessControl(
             $project_id,
-            array(ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED),
+            [ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED],
             ProjectUGroup::PROJECT_MEMBERS
         );
     }
 
-    public function disableAuthenticated($project_id) {
+    public function disableAuthenticated($project_id)
+    {
         return $this->updateAccessControl(
             $project_id,
-            array(ProjectUGroup::AUTHENTICATED),
+            [ProjectUGroup::AUTHENTICATED],
             ProjectUGroup::REGISTERED
         );
     }
 
-    public function updateAllAnonymousToRegistered() {
+    public function updateAllAnonymousToRegistered()
+    {
         return $this->updateGlobalAccessControl(ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED);
     }
 
-    public function updateAllAuthenticatedToRegistered() {
+    public function updateAllAuthenticatedToRegistered()
+    {
         return $this->updateGlobalAccessControl(ProjectUGroup::AUTHENTICATED, ProjectUGroup::REGISTERED);
     }
 
-    private function updateAccessControl($project_id, array $old_ugroup_ids, $new_ugroup_id) {
+    private function updateAccessControl($project_id, array $old_ugroup_ids, $new_ugroup_id)
+    {
         $project_id     = $this->da->escapeInt($project_id);
         $old_ugroup_ids = $this->da->escapeIntImplode($old_ugroup_ids);
         $new_ugroup_id  = $this->da->escapeInt($new_ugroup_id);
@@ -635,7 +694,8 @@ class MediawikiDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    private function updateGlobalAccessControl($old_ugroup_id, $new_ugroup_id) {
+    private function updateGlobalAccessControl($old_ugroup_id, $new_ugroup_id)
+    {
         $old_ugroup_id = $this->da->escapeInt($old_ugroup_id);
         $new_ugroup_id = $this->da->escapeInt($new_ugroup_id);
 

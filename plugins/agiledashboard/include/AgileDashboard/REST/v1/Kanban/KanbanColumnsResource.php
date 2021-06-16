@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,11 @@
 
 namespace Tuleap\AgileDashboard\REST\v1\Kanban;
 
+use AgileDashboard_SemanticStatusNotFoundException;
+use BackendLogger;
 use Luracast\Restler\RestException;
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\HTTPFactoryBuilder;
 use Tuleap\REST\Header;
 use AgileDashboard_PermissionsManager;
 use AgileDashboard_KanbanDao;
@@ -35,22 +39,24 @@ use AgileDashboard_UserNotAdminException;
 use AgileDashboard_KanbanColumnNotRemovableException;
 use AgileDashboardStatisticsAggregator;
 use TrackerFactory;
+use Tuleap\REST\ProjectStatusVerificator;
 use UserManager;
 use PFUser;
 use AgileDashboard_KanbanUserPreferences;
 use AgileDashboard_KanbanActionsChecker;
 use Tracker_FormElementFactory;
-use Tracker_FormElement_Field_List_Bind_Static_ValueDao;
+use Tuleap\Tracker\FormElement\Field\ListFields\Bind\BindStaticValueDao;
 use Tuleap\RealTime\NodeJSClient;
 use Tracker_Permission_PermissionsSerializer;
 use Tracker_Permission_PermissionRetrieveAssignee;
 use Tuleap\RealTime\MessageDataPresenter;
 use Tuleap\AgileDashboard\KanbanRightsPresenter;
 
-class KanbanColumnsResource {
+class KanbanColumnsResource
+{
 
-    const MAX_LIMIT = 100;
-    const HTTP_CLIENT_UUID = 'HTTP_X_CLIENT_UUID';
+    public const MAX_LIMIT        = 100;
+    public const HTTP_CLIENT_UUID = 'HTTP_X_CLIENT_UUID';
 
     /** @var AgileDashboard_KanbanFactory */
     private $kanban_factory;
@@ -66,8 +72,17 @@ class KanbanColumnsResource {
 
     /** @var TrackerFactory */
     private $tracker_factory;
+    /**
+     * @var NodeJSClient
+     */
+    private $node_js_client;
+    /**
+     * @var Tracker_Permission_PermissionsSerializer
+     */
+    private $permissions_serializer;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->tracker_factory = TrackerFactory::instance();
 
         $this->kanban_factory = new AgileDashboard_KanbanFactory(
@@ -83,7 +98,7 @@ class KanbanColumnsResource {
         );
         $this->kanban_column_manager = new AgileDashboard_KanbanColumnManager(
             $kanban_column_dao,
-            new Tracker_FormElement_Field_List_Bind_Static_ValueDao(),
+            new BindStaticValueDao(),
             new AgileDashboard_KanbanActionsChecker(
                 $this->tracker_factory,
                 $permissions_manager,
@@ -93,7 +108,12 @@ class KanbanColumnsResource {
 
         $this->statistics_aggregator = new AgileDashboardStatisticsAggregator();
 
-        $this->node_js_client         = new NodeJSClient();
+        $this->node_js_client         = new NodeJSClient(
+            HttpClientFactory::createClient(),
+            HTTPFactoryBuilder::requestFactory(),
+            HTTPFactoryBuilder::streamFactory(),
+            BackendLogger::getDefaultLogger()
+        );
         $this->permissions_serializer = new Tracker_Permission_PermissionsSerializer(
             new Tracker_Permission_PermissionRetrieveAssignee(UserManager::instance())
         );
@@ -106,7 +126,8 @@ class KanbanColumnsResource {
      * /!\ Kanban REST routes are under construction and subject to changes /!\
      * </pre>
      */
-    public function options() {
+    public function options()
+    {
         Header::allowOptionsPatchDelete();
     }
 
@@ -125,13 +146,20 @@ class KanbanColumnsResource {
      * @param int                             $kanban_id Id of the Kanban {@from query}
      * @param KanbanColumnPATCHRepresentation $column    The kanban column {@from body} {@type Tuleap\AgileDashboard\REST\v1\Kanban\KanbanColumnPATCHRepresentation}
      *
-     * @throws 401
-     * @throws 404
+     * @throws RestException 401
+     * @throws RestException 403
+     * @throws RestException 404
      */
-    protected function patch($id, $kanban_id, KanbanColumnPATCHRepresentation $updated_column_properties) {
+    protected function patch($id, $kanban_id, KanbanColumnPATCHRepresentation $updated_column_properties)
+    {
         $current_user = $this->getCurrentUser();
         $kanban       = $this->getKanban($current_user, $kanban_id);
-        $column       = $this->kanban_column_factory->getColumnForAKanban($kanban, $id, $current_user);
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+            $this->getKanbanProject($kanban)
+        );
+
+        $column = $this->kanban_column_factory->getColumnForAKanban($kanban, $id, $current_user);
 
         try {
             if (isset($updated_column_properties->wip_limit) && ! $this->kanban_column_manager->updateWipLimit($current_user, $kanban, $column, $updated_column_properties->wip_limit)) {
@@ -141,7 +169,6 @@ class KanbanColumnsResource {
             if (isset($updated_column_properties->label) && ! $this->kanban_column_manager->updateLabel($current_user, $kanban, $column, $updated_column_properties->label)) {
                 throw new RestException(500);
             }
-
         } catch (AgileDashboard_KanbanColumnNotFoundException $exception) {
             throw new RestException(404, $exception->getMessage());
         } catch (AgileDashboard_UserNotAdminException $exception) {
@@ -153,14 +180,17 @@ class KanbanColumnsResource {
             $this->getProjectIdForKanban($kanban)
         );
 
-        if(isset($_SERVER[self::HTTP_CLIENT_UUID]) && $_SERVER[self::HTTP_CLIENT_UUID]) {
+        if (isset($_SERVER[self::HTTP_CLIENT_UUID]) && $_SERVER[self::HTTP_CLIENT_UUID]) {
             $tracker = $this->tracker_factory->getTrackerById($kanban->getTrackerId());
+            if ($tracker === null) {
+                throw new \RuntimeException('Tracker does not exist');
+            }
             $rights  = new KanbanRightsPresenter($tracker, $this->permissions_serializer);
-            $data    = array(
+            $data    = [
                 'id'        => $id,
                 'label'     => $updated_column_properties->label,
                 'wip_limit' => $updated_column_properties->wip_limit
-            );
+            ];
             $message = new MessageDataPresenter(
                 $current_user->getId(),
                 $_SERVER[self::HTTP_CLIENT_UUID],
@@ -188,30 +218,48 @@ class KanbanColumnsResource {
      * @param int $id           Id of the column
      * @param int $kanban_id    Id of the Kanban {@from query}
      *
-     * @throws 401
-     * @throws 404
+     * @throws RestException 401
+     * @throws RestException 403
+     * @throws RestException 404
      */
-    protected function delete($id, $kanban_id) {
+    protected function delete($id, $kanban_id)
+    {
         $current_user = $this->getCurrentUser();
         $kanban       = $this->getKanban($current_user, $kanban_id);
-        $column       = $this->kanban_column_factory->getColumnForAKanban($kanban, $id, $current_user);
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+            $this->getKanbanProject($kanban)
+        );
+
+        try {
+            $column = $this->kanban_column_factory->getColumnForAKanban($kanban, $id, $current_user);
+        } catch (AgileDashboard_KanbanColumnNotFoundException $exception) {
+            throw new RestException(404, $exception->getMessage());
+        } catch (AgileDashboard_SemanticStatusNotFoundException $exception) {
+            throw new RestException(404, $exception->getMessage());
+        }
 
         try {
             if (! $this->kanban_column_manager->deleteColumn($current_user, $kanban, $column)) {
                 throw new RestException(500);
             }
-        } catch (AgileDashboard_KanbanColumnNotFoundException $exception) {
-            throw new RestException(404, $exception->getMessage());
-        } catch (AgileDashboard_UserNotAdminException $exception) {
-            throw new RestException(401, $exception->getMessage());
-        } catch (AgileDashboard_SemanticStatusNotFoundException $exception) {
-            throw new RestException(404, $exception->getMessage());
         } catch (AgileDashboard_KanbanColumnNotRemovableException $exception) {
             throw new RestException(409, $exception->getMessage());
+        } catch (\Kanban_SemanticStatusBasedOnASharedFieldException $exception) {
+            throw new RestException(400, $exception->getMessage());
+        } catch (\Kanban_SemanticStatusNotBoundToStaticValuesException $exception) {
+            throw new RestException(400, $exception->getMessage());
+        } catch (\Kanban_SemanticStatusNotDefinedException $exception) {
+            throw new RestException(400, $exception->getMessage());
+        } catch (\Kanban_TrackerNotDefinedException $exception) {
+            throw new RestException(400, $exception->getMessage());
         }
 
-        if(isset($_SERVER[self::HTTP_CLIENT_UUID]) && $_SERVER[self::HTTP_CLIENT_UUID]) {
+        if (isset($_SERVER[self::HTTP_CLIENT_UUID]) && $_SERVER[self::HTTP_CLIENT_UUID]) {
             $tracker = $this->tracker_factory->getTrackerById($kanban->getTrackerId());
+            if ($tracker === null) {
+                throw new \RuntimeException('Tracker does not exist');
+            }
             $rights  = new KanbanRightsPresenter($tracker, $this->permissions_serializer);
             $message = new MessageDataPresenter(
                 $current_user->getId(),
@@ -227,7 +275,8 @@ class KanbanColumnsResource {
     }
 
     /** @return AgileDashboard_Kanban */
-    private function getKanban(PFUser $user, $id) {
+    private function getKanban(PFUser $user, $id)
+    {
         try {
             $kanban = $this->kanban_factory->getKanban($user, $id);
         } catch (AgileDashboard_KanbanNotFoundException $exception) {
@@ -239,14 +288,27 @@ class KanbanColumnsResource {
         return $kanban;
     }
 
-    private function getCurrentUser() {
+    private function getCurrentUser()
+    {
         return UserManager::instance()->getCurrentUser();
     }
 
     /**
      * @return int
      */
-    private function getProjectIdForKanban(AgileDashboard_Kanban $kanban) {
-        return $this->tracker_factory->getTrackerById($kanban->getTrackerId())->getGroupId();
+    private function getProjectIdForKanban(AgileDashboard_Kanban $kanban)
+    {
+        return $this->getKanbanProject($kanban)->getGroupId();
+    }
+
+
+    private function getKanbanProject(AgileDashboard_Kanban $kanban)
+    {
+        $kanban_tracker = $this->tracker_factory->getTrackerById($kanban->getTrackerId());
+        if ($kanban_tracker === null) {
+            throw new \RuntimeException('Tracker does not exist');
+        }
+
+        return $kanban_tracker->getProject();
     }
 }

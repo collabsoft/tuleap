@@ -1,9 +1,6 @@
 <?php
-
-use Tuleap\User\ForgeUserGroupPermission\UserForgeUGroupPresenter;
-
 /**
-  * Copyright (c) Enalean, 2014. All rights reserved
+  * Copyright (c) Enalean, 2014-Present. All rights reserved
   *
   * This file is a part of Tuleap.
   *
@@ -21,17 +18,14 @@ use Tuleap\User\ForgeUserGroupPermission\UserForgeUGroupPresenter;
   * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 
+use Tuleap\User\ForgeUserGroupPermission\UserForgeUGroupPresenter;
+
 class Admin_PermissionDelegationGroupPresenter
 {
     /**
      * @var int
      */
     public $id;
-
-    /**
-     * @var boolean
-     */
-    private $is_current;
 
     /**
      * @var  Tuleap\admin\PermissionDelegation\PermissionPresenter[]
@@ -51,7 +45,6 @@ class Admin_PermissionDelegationGroupPresenter
     public function __construct(UserForgeUGroupPresenter $group, array $permissions, $users)
     {
         $this->id          = $group->id;
-        $this->is_current  = false;
         $this->permissions = $permissions;
         $this->users       = $users;
         $this->group       = $group;
@@ -62,71 +55,88 @@ class Admin_PermissionDelegationGroupPresenter
         return $this->group;
     }
 
-    public function description_label() {
+    public function description_label()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'group_description');
     }
 
-    public function group_action_edit() {
+    public function group_action_edit()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'group_action_edit');
     }
 
-    public function group_action_delete() {
+    public function group_action_delete()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'group_action_delete');
     }
 
-    public function permissions_title() {
+    public function permissions_title()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'permissions_title');
     }
 
-    public function users_title() {
+    public function users_title()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'users_title');
     }
 
-    public function permissions_list_title() {
+    public function permissions_list_title()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'permissions_list_title');
     }
 
-    public function users_list_title() {
+    public function users_list_title()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'users_list_title');
     }
 
-    public function permissions_action_add() {
+    public function permissions_action_add()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'permissions_action_add');
     }
 
-    public function permissions_action_delete() {
+    public function permissions_action_delete()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'permissions_action_delete');
     }
 
-    public function users_action_add() {
+    public function users_action_add()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'users_action_add');
     }
 
-    public function users_action_delete() {
+    public function users_action_delete()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'users_action_delete');
     }
 
-    public function has_permissions() {
+    public function has_permissions()
+    {
         return count($this->permissions) > 0;
     }
 
-    public function no_permission() {
+    public function no_permission()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'no_permission');
     }
 
-    public function permissions() {
+    public function permissions()
+    {
         return $this->permissions;
     }
 
-    public function has_users() {
+    public function has_users()
+    {
         return count($this->users) > 0;
     }
 
-    public function no_user() {
+    public function no_user()
+    {
         return $GLOBALS['Language']->getText('admin_permission_delegation', 'no_user');
     }
 
-    public function users() {
+    public function users()
+    {
         return $this->users;
     }
 }

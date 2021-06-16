@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,11 @@
 
 use Tuleap\Mail\MailFilter;
 
-class MailBuilder {
+class MailBuilder
+{
 
-    const TRUNCATED_SUBJECT_TEMPLATE = 'subject';
-    const TRUNCATED_BODY_TEMPLATE    = 'body';
+    public const TRUNCATED_SUBJECT_TEMPLATE = 'subject';
+    public const TRUNCATED_BODY_TEMPLATE    = 'body';
 
     /** @var TemplateRenderer */
     private $renderer;
@@ -45,14 +46,12 @@ class MailBuilder {
     }
 
     /**
-     * @param Project $project
-     * @param Notification $notification
-     * @param MailEnhancer $mail_enhancer
      *
      * @return bool
      */
-    public function buildAndSendEmail(Project $project, Notification $notification, MailEnhancer $mail_enhancer) {
-        $sent_status = true;
+    public function buildAndSendEmail(Project $project, Notification $notification, MailEnhancer $mail_enhancer)
+    {
+        $sent_status     = true;
         $filtered_emails = $this->mail_filter->filter($project, $notification->getEmails());
         foreach ($filtered_emails as $email) {
             $mail = $this->buildEmail($project, $notification, $mail_enhancer, $email);
@@ -63,7 +62,8 @@ class MailBuilder {
         return $sent_status;
     }
 
-    private function buildEmail(Project $project, Notification $notification, MailEnhancer $mail_enhancer, $email) {
+    private function buildEmail(Project $project, Notification $notification, MailEnhancer $mail_enhancer, $email)
+    {
         $mail = $this->getMailSender();
         $mail->setFrom(ForgeConfig::get('sys_noreply'));
         $mail->setTo($email);
@@ -102,7 +102,8 @@ class MailBuilder {
         return $mail->getTo() !== null || $mail->getCc() !== null || $mail->getBcc() !== null;
     }
 
-    protected function getMailSender() {
+    protected function getMailSender()
+    {
         return new Codendi_Mail();
     }
 }

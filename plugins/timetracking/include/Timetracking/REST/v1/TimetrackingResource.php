@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018-Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -24,42 +24,40 @@
 
 namespace Tuleap\Timetracking\REST\v1;
 
-use DateTime;
 use Luracast\Restler\RestException;
 use Tracker_ArtifactFactory;
 use Tuleap\REST\AuthenticatedResource;
 use Tuleap\REST\Header;
-use Tuleap\REST\JsonDecoder;
-use Tuleap\REST\QueryParameterException;
-use Tuleap\REST\QueryParameterParser;
-use Tuleap\REST\UserManager;
+use Tuleap\REST\ProjectStatusVerificator;
+use Tuleap\Timetracking\Admin\AdminDao;
 use Tuleap\Timetracking\Admin\TimetrackingUgroupDao;
 use Tuleap\Timetracking\Admin\TimetrackingUgroupRetriever;
 use Tuleap\Timetracking\Exceptions\TimeTrackingBadTimeFormatException;
 use Tuleap\Timetracking\Exceptions\TimeTrackingMissingTimeException;
 use Tuleap\Timetracking\Exceptions\TimeTrackingNotAllowedToAddException;
 use Tuleap\Timetracking\Exceptions\TimeTrackingBadDateFormatException;
+use Tuleap\Timetracking\Exceptions\TimeTrackingNotAllowedToDeleteException;
+use Tuleap\Timetracking\Exceptions\TimeTrackingNotAllowedToEditException;
+use Tuleap\Timetracking\Exceptions\TimeTrackingNotBelongToUserException;
 use Tuleap\Timetracking\Permissions\PermissionsRetriever;
+use Tuleap\Timetracking\REST\v1\Exception\InvalidArgumentException;
 use Tuleap\Timetracking\Time\TimeChecker;
 use Tuleap\Timetracking\Time\TimeDao;
 use Tuleap\Timetracking\Time\TimeRetriever;
 use Tuleap\Timetracking\Time\TimeUpdater;
+use UGroupManager;
+use UserManager;
 
 class TimetrackingResource extends AuthenticatedResource
 {
-    const DEFAULT_OFFSET  = 0;
-    const MAX_LIMIT       = 50;
-    const MAX_TIMES_BATCH = 100;
+    public const DEFAULT_OFFSET  = 0;
+    public const MAX_LIMIT       = 50;
+    public const MAX_TIMES_BATCH = 100;
 
     /**
      * @var UserManager
      */
-    private $rest_user_manager;
-
-    /**
-     * @var TimetrackingRepresentationBuilder
-     */
-    private $representation_builder;
+    private $user_manager;
 
     /**
      * @var TimeRetriever
@@ -73,19 +71,21 @@ class TimetrackingResource extends AuthenticatedResource
 
     public function __construct()
     {
-        $this->representation_builder = new TimetrackingRepresentationBuilder();
-        $time_dao                     = new TimeDao();
-        $permissionsRetriever         = new PermissionsRetriever((
+        $time_dao             = new TimeDao();
+        $permissionsRetriever = new PermissionsRetriever((
         new TimetrackingUgroupRetriever(
-            new TimetrackingUgroupDao()
+            new TimetrackingUgroupDao(),
+            new UGroupManager()
         )
         ));
-        $this->time_retriever         = new TimeRetriever(
+        $this->time_retriever = new TimeRetriever(
             $time_dao,
-            $permissionsRetriever
+            $permissionsRetriever,
+            new AdminDao(),
+            \ProjectManager::instance()
         );
-        $this->time_updater           = new TimeUpdater($time_dao, new TimeChecker(), $permissionsRetriever);
-        $this->rest_user_manager      = UserManager::build();
+        $this->time_updater   = new TimeUpdater($time_dao, new TimeChecker(), $permissionsRetriever);
+        $this->user_manager   = UserManager::instance();
     }
 
     /**
@@ -97,70 +97,37 @@ class TimetrackingResource extends AuthenticatedResource
     }
 
     /**
-     * Get Timetracking times
+     * Retrieve time recorded on something
      *
-     * Get the times in all projects for the current user and a given time period
+     * As of today it only works on one artifact so the query should looks like <code>{ "artifact_id": 123 }</code>
      *
-     * <br><br>
-     * Notes on the query parameter
-     * <ol>
-     *  <li>You have to specify a start_date and an end_date</li>
-     *  <li>One day minimum between the two dates</li>
-     *  <li>end_date must be greater than start_date</li>
-     *  <li>Dates must be in ISO date format</li>
-     * </ol>
-     *
-     * Example of query:
-     * <br><br>
-     * {
-     *   "start_date": "2018-03-01T00:00:00+01",
-     *   "end_date"  : "2018-03-31T00:00:00+01"
-     * }
      * @url GET
      * @access protected
      *
-     * @param string $query JSON object of search criteria properties {@from query}
-     * @param int    $limit     Number of elements displayed per page {@from path}{@min 1}{@max 100}
-     * @param int    $offset    Position of the first element to display {@from path}{@min 0}
+     * @param string $query A query
+     * @return array {@type Tuleap\Timetracking\REST\v1\ArtifactTimeRepresentation}
      *
-     * @return array {@type TimetrackingRepresentation}
-     * @throws RestException
+     * @throws RestException 401
+     * @throws RestException 403
+     * @throws RestException 400
      */
-    protected function get($query, $limit = self::MAX_TIMES_BATCH, $offset = self::DEFAULT_OFFSET)
+    protected function getTrackedTimeOnArtifact($query)
     {
         $this->checkAccess();
-
         $this->sendAllowHeaders();
-
-        $query_parameter_parser = new QueryParameterParser(new JsonDecoder());
-
         try {
-            $start_date = $query_parameter_parser->getString($query, 'start_date');
-            $end_date   = $query_parameter_parser->getString($query, 'end_date');
-        } catch (QueryParameterException $ex) {
-            throw new RestException(400, $ex->getMessage());
+            $current_user = $this->user_manager->getCurrentUser();
+            $retriever    = ArtifactTimeRetriever::build();
+            return $retriever->getArtifactTime($current_user, $query);
+        } catch (\User_StatusInvalidException $exception) {
+            throw new RestException(401);
+        } catch (\Rest_Exception_InvalidTokenException $exception) {
+            throw new RestException(401);
+        } catch (\User_PasswordExpiredException $exception) {
+            throw new RestException(401);
+        } catch (InvalidArgumentException $exception) {
+            throw new RestException(400, $exception->getMessage());
         }
-
-        $this->checkTimePeriodIsValid($start_date, $end_date);
-
-        $current_user = $this->rest_user_manager->getCurrentUser();
-
-        $paginated_times = $this->time_retriever->getPaginatedTimesForUserInTimePeriodByArtifact(
-            $current_user,
-            $start_date,
-            $end_date,
-            $limit,
-            $offset
-        );
-
-        Header::sendPaginationHeaders(
-            $limit,
-            $offset,
-            $paginated_times->getTotalSize(),
-            self::MAX_TIMES_BATCH
-        );
-
-        return $this->representation_builder->buildPaginatedTimes($paginated_times->getTimes());
     }
 
     /**
@@ -184,9 +151,10 @@ class TimetrackingResource extends AuthenticatedResource
      * @param TimetrackingPOSTRepresentation $item_representation The created Time {@from body} {@type Tuleap\Timetracking\REST\v1\TimetrackingPOSTRepresentation}
      * @return TimetrackingRepresentation
      *
-     * @throws 400
-     * @throws 401
-     * @throws 404
+     * @throws RestException 400
+     * @throws RestException 401
+     * @throws RestException 403
+     * @throws RestException 404
      */
     protected function addTime(TimetrackingPOSTRepresentation $item)
     {
@@ -194,15 +162,17 @@ class TimetrackingResource extends AuthenticatedResource
 
         $this->sendAllowHeaders();
 
-        $current_user = $this->rest_user_manager->getCurrentUser();
+        $current_user = $this->user_manager->getCurrentUser();
 
         $artifact = $this->getArtifact($current_user, $item->artifact_id);
 
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+            $artifact->getTracker()->getProject()
+        );
+
         try {
-            $time_representation = new TimetrackingRepresentation();
             $this->time_updater->addTimeForUserInArtifact($current_user, $artifact, $item->date_time, $item->time_value, $item->step);
-            $time_representation->build($this->time_retriever->getLastTime($current_user, $artifact));
-            return $time_representation;
+            return TimetrackingRepresentation::fromTime($this->time_retriever->getLastTime($current_user, $artifact));
         } catch (TimeTrackingBadTimeFormatException $e) {
             throw new RestException(400, $e->getMessage());
         } catch (TimeTrackingMissingTimeException $e) {
@@ -230,14 +200,15 @@ class TimetrackingResource extends AuthenticatedResource
      *
      * @url PUT {id}
      * @status 201
-     * @param int $time_id Id of the time
-     * @param TimetrackingPUTRepresentation $item_representation The edited Time {@from body} {@type Tuleap\Timetracking\REST\v1\TimetrackingPUTRepresentation}
+     * @param int $id Id of the time
+     * @param TimetrackingPUTRepresentation $item The edited Time {@from body} {@type Tuleap\Timetracking\REST\v1\TimetrackingPUTRepresentation}
      *
      * @return TimetrackingRepresentation
      *
-     * @throws 400
-     * @throws 401
-     * @throws 404
+     * @throws RestException 400
+     * @throws RestException 401
+     * @throws RestException 403
+     * @throws RestException 404
      */
     protected function updateTime($id, TimetrackingPUTRepresentation $item)
     {
@@ -245,19 +216,21 @@ class TimetrackingResource extends AuthenticatedResource
 
         $this->sendAllowHeaders();
 
-        $current_user = $this->rest_user_manager->getCurrentUser();
+        $current_user = $this->user_manager->getCurrentUser();
+        $time         = $this->time_retriever->getTimeByIdForUser($current_user, $id);
 
-        $time = $this->time_retriever->getTimeByIdForUser($current_user, $id);
         if (! $time) {
             throw new RestException(404, dgettext('tuleap-timetracking', "This time does not exist"));
         }
         $artifact = $this->getArtifact($current_user, $time->getArtifactId());
 
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+            $artifact->getTracker()->getProject()
+        );
+
         try {
-            $time_representation = new TimetrackingRepresentation();
             $this->time_updater->updateTime($current_user, $artifact, $time, $item->date_time, $item->time_value, $item->step);
-            $time_representation->build($this->time_retriever->getTimeByIdForUser($current_user, $id));
-            return $time_representation;
+            return TimetrackingRepresentation::fromTime($this->time_retriever->getTimeByIdForUser($current_user, $id));
         } catch (TimeTrackingBadTimeFormatException $e) {
             throw new RestException(400, $e->getMessage());
         } catch (TimeTrackingMissingTimeException $e) {
@@ -282,8 +255,9 @@ class TimetrackingResource extends AuthenticatedResource
      *
      * @param int $id Id of the time
      *
-     * @throws 401
-     * @throws 404
+     * @throws RestException 401
+     * @throws RestException 403
+     * @throws RestException 404
      */
     protected function delete($id)
     {
@@ -291,10 +265,14 @@ class TimetrackingResource extends AuthenticatedResource
 
         $this->sendAllowHeaders();
 
-        $current_user = $this->rest_user_manager->getCurrentUser();
+        $current_user = $this->user_manager->getCurrentUser();
 
         $time     = $this->getTime($current_user, $id);
         $artifact = $this->getArtifact($current_user, $time->getArtifactId());
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+            $artifact->getTracker()->getProject()
+        );
 
         try {
             $this->time_updater->deleteTime($current_user, $artifact, $time);
@@ -308,25 +286,6 @@ class TimetrackingResource extends AuthenticatedResource
     private function sendAllowHeaders()
     {
         Header::allowOptionsGetPutPostDelete();
-    }
-
-    private function checkTimePeriodIsValid($start_date, $end_date)
-    {
-        $period_start = DateTime::createFromFormat(DateTime::ISO8601, $start_date);
-        $period_end   = DateTime::createFromFormat(DateTime::ISO8601, $end_date);
-
-        if (! $period_start || ! $period_end) {
-            throw new RestException(400, "Please provide valid ISO-8601 dates");
-        }
-
-        $period_length = $period_start->diff($period_end);
-
-        if ($period_length->days < 1) {
-            throw new RestException(400, 'There must be one day offset between the both dates');
-        }
-        if ($period_start > $period_end) {
-            throw new RestException(400, "end_date must be greater than start_date");
-        }
     }
 
     private function getArtifact(\PFUser $user, $artifact_id)

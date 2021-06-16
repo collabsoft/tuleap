@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -51,7 +51,7 @@ class FileUniDiffBuilder
         $new_offset     = 0;
         $unidiff_offset = 0;
 
-        $i = $this->getUniDiffStartLineIndex($raw_diff);
+        $i              = $this->getUniDiffStartLineIndex($raw_diff);
         $raw_diff_count = count($raw_diff);
         while ($i < $raw_diff_count) {
             $line = $raw_diff[$i];
@@ -72,11 +72,11 @@ class FileUniDiffBuilder
             if ($type == $this->REMOVED) {
                 $old_offset += 1;
                 $diff->addLine(UniDiffLine::REMOVED, $unidiff_offset, $old_offset, null, $line);
-            } else if ($type == $this->KEPT) {
+            } elseif ($type == $this->KEPT) {
                 $new_offset += 1;
                 $old_offset += 1;
                 $diff->addLine(UniDiffLine::KEPT, $unidiff_offset, $old_offset, $new_offset, $line);
-            } else if ($type == $this->ADDED) {
+            } elseif ($type == $this->ADDED) {
                 $new_offset += 1;
                 $diff->addLine(UniDiffLine::ADDED, $unidiff_offset, null, $new_offset, $line);
             }
@@ -86,7 +86,7 @@ class FileUniDiffBuilder
 
     private function getUniDiffStartLineIndex($raw_diff)
     {
-        $i = 0;
+        $i              = 0;
         $raw_diff_count = count($raw_diff);
         while ($i < $raw_diff_count) {
             $line = substr($raw_diff[$i], 0, 2);

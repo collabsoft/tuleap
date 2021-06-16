@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,14 +25,14 @@ use Tuleap\Git\Gitolite\SSHKey\Key;
 
 class GitoliteAdmin extends ArrayIterator implements IProvideKey
 {
-    const GITOLITE_ADMIN_KEY_NAME = 'id_rsa_gl-adm';
-    const GITOLITE_ADMIN_KEY_FILE = 'id_rsa_gl-adm.pub';
-    const EL6_HOME                = '/home/codendiadm';
-    const EL7_HOME                = '/var/lib/tuleap';
+    public const GITOLITE_ADMIN_KEY_NAME = 'id_rsa_gl-adm';
+    public const GITOLITE_ADMIN_KEY_FILE = 'id_rsa_gl-adm.pub';
+    public const EL6_HOME                = '/home/codendiadm';
+    public const EL7_HOME                = '/var/lib/tuleap';
 
     public function __construct()
     {
-        $keys = array($this->getGitoliteAdminKey());
+        $keys = [$this->getGitoliteAdminKey()];
         parent::__construct($keys);
     }
 
@@ -63,6 +63,6 @@ class GitoliteAdmin extends ArrayIterator implements IProvideKey
                 return $file_path;
             }
         }
-        throw new AccessException("No valid ".self::GITOLITE_ADMIN_KEY_FILE." found");
+        throw new AccessException("No valid " . self::GITOLITE_ADMIN_KEY_FILE . " found");
     }
 }

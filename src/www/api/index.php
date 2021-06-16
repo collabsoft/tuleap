@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,89 +18,56 @@
  */
 
 define('IS_SCRIPT', true);
+require_once __DIR__ . '/../include/pre.php';
+require_once __DIR__ . '/../project/admin/permissions.php';
 
-require_once 'pre.php';
-require_once 'www/project/admin/permissions.php';
-
+use Tuleap\BrowserDetection\DetectedBrowser;
+use Tuleap\Instrument\Prometheus\Prometheus;
+use Tuleap\Request\RequestInstrumentation;
+use Tuleap\REST\BasicAuthentication;
+use Tuleap\REST\RestlerFactory;
+use Tuleap\REST\TuleapRESTAuthentication;
 use Tuleap\REST\GateKeeper;
-use Luracast\Restler\Restler;
-use Luracast\Restler\Explorer\v2\Explorer;
-use Luracast\Restler\Defaults;
-use Luracast\Restler\Format\JsonFormat;
+use Laminas\HttpHandlerRunner\Emitter\SapiEmitter;
 
-if (! headers_sent()) {
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Allow-Headers: Accept, Accept-Charset, Authorization, Content-Type, Origin, X-Auth-UserId, X-Auth-Token, X-Client-Uuid');
-    header('Access-Control-Expose-Headers: X-PAGINATION-SIZE, X-PAGINATION-LIMIT-MAX, X-PAGINATION-LIMIT');
-}
+$message_factory = \Tuleap\Http\HTTPFactoryBuilder::responseFactory();
+$request_handler = new \Tuleap\Http\Server\AlwaysSuccessfulRequestHandler($message_factory);
+$cors_middleware = new \Tuleap\REST\TuleapRESTCORSMiddleware();
+$minimal_request = new \Tuleap\Http\Server\NullServerRequest();
+$response        = $cors_middleware->process($minimal_request, $request_handler);
+(new SapiEmitter())->emit($response);
 
+$request_instrumentation = new RequestInstrumentation(Prometheus::instance());
 
 $http_request = HTTPRequest::instance();
 try {
     $gate_keeper = new GateKeeper();
     $gate_keeper->assertAccess(UserManager::instance()->getCurrentUser(), $http_request);
 } catch (Exception $exception) {
-    \Tuleap\Request\RequestInstrumentation::incrementRest(403);
+    $request_instrumentation->incrementRest(
+        403,
+        DetectedBrowser::detectFromTuleapHTTPRequest($http_request)
+    );
     header("HTTP/1.0 403 Forbidden");
-    $GLOBALS['Response']->sendJSON(array(
+    $GLOBALS['Response']->sendJSON([
         'error' => $exception->getMessage()
-    ));
+    ]);
     die();
 }
 
 preg_match('/^\/api\/v(\d+)\//', $_SERVER['REQUEST_URI'], $matches);
-$version = floor(file_get_contents(__DIR__ .'/VERSION'));
+$version = 1;
 if ($matches && isset($matches[1]) && $matches[1] == 2) {
     $version = 2;
 }
 
-// Do not put .json at the end of the resource
-Explorer::$useFormatAsExtension = false;
+$restler = (new RestlerFactory(new RestlerCache(), new Tuleap\REST\ResourcesInjector(), EventManager::instance()))->buildRestler($version);
 
-//Do not hide the API
-Explorer::$hideProtected = false;
-// Use /api/v1/projects uri
-Defaults::$useUrlBasedVersioning = true;
-
-// Do not unescape unicode or it will break the api (see request #9162)
-JsonFormat::$unEscapedUnicode = false;
-
-if (ForgeConfig::get('DEBUG_MODE')) {
-    $restler = new Restler(false, true);
-    $restler->setSupportedFormats('JsonFormat', 'XmlFormat', 'HtmlFormat');
-} else {
-    $restler_cache = new RestlerCache();
-    Defaults::$cacheDirectory = $restler_cache->getAndInitiateCacheDirectory($version);
-    $restler = new Restler(true, false);
-    $restler->setSupportedFormats('JsonFormat', 'XmlFormat');
-}
-
-// Do not let Restler find itself the domain, when behind a reverse proxy, it's
-// a mess.
-$restler->setBaseUrls($http_request->getServerUrl());
-$restler->setAPIVersion($version);
-
-$core_resources_injector = new Tuleap\REST\ResourcesInjector();
-$core_resources_injector->populate($restler);
-
-switch ($version) {
-    case 2:
-        $event = Event::REST_RESOURCES_V2;
-        break;
-    default:
-        $event = Event::REST_RESOURCES;
-        break;
-}
-
-EventManager::instance()->processEvent($event, array('restler' => $restler));
-$restler->addAPIClass('Explorer');
-
-$restler->addAuthenticationClass('\\Tuleap\\REST\\TokenAuthentication');
-$restler->addAuthenticationClass('\\Tuleap\\REST\\BasicAuthentication');
-
-$restler->onComplete(function() use ($restler) {
-    \Tuleap\Request\RequestInstrumentation::incrementRest($restler->responseCode);
+$restler->onComplete(static function () use ($restler, $request_instrumentation, $http_request) {
+    $request_instrumentation->incrementRest(
+        $restler->responseCode,
+        DetectedBrowser::detectFromTuleapHTTPRequest($http_request)
+    );
 
     if ($restler->exception === null || $restler->responseCode !== 500) {
         return;
@@ -110,8 +77,15 @@ $restler->onComplete(function() use ($restler) {
     if ($initial_exception === null) {
         return;
     }
-    $logger = new \Tuleap\REST\RESTLogger();
-    $logger->error('Unhandled exception', $initial_exception);
+    $logger = \Tuleap\REST\RESTLogger::getLogger();
+    $logger->error('Unhandled exception', ['exception' => $initial_exception]);
 });
+
+// Do not let Restler find itself the domain, when behind a reverse proxy, it's
+// a mess.
+$restler->setBaseUrls($http_request->getServerUrl());
+
+$restler->addAuthenticationClass('\\' . TuleapRESTAuthentication::class);
+$restler->addAuthenticationClass('\\' . BasicAuthentication::class);
 
 $restler->handle();

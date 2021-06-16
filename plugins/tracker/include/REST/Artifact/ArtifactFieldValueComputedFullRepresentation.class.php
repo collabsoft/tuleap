@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -40,7 +40,7 @@ class ArtifactFieldComputedValueFullRepresentation
     public $label;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $is_autocomputed;
 
@@ -62,6 +62,5 @@ class ArtifactFieldComputedValueFullRepresentation
         $this->is_autocomputed = JsonCast::toBoolean($is_autocomputed);
         $this->value           = JsonCast::toFloat($autocomputed_value);
         $this->manual_value    = JsonCast::toFloat($manual_value);
-
     }
 }

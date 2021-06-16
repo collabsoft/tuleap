@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,6 +20,7 @@
 
 use Tuleap\Cardwall\AccentColor\AccentColorBuilder;
 use Tuleap\Cardwall\BackgroundColor\BackgroundColorBuilder;
+use Tuleap\Tracker\Artifact\Artifact;
 
 /**
  * Builds instances of CardInCellPresenterNode
@@ -63,7 +64,8 @@ class Cardwall_CardInCellPresenterBuilder
     /**
      * @return Cardwall_CardInCellPresenter
      */
-    public function getCardInCellPresenter(Tracker_Artifact $artifact, $swimline_id = 0) {
+    public function getCardInCellPresenter(Artifact $artifact, $swimline_id = 0)
+    {
         return $this->card_in_cell_presenter_factory->getCardInCellPresenter(
             $this->getCardPresenter($artifact, $swimline_id)
         );
@@ -72,8 +74,9 @@ class Cardwall_CardInCellPresenterBuilder
     /**
      * @return Cardwall_CardInCellPresenter[]
      */
-    public function getCardInCellPresenters(array $artifacts, $swimline_id = 0) {
-        $presenters = array();
+    public function getCardInCellPresenters(array $artifacts, $swimline_id = 0)
+    {
+        $presenters = [];
 
         foreach ($artifacts as $artifact) {
             $presenters[] = $this->getCardInCellPresenter($artifact, $swimline_id);
@@ -82,7 +85,7 @@ class Cardwall_CardInCellPresenterBuilder
         return $presenters;
     }
 
-    private function getCardPresenter(Tracker_Artifact $artifact, $swimline_id)
+    private function getCardPresenter(Artifact $artifact, $swimline_id)
     {
         $color                = $this->accent_color_builder->build($artifact, $this->user);
         $card_fields_semantic = Cardwall_Semantic_CardFields::load($artifact->getTracker());

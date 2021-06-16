@@ -1,0 +1,258 @@
+/**
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+@use '../../../../../../../src/themes/tlp/src/scss/variables/colors/swatch-colors';
+
+@import "../../card-fields";
+@import "backlog-item-moves";
+
+.backlog-item-details {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    width: 100%;
+    transition: border-color 75ms ease-in-out, background-color 75ms ease-in-out;
+    border: 1px solid var(--tlp-ui-border-normal);
+    border-radius: 3px;
+    background: var(--tlp-ui-white);
+    cursor: move;
+
+    @each $color-name, $colors in swatch-colors.$tlp-swatch-color-map {
+        &.#{$color-name} {
+            border-top-color: map-get($colors, "border");
+            border-right-color: map-get($colors, "border");
+            border-bottom-color: map-get($colors, "border");
+            background: map-get($colors, "secondary");
+
+            .backlog-item-details-id,
+            .extra-card-field-title,
+            .backlog-item-details-effort-container-content-no-initial-effort,
+            .backlog-item-details-parent,
+            .backlog-item-details-parent-link {
+                color: map-get($colors, "text");
+            }
+
+            .backlog-item-details-effort-container-content-no-initial-effort {
+                $background-color-no-initial-effort: darken(map-get($colors, "secondary"), 5%);
+                border-color: $background-color-no-initial-effort;
+                background: $background-color-no-initial-effort;
+            }
+
+            .backlog-item-details-parent {
+                border-color: transparent;
+                background: transparent;
+            }
+        }
+    }
+
+    &.closed {
+        border-color: var(--tlp-ui-border-normal-transparent-50);
+        background: transparent;
+
+        .backlog-item-details-id {
+            color: var(--tlp-ui-dimmed-transparent-50);
+        }
+
+        .backlog-item-details-type-border,
+        .backlog-item-details-title,
+        .backlog-item-details-parent,
+        .backlog-item-details-effort-container,
+        .extra-card-fields {
+            opacity: 0.5;
+        }
+    }
+
+    @keyframes blink {
+        0% {
+            border-color: var(--tlp-ui-border-normal);
+            background: var(--tlp-ui-white);
+        }
+
+        50% {
+            border-color: var(--tlp-ui-info);
+            background: var(--tlp-ui-info-transparent-90);
+        }
+
+        100% {
+            border-color: var(--tlp-ui-border-normal);
+            background: var(--tlp-ui-white);
+        }
+    }
+
+    &.updating {
+        transition: border-color 75ms ease-in-out, background-color 75ms ease-in-out;
+        animation: blink 1200ms ease-in-out alternate infinite;
+    }
+
+    &.updated {
+        transition: border-color 75ms ease-in-out, background-color 75ms ease-in-out;
+        animation: pulse 500ms ease-in-out;
+        border-color: var(--tlp-ui-success);
+        background: var(--tlp-ui-success-transparent-90);
+    }
+
+    &.created {
+        transition: border-color 75ms ease-in-out, background-color 75ms ease-in-out;
+        animation: pulse 500ms ease-in-out;
+        border-color: var(--tlp-ui-success);
+        background: var(--tlp-ui-success-transparent-90);
+    }
+
+    &:hover,
+    &.moving-to {
+        > .backlog-item-details-moves {
+            transition: opacity 100ms ease-in-out 500ms;
+            opacity: 1;
+        }
+
+        > .backlog-item-details-content {
+            > .backlog-item-details-parent,
+            > .card-accessibility,
+            > .backlog-item-details-effort-container {
+                transform: translateX(-15px);
+            }
+        }
+    }
+}
+
+.backlog-item-details-type-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    border-left-width: 4px;
+    border-left-style: solid;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+
+    @each $color-name, $colors in swatch-colors.$tlp-swatch-color-map {
+        &.#{$color-name} {
+            border-left-color: map-get($colors, "primary");
+        }
+    }
+}
+
+.backlog-item-details-content {
+    display: flex;
+    flex: 1 0 auto;
+    align-items: baseline;
+    width: 100%;
+    padding: var(--tlp-small-spacing) 0 var(--tlp-small-spacing) 0;
+}
+
+.card-accessibility {
+    flex: 0 0 auto;
+    align-self: stretch;
+    width: 20px;
+    margin: 0 0 0 5px;
+    transition: transform 100ms ease-in-out 500ms;
+
+    @each $color-name, $colors in swatch-colors.$tlp-swatch-color-map {
+        &.#{$color-name} {
+            opacity: 0.5;
+            background-color: map-get($colors, "text");
+            mask-image: url("#{map-get($colors, 'pattern')}");
+        }
+    }
+}
+
+.backlog-item-details-id {
+    display: flex;
+    flex: 0 0 auto;
+    margin: 0 7px 0 0;
+    padding: 0 var(--tlp-small-spacing) 0 var(--tlp-small-spacing);
+    color: var(--tlp-ui-dimmed);
+    font-size: 12px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+
+    &:hover {
+        opacity: 0.7;
+        text-decoration: none;
+    }
+}
+
+.backlog-item-details-id-icon {
+    visibility: hidden;
+    margin: 0 0 0 4px;
+}
+
+.tlp-dropdown > .backlog-item-details-id > .backlog-item-details-id-icon {
+    visibility: visible;
+}
+
+.backlog-item-details-title {
+    display: block;
+    flex: 1 1 auto;
+    padding-right: var(--tlp-small-spacing);
+    font-size: 14px;
+    line-height: 18px;
+}
+
+$backlog-item-details-parent-color: var(--project-color, var(--tlp-ui-dimmed-darker-10));
+$backlog-item-details-parent-background: var(--project-color-background, var(--tlp-ui-border-normal));
+
+.backlog-item-details-parent {
+    display: flex;
+    position: relative;
+    left: 0;
+    flex: 0 1 auto;
+    flex-direction: column;
+    align-self: center;
+    margin: 0 5px 0 13px;
+    padding: 3px 5px;
+    transition: transform 100ms ease-in-out 500ms;
+    border: 1px hidden;
+    border-radius: 3px;
+    background: $backlog-item-details-parent-background;
+    fill: $backlog-item-details-parent-color;
+    color: $backlog-item-details-parent-color;
+    font-size: 12px;
+
+    &:hover,
+    &:focus {
+        text-decoration: none;
+
+        > span {
+            opacity: 0.7;
+        }
+    }
+}
+
+.backlog-item-details-parent-link {
+    color: $backlog-item-details-parent-color;
+
+    &:hover {
+        text-decoration: none;
+    }
+}
+
+.backlog-item-details-parent-project {
+    margin-bottom: 2px;
+}
+
+.backlog-item-details-effort-container {
+    position: relative;
+    left: 0;
+    flex: 0 0 auto;
+    min-width: 40px;
+    margin: 0 5px;
+    transition: transform 100ms ease-in-out 500ms;
+    text-align: right;
+}

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -46,7 +46,7 @@ class ProjectLabelRequestDataValidator
 
     private function extractProjectLabelsIds(array $project_labels)
     {
-        $ids = array();
+        $ids = [];
 
         foreach ($project_labels as $label) {
             $ids[] = $label['id'];

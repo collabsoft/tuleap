@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean 2016-2017. All rights reserved.
+ * Copyright (c) Enalean 2016 - Present. All rights reserved.
  * Copyright (c) STMicroelectronics, 2010. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -22,7 +22,8 @@
 /**
  * Check the URL validity for WebDAV plugin
  */
-class Webdav_URLVerification extends URLVerification {
+class Webdav_URLVerification extends URLVerification
+{
 
     protected $webdavHost;
 
@@ -41,7 +42,8 @@ class Webdav_URLVerification extends URLVerification {
      *
      * @return String
      */
-    function getWebDAVHost() {
+    public function getWebDAVHost()
+    {
         return $this->webdavHost;
     }
 
@@ -63,11 +65,9 @@ class Webdav_URLVerification extends URLVerification {
      *
      * @return void
      */
-    public function assertValidUrl($server, HTTPRequest $request, Project $project = null) {
-        if (strcmp($server['HTTP_HOST'], $this->getWebDAVHost()) == 0 
-            && strcmp($this->getWebDAVHost(), $GLOBALS['sys_default_domain']) != 0
-            && strcmp($this->getWebDAVHost(), ForgeConfig::get('sys_https_host')) != 0
-            ) {
+    public function assertValidUrl($server, HTTPRequest $request, ?Project $project = null)
+    {
+        if (self::isRequestForDedicatedWebdavHost($server, $this->getWebDAVHost())) {
             if (! $request->isSecure() && ForgeConfig::get('sys_https_host')) {
                 $this->forbiddenError();
             }
@@ -76,14 +76,22 @@ class Webdav_URLVerification extends URLVerification {
         }
     }
 
+    public static function isRequestForDedicatedWebdavHost(array $server, string $webdav_host): bool
+    {
+        return $webdav_host
+            && strcmp($server['HTTP_HOST'] ?? '', $webdav_host) === 0
+            && strcmp($webdav_host, ForgeConfig::get('sys_default_domain')) !== 0
+            && strcmp($webdav_host, ForgeConfig::get('sys_https_host')) !== 0;
+    }
+
     /**
      * Used to return HTTP/1.1 403 Forbidden
      *
      * @return void
      */
-    function forbiddenError() {
+    public function forbiddenError()
+    {
         header('HTTP/1.1 403 Forbidden: HTTPS required instead of HTTP');
         exit;
     }
-
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,20 +24,24 @@ use FRSPackageFactory;
 use FRSRelease;
 use FRSReleaseFactory;
 use Luracast\Restler\RestException;
+use PermissionsManager;
 use PFUser;
+use Tuleap\FRS\FRSPermissionManager;
 use Tuleap\FRS\Link\Dao;
 use Tuleap\FRS\Link\Retriever;
 use Tuleap\FRS\UploadedLinksDao;
 use Tuleap\FRS\UploadedLinksRetriever;
 use Tuleap\REST\AuthenticatedResource;
 use Tuleap\REST\Header;
+use Tuleap\REST\ProjectStatusVerificator;
+use UGroupManager;
 use UserManager;
 
 class ReleaseResource extends AuthenticatedResource
 {
-    const MAX_LIMIT      = 50;
-    const DEFAULT_LIMIT  = 10;
-    const DEFAULT_OFFSET = 0;
+    public const MAX_LIMIT      = 50;
+    public const DEFAULT_LIMIT  = 10;
+    public const DEFAULT_OFFSET = 0;
 
     /**
      * @var FRSPackageFactory
@@ -59,14 +63,23 @@ class ReleaseResource extends AuthenticatedResource
      * @var Retriever
      */
     private $retriever;
+    /**
+     * @var ReleasePermissionsForGroupsBuilder
+     */
+    private $permissions_for_groups_builder;
 
     public function __construct()
     {
-        $this->release_factory         = FRSReleaseFactory::instance();
-        $this->retriever               = new Retriever(new Dao());
-        $this->uploaded_link_retriever = new UploadedLinksRetriever(new UploadedLinksDao(), UserManager::instance());
-        $this->package_factory         = FRSPackageFactory::instance();
-        $this->user_manager            = UserManager::instance();
+        $this->release_factory                = FRSReleaseFactory::instance();
+        $this->retriever                      = new Retriever(new Dao());
+        $this->uploaded_link_retriever        = new UploadedLinksRetriever(new UploadedLinksDao(), UserManager::instance());
+        $this->package_factory                = FRSPackageFactory::instance();
+        $this->user_manager                   = UserManager::instance();
+        $this->permissions_for_groups_builder = new ReleasePermissionsForGroupsBuilder(
+            FRSPermissionManager::build(),
+            PermissionsManager::instance(),
+            new UGroupManager()
+        );
     }
 
     /**
@@ -78,6 +91,8 @@ class ReleaseResource extends AuthenticatedResource
      * @param int $id ID of the release
      *
      * @return \Tuleap\FRS\REST\v1\ReleaseRepresentation
+     *
+     * @throws RestException 403
      */
     public function getId($id)
     {
@@ -85,12 +100,15 @@ class ReleaseResource extends AuthenticatedResource
 
         $release = $this->getRelease($id);
         $user    = $this->user_manager->getCurrentUser();
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsOnlySiteAdminToAccessIt(
+            $user,
+            $release->getProject()
+        );
+
         $this->checkUserCanReadRelease($release, $user);
 
-        $release_representation = new ReleaseRepresentation();
-        $release_representation->build($release, $this->retriever, $user, $this->uploaded_link_retriever);
-
-        return $release_representation;
+        return new ReleaseRepresentation($release, $this->retriever, $user, $this->uploaded_link_retriever, $this->permissions_for_groups_builder);
     }
 
     /**
@@ -106,29 +124,32 @@ class ReleaseResource extends AuthenticatedResource
      * @param int $offset Position of the first file to display {@from path}{@min 0}
      *
      * @return \Tuleap\FRS\REST\v1\CollectionOfFileRepresentation
+     *
+     * @throws RestException 403
      */
     public function getFiles($id, $limit = self::DEFAULT_LIMIT, $offset = self::DEFAULT_OFFSET)
     {
-
         $release = $this->getRelease($id);
         $user    = $this->user_manager->getCurrentUser();
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsOnlySiteAdminToAccessIt(
+            $user,
+            $release->getProject()
+        );
+
         $this->checkUserCanReadRelease($release, $user);
 
         $files_in_release = $release->getFiles();
-        $representations  = array();
+        $representations  = [];
         foreach (array_slice($files_in_release, $offset, $limit) as $file) {
-            $file_representation = new FileRepresentation();
-            $file_representation->build($file);
-            $representations[] = $file_representation;
+            $file_representation = new FileRepresentation($file);
+            $representations[]   = $file_representation;
         }
 
         $this->sendAllowOptionsForFiles();
         Header::sendPaginationHeaders($limit, $offset, count($files_in_release), self::MAX_LIMIT);
 
-        $collection = new CollectionOfFileRepresentation();
-        $collection->build($representations);
-
-        return $collection;
+        return new CollectionOfFileRepresentation($representations);
     }
 
     /**
@@ -155,19 +176,23 @@ class ReleaseResource extends AuthenticatedResource
      * </pre>
      *
      * @url POST
-     * @access hybrid
      *
-     * @param ReleasePOSTRepresentation $body
      *
      * @return \Tuleap\FRS\REST\v1\ReleaseRepresentation
      * @status 201
+     *
+     * @throws RestException 403
      */
-    public function post(ReleasePOSTRepresentation $body)
+    protected function post(ReleasePOSTRepresentation $body)
     {
         $this->sendAllowOptions();
 
         $user    = $this->user_manager->getCurrentUser();
         $package = $this->package_factory->getFRSPackageFromDb($body->package_id);
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+            \ProjectManager::instance()->getProject($package->getGroupID())
+        );
 
         if (! $package) {
             throw new RestException(400, "Package not found");
@@ -185,13 +210,13 @@ class ReleaseResource extends AuthenticatedResource
             throw new RestException(409, "Release name '{$body->name}' already exists in this package");
         }
 
-        $release_array = array(
+        $release_array = [
             'package_id' => $body->package_id,
             'name'       => $body->name,
             'notes'      => $body->release_note,
             'changes'    => $body->changelog,
             'status_id'  => $this->getStatusIdFromLiteralStatus($body->status)
-        );
+        ];
 
         $id = $this->release_factory->create($release_array);
         if (! $id) {
@@ -199,10 +224,10 @@ class ReleaseResource extends AuthenticatedResource
         }
 
         $release = $this->release_factory->getFRSReleaseFromDb($id);
-        $release_representation = new ReleaseRepresentation();
-        $release_representation->build($release, $this->retriever, $user, $this->uploaded_link_retriever);
-
-        return $release_representation;
+        if (! $release) {
+            throw new RestException(500, "Unable to retrieve the release from the DB. Please contact site administrators");
+        }
+        return new ReleaseRepresentation($release, $this->retriever, $user, $this->uploaded_link_retriever, $this->permissions_for_groups_builder);
     }
 
     /**
@@ -216,17 +241,21 @@ class ReleaseResource extends AuthenticatedResource
      * </pre>
      *
      * @url PATCH {id}
-     * @access hybrid
      *
      * @param int $id
-     * @param ReleasePATCHRepresentation $body
+     *
+     * @throws RestException 403
      */
-    public function patchId($id, ReleasePATCHRepresentation $body)
+    protected function patchId($id, ReleasePATCHRepresentation $body)
     {
         $this->sendAllowOptionsForRelease();
 
         $user    = $this->user_manager->getCurrentUser();
         $release = $this->getRelease($id);
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+            $release->getProject()
+        );
 
         if (! $this->release_factory->userCanUpdate($release->getGroupID(), $release->getReleaseID(), $user->getId())) {
             throw new RestException(403, "Write access to release denied");
@@ -310,7 +339,6 @@ class ReleaseResource extends AuthenticatedResource
 
     /**
      * @param $release
-     * @param ReleasePATCHRepresentation $body
      * @return array
      */
     private function getArrayForUpdateRelease($release, ReleasePATCHRepresentation $body)
@@ -318,9 +346,9 @@ class ReleaseResource extends AuthenticatedResource
         $release_id = (int) $release->getReleaseID();
         $package_id = (int) $release->getPackageID();
 
-        $release_array = array(
+        $release_array = [
             'release_id' => $release_id
-        );
+        ];
 
         if ($body->name) {
             $with_same_name_release_id = (int) $this->release_factory->getReleaseIdByName($body->name, $package_id);
@@ -354,12 +382,14 @@ class ReleaseResource extends AuthenticatedResource
             throw new RestException(403, "Access to package denied");
         }
 
-        if (! $this->release_factory->userCanRead(
-            $package->getGroupID(),
-            $package->getPackageID(),
-            $release->getReleaseID(),
-            $user->getId()
-        )) {
+        if (
+            ! $this->release_factory->userCanRead(
+                $package->getGroupID(),
+                $package->getPackageID(),
+                $release->getReleaseID(),
+                $user->getId()
+            )
+        ) {
             throw new RestException(403, "Access to release denied");
         }
 

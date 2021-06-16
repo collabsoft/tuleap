@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,9 +23,10 @@ use Tuleap\REST\JsonCast;
 /**
  * Minimal representation of a milestone
  */
-class MilestoneInfoRepresentation {
+class MilestoneInfoRepresentation
+{
 
-    const ROUTE = 'milestones';
+    public const ROUTE = 'milestones';
 
     /** @var int */
     public $id;
@@ -39,10 +40,11 @@ class MilestoneInfoRepresentation {
     /** @var String */
     public $uri;
 
-    public function __construct(\Planning_Milestone $milestone) {
+    public function __construct(\Planning_Milestone $milestone)
+    {
         $this->id            = JsonCast::toInt($milestone->getArtifactId());
-        $this->label         = $milestone->getArtifactTitle();
+        $this->label         = $milestone->getArtifactTitle() ?? '';
         $this->last_modified = JsonCast::toDate($milestone->getLastModifiedDate());
-        $this->uri           = self::ROUTE.'/'.$this->id;
+        $this->uri           = self::ROUTE . '/' . $this->id;
     }
 }

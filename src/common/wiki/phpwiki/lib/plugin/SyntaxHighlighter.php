@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: SyntaxHighlighter.php,v 1.7 2004/07/08 20:30:07 rurban Exp $');
 /**
  Copyright 2004 $ThePhpWikiProgrammingTeam
@@ -21,17 +22,17 @@ rcs_id('$Id: SyntaxHighlighter.php,v 1.7 2004/07/08 20:30:07 rurban Exp $');
  */
 
 /**
- * The SyntaxHighlighter plugin passes all its arguments through a C++ 
+ * The SyntaxHighlighter plugin passes all its arguments through a C++
  * highlighter called "highlight" (available at http://www.andre-simon.de/).
  *
  * @author: alecthomas
- * 
+ *
  * syntax: See http://www.andre-simon.de/doku/highlight/highlight.html
  * style = ["ansi", "gnu", "kr", "java", "linux"]
- 
+
 <?plugin SyntaxHighlighter syntax=c style=kr
  #include <stdio.h>
- 
+
  int main() {
  printf("Lalala\n");
  }
@@ -46,57 +47,68 @@ Fixes by Reini Urban:
   php version switch
   HIGHLIGHT_DATA_DIR, HIGHLIGHT_EXE
 */
-if (!defined('HIGHLIGHT_EXE'))
-    define('HIGHLIGHT_EXE','highlight');
+if (! defined('HIGHLIGHT_EXE')) {
+    define('HIGHLIGHT_EXE', 'highlight');
+}
 //define('HIGHLIGHT_EXE','/usr/local/bin/highlight');
 //define('HIGHLIGHT_EXE','/home/groups/p/ph/phpwiki/bin/highlight');
 
 // highlight requires two subdirs themes and langDefs somewhere.
-// Best by highlight.conf in $HOME, but the webserver user usually 
+// Best by highlight.conf in $HOME, but the webserver user usually
 // doesn't have a $HOME
-if (!defined('HIGHLIGHT_DATA_DIR'))
-    if (isWindows())
-        define('HIGHLIGHT_DATA_DIR','f:\cygnus\usr\local\share\highlight');
-    else
-        define('HIGHLIGHT_DATA_DIR','/usr/share/highlight');
+if (! defined('HIGHLIGHT_DATA_DIR')) {
+    if (isWindows()) {
+        define('HIGHLIGHT_DATA_DIR', 'f:\cygnus\usr\local\share\highlight');
+    } else {
+        define('HIGHLIGHT_DATA_DIR', '/usr/share/highlight');
+    }
+}
         //define('HIGHLIGHT_DATA_DIR','/home/groups/p/ph/phpwiki/share/highlight');
 
-class WikiPlugin_SyntaxHighlighter
-extends WikiPlugin
+class WikiPlugin_SyntaxHighlighter extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return _("SyntaxHighlighter");
     }
-    function getDescription () {
+    public function getDescription()
+    {
         return _("Source code syntax highlighter (via http://www.andre-simon.de)");
     }
-    function managesValidators() {
+    public function managesValidators()
+    {
         return true;
     }
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.7 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.7 $"
+        );
     }
-    function getDefaultArguments() {
-        return array(
+    public function getDefaultArguments()
+    {
+        return [
                      'syntax' => null, // required argument
                      'style'  => null, // optional argument ["ansi", "gnu", "kr", "java", "linux"]
                      'color'  => null, // optional, see highlight/themes
                      'number' => 0,
                      'wrap'   => 0,
-                     );
+                     ];
     }
-    function handle_plugin_args_cruft(&$argstr, &$args) {
+    public function handle_plugin_args_cruft(&$argstr, &$args)
+    {
         $this->source = $argstr;
     }
 
     private function filterThroughCmd($input, $commandLine)
     {
-        $descriptorspec = array(
-               0 => array("pipe", "r"),  // stdin is a pipe that the child will read from
-               1 => array("pipe", "w"),  // stdout is a pipe that the child will write to
-               2 => array("pipe", "w"),  // stdout is a pipe that the child will write to
-        );
+        $descriptorspec = [
+               0 => ["pipe", "r"],  // stdin is a pipe that the child will read from
+               1 => ["pipe", "w"],  // stdout is a pipe that the child will write to
+               2 => ["pipe", "w"],  // stdout is a pipe that the child will write to
+        ];
 
         $process = proc_open("$commandLine", $descriptorspec, $pipes);
         if (is_resource($process)) {
@@ -107,30 +119,33 @@ extends WikiPlugin
             fwrite($pipes[0], $input);
             fclose($pipes[0]);
             $buf = "";
-            while(!feof($pipes[1])) {
+            while (! feof($pipes[1])) {
                 $buf .= fgets($pipes[1], 1024);
             }
             fclose($pipes[1]);
             $stderr = '';
-            while(!feof($pipes[2])) {
+            while (! feof($pipes[2])) {
                 $stderr .= fgets($pipes[2], 1024);
             }
             fclose($pipes[2]);
             // It is important that you close any pipes before calling
             // proc_close in order to avoid a deadlock
             $return_value = proc_close($process);
-            if (empty($buf)) printXML($this->error($stderr));
+            if (empty($buf)) {
+                printXML($this->error($stderr));
+            }
             return $buf;
         }
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         extract($this->getArgs($argstr, $request));
-        $source =& $this->source;
+        $source = $this->source;
         if (empty($syntax)) {
             return $this->error(_("Syntax language not specified."));
         }
-        if (!empty($source)) {
+        if (! empty($source)) {
             $args = "";
             if (defined('HIGHLIGHT_DATA_DIR')) {
                 $args .= " --data-dir " . escapeshellarg(HIGHLIGHT_DATA_DIR);
@@ -143,24 +158,24 @@ extends WikiPlugin
             }
             $html = HTML();
 
-            if (!empty($style)) {
+            if (! empty($style)) {
                 $args .= ' -F ' . escapeshellarg($style);
             }
             $commandLine = HIGHLIGHT_EXE . "$args -q -f -S " . escapeshellarg($syntax);
-            $code = $this->filterThroughCmd($source, $commandLine);
+            $code        = $this->filterThroughCmd($source, $commandLine);
             if (empty($code)) {
                 return $this->error(fmt("Couldn't start commandline"));
             }
             $pre = HTML::pre(HTML::raw($code));
-            $pre->setAttr('class','tightenable top bottom');
+            $pre->setAttr('class', 'tightenable top bottom');
             $html->pushContent($pre);
             $css = $GLOBALS['WikiTheme']->_CSSlink('', 'highlight.css', '');
-            return HTML($css,$html);
+            return HTML($css, $html);
         } else {
             return $this->error(fmt("empty source"));
         }
     }
-};
+}
 
 // $Log: SyntaxHighlighter.php,v $
 // Revision 1.7  2004/07/08 20:30:07  rurban
@@ -190,9 +205,6 @@ extends WikiPlugin
 // Revision 1.1  2004/05/14 14:55:52  rurban
 // Alec Thomas original plugin, which comes with highlight http://www.andre-simon.de/,
 // plus some extensions by Reini Urban
-//
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -201,4 +213,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

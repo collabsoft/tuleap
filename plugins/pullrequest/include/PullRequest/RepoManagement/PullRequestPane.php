@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,12 +23,13 @@ namespace Tuleap\PullRequest\RepoManagement;
 use Codendi_Request;
 use GitRepository;
 use TemplateRendererFactory;
+use Tuleap\CSRFSynchronizerTokenPresenter;
 use Tuleap\Git\GitViews\RepoManagement\Pane\Pane;
 use Tuleap\PullRequest\MergeSetting\MergeSettingRetriever;
 
 class PullRequestPane extends Pane
 {
-    const NAME = 'pullrequest';
+    public const NAME = 'pullrequest';
 
     /**
      * @var MergeSettingRetriever
@@ -71,7 +72,7 @@ class PullRequestPane extends Pane
 
         return $renderer->renderToString(
             'repository-settings',
-            new PullRequestPanePresenter($this->repository, $merge_setting)
+            new PullRequestPanePresenter(CSRFSynchronizerTokenPresenter::fromToken($this->csrf_token()), $this->repository, $merge_setting)
         );
     }
 }

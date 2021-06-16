@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-class AgileDashboard_KanbanManager {
+class AgileDashboard_KanbanManager
+{
 
     /**
      * @var TrackerFactory
@@ -30,26 +31,21 @@ class AgileDashboard_KanbanManager {
      */
     private $dao;
 
-    /**
-     * @var AgileDashboard_HierarchyChecker
-     */
-    private $hierarchy_checker;
-
     public function __construct(
         AgileDashboard_KanbanDao $dao,
-        TrackerFactory $tracker_factory,
-        AgileDashboard_HierarchyChecker $hierarchy_checker
+        TrackerFactory $tracker_factory
     ) {
-        $this->dao               = $dao;
-        $this->tracker_factory   = $tracker_factory;
-        $this->hierarchy_checker = $hierarchy_checker;
+        $this->dao             = $dao;
+        $this->tracker_factory = $tracker_factory;
     }
 
-    public function doesKanbanExistForTracker(Tracker $tracker) {
+    public function doesKanbanExistForTracker(Tracker $tracker)
+    {
         return $this->dao->getKanbanByTrackerId($tracker->getId())->count() > 0;
     }
 
-    public function createKanban($kanban_name, $tracker_id) {
+    public function createKanban($kanban_name, $tracker_id)
+    {
         return $this->dao->create($kanban_name, $tracker_id);
     }
 
@@ -60,22 +56,22 @@ class AgileDashboard_KanbanManager {
 
     public function getTrackersWithKanbanUsage($project_id, PFUser $user)
     {
-        $trackers     = array();
+        $trackers     = [];
         $all_trackers = $this->tracker_factory->getTrackersByGroupIdUserCanView($project_id, $user);
 
         foreach ($all_trackers as $tracker) {
-            $tracker_representation         = array();
+            $tracker_representation         = [];
             $tracker_representation['id']   = $tracker->getId();
             $tracker_representation['name'] = $tracker->getName();
 
             if ($this->doesKanbanExistForTracker($tracker)) {
                 $tracker_representation['used'] = true;
-                $trackers[] = $tracker_representation;
+                $trackers[]                     = $tracker_representation;
                 continue;
             }
 
             $tracker_representation['used'] = false;
-            $trackers[] = $tracker_representation;
+            $trackers[]                     = $tracker_representation;
         }
 
         return $trackers;
@@ -84,8 +80,9 @@ class AgileDashboard_KanbanManager {
     /**
      * @return Tracker[]
      */
-    public function getTrackersUsedAsKanban(Project $project) {
-        $trackers = array();
+    public function getTrackersUsedAsKanban(Project $project)
+    {
+        $trackers = [];
         foreach ($this->dao->getKanbansForProject($project->getId()) as $row) {
             $tracker = $this->tracker_factory->getTrackerById($row['tracker_id']);
             if ($tracker) {

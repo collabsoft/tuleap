@@ -1,23 +1,24 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2007
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -28,32 +29,33 @@
  * proposed with an approval table. However, an approval owner can decide to
  * delete one table (attached to a version).
  */
-class Docman_ApprovalTableFileFactory extends Docman_ApprovalTableVersionnedFactory {
-    var $itemVersion;
+class Docman_ApprovalTableFileFactory extends Docman_ApprovalTableVersionnedFactory
+{
+    public $itemVersion;
 
-    /**
-     *
-     */
-    function __construct($item, $versionNumber=null) {
+    public function __construct($item, $versionNumber = null)
+    {
         parent::__construct($item);
 
-        $dao = $this->_getDao();
+        $dao      = $this->_getDao();
         $vFactory = new Docman_VersionFactory();
 
         $dar = $dao->getLatestTableByItemId($item->getId(), 'ver.number');
-        if($dar && !$dar->isError() && $dar->rowCount() == 1) {
-            $row = $dar->getRow();
+        if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
+            $row               = $dar->getRow();
             $lastVersionNumber = $row['number'];
-            $lastItemVersion = $vFactory->getSpecificVersion($item, $lastVersionNumber);
+            $lastItemVersion   = $vFactory->getSpecificVersion($item, $lastVersionNumber);
 
-            if($versionNumber !== null
-               && $lastItemVersion->getNumber() != $versionNumber) {
-                $this->itemVersion = $vFactory->getSpecificVersion($item, $versionNumber);
+            if (
+                $versionNumber !== null
+                && $lastItemVersion->getNumber() != $versionNumber
+            ) {
+                $this->itemVersion  = $vFactory->getSpecificVersion($item, $versionNumber);
                 $this->customizable = false;
             } else {
                 $this->itemVersion = $lastItemVersion;
             }
-        } else {
+        } elseif ($item instanceof Docman_File || $item instanceof Docman_Link) {
             $this->itemVersion = $item->getCurrentVersion();
         }
     }
@@ -61,7 +63,8 @@ class Docman_ApprovalTableFileFactory extends Docman_ApprovalTableVersionnedFact
     /**
      * Create a new Docman_ApprovalTable object.
      */
-    function newTable() {
+    public function newTable()
+    {
         return new Docman_ApprovalTableFile();
     }
 
@@ -71,8 +74,10 @@ class Docman_ApprovalTableFileFactory extends Docman_ApprovalTableVersionnedFact
      * @param $table ApprovalTable
      * @return int new table id
      */
-    function _createTable($table) {
+    public function _createTable($table)
+    {
         return $this->_getDao()->createTable(
+            'version_id',
             $table->getVersionId(),
             $table->getOwner(),
             $table->getDescription(),
@@ -82,22 +87,25 @@ class Docman_ApprovalTableFileFactory extends Docman_ApprovalTableVersionnedFact
         );
     }
 
-    protected function _updateTableWithLastId($dstTable) {
+    protected function _updateTableWithLastId($dstTable)
+    {
         $currentVersion = $this->item->getCurrentVersion();
         $dstTable->setVersionId($currentVersion->getId());
     }
 
-    function _getTable() {
+    public function _getTable()
+    {
         return $this->getTableFromVersion($this->itemVersion);
     }
 
-    function getTableFromVersion($version) {
+    public function getTableFromVersion($version)
+    {
         $table = null;
-        if($version !== null) {
-            $dao =& $this->_getDao();
+        if ($version !== null) {
+            $dao = $this->_getDao();
             $dar = $dao->getTableById($version->getId());
-            if($dar && !$dar->isError() && $dar->rowCount() == 1) {
-                $row = $dar->current();
+            if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
+                $row   = $dar->current();
                 $table = $this->createTableFromRow($row);
                 $table->setVersionNumber($version->getNumber());
             }
@@ -105,21 +113,21 @@ class Docman_ApprovalTableFileFactory extends Docman_ApprovalTableVersionnedFact
         return $table;
     }
 
-    function getLastDocumentVersionNumber() {
+    public function getLastDocumentVersionNumber()
+    {
         $currentItemVersion = $this->item->getCurrentVersion();
         return $currentItemVersion->getNumber();
     }
 
-    function userAccessedSinceLastUpdate($user) {
+    public function userAccessedSinceLastUpdate($user)
+    {
         $log = new Docman_Log();
         return $log->userAccessedSince($user->getId(), $this->item->getId(), $this->itemVersion->getDate());
     }
 
-    //
     // Class accessor
-    //
-
-    function _getDao() {
+    public function _getDao()
+    {
         return new Docman_ApprovalTableFileDao(CodendiDataAccess::instance());
     }
 }

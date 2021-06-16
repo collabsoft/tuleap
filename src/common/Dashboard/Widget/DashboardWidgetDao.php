@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -28,10 +28,10 @@ use Tuleap\Widget\WidgetFactory;
 
 class DashboardWidgetDao extends DataAccessObject
 {
-    private $legacy_types_to_new_types = array(
+    private $legacy_types_to_new_types = [
         ProjectDashboardController::LEGACY_DASHBOARD_TYPE => 'project',
         UserDashboardController::LEGACY_DASHBOARD_TYPE    => 'user'
-    );
+    ];
 
     /**
      * @var WidgetFactory
@@ -40,7 +40,7 @@ class DashboardWidgetDao extends DataAccessObject
 
     public function __construct(
         WidgetFactory $widget_factory,
-        LegacyDataAccessInterface $da = null
+        ?LegacyDataAccessInterface $da = null
     ) {
         parent::__construct($da);
         $this->enableExceptionsOnError();
@@ -214,7 +214,7 @@ class DashboardWidgetDao extends DataAccessObject
 
         $position = 1;
         foreach ($this->retrieve($sql) as $row) {
-            if ((int)$row['id'] === (int)$column_id) {
+            if ((int) $row['id'] === (int) $column_id) {
                 break;
             }
             $position++;
@@ -227,7 +227,7 @@ class DashboardWidgetDao extends DataAccessObject
     {
         $line_id = $this->da->escapeInt($line_id);
 
-        $nb_columns = (int)$this->getNbColumns($line_id);
+        $nb_columns = (int) $this->getNbColumns($line_id);
 
         if ($nb_columns > 3) {
             return;
@@ -771,7 +771,7 @@ class DashboardWidgetDao extends DataAccessObject
             $dashboard_id = $this->createUserDashboard($user_id);
 
             $nb_widgets = count($widgets);
-            $line_id = $this->createDefaultLine($dashboard_id, $nb_widgets);
+            $line_id    = $this->createDefaultLine($dashboard_id, $nb_widgets);
 
             $rank = 0;
             foreach ($widgets as $widget_name) {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -33,7 +33,7 @@ class GlobalParameterDao extends DataAccessObject
 
         $row = $this->getDB()->row($sql);
 
-        return !empty($row);
+        return ! empty($row);
     }
 
     /**

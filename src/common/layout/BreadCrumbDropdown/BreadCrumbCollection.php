@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -33,5 +33,10 @@ class BreadCrumbCollection
     public function getBreadcrumbs()
     {
         return $this->breadcrumbs;
+    }
+
+    public function addFirst(BreadCrumb $crumb): void
+    {
+        array_splice($this->breadcrumbs, 0, 0, [$crumb]);
     }
 }

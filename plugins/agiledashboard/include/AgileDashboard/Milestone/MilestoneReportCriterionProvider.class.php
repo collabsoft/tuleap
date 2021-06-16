@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,17 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\AgileDashboard\ExplicitBacklog\UnplannedCriterionOptionsProvider;
+use Tuleap\AgileDashboard\ExplicitBacklog\UnplannedReportCriterionChecker;
+
 /**
  * I am a helper to provide a selectbox as a criterion in the tracker report to choose a milestone for a given tracker
  */
-class AgileDashboard_Milestone_MilestoneReportCriterionProvider {
-
-    const FIELD_NAME = 'agiledashboard_milestone';
-    const ANY        = '';
+class AgileDashboard_Milestone_MilestoneReportCriterionProvider
+{
+    public const FIELD_NAME = 'agiledashboard_milestone';
+    public const ANY        = '';
+    public const UNPLANNED  = '-1';
 
     /** @var AgileDashboard_Milestone_MilestoneReportCriterionOptionsProvider */
     private $options_provider;
@@ -32,21 +36,36 @@ class AgileDashboard_Milestone_MilestoneReportCriterionProvider {
     /** @var AgileDashboard_Milestone_SelectedMilestoneProvider */
     private $milestone_provider;
 
+    /**
+     * @var UnplannedCriterionOptionsProvider
+     */
+    private $unplanned_criterion_options_provider;
+
+    /**
+     * @var UnplannedReportCriterionChecker
+     */
+    private $unplanned_report_criterion_checker;
+
     public function __construct(
         AgileDashboard_Milestone_SelectedMilestoneProvider $milestone_provider,
-        AgileDashboard_Milestone_MilestoneReportCriterionOptionsProvider $options_provider
+        AgileDashboard_Milestone_MilestoneReportCriterionOptionsProvider $options_provider,
+        UnplannedCriterionOptionsProvider $unplanned_criterion_options_provider,
+        UnplannedReportCriterionChecker $unplanned_report_criterion_checker
     ) {
-        $this->milestone_provider = $milestone_provider;
-        $this->options_provider   = $options_provider;
+        $this->milestone_provider                   = $milestone_provider;
+        $this->options_provider                     = $options_provider;
+        $this->unplanned_criterion_options_provider = $unplanned_criterion_options_provider;
+        $this->unplanned_report_criterion_checker   = $unplanned_report_criterion_checker;
     }
 
     /**
      * @return string
      */
-    public function getCriterion(Tracker $backlog_tracker, PFUser $user) {
+    public function getCriterion(Tracker $backlog_tracker, PFUser $user)
+    {
         $options = $this->options_provider->getSelectboxOptions(
             $backlog_tracker,
-            $this->milestone_provider->getMilestoneId(),
+            $this->getSelectedOptionId(),
             $user
         );
         if (! $options) {
@@ -55,13 +74,26 @@ class AgileDashboard_Milestone_MilestoneReportCriterionProvider {
 
         $criterion  = '';
         $criterion .= '<label for="tracker_report_crit_agiledashboard_milestone">';
-        $criterion .= $GLOBALS['Language']->getText('plugin_agiledashboard', 'report_criteria_label');
+        $criterion .= dgettext('tuleap-agiledashboard', 'In milestone');
         $criterion .= '</label>';
-        $criterion .= '<select name="additional_criteria['.self::FIELD_NAME.']" id="tracker_report_crit_agiledashboard_milestone">';
-        $criterion .= '<option value="" >'. $GLOBALS['Language']->getText('global','any') .'</option>';
+        $criterion .= '<select name="additional_criteria[' . self::FIELD_NAME . ']" id="tracker_report_crit_agiledashboard_milestone">';
+        $criterion .= '<option value="" >' . $GLOBALS['Language']->getText('global', 'any') . '</option>';
+        $criterion .= $this->unplanned_criterion_options_provider->formatUnplannedAsSelectboxOption(
+            $backlog_tracker->getProject(),
+            $this->getSelectedOptionId()
+        );
         $criterion .= implode('', $options);
         $criterion .= '</select>';
 
         return $criterion;
+    }
+
+    private function getSelectedOptionId()
+    {
+        if ($this->unplanned_report_criterion_checker->isUnplannedValueSelected()) {
+            return self::UNPLANNED;
+        }
+
+        return $this->milestone_provider->getMilestoneId();
     }
 }

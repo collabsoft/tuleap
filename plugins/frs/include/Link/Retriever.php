@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +21,7 @@
 
 namespace Tuleap\FRS\Link;
 
-use Tracker_Artifact;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class Retriever
 {
@@ -48,7 +47,7 @@ class Retriever
         return null;
     }
 
-    public function getLinkedReleaseId(Tracker_Artifact $artifact)
+    public function getLinkedReleaseId(Artifact $artifact)
     {
         $row = $this->dao->searchLinkedReleaseForArtifact($artifact->getId());
 

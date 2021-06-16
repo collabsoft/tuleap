@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2011 — 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 — Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,7 +23,8 @@
  * System Event class
  *
  */
-abstract class SystemEvent {
+abstract class SystemEvent
+{
 
     protected $id;
     protected $type;
@@ -37,56 +38,68 @@ abstract class SystemEvent {
     protected $log;
 
     // Define event types
-    const TYPE_SYSTEM_CHECK          = "SYSTEM_CHECK";
-    const TYPE_EDIT_SSH_KEYS         = "EDIT_SSH_KEYS";
-    const TYPE_PROJECT_CREATE        = "PROJECT_CREATE";
-    const TYPE_PROJECT_DELETE        = "PROJECT_DELETE";
-    const TYPE_PROJECT_RENAME        = "PROJECT_RENAME";
-    const TYPE_UGROUP_MODIFY         = "UGROUP_MODIFY";
-    const TYPE_USER_CREATE           = "USER_CREATE";
-    const TYPE_USER_DELETE           = "USER_DELETE";
-    const TYPE_USER_MODIFY           = "USER_MODIFY";
-    const TYPE_USER_RENAME           = "USER_RENAME";
-    const TYPE_MEMBERSHIP_CREATE     = "MEMBERSHIP_CREATE";
-    const TYPE_MEMBERSHIP_DELETE     = "MEMBERSHIP_DELETE";
-    const TYPE_MEMBERSHIP_MODIFY     = "MEMBERSHIP_MODIFY";
-    const TYPE_CVS_IS_PRIVATE        = "CVS_IS_PRIVATE";
-    const TYPE_PROJECT_IS_PRIVATE    = "PROJECT_IS_PRIVATE";
-    const TYPE_MAILING_LIST_CREATE   = "MAILING_LIST_CREATE";
-    const TYPE_MAILING_LIST_DELETE   = "MAILING_LIST_DELETE";
-    const TYPE_SERVICE_USAGE_SWITCH  = "SERVICE_USAGE_SWITCH";    
-    const TYPE_ROOT_DAILY            = "ROOT_DAILY";
-    const TYPE_COMPUTE_MD5SUM        = "COMPUTE_MD5SUM";
-    const TYPE_MASSMAIL              = "MASSMAIL";
-    const TYPE_SVN_UPDATE_HOOKS      = "SVN_UPDATE_HOOKS";
-    const TYPE_SVN_AUTHORIZE_TOKENS  = "SVN_AUTHORIZE_TOKENS";
-    const TYPE_SVN_REVOKE_TOKENS     = "SVN_REVOKE_TOKENS";
-    const TYPE_SVN_AUTH_CACHE_CHANGE = "SVN_AUTH_CACHE_CHANGE";
-    const TYPE_MOVE_FRS_FILE         = "MOVE_FRS_FILE";
-    const TYPE_UPDATE_ALIASES        = "UPDATE_ALIASES";
+    public const TYPE_SYSTEM_CHECK                             = "SYSTEM_CHECK";
+    public const TYPE_EDIT_SSH_KEYS                            = "EDIT_SSH_KEYS";
+    public const TYPE_PROJECT_CREATE                           = "PROJECT_CREATE";
+    public const TYPE_PROJECT_ACTIVE                           = "PROJECT_ACTIVE";
+    public const TYPE_PROJECT_DELETE                           = "PROJECT_DELETE";
+    public const TYPE_PROJECT_SVN_AUTHENTICATION_CACHE_REFRESH = "PROJECT_SVN_AUTHENTICATION_CACHE_REFRESH";
+    public const TYPE_PROJECT_RENAME                           = "PROJECT_RENAME";
+    public const TYPE_UGROUP_MODIFY                            = "UGROUP_MODIFY";
+    public const TYPE_USER_ACTIVE_STATUS_CHANGE                = "ACTIVE_USER_STATUS_CHANGE";
+    public const TYPE_USER_DELETE                              = "USER_DELETE";
+    public const TYPE_USER_MODIFY                              = "USER_MODIFY";
+    public const TYPE_USER_RENAME                              = "USER_RENAME";
+    public const TYPE_MEMBERSHIP_CREATE                        = "MEMBERSHIP_CREATE";
+    public const TYPE_MEMBERSHIP_DELETE                        = "MEMBERSHIP_DELETE";
+    public const TYPE_MEMBERSHIP_MODIFY                        = "MEMBERSHIP_MODIFY";
+    public const TYPE_CVS_IS_PRIVATE                           = "CVS_IS_PRIVATE";
+    public const TYPE_PROJECT_IS_PRIVATE                       = "PROJECT_IS_PRIVATE";
+    public const TYPE_MAILING_LIST_CREATE                      = "MAILING_LIST_CREATE";
+    public const TYPE_MAILING_LIST_DELETE                      = "MAILING_LIST_DELETE";
+    public const TYPE_SERVICE_USAGE_SWITCH                     = "SERVICE_USAGE_SWITCH";
+    public const TYPE_ROOT_DAILY                               = "ROOT_DAILY";
+    public const TYPE_COMPUTE_MD5SUM                           = "COMPUTE_MD5SUM";
+    public const TYPE_MASSMAIL                                 = "MASSMAIL";
+    public const TYPE_SVN_UPDATE_HOOKS                         = "SVN_UPDATE_HOOKS";
+    public const TYPE_SVN_AUTHORIZE_TOKENS                     = "SVN_AUTHORIZE_TOKENS";
+    public const TYPE_SVN_REVOKE_TOKENS                        = "SVN_REVOKE_TOKENS";
+    public const TYPE_SVN_AUTH_CACHE_CHANGE                    = "SVN_AUTH_CACHE_CHANGE";
+    public const TYPE_MOVE_FRS_FILE                            = "MOVE_FRS_FILE";
+    public const TYPE_UPDATE_ALIASES                           = "UPDATE_ALIASES";
+    public const TYPE_SVN_UPDATE_PROJECT_ACCESS_FILES          = 'UPDATE_SVN_ACCESS_FILE';
 
     // Define status value (in sync with DB enum)
-    const STATUS_NONE       = "NONE";
-    const STATUS_NEW        = "NEW";
-    const STATUS_RUNNING    = "RUNNING";
-    const STATUS_DONE       = "DONE";
-    const STATUS_WARNING    = "WARNING";
-    const STATUS_ERROR      = "ERROR";
+    public const STATUS_NONE    = "NONE";
+    public const STATUS_NEW     = "NEW";
+    public const STATUS_RUNNING = "RUNNING";
+    public const STATUS_DONE    = "DONE";
+    public const STATUS_WARNING = "WARNING";
+    public const STATUS_ERROR   = "ERROR";
+
+    public const ALL_STATUS = [
+        self::STATUS_NONE,
+        self::STATUS_NEW,
+        self::STATUS_RUNNING,
+        self::STATUS_DONE,
+        self::STATUS_WARNING,
+        self::STATUS_ERROR,
+    ];
 
     //Priority of the event
-    const PRIORITY_HIGH   = 1;
-    const PRIORITY_MEDIUM = 2;
-    const PRIORITY_LOW    = 3;
-    
-    const PARAMETER_SEPARATOR        = '::';
-    const PARAMETER_SEPARATOR_ESCAPE = '\:\:';
+    public const PRIORITY_HIGH   = 1;
+    public const PRIORITY_MEDIUM = 2;
+    public const PRIORITY_LOW    = 3;
+
+    public const PARAMETER_SEPARATOR        = '::';
+    public const PARAMETER_SEPARATOR_ESCAPE = '\:\:';
 
     // Who should execute the event
-    const OWNER_ROOT = 'root';
-    const OWNER_APP  = 'app';
+    public const OWNER_ROOT = 'root';
+    public const OWNER_APP  = 'app';
 
-    const APP_OWNER_QUEUE = 'owner';
-    const DEFAULT_QUEUE   = 'default';
+    public const APP_OWNER_QUEUE = 'owner';
+    public const DEFAULT_QUEUE   = 'default';
 
     /**
      * Constructor
@@ -100,7 +113,8 @@ abstract class SystemEvent {
      * @param string $end_date
      * @param string $log
      */
-    function __construct($id, $type, $owner, $parameters, $priority, $status, $create_date, $process_date, $end_date, $log) {
+    public function __construct($id, $type, $owner, $parameters, $priority, $status, $create_date, $process_date, $end_date, $log)
+    {
         $this->id           = $id;
         $this->type         = $type;
         $this->owner        = $owner;
@@ -115,104 +129,121 @@ abstract class SystemEvent {
 
     // Getters
 
-    function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
-    function getType() {
+    public function getType()
+    {
         return $this->type;
     }
 
-    function getOwner() {
+    public function getOwner()
+    {
         return $this->owner;
     }
 
-    function getParameters() {
+    public function getParameters()
+    {
         return $this->parameters;
     }
-    
+
     /**
-     * Verbalize the parameters so they are readable and much user friendly in 
+     * Verbalize the parameters so they are readable and much user friendly in
      * notifications
-     * 
-     * @param bool $with_link true if you want links to entities. The returned 
+     *
+     * @param bool $with_link true if you want links to entities. The returned
      * string will be html instead of plain/text
      *
      * @return string
      */
-    public abstract function verbalizeParameters($with_link);
-    
+    abstract public function verbalizeParameters($with_link);
+
     /**
      * verbalize a user id.
-     * 
-     * @param integer $user_id   The user id
-     * @param boolean $with_link true if you want links to entities. The returned 
-     * string will be html instead of plain/text
+     *
+     * @param int $user_id The user id
+     * @param bool $with_link true if you want links to entities. The returned string will be html instead of plain/text
      *
      * @return string
      */
-    public function verbalizeUserId($user_id, $with_link) {
-        $txt = '#'. $user_id;
+    public function verbalizeUserId($user_id, $with_link)
+    {
+        $txt = '#' . $user_id;
         if ($with_link) {
-            $txt = '<a href="/admin/usergroup.php?user_id='. $user_id .'">'. $txt .'</a>';
+            $txt = '<a href="/admin/usergroup.php?user_id=' . $user_id . '">' . $txt . '</a>';
         }
         return $txt;
     }
-    
+
     /**
      * verbalize a project id.
-     * 
-     * @param integer $group_id   The project id
-     * @param boolean $with_link true if you want links to entities. The returned 
-     * string will be html instead of plain/text
+     *
+     * @param int $group_id The project id
+     * @param bool $with_link true if you want links to entities. The returned string will be html instead of plain/text
      *
      * @return string
      */
-    public function verbalizeProjectId($group_id, $with_link) {
-        $txt = '#'. $group_id;
+    public function verbalizeProjectId($group_id, $with_link)
+    {
+        $txt = '#' . $group_id;
         if ($with_link) {
-            $txt = '<a href="/admin/groupedit.php?group_id='. $group_id .'">'. $txt .'</a>';
+            $txt = '<a href="/admin/groupedit.php?group_id=' . $group_id . '">' . $txt . '</a>';
         }
         return $txt;
     }
-    
-    function getParametersAsArray() {
+
+    public function getParametersAsArray()
+    {
         return explode(self::PARAMETER_SEPARATOR, $this->parameters);
     }
 
-    function getPriority() {
+    public function getPriority()
+    {
         return $this->priority;
     }
 
-    function getStatus() {
+    /**
+     * @psalm-return value-of<self::ALL_STATUS>
+     */
+    public function getStatus(): string
+    {
         return $this->status;
     }
 
-    function getLog() {
+    public function getLog()
+    {
         return $this->log;
     }
 
-    function setStatus($status) {
-        $this->status=$status;
+    public function setStatus($status)
+    {
+        $this->status = $status;
     }
 
-    function setLog($log) {
-        $this->log=$log;
+    public function setLog($log)
+    {
+        $this->log = $log;
     }
 
-    function setParameters($params) {
+    public function setParameters($params)
+    {
         $this->parameters = $params;
     }
 
-    function getCreateDate() {
+    public function getCreateDate()
+    {
         return $this->create_date;
     }
-    
-    function getProcessDate() {
+
+    public function getProcessDate()
+    {
         return $this->process_date;
     }
-    
-    function getEndDate() {
+
+    public function getEndDate()
+    {
         return $this->end_date;
     }
 
@@ -229,13 +260,13 @@ abstract class SystemEvent {
 
         if ($duration->y) {
             $format = $GLOBALS['Language']->getText('admin_system_events', 'duration_years');
-        } else if ($duration->m) {
+        } elseif ($duration->m) {
             $format = $GLOBALS['Language']->getText('admin_system_events', 'duration_months');
-        } else if ($duration->d) {
+        } elseif ($duration->d) {
             $format = $GLOBALS['Language']->getText('admin_system_events', 'duration_days');
-        } else if ($duration->h) {
+        } elseif ($duration->h) {
             $format = $GLOBALS['Language']->getText('admin_system_events', 'duration_hours');
-        } else if ($duration->i) {
+        } elseif ($duration->i) {
             $format = $GLOBALS['Language']->getText('admin_system_events', 'duration_minutes');
         } else {
             $format = $GLOBALS['Language']->getText('admin_system_events', 'duration_seconds');
@@ -243,42 +274,49 @@ abstract class SystemEvent {
 
         return $duration->format($format);
     }
-    
-    public function setProcessDate($process_date) {
+
+    public function setProcessDate($process_date)
+    {
         $this->process_date = is_numeric($process_date) ? date('Y-m-d H:i:s', $process_date) : $process_date;
     }
-    
-    public function setEndDate($end_date) {
+
+    public function setEndDate($end_date)
+    {
         $this->end_date = is_numeric($end_date) ? date('Y-m-d H:i:s', $end_date) : $end_date;
     }
-    
+
     /**
      * Checks if the given value represents integer
      * is_int() won't work on string containing integers...
      */
-    function int_ok($val)
+    public function int_ok($val)
     {
-        return ((string) $val) === ((string)(int) $val);
+        return ((string) $val) === ((string) (int) $val);
     }
 
     /**
      * A few functions to parse the parameters string
      */
-    function getIdFromParam() {
+    public function getIdFromParam()
+    {
         if ($this->int_ok($this->parameters)) {
             return $this->parameters;
-        } else return 0;
+        } else {
+            return 0;
+        }
     }
 
-    public function getParameter($index) {
+    public function getParameter($index)
+    {
         $params = $this->getParametersAsArray();
         return isset($params[$index]) && $params[$index] !== '' ? $params[$index] : null;
     }
 
-    public function getRequiredParameter($index) {
+    public function getRequiredParameter($index)
+    {
         $param = $this->getParameter($index);
         if ($param === null) {
-            throw new SystemEventMissingParameterException('Missing parameter n°'. (int)$index);
+            throw new SystemEventMissingParameterException('Missing parameter n°' . (int) $index);
         }
         return $param;
     }
@@ -286,17 +324,19 @@ abstract class SystemEvent {
     /**
      * Error functions
      */
-    function setErrorBadParam() {
-        $this->error("Bad parameter for event ".$this->getType().": ".$this->getParameters());
+    public function setErrorBadParam()
+    {
+        $this->error("Bad parameter for event " . $this->getType() . ": " . $this->getParameters());
         return 0;
     }
 
 
-    /** 
+    /**
      * Process stored event
      * Virtual method redeclared in children
      */
-    function process() {
+    public function process()
+    {
         return null;
     }
 
@@ -304,11 +344,13 @@ abstract class SystemEvent {
      * This function allows one to call all listeners (e.g. plugins) of an event related to the current processed system event
      * @param string $eventName
      */
-    protected function callSystemEventListeners( $eventName ) {
-        EventManager::instance()->processEvent( $eventName , $this->getParametersAsArray() );
+    protected function callSystemEventListeners($eventName)
+    {
+        EventManager::instance()->processEvent($eventName, $this->getParametersAsArray());
     }
 
-    public function logException(Exception $exception) {
+    public function logException(Exception $exception)
+    {
         $this->error($exception->getMessage());
     }
 
@@ -317,54 +359,59 @@ abstract class SystemEvent {
      * @param string $status the status
      * @param string $msg the message to log
      */
-    private function logStatus($status, $msg) {
+    private function logStatus($status, $msg)
+    {
         $this->setStatus($status);
         $this->setLog($msg);
     }
-    
+
     /**
      * Set the status of the event to STATUS_ERROR
      * and log the msg
      * @param string $msg the message to log
      */
-    protected function error($msg) {
+    protected function error($msg)
+    {
         $this->logStatus(self::STATUS_ERROR, $msg);
     }
-    
+
     /**
      * Set the status of the event to STATUS_DONE
      * and log the msg
      * @param string $msg the message to log. default is 'OK'
      */
-    protected function done($msg = 'OK') {
+    protected function done($msg = 'OK')
+    {
         $this->logStatus(self::STATUS_DONE, $msg);
     }
-    
+
     /**
      * Set the status of the event to STATUS_WARNING
      * and log the msg
      * @param string $msg the message to log.
      */
-    protected function warning($msg) {
+    protected function warning($msg)
+    {
         $this->logStatus(self::STATUS_WARNING, $msg);
     }
-    
+
     /**
      * Initialize a project from the given $group_id
      * @param int $group_id the id of the project
      * @return Project
      */
-    protected function getProject($group_id) {
-        if (!$group_id) {
+    protected function getProject($group_id)
+    {
+        if (! $group_id) {
             return $this->setErrorBadParam();
         }
-        
+
         $project = ProjectManager::instance()->getProject($group_id);
-        
-        if (!$project) {
+
+        if (! $project) {
             $this->error("Could not create/initialize project object");
         }
-        
+
         return $project;
     }
 
@@ -373,45 +420,48 @@ abstract class SystemEvent {
      * @param int $user_id the id of the User
      * @return PFUser
      */
-    protected function getUser($user_id) {
-        if (!$user_id) {
+    protected function getUser($user_id)
+    {
+        if (! $user_id) {
             return $this->setErrorBadParam();
         }
-        
+
         $user = UserManager::instance()->getUserById($user_id);
-        
-        if (!$user) {
+
+        if (! $user) {
             $this->error("Could not create/initialize user object");
         }
-        
+
         return $user;
     }
     /**
      * Wrapper for event manager
-     * 
+     *
      * @return EventManager
      */
-    protected function getEventManager() {
+    protected function getEventManager()
+    {
         return EventManager::instance();
     }
-    
+
     /**
      * Notify people that listen to the status of the event
      */
-    public function notify(SystemEventsFollowersDao $dao = null) {
-        if(is_null($dao)) {
+    public function notify(?SystemEventsFollowersDao $dao = null)
+    {
+        if (is_null($dao)) {
             $dao = new SystemEventsFollowersDao(CodendiDataAccess::instance());
         }
-        $listeners = array();
-        foreach($dao->searchByType($this->getStatus()) as $row) {
+        $listeners = [];
+        foreach ($dao->searchByType($this->getStatus()) as $row) {
             $listeners = array_merge($listeners, explode(',', $row['emails']));
         }
         if (count($listeners)) {
             $listeners = array_unique($listeners);
-            $m = new Codendi_Mail();
-            $m->setFrom($GLOBALS['sys_noreply']);
+            $m         = new Codendi_Mail();
+            $m->setFrom(ForgeConfig::get('sys_noreply'));
             $m->setTo(implode(',', $listeners));
-            $m->setSubject('['. $this->getstatus() .'] '. $this->getType());
+            $m->setSubject('[' . $this->getstatus() . '] ' . $this->getType());
             $m->setBodyText("
 Event:        #{$this->getId()}
 Type:         {$this->getType()}
@@ -423,20 +473,21 @@ Create Date:  {$this->getCreateDate()}
 Process Date: {$this->getProcessDate()}
 End Date:     {$this->getEndDate()}
 ---------------
-<". get_server_url() ."/admin/system_events/>
+<" . HTTPRequest::instance()->getServerUrl() . "/admin/system_events/>
 ");
             $m->send();
         }
     }
-    
+
     /**
      * Wrapper for Backend
-     * 
+     *
      * @param String $type Backend type
-     * 
+     *
      * @return Backend
      */
-    protected function getBackend($type) {
+    protected function getBackend($type)
+    {
         return Backend::instance($type);
     }
 
@@ -445,8 +496,9 @@ End Date:     {$this->getEndDate()}
      *
      * @return string suitable to be enclosed as parameter
      */
-    public static function encode($data) {
-        return str_replace(self::PARAMETER_SEPARATOR, self::PARAMETER_SEPARATOR_ESCAPE, json_encode(array('data' => $data)));
+    public static function encode($data)
+    {
+        return str_replace(self::PARAMETER_SEPARATOR, self::PARAMETER_SEPARATOR_ESCAPE, json_encode(['data' => $data]));
     }
 
     /**
@@ -454,7 +506,8 @@ End Date:     {$this->getEndDate()}
      *
      * @return mixed data
      */
-    public static function decode($string) {
+    public static function decode($string)
+    {
         $decode = json_decode(str_replace(self::PARAMETER_SEPARATOR_ESCAPE, self::PARAMETER_SEPARATOR, $string), true);
         if (isset($decode['data'])) {
             return $decode['data'];

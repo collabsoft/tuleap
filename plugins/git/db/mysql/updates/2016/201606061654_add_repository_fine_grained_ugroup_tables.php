@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -54,7 +54,8 @@ EOT;
 
     public function postUp()
     {
-        if (! $this->db->tableNameExists('plugin_git_repository_fine_grained_permissions_writers') ||
+        if (
+            ! $this->db->tableNameExists('plugin_git_repository_fine_grained_permissions_writers') ||
             ! $this->db->tableNameExists('plugin_git_repository_fine_grained_permissions_rewinders')
         ) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete(

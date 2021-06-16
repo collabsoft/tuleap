@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,13 +20,12 @@
 
 namespace Tuleap\Tracker\Events;
 
-use Tracker;
 use Tuleap\Event\Dispatchable;
 use Tuleap\Tracker\Action\MoveSemanticChecker;
 
 class MoveArtifactGetExternalSemanticCheckers implements Dispatchable
 {
-    const NAME = "moveArtifactGetExternalSemanticCheckers";
+    public const NAME = "moveArtifactGetExternalSemanticCheckers";
 
     /**
      * @var MoveSemanticChecker[]

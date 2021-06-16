@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: CategoryPage.php,v 1.2 2004/07/08 20:30:07 rurban Exp $');
 /**
  Copyright 1999, 2000, 2001, 2002 $ThePhpWikiProgrammingTeam
@@ -20,7 +21,7 @@ rcs_id('$Id: CategoryPage.php,v 1.2 2004/07/08 20:30:07 rurban Exp $');
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#require_once('lib/InlineParser.php');
+// require_once('lib/InlineParser.php');
 require_once('lib/BlockParser.php');
 
 /**
@@ -37,33 +38,40 @@ require_once('lib/BlockParser.php');
  *
  * This has only been used in wikilens.org.
  */
-class WikiPlugin_CategoryPage
-extends WikiPlugin
+class WikiPlugin_CategoryPage extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return _("CategoryPage");
     }
 
-    function getDescription () {
+    public function getDescription()
+    {
         return _("Create a Wiki page.");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.2 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.2 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array(// Assume the categories are listed on the HomePage
+    public function getDefaultArguments()
+    {
+        return [// Assume the categories are listed on the HomePage
                      'exclude'              => false,
                      'pagename'             => '[pagename]',
                      'plural'               => false,
                      'singular'             => false,
                      'self_on_create'       => true,
-                     'showbuds'             => false);
+                     'showbuds'             => false];
     }
 
-    function run($dbi, $argstr, &$request) {
+    public function run($dbi, $argstr, &$request)
+    {
         $args = $this->getArgs($argstr, $request);
 
         if (empty($args['singular'])) {
@@ -73,15 +81,18 @@ extends WikiPlugin
             $args['plural'] = $args['singular'] . 's';
         }
 
-        return new Template('categorypage', $request,
-                            array('EXCLUDE' => $args['exclude'],
+        return new Template(
+            'categorypage',
+            $request,
+            ['EXCLUDE' => $args['exclude'],
                                   'PAGENAME' => $args['pagename'],
                                   'PLURAL' => $args['plural'],
                                   'SHOWBUDS' => $args['showbuds'],
                                   'SELF_ON_CREATE' => $args['self_on_create'],
-                                  'SINGULAR' => $args['singular']));
+            'SINGULAR' => $args['singular']]
+        );
     }
-};
+}
 
 // Local Variables:
 // mode: php
@@ -90,4 +101,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

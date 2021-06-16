@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,14 +25,14 @@ use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NaturePresenter;
 
 class NatureInFolderPresenter extends NaturePresenter
 {
-    const NATURE_IN_FOLDER = '_in_folder';
+    public const NATURE_IN_FOLDER = '_in_folder';
 
     public function __construct()
     {
         parent::__construct(
             self::NATURE_IN_FOLDER,
-            $GLOBALS['Language']->getText('plugin_folders', '_in_folder_forward'),
-            $GLOBALS['Language']->getText('plugin_folders', '_in_folder_reverse'),
+            dgettext('tuleap-artifactsfolders', 'Folder'),
+            dgettext('tuleap-artifactsfolders', 'In folder'),
             false
         );
 

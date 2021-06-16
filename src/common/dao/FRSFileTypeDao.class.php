@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015-2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,21 +18,25 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class FRSFileTypeDao extends DataAccessObject {
+class FRSFileTypeDao extends DataAccessObject
+{
 
-    public function listFileTypes($group_id){
+    public function listFileTypes($group_id)
+    {
         return $this->retrieve("SELECT * FROM frs_filetype ORDER BY type_id");
     }
 
     /**
      * @return int type_id or null
      */
-    public function searchTypeId($name) {
-        $sql = sprintf(
-          "SELECT type_id FROM frs_filetype WHERE name=%s ORDER BY type_id LIMIT 1",
-          $this->da->quoteSmart((string) $name));
+    public function searchTypeId($name)
+    {
+        $sql      = sprintf(
+            "SELECT type_id FROM frs_filetype WHERE name=%s ORDER BY type_id LIMIT 1",
+            $this->da->quoteSmart((string) $name)
+        );
         $filetype = $this->retrieve($sql);
-        if(!$filetype->valid()) {
+        if (! $filetype->valid()) {
             return null;
         }
         $current = $filetype->current();
@@ -41,7 +45,7 @@ class FRSFileTypeDao extends DataAccessObject {
 
     public function searchById($id)
     {
-        $id = $this->da->escapeInt($id);
+        $id  = $this->da->escapeInt($id);
         $sql = "SELECT * FROM frs_filetype WHERE type_id=$id ORDER BY type_id LIMIT 1";
         return $this->retrieveFirstRow($sql);
     }

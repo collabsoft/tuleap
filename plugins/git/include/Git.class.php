@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2011-2018. All Rights Reserved.
+  * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
   * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
   *
   * This file is a part of Tuleap.
@@ -19,12 +19,14 @@
   * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 
+use Tuleap\Git\DefaultBranch\CannotSetANonExistingBranchAsDefaultException;
+use Tuleap\Git\DefaultBranch\DefaultBranchUpdater;
 use Tuleap\Git\GerritCanMigrateChecker;
-use Tuleap\Git\Gitolite\VersionDetector;
 use Tuleap\Git\GitViews\Header\HeaderRenderer;
 use Tuleap\Git\History\GitPhpAccessLogger;
 use Tuleap\Git\Notifications\UgroupsToNotifyDao;
 use Tuleap\Git\Notifications\UsersToNotifyDao;
+use Tuleap\Git\PathJoinUtil;
 use Tuleap\Git\Permissions\DefaultFineGrainedPermissionFactory;
 use Tuleap\Git\Permissions\FineGrainedPermissionDestructor;
 use Tuleap\Git\Permissions\FineGrainedPermissionFactory;
@@ -46,7 +48,6 @@ use Tuleap\User\RequestFromAutocompleter;
 
 /**
  * Git
- * @author Guillaume Storchi
  */
 class Git extends PluginController
 {
@@ -54,31 +55,31 @@ class Git extends PluginController
      * @var DescriptionUpdater
      */
     private $description_updater;
+    private DefaultBranchUpdater $default_branch_updater;
 
-    const PERM_READ  = 'PLUGIN_GIT_READ';
-    const PERM_WRITE = 'PLUGIN_GIT_WRITE';
-    const PERM_WPLUS = 'PLUGIN_GIT_WPLUS';
+    public const PERM_READ  = 'PLUGIN_GIT_READ';
+    public const PERM_WRITE = 'PLUGIN_GIT_WRITE';
+    public const PERM_WPLUS = 'PLUGIN_GIT_WPLUS';
 
-    const READ_PERM  = 'R';
+    public const READ_PERM = 'R';
 
-    const DEFAULT_PERM_READ  = 'PLUGIN_GIT_DEFAULT_READ';
-    const DEFAULT_PERM_WRITE = 'PLUGIN_GIT_DEFAULT_WRITE';
-    const DEFAULT_PERM_WPLUS = 'PLUGIN_GIT_DEFAULT_WPLUS';
+    public const DEFAULT_PERM_READ  = 'PLUGIN_GIT_DEFAULT_READ';
+    public const DEFAULT_PERM_WRITE = 'PLUGIN_GIT_DEFAULT_WRITE';
+    public const DEFAULT_PERM_WPLUS = 'PLUGIN_GIT_DEFAULT_WPLUS';
 
-    const PERM_ADMIN         = 'PLUGIN_GIT_ADMIN';
-    const SPECIAL_PERM_ADMIN = 'PROJECT_ADMIN';
+    public const PERM_ADMIN         = 'PLUGIN_GIT_ADMIN';
+    public const SPECIAL_PERM_ADMIN = 'PROJECT_ADMIN';
 
-    const SCOPE_PERSONAL = 'personal';
+    public const SCOPE_PERSONAL = 'personal';
 
-    const REFERENCE_KEYWORD = 'git';
-    const REFERENCE_NATURE  = 'git_commit';
+    public const REFERENCE_KEYWORD = 'git';
+    public const REFERENCE_NATURE  = 'git_commit';
 
-    const DEFAULT_GIT_PERMS_GRANTED_FOR_PROJECT = 'default_git_perms_granted_for_project';
+    public const TAG_REFERENCE_KEYWORD = 'git_tag';
+    public const TAG_REFERENCE_NATURE  = 'git_tag';
 
-    /**
-     * @var VersionDetector
-     */
-    private $detector;
+    public const DEFAULT_GIT_PERMS_GRANTED_FOR_PROJECT = 'default_git_perms_granted_for_project';
+
     /**
      * @var RegexpFineGrainedRetriever
      */
@@ -119,15 +120,17 @@ class Git extends PluginController
      *
      * @return array
      */
-    public static function allPermissionTypes() {
-        return array(Git::PERM_READ, Git::PERM_WRITE, Git::PERM_WPLUS);
+    public static function allPermissionTypes()
+    {
+        return [self::PERM_READ, self::PERM_WRITE, self::PERM_WPLUS];
     }
 
     /**
      * @return array
      */
-    public static function allDefaultPermissionTypes() {
-        return array(Git::DEFAULT_PERM_READ, Git::DEFAULT_PERM_WRITE, Git::DEFAULT_PERM_WPLUS);
+    public static function allDefaultPermissionTypes()
+    {
+        return [self::DEFAULT_PERM_READ, self::DEFAULT_PERM_WRITE, self::DEFAULT_PERM_WPLUS];
     }
 
     /**
@@ -136,7 +139,7 @@ class Git extends PluginController
     private $mirror_data_mapper;
 
     /**
-     * @var Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
 
@@ -161,12 +164,12 @@ class Git extends PluginController
     private $projectManager;
 
     /**
-     * @var GitPlugin
+     * @var GitPlugin
      */
     private $plugin;
 
     /**
-     * @var Git_RemoteServer_GerritServerFactory
+     * @var Git_RemoteServer_GerritServerFactory
      */
     private $gerrit_server_factory;
 
@@ -279,12 +282,12 @@ class Git extends PluginController
         GitRepositoryFactory $git_repository_factory,
         UserManager $user_manager,
         ProjectManager $project_manager,
-        Codendi_Request $request,
+        HTTPRequest $request,
         Git_Driver_Gerrit_ProjectCreator $project_creator,
         Git_Driver_Gerrit_Template_TemplateFactory $template_factory,
         GitPermissionsManager $permissions_manager,
         Git_GitRepositoryUrlManager $url_manager,
-        Logger $logger,
+        \Psr\Log\LoggerInterface $logger,
         Git_Mirror_MirrorDataMapper $mirror_data_mapper,
         Git_Driver_Gerrit_ProjectCreatorStatus $project_creator_status,
         GerritCanMigrateChecker $gerrit_can_migrate_checker,
@@ -299,9 +302,9 @@ class Git extends PluginController
         PermissionChangesDetector $permission_changes_detector,
         TemplatePermissionsUpdater $template_permission_updater,
         ProjectHistoryDao $history_dao,
+        DefaultBranchUpdater $default_branch_updater,
         DescriptionUpdater $description_updater,
         GitPhpAccessLogger $access_loger,
-        VersionDetector $detector,
         RegexpFineGrainedRetriever $regexp_retriever,
         RegexpFineGrainedEnabler $regexp_enabler,
         RegexpFineGrainedDisabler $regexp_disabler,
@@ -331,7 +334,6 @@ class Git extends PluginController
         $this->project_creator_status     = $project_creator_status;
         $this->gerrit_can_migrate_checker = $gerrit_can_migrate_checker;
         $this->access_loger               = $access_loger;
-        $this->detector                   = $detector;
 
         $valid = new Valid_GroupId('group_id');
         $valid->required();
@@ -350,7 +352,7 @@ class Git extends PluginController
 
         $this->project = $this->projectManager->getProject($this->groupId);
 
-        $this->permittedActions                = array();
+        $this->permittedActions                = [];
         $this->fine_grained_updater            = $fine_grained_updater;
         $this->fine_grained_permission_factory = $fine_grained_permission_factory;
         $this->fine_grained_retriever          = $fine_grained_retriever;
@@ -363,6 +365,7 @@ class Git extends PluginController
         $this->permission_changes_detector             = $permission_changes_detector;
         $this->template_permission_updater             = $template_permission_updater;
         $this->history_dao                             = $history_dao;
+        $this->default_branch_updater                  = $default_branch_updater;
         $this->description_updater                     = $description_updater;
         $this->regexp_retriever                        = $regexp_retriever;
         $this->regexp_enabler                          = $regexp_enabler;
@@ -378,7 +381,6 @@ class Git extends PluginController
     {
         return new GitViews(
             $this,
-            new Git_GitRepositoryUrlManager($this->getPlugin()),
             $this->mirror_data_mapper,
             $this->permissions_manager,
             $this->fine_grained_permission_factory,
@@ -388,31 +390,38 @@ class Git extends PluginController
             $this->access_loger,
             $this->regexp_retriever,
             $this->gerrit_server_factory,
-            $this->header_renderer
+            $this->header_renderer,
+            $this->projectManager
         );
     }
 
-    public function setPermissionsManager(GitPermissionsManager $permissions_manager) {
+    public function setPermissionsManager(GitPermissionsManager $permissions_manager)
+    {
         $this->permissions_manager = $permissions_manager;
     }
 
-    public function setProjectManager($projectManager) {
+    public function setProjectManager($projectManager)
+    {
         $this->projectManager = $projectManager;
     }
 
-    public function setFactory(GitRepositoryFactory $factory) {
+    public function setFactory(GitRepositoryFactory $factory)
+    {
         $this->factory = $factory;
     }
 
-    public function setRequest(Codendi_Request $request) {
+    public function setRequest(HTTPRequest $request)
+    {
         $this->request = $request;
     }
 
-    public function setUserManager(UserManager $userManager) {
+    public function setUserManager(UserManager $userManager)
+    {
         $this->userManager = $userManager;
     }
 
-    public function setAction($action) {
+    public function setAction($action)
+    {
         $this->action = $action;
     }
 
@@ -425,28 +434,27 @@ class Git extends PluginController
         $this->project = $project;
     }
 
-    public function setPermittedActions($permittedActions) {
+    public function setPermittedActions($permittedActions)
+    {
         $this->permittedActions = $permittedActions;
-    }
-
-    protected function getText($key, $params = array()) {
-        return $GLOBALS['Language']->getText('plugin_git', $key, $params);
     }
 
     /**
      * @return GitPlugin
      */
-    public function getPlugin() {
+    public function getPlugin()
+    {
         return $this->plugin;
     }
 
-    protected function definePermittedActions(/* GitRepository */ $repository, $user) {
+    protected function definePermittedActions(/* GitRepository */ $repository, $user)
+    {
         if ($this->permissions_manager->userIsGitAdmin($user, $this->projectManager->getProject($this->groupId))) {
-            $this->permittedActions = array(
+            $this->permittedActions = [
                 'index',
                 'view' ,
                 'edit',
-                'edit-description',
+                'edit-general-settings',
                 'clone',
                 'add',
                 'del',
@@ -474,7 +482,7 @@ class Git extends PluginController
                 'delete_gerrit_project',
                 'update_mirroring',
                 'update_default_mirroring',
-            );
+            ];
             if ($this->areMirrorsEnabledForProject()) {
                 $this->permittedActions[] = 'admin-mass-update';
             }
@@ -506,13 +514,14 @@ class Git extends PluginController
         $this->addAdditionalPermittedActions($user, $repository);
     }
 
-    private function addAdditionalPermittedActions(PFUser $user, /* GitRepository */ $repository) {
-        $permitted_actions = array();
-        $params            = array(
+    private function addAdditionalPermittedActions(PFUser $user, /* GitRepository */ $repository)
+    {
+        $permitted_actions = [];
+        $params            = [
             'repository'        => $repository,
             'user'              => $user,
             'permitted_actions' => &$permitted_actions
-        );
+        ];
 
         EventManager::instance()->processEvent(GIT_ADDITIONAL_PERMITTED_ACTIONS, $params);
 
@@ -521,16 +530,17 @@ class Git extends PluginController
         }
     }
 
-    public function request() {
+    public function request()
+    {
         $valid = new Valid_String('repo_name');
         $valid->required();
         $repositoryName = null;
-        if($this->request->valid($valid)) {
+        if ($this->request->valid($valid)) {
             $repositoryName = trim($this->request->get('repo_name'));
         }
         $valid = new Valid_UInt('repo_id');
         $valid->required();
-        if($this->request->valid($valid)) {
+        if ($this->request->valid($valid)) {
             $repoId = $this->request->get('repo_id');
         } else {
             $repoId = 0;
@@ -547,8 +557,8 @@ class Git extends PluginController
         $this->definePermittedActions($repository, $user);
 
         //check permissions
-        if ( empty($this->permittedActions) || !$this->isAPermittedAction($this->action) ) {
-            $this->addError($this->getText('controller_access_denied'));
+        if (empty($this->permittedActions) || ! $this->isAPermittedAction($this->action)) {
+            $this->addError(dgettext('tuleap-git', 'You are not allowed to access this page'));
             $this->redirect('/plugins/git/' . urlencode($this->project->getUnixNameLowerCase()) . '/');
             return;
         }
@@ -558,17 +568,30 @@ class Git extends PluginController
         $this->_dispatchActionAndView($this->action, $repository, $repoId, $repositoryName, $user);
     }
 
-    public function _dispatchActionAndView($action, /* GitRepository */ $repository, $repo_id, $repositoryName, $user) {
+    public function _dispatchActionAndView($action, /* GitRepository */ $repository, $repo_id, $repositoryName, $user)
+    {
         $pane = $this->request->get('pane');
         switch ($action) {
-             #DELETE a repository
+             // DELETE a repository
             case 'del':
-                $this->addAction( 'deleteRepository', array($this->groupId, $repository->getId()));
+                $this->defaultCSRFChecks($repository, 'delete');
+                $this->addAction('deleteRepository', [$this->groupId, $repository->getId()]);
                 $this->addView('index');
                 break;
-            #EDIT
-            case 'edit-description':
-                $description = null;
+            // EDIT
+            case 'edit-general-settings':
+                $this->defaultCSRFChecks($repository, 'settings');
+                if ($this->request->exist('repo-default-branch')) {
+                    try {
+                        $this->default_branch_updater->updateDefaultBranch(
+                            Git_Exec::buildFromRepository($repository),
+                            $this->request->get('repo-default-branch')
+                        );
+                        $this->addInfo(dgettext('tuleap-git', 'Default branch successfully updated'));
+                    } catch (CannotSetANonExistingBranchAsDefaultException $exception) {
+                        $this->addError(dgettext('tuleap-git', 'The update of the default branch did not succeed'));
+                    }
+                }
                 if ($this->request->exist('repo_desc')) {
                     $description       = GitRepository::DEFAULT_DESCRIPTION;
                     $valid_descrpition = new Valid_Text('repo_desc');
@@ -582,24 +605,25 @@ class Git extends PluginController
                 break;
             case 'edit':
                 if (empty($repository)) {
-                    $this->addError($this->getText('actions_params_error'));
-                    $this->redirect('/plugins/git/?action=index&group_id='. $this->groupId);
+                    $this->addError(dgettext('tuleap-git', 'Empty required parameter(s)'));
+                    $this->redirect('/plugins/git/?action=index&group_id=' . $this->groupId);
                     return false;
                 }
-                if ( $this->isAPermittedAction('clone') && $this->request->get('clone') ) {
+                if ($this->isAPermittedAction('clone') && $this->request->get('clone')) {
                     $valid_url = new Valid_UInt('parent_id');
                     $valid_url->required();
-                    if($this->request->valid($valid_url)) {
-                        $parentId = (int)$this->request->get('parent_id');
+                    if ($this->request->valid($valid_url)) {
+                        $parentId = (int) $this->request->get('parent_id');
+                        $this->addAction('cloneRepository', [$this->groupId, $repositoryName, $parentId]);
+                        $this->addAction('getRepositoryDetails', [$this->groupId, $parentId]);
                     }
-                    $this->addAction( 'cloneRepository', array($this->groupId, $repositoryName, $parentId) );
-                    $this->addAction( 'getRepositoryDetails', array($this->groupId, $parentId) );
                     $this->addView('view');
-                } else if ( $this->isAPermittedAction('save') && $this->request->get('save') ) {
+                } elseif ($this->isAPermittedAction('save') && $this->request->get('save')) {
+                    $this->defaultCSRFChecks($repository, 'perms');
                     $repoAccess = null;
-                    $valid_url = new Valid_String('repo_access');
+                    $valid_url  = new Valid_String('repo_access');
                     $valid_url->required();
-                    if($this->request->valid($valid_url) || is_array($this->request->get('repo_access'))) {
+                    if ($this->request->valid($valid_url) || is_array($this->request->get('repo_access'))) {
                         $repoAccess = $this->request->get('repo_access');
                     }
 
@@ -613,9 +637,9 @@ class Git extends PluginController
 
                     $use_regexp = $this->request->exist('use-regexp');
 
-                    $updated_permissions        = array();
-                    $added_tags_permissions     = array();
-                    $added_branches_permissions = array();
+                    $updated_permissions        = [];
+                    $added_tags_permissions     = [];
+                    $added_branches_permissions = [];
 
                     if ($fine_grained_permissions_activated && count($current_permissions) === 0) {
                         $added_tags_permissions     = $this->fine_grained_permission_factory->getDefaultTagsFineGrainedPermissionsForRepository($repository);
@@ -641,7 +665,7 @@ class Git extends PluginController
 
                     $this->addAction(
                         'save',
-                        array(
+                        [
                             $this->groupId,
                             $repository->getId(),
                             $repoAccess,
@@ -651,84 +675,85 @@ class Git extends PluginController
                             $added_tags_permissions,
                             $updated_permissions,
                             $use_regexp
-                        )
+                        ]
                     );
                     $this->addView('view');
                 } else {
-                    $this->addError( $this->getText('controller_access_denied') );
+                    $this->addError(dgettext('tuleap-git', 'You are not allowed to access this page'));
                     $this->redirect('/plugins/git/' . urlencode($this->project->getUnixNameLowerCase()) . '/');
                 }
                 break;
-            #repo_management
+            // repo_management
             case 'repo_management':
                 if (empty($repository)) {
                     $this->redirectNoRepositoryError();
                     return false;
                 }
-                $this->addAction('repoManagement', array($repository));
+                $this->addAction('repoManagement', [$repository]);
                 $this->setDefaultPageRendering(false);
                 $this->addView('repoManagement');
                 break;
             case 'mail':
+                $this->defaultCSRFChecks($repository, 'mail');
                 $this->processRepoManagementNotifications($pane, $repository->getId(), $repositoryName, $user);
                 break;
-            #fork
+            // fork
             case 'fork':
-                $this->addAction('repoManagement', array($this->groupId, $repository->getId()));
+                $this->addAction('repoManagement', [$this->groupId, $repository->getId()]);
                 $this->addView('forkRepositories');
                 break;
-            #confirm_private
+            // confirm_private
             case 'confirm_private':
-                if ( $this->isAPermittedAction('confirm_deletion') && $this->request->get('confirm_deletion') ) {
-                    $this->addAction('confirmDeletion', array($this->groupId, $repository));
-                    $this->addView('confirm_deletion', array( 0=>array('repo_id'=>$repository->getId()) ) );
-                }
-                else if ( $this->isAPermittedAction('save') && $this->request->get('save') ) {
+                if ($this->isAPermittedAction('confirm_deletion') && $this->request->get('confirm_deletion')) {
+                    $this->addAction('confirmDeletion', [$this->groupId, $repository]);
+                    $this->addView('confirm_deletion', [0 => ['repo_id' => $repository->getId()]]);
+                } elseif ($this->isAPermittedAction('save') && $this->request->get('save')) {
                     $valid_url = new Valid_Text('repo_desc');
                     $valid_url->required();
-                    if($this->request->valid($valid_url)) {
+                    if ($this->request->valid($valid_url)) {
                         $description = $this->request->get('repo_desc');
                     }
                     $valid_url = new Valid_String('repo_access');
                     $valid_url->required();
-                    if($this->request->valid($valid_url)) {
+                    if ($this->request->valid($valid_url)) {
                         $repoAccess = $this->request->get('repo_access');
                     }
-                    $this->addAction('confirmPrivate', array($this->groupId, $repository->getId(), $repoAccess, $description) );
+                    $this->addAction('confirmPrivate', [$this->groupId, $repository->getId(), $repoAccess, $description]);
                     $this->addView('confirmPrivate');
                 }
                 break;
-             #SET TO PRIVATE
+             // SET TO PRIVATE
             case 'set_private':
-                $this->addAction('setPrivate', array($this->groupId, $repository->getId()));
+                $this->addAction('setPrivate', [$this->groupId, $repository->getId()]);
                 $this->addView('view');
                 break;
             case 'fork_repositories':
-                $this->addAction('getProjectRepositoryList', array($this->groupId));
+                $this->addAction('getProjectRepositoryList', [$this->groupId]);
                 $this->addView('forkRepositories');
                 break;
             case 'admin-git-admins':
                 if ($this->request->get('submit')) {
+                    $this->defaultProjectAdminCSRFChecks($action);
                     $valid_url = new Valid_Numeric(GitPresenters_AdminGitAdminsPresenter::GIT_ADMIN_SELECTBOX_NAME);
-                    $project = $this->projectManager->getProject($this->groupId);
+                    $project   = $this->projectManager->getProject($this->groupId);
 
                     if ($this->request->validArray($valid_url)) {
                         $select_project_ids = $this->request->get(GitPresenters_AdminGitAdminsPresenter::GIT_ADMIN_SELECTBOX_NAME);
 
                         if ($select_project_ids) {
-                            $this->addAction('updateGitAdminGroups', array($project, $user, $select_project_ids));
+                            $this->addAction('updateGitAdminGroups', [$project, $user, $select_project_ids]);
                         } else {
-                            $this->addError($this->getText('no_data_retrieved'));
+                            $this->addError(dgettext('tuleap-git', 'No data retrieved from the request'));
                         }
                     } else {
-                        $this->addError($this->getText('not_valid_request'));
+                        $this->addError(dgettext('tuleap-git', 'The request is not valid.'));
                     }
                 }
 
                 $this->setDefaultPageRendering(false);
                 $this->addView(
                     'adminGitAdminsView',
-                    array($this->areMirrorsEnabledForProject())
+                    [$this->areMirrorsEnabledForProject()]
                 );
 
                 break;
@@ -737,40 +762,42 @@ class Git extends PluginController
                 $project = $this->projectManager->getProject($this->groupId);
 
                 if ($this->request->get('save')) {
-                    $template_content = $this->request->getValidated('git_admin_config_data','text');
-                    if ($this->request->getValidated('git_admin_template_id','uint')) {
+                    $this->defaultProjectAdminCSRFChecks('admin-gerrit-templates');
+                    $template_content = $this->request->getValidated('git_admin_config_data', 'text');
+                    if ($this->request->getValidated('git_admin_template_id', 'uint')) {
                         $template_id = $this->request->get('git_admin_template_id');
-                        $this->addAction('updateTemplate', array($project, $user, $template_content, $template_id));
+                        $this->addAction('updateTemplate', [$project, $user, $template_content, $template_id]);
                     } else {
-                        $template_name = $this->request->getValidated('git_admin_file_name','string');
-                        $this->addAction('createTemplate', array($project, $user, $template_content, $template_name));
+                        $template_name = $this->request->getValidated('git_admin_file_name', 'string');
+                        $this->addAction('createTemplate', [$project, $user, $template_content, $template_name]);
                     }
                 }
 
                 if ($this->request->get('delete')) {
-                    if ($this->request->getValidated('git_admin_template_id','uint')) {
+                    $this->defaultProjectAdminCSRFChecks('admin-gerrit-templates');
+                    if ($this->request->getValidated('git_admin_template_id', 'uint')) {
                         $template_id = $this->request->get('git_admin_template_id');
-                        $this->addAction('deleteGerritTemplate', array($template_id, $project, $user));
+                        $this->addAction('deleteGerritTemplate', [$template_id, $project, $user]);
                     }
                 }
 
                 if ($this->permissions_manager->userIsGitAdmin($user, $project)) {
-                    $this->addAction('generateGerritRepositoryAndTemplateList', array($project, $user));
+                    $this->addAction('generateGerritRepositoryAndTemplateList', [$project, $user]);
                     $this->setDefaultPageRendering(false);
                     $this->addView(
                         'adminGerritTemplatesView',
-                        array($this->areMirrorsEnabledForProject())
+                        [$this->areMirrorsEnabledForProject()]
                     );
                 } else {
-                    $this->addError($this->getText('controller_access_denied'));
-                    $this->redirect('/plugins/git/?action=index&group_id='. $this->groupId);
+                    $this->addError(dgettext('tuleap-git', 'You are not allowed to access this page'));
+                    $this->redirect('/plugins/git/?action=index&group_id=' . $this->groupId);
                     return false;
                 }
 
                 break;
             case 'admin-mass-update':
                 if ($this->request->get('save-mass-change') || $this->request->get('go-to-mass-change')) {
-                    $this->checkSynchronizerToken('/plugins/git/?group_id='. (int)$this->groupId .'&action=admin-mass-update');
+                    $this->checkSynchronizerToken('/plugins/git/?group_id=' . (int) $this->groupId . '&action=admin-mass-update');
 
                     $repositories = $this->getRepositoriesFromIds($this->request->get('repository_ids'));
 
@@ -780,18 +807,20 @@ class Git extends PluginController
                 }
 
                 if ($this->request->get('go-to-mass-change')) {
-                    $this->addAction('setSelectedRepositories', array($repositories));
+                    assert(isset($repositories));
+                    $this->addAction('setSelectedRepositories', [$repositories]);
                     $this->setDefaultPageRendering(false);
                     $this->addView('adminMassUpdateView');
                     return;
                 }
 
                 if ($this->request->get('save-mass-change')) {
-                    $this->addAction('updateMirroring', array(
+                    assert(isset($repositories));
+                    $this->addAction('updateMirroring', [
                         $this->request->getProject(),
                         $repositories,
                         $this->request->get('selected_mirror_ids')
-                    ));
+                    ]);
                 }
 
                 $this->setDefaultPageRendering(false);
@@ -809,19 +838,19 @@ class Git extends PluginController
             case 'fetch_git_config':
                 $project = $this->projectManager->getProject($this->groupId);
                 $this->setDefaultPageRendering(false);
-                $this->addAction('fetchGitConfig', array($repository->getId(), $user, $project));
+                $this->addAction('fetchGitConfig', [$repository->getId(), $user, $project]);
                 break;
             case 'fetch_git_template':
-                $project = $this->projectManager->getProject($this->groupId);
-                $template_id = $this->request->getValidated('template_id','uint');
+                $project     = $this->projectManager->getProject($this->groupId);
+                $template_id = $this->request->getValidated('template_id', 'uint');
                 $this->setDefaultPageRendering(false);
-                $this->addAction('fetchGitTemplate', array($template_id, $user, $project));
+                $this->addAction('fetchGitTemplate', [$template_id, $user, $project]);
                 break;
             case 'fork_repositories_permissions':
-                $scope = self::SCOPE_PERSONAL;
+                $scope     = self::SCOPE_PERSONAL;
                 $valid_url = new Valid_UInt('repos');
                 $valid_url->required();
-                if($this->request->validArray($valid_url)) {
+                if ($this->request->validArray($valid_url)) {
                     $repos = $this->request->get('repos');
                 }
                 $valid_url = new Valid_UInt('to_project');
@@ -831,20 +860,20 @@ class Git extends PluginController
                 $valid_url = new Valid_String('path');
                 $valid_url->required();
                 $path = '';
-                if($this->request->valid($valid_url)) {
+                if ($this->request->valid($valid_url)) {
                     $path = $this->request->get('path');
                 }
                 $valid_url = new Valid_String('choose_destination');
                 $valid_url->required();
-                if($this->request->valid($valid_url)) {
+                if ($this->request->valid($valid_url)) {
                     $scope = $this->request->get('choose_destination');
                 }
-                if (!empty($repos)) {
-                    $this->addAction('forkRepositoriesPermissions', array($repos, $toProject, $path, $scope));
+                if (! empty($repos)) {
+                    $this->addAction('forkRepositoriesPermissions', [$repos, $toProject, $path, $scope]);
                     $this->addView('forkRepositoriesPermissions');
                 } else {
-                    $this->addError($this->getText('actions_params_error'));
-                    $this->addAction('getProjectRepositoryList', array($this->groupId));
+                    $this->addError(dgettext('tuleap-git', 'Empty required parameter(s)'));
+                    $this->addAction('getProjectRepositoryList', [$this->groupId]);
                     $this->addView('forkRepositories');
                 }
                 break;
@@ -854,15 +883,15 @@ class Git extends PluginController
                         if ($this->user->isMember($this->groupId)) {
                             $this->_doDispatchForkRepositories($this->request, $user);
                         } else {
-                            $this->addError($this->getText('controller_access_denied'));
+                            $this->addError(dgettext('tuleap-git', 'You are not allowed to access this page'));
                         }
                     } else {
                         $this->_doDispatchForkCrossProject($this->request, $user);
                     }
                 } catch (MalformedPathException $e) {
-                    $this->addError($this->getText('fork_malformed_path'));
+                    $this->addError(dgettext('tuleap-git', 'Path cannot contain double dots (..)'));
                 }
-                $this->addAction('getProjectRepositoryList', array($this->groupId));
+                $this->addAction('getProjectRepositoryList', [$this->groupId]);
                 $this->addView('forkRepositories');
                 break;
             case "view_last_git_pushes":
@@ -882,81 +911,80 @@ class Git extends PluginController
                 $imageRenderer->display();
                 break;
             case 'migrate_to_gerrit':
+                $this->defaultCSRFChecks($repository, 'gerrit');
                 if (! $this->gerrit_can_migrate_checker->canMigrate($repository->getProject())) {
                     $this->redirect('/plugins/git/' . urlencode($this->project->getUnixNameLowerCase()) . '/');
                     break;
                 }
 
-                $remote_server_id      = $this->request->getValidated('remote_server_id', 'uint');
-                $gerrit_template_id    = $this->getValidatedGerritTemplateId($repository);
+                $remote_server_id   = $this->request->getValidated('remote_server_id', 'uint');
+                $gerrit_template_id = $this->getValidatedGerritTemplateId($repository);
 
-                if (empty($repository) || empty($remote_server_id) || empty($gerrit_template_id)) {
-                    $this->addError($this->getText('actions_params_error'));
+                if (empty($remote_server_id) || empty($gerrit_template_id)) {
+                    $this->addError(dgettext('tuleap-git', 'Empty required parameter(s)'));
                     $this->redirect('/plugins/git/' . urlencode($this->project->getUnixNameLowerCase()) . '/');
                 } else {
                     try {
                         $project_exists = $this->gerritProjectAlreadyExists($remote_server_id, $repository);
                         if ($project_exists) {
-                            $this->addError($this->getText('gerrit_project_exists'));
+                            $this->addError(dgettext('tuleap-git', 'A Gerrit project with that name already exists on that server'));
                         } else {
-                            $this->addAction('migrateToGerrit', array($repository, $remote_server_id, $gerrit_template_id, $user));
+                            $this->addAction('migrateToGerrit', [$repository, $remote_server_id, $gerrit_template_id, $user]);
                         }
                     } catch (Git_Driver_Gerrit_Exception $e) {
-                        $this->addError($this->getText('gerrit_server_down').' '.$e->getMessage());
+                        $this->addError(dgettext('tuleap-git', 'Cannot connect to remote Gerrit server') . ' ' . $e->getMessage());
                     } catch (Git_RemoteServer_NotFoundException $e) {
-                        $this->addError($this->getText('gerrit_servers_id_does_not_exist').' '.$e->getMessage());
+                        $this->addError(dgettext('tuleap-git', 'The requested Gerrit server does not exist.') . ' ' . $e->getMessage());
                     }
-                    $this->addAction('redirectToRepoManagementWithMigrationAccessRightInformation', array($this->groupId, $repository->getId(), $pane));
+                    $this->addAction('redirectToRepoManagementWithMigrationAccessRightInformation', [$this->groupId, $repository->getId(), $pane]);
                 }
                 break;
             case 'disconnect_gerrit':
                 if (empty($repository)) {
-                    $this->addError($this->getText('actions_params_error'));
+                    $this->addError(dgettext('tuleap-git', 'Empty required parameter(s)'));
                     $this->redirect('/plugins/git/' . urlencode($this->project->getUnixNameLowerCase()) . '/');
                 } else {
-                    $this->addAction('disconnectFromGerrit', array($repository));
-                    $this->addAction('redirectToRepoManagement', array($this->groupId, $repository->getId(), $pane));
+                    $this->defaultCSRFChecks($repository, 'gerrit');
+                    $this->addAction('disconnectFromGerrit', [$repository]);
+                    $this->addAction('redirectToRepoManagement', [$this->groupId, $repository->getId(), $pane]);
                 }
                 break;
             case 'delete_gerrit_project':
                 $server              = $this->gerrit_server_factory->getServerById($repository->getRemoteServerId());
                 $project_gerrit_name = $this->driver_factory->getDriver($server)->getGerritProjectName($repository);
+                $this->defaultCSRFChecks($repository, 'gerrit');
 
                 try {
                     $this->driver_factory->getDriver($server)->deleteProject($server, $project_gerrit_name);
                 } catch (ProjectDeletionException $exception) {
-                    $this->addError($this->getText(
-                        'project_deletion_not_possible',
-                        array(
-                            $project_gerrit_name,
-                            $exception->getMessage()
-                        )
-                    ));
+                    $this->addError(sprintf(dgettext('tuleap-git', 'Cannot delete project %1$s on Gerrit: %2$s.'), $project_gerrit_name, $exception->getMessage()));
                 } catch (Git_Driver_Gerrit_Exception $e) {
-                    $this->addError($this->getText('gerrit_server_down'));
+                    $this->addError(dgettext('tuleap-git', 'Cannot connect to remote Gerrit server'));
                 }
                 $migrate_access_right = $this->request->existAndNonEmpty('migrate_access_right');
-                $this->addAction('redirectToRepoManagementWithMigrationAccessRightInformation', array($this->groupId, $repository->getId(), $pane));
+                $this->addAction('redirectToRepoManagementWithMigrationAccessRightInformation', [$this->groupId, $repository->getId(), $pane]);
                 break;
 
             case 'update_mirroring':
                 if (! $repository) {
-                    $this->addError($this->getText('actions_repo_not_found'));
+                    $this->addError(dgettext('tuleap-git', 'The repository does not exist'));
                 }
+
+                $this->defaultCSRFChecks($repository, 'mirroring');
 
                 $selected_mirror_ids = $this->request->get('selected_mirror_ids');
 
                 if (is_array($selected_mirror_ids)) {
-                    $this->addAction('updateMirroring', array(
+                    $this->addAction('updateMirroring', [
                         $this->request->getProject(),
-                        array($repository),
+                        [$repository],
                         $selected_mirror_ids
-                    ));
+                    ]);
                 } else {
-                    $this->addError($this->getText('actions_mirror_ids_not_valid'));
+                    $this->addError(dgettext('tuleap-git', 'This request is not valid (invalid mirror ids).'));
                 }
 
-                $this->addAction('redirectToRepoManagement', array($this->groupId, $repository->getId(), $pane));
+                $this->addAction('redirectToRepoManagement', [$this->groupId, $repository->getId(), $pane]);
                 break;
 
             case 'update_default_mirroring':
@@ -971,19 +999,19 @@ class Git extends PluginController
                 $selected_mirror_ids = $this->request->get('selected_mirror_ids');
 
                 if (is_array($selected_mirror_ids)) {
-                    $this->addAction('updateDefaultMirroring', array($project, $selected_mirror_ids));
+                    $this->addAction('updateDefaultMirroring', [$project, $selected_mirror_ids]);
                 } else {
-                    $this->addError($this->getText('actions_mirror_ids_not_valid'));
+                    $this->addError(dgettext('tuleap-git', 'This request is not valid (invalid mirror ids).'));
                 }
 
                 $this->addRedirectToDefaultSettingsAction();
 
                 break;
             case 'restore':
-                $this->addAction('restoreRepository', array($repo_id, $this->groupId));
+                $this->addAction('restoreRepository', [$repo_id, $this->groupId]);
                 break;
             case 'delete-permissions':
-                $url  = '?action=repo_management&pane=perms&group_id='.$this->groupId;
+                $url  = '?action=repo_management&pane=perms&group_id=' . $this->groupId;
                 $csrf = new CSRFSynchronizerToken($url);
                 $csrf->check();
 
@@ -1003,15 +1031,15 @@ class Git extends PluginController
                     'perm_granted_for_git_repository',
                     $this->history_value_formatter->formatValueForRepository($repository),
                     $this->groupId,
-                    array($repository->getName())
+                    [$repository->getName()]
                 );
 
                 $this->git_system_event_manager->queueRepositoryUpdate($repository);
 
-                $this->addAction('redirectToRepoManagement', array($this->groupId, $repository->getId(), $pane));
+                $this->addAction('redirectToRepoManagement', [$this->groupId, $repository->getId(), $pane]);
                 break;
             case 'delete-default-permissions':
-                $url  = '?action=admin-default-settings&pane=access_control&group_id='.$this->groupId;
+                $url  = '?action=admin-default-settings&pane=access_control&group_id=' . $this->groupId;
                 $csrf = new CSRFSynchronizerToken($url);
                 $csrf->check();
 
@@ -1031,14 +1059,14 @@ class Git extends PluginController
                     self::DEFAULT_GIT_PERMS_GRANTED_FOR_PROJECT,
                     $this->history_value_formatter->formatValueForProject($this->request->getProject()),
                     $this->groupId,
-                    array($this->groupId)
+                    [$this->groupId]
                 );
 
                 $this->addRedirectToDefaultSettingsAction();
                 break;
-            #LIST
+            // LIST
             default:
-                $GLOBALS['Response']->permanentRedirect('/plugins/git/' . urlencode($this->project->getUnixNameLowerCase()) ."/");
+                $GLOBALS['Response']->permanentRedirect('/plugins/git/' . urlencode($this->project->getUnixNameLowerCase()) . "/");
 
                 break;
         }
@@ -1049,18 +1077,12 @@ class Git extends PluginController
         if ($deleted) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText(
-                    'plugin_git',
-                    'fine_grained_delete_ok'
-                )
+                dgettext('tuleap-git', 'Permission successfully deleted.')
             );
         } else {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText(
-                    'plugin_git',
-                    'fine_grained_delete_error'
-                )
+                dgettext('tuleap-git', 'An error occured while deleting permission.')
             );
         }
     }
@@ -1071,10 +1093,7 @@ class Git extends PluginController
         if (! $permission_id) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText(
-                    'plugin_git',
-                    'fine_grained_bad_request'
-                )
+                dgettext('tuleap-git', 'Bad request.')
             );
 
             return;
@@ -1085,7 +1104,7 @@ class Git extends PluginController
 
     private function addRedirectToDefaultSettingsAction()
     {
-        $pane = \Tuleap\Git\DefaultSettings\Pane\AccessControl::NAME;
+        $pane           = \Tuleap\Git\DefaultSettings\Pane\AccessControl::NAME;
         $requested_pane = $this->request->get('pane');
         if ($requested_pane) {
             $pane = $requested_pane;
@@ -1094,7 +1113,8 @@ class Git extends PluginController
         $this->addAction('redirectToDefaultSettings', [$this->groupId, $pane]);
     }
 
-    private function getValidatedGerritTemplateId($repository) {
+    private function getValidatedGerritTemplateId($repository)
+    {
         if (empty($repository)) {
             return null;
         }
@@ -1121,7 +1141,8 @@ class Git extends PluginController
         return null;
     }
 
-    private function gerritProjectAlreadyExists($remote_server_id, GitRepository $repo) {
+    private function gerritProjectAlreadyExists($remote_server_id, GitRepository $repo)
+    {
         $gerrit_server       = $this->gerrit_server_factory->getServerById($remote_server_id);
         $driver              = $this->driver_factory->getDriver($gerrit_server);
         $gerrit_project_name = $driver->getGerritProjectName($repo);
@@ -1129,13 +1150,14 @@ class Git extends PluginController
         return $driver->doesTheProjectExist($gerrit_server, $gerrit_project_name);
     }
 
-    private function processRepoManagementNotifications($pane, $repoId, $repositoryName, $user) {
+    private function processRepoManagementNotifications($pane, $repoId, $repositoryName, $user)
+    {
         $this->addView('repoManagement');
         if ($this->request->exist('mail_prefix')) {
             $valid = new Valid_String('mail_prefix');
             $valid->required();
             $mailPrefix = $this->request->getValidated('mail_prefix', $valid, '');
-            $this->addAction('notificationUpdatePrefix', array($this->groupId, $repoId, $mailPrefix, $pane));
+            $this->addAction('notificationUpdatePrefix', [$this->groupId, $repoId, $mailPrefix, $pane]);
         }
         $add_mail = $this->request->getValidated('add_mail');
         if ($add_mail) {
@@ -1153,78 +1175,75 @@ class Git extends PluginController
 
             $emails = $autocompleter->getEmails();
             if ($emails) {
-                $this->addAction('notificationAddMail', array($this->groupId, $repoId, $emails, $pane));
+                $this->addAction('notificationAddMail', [$this->groupId, $repoId, $emails, $pane]);
             }
 
             $users = $autocompleter->getUsers();
             if ($users) {
-                $this->addAction('notificationAddUsers', array($this->groupId, $repoId, $users));
+                $this->addAction('notificationAddUsers', [$this->groupId, $repoId, $users]);
             }
 
             $ugroups = $autocompleter->getUgroups();
             if ($ugroups) {
-                $this->addAction('notificationAddUgroups', array($this->groupId, $repoId, $ugroups));
+                $this->addAction('notificationAddUgroups', [$this->groupId, $repoId, $ugroups]);
             }
         }
         $remove_mail = $this->request->get('remove_mail');
         if (is_array($remove_mail)) {
-            $mails = array();
+            $mails = [];
             $valid = new Valid_Email('remove_mail');
             $valid->required();
             if ($this->request->validArray($valid)) {
                 $mails = $this->request->get('remove_mail');
             }
             if (count($mails) > 0) {
-                $this->addAction('notificationRemoveMail', array($this->groupId, $repoId, $mails, $pane));
+                $this->addAction('notificationRemoveMail', [$this->groupId, $repoId, $mails, $pane]);
             }
         }
         $users_to_remove = $this->request->get('remove_user');
         if (is_array($users_to_remove) && count($users_to_remove) > 0) {
-            $this->addAction('notificationRemoveUser', array($this->groupId, $repoId, $users_to_remove));
+            $this->addAction('notificationRemoveUser', [$this->groupId, $repoId, $users_to_remove]);
         }
         $ugrops_to_remove = $this->request->get('remove_ugroup');
         if (is_array($ugrops_to_remove) && count($ugrops_to_remove) > 0) {
-            $this->addAction('notificationRemoveUgroup', array($this->groupId, $repoId, $ugrops_to_remove));
+            $this->addAction('notificationRemoveUgroup', [$this->groupId, $repoId, $ugrops_to_remove]);
         }
-        $this->addAction('redirectToRepoManagement', array($this->groupId, $repoId, $pane));
+        $this->addAction('redirectToRepoManagement', [$this->groupId, $repoId, $pane]);
     }
 
-    protected function _informAboutPendingEvents(/* GitRepository */ $repository) {
+    protected function _informAboutPendingEvents(/* GitRepository */ $repository)
+    {
         $sem = SystemEventManager::instance();
-        $dar = $sem->_getDao()->searchWithParam('head', $this->groupId, array('GIT_REPO_CREATE', 'GIT_REPO_DELETE'), array(SystemEvent::STATUS_NEW, SystemEvent::STATUS_RUNNING));
+        $dar = $sem->_getDao()->searchWithParam('head', $this->groupId, ['GIT_REPO_CREATE', 'GIT_REPO_DELETE'], [SystemEvent::STATUS_NEW, SystemEvent::STATUS_RUNNING]);
         foreach ($dar as $row) {
-            $p = explode(SystemEvent::PARAMETER_SEPARATOR, $row['parameters']);
+            $p                  = explode(SystemEvent::PARAMETER_SEPARATOR, $row['parameters']);
             $deleted_repository = $this->factory->getDeletedRepository($p[1]);
-            switch($row['type']) {
-            case 'GIT_REPO_CREATE':
-                $GLOBALS['Response']->addFeedback('info', $this->getText('feedback_event_create', array($p[1])));
-                break;
+            switch ($row['type']) {
+                case 'GIT_REPO_CREATE':
+                    $GLOBALS['Response']->addFeedback('info', sprintf(dgettext('tuleap-git', 'There is an event in queue for a repository creation (%1$s), it will be processed in one minute or two. Please be patient!'), $p[1]));
+                    break;
 
-            case 'GIT_REPO_DELETE':
-                $GLOBALS['Response']->addFeedback('info', $this->getText('feedback_event_delete', array($deleted_repository->getFullName())));
-                break;
+                case 'GIT_REPO_DELETE':
+                    $repository_name = '';
+                    if ($deleted_repository !== null) {
+                        $repository_name = $deleted_repository->getFullName();
+                    }
+                    $GLOBALS['Response']->addFeedback('info', sprintf(dgettext('tuleap-git', 'There is an event in queue for repository \'%1$s\' deletion, it will be processed in one minute or two. Please be patient!'), $repository_name));
+                    break;
             }
         }
 
         if ($repository && $repository->getId() !== 0) {
-            $dar = $sem->_getDao()->searchWithParam('head', $repository->getId(), array('GIT_REPO_ACCESS'), array(SystemEvent::STATUS_NEW, SystemEvent::STATUS_RUNNING));
+            $dar = $sem->_getDao()->searchWithParam('head', $repository->getId(), ['GIT_REPO_ACCESS'], [SystemEvent::STATUS_NEW, SystemEvent::STATUS_RUNNING]);
             foreach ($dar as $row) {
-                $GLOBALS['Response']->addFeedback('info', $this->getText('feedback_event_access'));
+                $GLOBALS['Response']->addFeedback('info', dgettext('tuleap-git', 'There is an event in queue for a repository permissions change, it will be processed in one minute or two. Please be patient!'));
             }
         }
     }
 
-    /**
-     * Instantiate an action based on a given name.
-     *
-     * Can be overriden to pass additionnal parameters to the action
-     *
-     * @param string $action The name of the action
-     *
-     * @return PluginActions
-     */
-    protected function instantiateAction($action) {
-        return new $action(
+    protected function instantiateAction($action)
+    {
+        $instance = new $action(
             $this,
             $this->git_system_event_manager,
             $this->factory,
@@ -1246,7 +1265,8 @@ class Git extends PluginController
                 $this->gerrit_server_factory,
                 $this->driver_factory,
                 $this->history_dao,
-                $this->project_creator_status
+                $this->project_creator_status,
+                $this->projectManager
             ),
             $this->gerrit_can_migrate_checker,
             $this->fine_grained_updater,
@@ -1262,22 +1282,31 @@ class Git extends PluginController
             $this->ugroups_to_notify_dao,
             $this->ugroup_manager
         );
+        \assert($instance instanceof PluginActions);
+        return $instance;
     }
 
-    public function _doDispatchForkCrossProject($request, $user) {
-        $this->checkSynchronizerToken('/plugins/git/?group_id='. (int)$this->groupId .'&action=fork_repositories');
-        $validators = array(new Valid_UInt('to_project'), new Valid_String('repos'), new Valid_Array('repo_access'));
+    public function _doDispatchForkCrossProject($request, $user)
+    {
+        $this->checkSynchronizerToken('/plugins/git/?group_id=' . (int) $this->groupId . '&action=fork_repositories');
+        $validators = [new Valid_UInt('to_project'), new Valid_String('repos'), new Valid_Array('repo_access')];
 
         foreach ($validators as $validator) {
             $validator->required();
-            if (!$request->valid($validator)) {
-                $this->addError($this->getText('missing_parameter_'. $validator->key));
+            if (! $request->valid($validator)) {
+                if ($validator->key === 'to_project') {
+                    $this->addError(dgettext('tuleap-git', 'No project selected for the fork'));
+                } elseif ($validator->key === 'repos') {
+                    $this->addError(dgettext('tuleap-git', 'No repository selected for the fork'));
+                } else {
+                    $this->addError(dgettext('tuleap-git', 'No access selected for the fork'));
+                }
                 $this->redirect('/plugins/git/' . urlencode($this->project->getUnixNameLowerCase()) . '/');
                 return;
             }
         }
-        $to_project_id   = $request->get('to_project');
-        if ($this->permissions_manager->userIsGitAdmin($user, $this->projectManager->getProject($to_project_id))){
+        $to_project_id = $request->get('to_project');
+        if ($this->permissions_manager->userIsGitAdmin($user, $this->projectManager->getProject($to_project_id))) {
             $to_project      = $this->projectManager->getProject($to_project_id);
             $repos_ids       = explode(',', $request->get('repos'));
             $repos           = $this->getRepositoriesFromIds($repos_ids);
@@ -1286,53 +1315,74 @@ class Git extends PluginController
             $redirect_url    = '/plugins/git/' . urlencode($to_project->getUnixNameLowerCase()) . '/';
             $forkPermissions = $this->getForkPermissionsFromRequest($request);
 
-            $this->addAction('fork', array($repos, $to_project, $namespace, $scope, $user, $GLOBALS['HTML'], $redirect_url, $forkPermissions));
+            $this->addAction('fork', [$repos, $to_project, $namespace, $scope, $user, $GLOBALS['HTML'], $redirect_url, $forkPermissions]);
         } else {
-            $this->addError($this->getText('must_be_admin_to_create_project_repo'));
+            $this->addError(dgettext('tuleap-git', 'Only project administrator can create repositories'));
         }
     }
 
-    public function redirectNoRepositoryError() {
-        $this->addError($this->getText('actions_repo_not_found'));
-        $this->redirect('/plugins/git/?action=index&group_id='. $this->groupId);
+    public function redirectNoRepositoryError()
+    {
+        $this->addError(dgettext('tuleap-git', 'The repository does not exist'));
+        $this->redirect('/plugins/git/?action=index&group_id=' . $this->groupId);
     }
 
-    protected function checkSynchronizerToken($url) {
+    private function defaultCSRFChecks(GitRepository $repository, string $pane): void
+    {
+        $default_url = '/plugins/git/?' . http_build_query(['action' => 'repo_management', 'group_id' => $this->groupId, 'repo_id' => $repository->getId(), 'pane' => $pane]);
+        if (! $this->request->isPost()) {
+            $this->redirect($default_url);
+        }
+        $this->checkSynchronizerToken($default_url);
+    }
+
+    public function defaultProjectAdminCSRFChecks(string $action): void
+    {
+        $url = '/plugins/git/?' . http_build_query(['group_id' => $this->groupId, 'action' => $action]);
+        if (! $this->request->isPost()) {
+            $this->redirect($url);
+        }
+        $this->checkSynchronizerToken($url);
+    }
+
+    protected function checkSynchronizerToken($url)
+    {
         $token = new CSRFSynchronizerToken($url);
         $token->check();
     }
 
-    public function _doDispatchForkRepositories($request, $user) {
-        $this->addAction('getProjectRepositoryList', array($this->groupId));
-        $this->checkSynchronizerToken('/plugins/git/?group_id='. (int)$this->groupId .'&action=fork_repositories');
+    public function _doDispatchForkRepositories($request, $user)
+    {
+        $this->addAction('getProjectRepositoryList', [$this->groupId]);
+        $this->checkSynchronizerToken('/plugins/git/?group_id=' . (int) $this->groupId . '&action=fork_repositories');
 
-        $repos_ids = array();
+        $repos_ids = [];
 
         $valid = new Valid_String('path');
         $valid->required();
 
         $path = '';
-        if($request->valid($valid)) {
+        if ($request->valid($valid)) {
             $path = trim($request->get('path'));
         }
-        $path = userRepoPath($user->getUserName(), $path);
+        $path            = PathJoinUtil::userRepoPath($user->getUserName(), $path);
         $forkPermissions = $this->getForkPermissionsFromRequest($request);
 
         $valid = new Valid_String('repos');
         $valid->required();
-        $repos_ids = explode(',', $request->get('repos'));
+        $repos_ids    = explode(',', $request->get('repos'));
         $to_project   = $this->projectManager->getProject($this->groupId);
         $repos        = $this->getRepositoriesFromIds($repos_ids);
         $scope        = GitRepository::REPO_SCOPE_INDIVIDUAL;
-        $redirect_url = '/plugins/git/?group_id='. (int)$this->groupId .'&user='. (int)$user->getId();
-        $this->addAction('fork', array($repos, $to_project, $path, $scope, $user, $GLOBALS['HTML'], $redirect_url, $forkPermissions));
-
+        $redirect_url = '/plugins/git/?group_id=' . (int) $this->groupId . '&user=' . (int) $user->getId();
+        $this->addAction('fork', [$repos, $to_project, $path, $scope, $user, $GLOBALS['HTML'], $redirect_url, $forkPermissions]);
     }
 
     /**
      * @return array
      */
-    private function getForkPermissionsFromRequest(Codendi_Request $request) {
+    private function getForkPermissionsFromRequest(Codendi_Request $request)
+    {
         $fork_permissions = $request->get('repo_access');
         if ($fork_permissions) {
             return $fork_permissions;
@@ -1341,13 +1391,14 @@ class Git extends PluginController
         // be updated by the user on the intermediate screen and the
         // repo_access is false. Forcing it to empty array to avoid
         // fatal errors
-        return array();
+        return [];
     }
 
-    private function getRepositoriesFromIds($repository_ids) {
-        $repositories = array();
+    private function getRepositoriesFromIds($repository_ids)
+    {
+        $repositories = [];
 
-        foreach($repository_ids as $repository_id) {
+        foreach ($repository_ids as $repository_id) {
             $repository = $this->factory->getRepositoryById($repository_id);
 
             if (! $repository) {
@@ -1367,12 +1418,14 @@ class Git extends PluginController
      *
      * @return Void
      */
-    public function logsDaily($params) {
-        $logger  = new GitLog();
+    public function logsDaily($params)
+    {
+        $logger = new GitLog();
         $logger->logsDaily($params);
     }
 
-    private function areMirrorsEnabledForProject() {
+    private function areMirrorsEnabledForProject()
+    {
         return count($this->mirror_data_mapper->fetchAllForProject($this->project)) > 0;
     }
 }

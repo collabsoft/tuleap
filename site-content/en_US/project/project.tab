@@ -14,15 +14,12 @@ project_admin_editgroupinfo	soft_required	Other Software Required
 project_admin_editgroupinfo	comments	Other Comments:
 project_admin_editgroupinfo	autocompleter_placeholder	Project name (search as you type)
 project_admin_editgroupinfo	visibility_section	Access
-project_admin_editgroupinfo	private_label	private
-project_admin_editgroupinfo	public_label	public
 project_admin_editgroupinfo	use_truncated_emails	Use truncated emails
 project_admin_editgroupinfo	truncated_emails_title	Truncated Emails
 project_admin_editgroupinfo	truncated_emails_impacted_services_introduction	Truncated emails are emails that have their content cleared (confidentiality) and replaced by a link of the modified item.
 project_admin_editgroupinfo	truncated_emails_impacted_services_no_available	No service using truncated emails is activated.
 project_admin_editgroupinfo	truncated_emails_impacted_services_impacted_services	Impacted services:
-project_admin_editgroupinfo	unrestricted_label	public incl. restricted users
-project_admin_editgroupinfo	restricted_warning	Only project members can access a <b>private</b> project. <br>A <b>public</b> project is accessible to all <b>except restricted users</b>.<br>It is not advisable to allow <b>restricted users</b> to access you project without good reason.<br />Please not that <b>Public incl. Restricted</b> only applies to <em>project dashboard page</em>, <em>Mediawiki</em> and <em>git repositories</em>.
+project_admin_editgroupinfo	restricted_warning	Only project members can access a <b>private</b> project. <br>A <b>public</b> project is accessible to all <b>except restricted users</b>.<br>It is not advisable to allow <b>restricted users</b> to access you project without good reason.<br />Please note that <b>Public incl. Restricted</b> only applies to <em>project dashboard page</em>, <em>Mediawiki</em> and <em>git repositories</em>.
 project_admin_editgroupinfo	general_warning	Only project members can access a <b>private</b> project <br>A <b>public</b> project is accessible to everyone.
 project_admin_editgroupinfo	under_construction	Page under construction.
 project_admin_editgroupinfo	term_of_service	Please accept platform <a href='/tos/tos.php'>Term of Services</a>
@@ -74,9 +71,6 @@ project_admin_editugroup	edit_ug	Edit User Group
 # Script: SF/www/project/admin/grouptrove.php
 #
 project_admin_grouptrove	changed_trove	Changed Trove
-project_admin_grouptrove	g_trove_info	Group Trove Information
-project_admin_grouptrove	select_3_classifs	Please select up to three classifications for this project in each of the Trove root categories. This will help potential developers and users to find your project and engage. If the project does not require any or all of these classification, simply select "None Selected".<P>IMPORTANT REMARKS: <ul><li>Projects should be categorized in the most specific locations available in the map.</li><li>Simultaneous categorization in a specific category AND a parent category will result in only the more specific categorization being accepted.</li><li><em><b>Topic Trove only</b></em>: If your project does not seem to fit into any of the categories or sub-categories, simply select "Other/Non Listed Topics". As new projects are submitted, the $1 Team will refine the Topic Trove by defining 2nd and possibly 3rd level subcategories.  We welcome any suggestions on this. You can change the trove categories for this project at any time.</li></ul>
-project_admin_grouptrove	submit_all_changes	Submit All Category Changes
 #
 #-----------------------------------------------
 # Script: SF/www/project/admin/history.php
@@ -135,15 +129,8 @@ project_admin_permissions	doc_access	Document Access
 project_admin_permissions	docgroup_access	Document Group Access
 project_admin_permissions	wiki_access	Wiki Access
 project_admin_permissions	wiki_attachment_access	Wiki Attachment Access
-# message key below must comply with values returned by
-# the permission_get_object_type function
-project_admin_permissions	package	package $1
-project_admin_permissions	release	release $1
-project_admin_permissions	document	document $1
-project_admin_permissions	docgroup	document group $1
-project_admin_permissions	wiki	wiki $1
-project_admin_permissions	wikipage	wiki page $1
-project_admin_permissions	wikiattachment	wiki attachment $1
+project_admin_permissions	wiki	wiki
+project_admin_permissions	wikiattachment	wiki attachment
 project_admin_permissions	tracker_artifact_access	Access to an artifact
 project_admin_permissions	tracker_full_access	Access to all tracker artifacts
 project_admin_permissions	tracker_submitter_access	Access to tracker artifacts submitted by group
@@ -151,11 +138,6 @@ project_admin_permissions	tracker_assignee_access	Access to tracker artifacts as
 project_admin_permissions	tracker_field_submit	Can submit tracker field
 project_admin_permissions	tracker_field_read	Can read tracker field
 project_admin_permissions	tracker_field_update	Can update tracker field
-project_admin_permissions	tracker	tracker $1
-project_admin_permissions	tracker_field	tracker field $1
-project_admin_permissions	object	object $1
-project_admin_permissions	artifact	Artifact $1
-# ...end of values
 project_admin_permissions	perm_type_not_def	permission_type '$1' is not defined
 project_admin_permissions	submit_perm	Submit Permissions
 project_admin_permissions	admins_create_modify_ug	Project admins can also <a href="$1">create or modify</a> user groups.
@@ -180,52 +162,8 @@ project_admin_permissions	override	Ignore $1 permission set to $2 because it was
 #-----------------------------------------------
 # Script: SF/www/project/admin/reference.php
 #
-project_reference	create_fail	Reference pattern creation failed: the selected keyword is invalid (reserved, or already exists)
 project_reference	create_for_tracker_fail	Reference pattern not created: the shortname is not valid (reserved, or already exists). You may still reference tracker artifacts with the 'art' or 'artifact' keyword.
-project_reference	create_s	Create a new reference pattern.
-project_reference	del?	Delete?
-project_reference	del_fail	- DELETE FAILED! $1
-project_reference	del_r	Delete this reference pattern?
-project_reference	disabled	<i>Disabled</i>
-project_reference	edit_fail	Reference pattern edition failed: the selected keyword is invalid (reserved, or already exists)
-project_reference	edit_r	Edit Reference Pattern
-project_reference	edit_reference	Editing Reference Patterns
-project_reference	edit_s_for	Editing Reference Patterns for <B>$1</B>
-project_reference	edit_system_s	Editing System Reference Patterns
-project_reference	enabled	Enabled
-project_reference	enabled_desc	Automatically extract this keyword?
-project_reference	force	Bypass filters <em>(Site administrators only)</em>:
-project_reference	force_desc	Force reference pattern creation
-project_reference	fields_required	fields required
-project_reference	id	Reference ID
-project_reference	keyword	Keyword
-project_reference	manage_sys_r	Manage System Reference Patterns
-project_reference	manage_proj_r	Manage Project Reference Patterns
-project_reference	missing_parameter	A parameter is missing, please press the "Back" button and complete the form
-project_reference	new_s	New Reference Pattern
-project_reference	project	project
-project_reference	r_create_success	Successfully Created Reference Pattern
-project_reference	r_creation	Create a new reference pattern
-project_reference	r_deleted	Reference Pattern Deleted
-project_reference	r_desc	Description
-project_reference	r_desc_in_tooltip	This description will be displayed in a tooltip above reference.
-project_reference	r_keyword	Keyword
-project_reference	r_keyword_desc	Keyword that will trigger a reference creation
-project_reference	r_link	Link
-project_reference	r_scope	Scope of the reference pattern: project only or system-wide
-project_reference	r_service	Bound to Service
-project_reference	r_service_desc	If the reference pattern is specific to one service, select it here
-project_reference	r_nature	Nature
-project_reference	r_nature_desc	Specify the nature of the reference, or Other if any.
-project_reference	ref_scope_P	Project
-project_reference	ref_scope_S	System
-project_reference	scope	Scope
-project_reference	sr_deleted	System Reference Pattern Deleted
-project_reference	system	system
-project_reference	system_r_create_success	Successfully Created System Reference Pattern - Reference pattern added to all project
 project_reference	t_r_deleted	Corresponding Reference Pattern Deleted
-project_reference	url	URL pointed by the reference
-project_reference	warning_del_r	*********** WARNING ***********  Do you want to delete the reference pattern? This will remove this reference pattern ($1) from ALL projects of this server. Are you SURE you want to continue ?
 project_reference	extract_syntax	Parameters:\n  group_id : project where reference patterns are defined\n  text     : input text
 project_reference	insert_syntax	<p>Parameters:<br>- group_id or group_name : project where reference patterns are defined<br>- text : input text
 ## Description value here for each reference pattern (system or project wide) that should be localized
@@ -549,9 +487,6 @@ project_export_bug_export	depend_on_bugs_desc	List of bugs this bug depends on
 #-----------------------------------------------
 # Script: SF/www/project/export/index.php
 #
-project_export_index	proj_db_success	Your project database has been successfully generated. You can now use your favorite desktop application and access your project database through the MySQL ODBC/JDBC driver installed on your desktop machine. The parameters to configure your ODBC/JDBC database connection are as follows:
-project_export_index	proj_db_no_data	No data to export. Only <strong>Tracker v3</strong> are exported.
-project_export_index	export_to_csv_or_db	Your project data can either be exported in individual text files (CSV format) or in a project specific database that you can directly access from your desktop machine through an ODBC/JDBC connection. See $1 for more information.
 project_export_index	export_to_csv_hdr	Text File Export $2
 project_export_index	export_to_csv_msg	Click on the links below to generate a text file export (CSV format).
 project_export_index	online_help	Online Help
@@ -740,15 +675,6 @@ project_memberlist	developer	Member
 project_memberlist	username	Username
 #
 #-----------------------------------------------
-# Script: SF/www/project/showdetails.php
-#
-project_showdetails	proj_details	Project Details
-project_showdetails	no_detail	No detail available for this project
-project_showdetails	proj_not_found	Error - Project Not Found
-project_showdetails	back_main	[Back to Main Page]
-project_showdetails	references	Reference patterns
-#
-#-----------------------------------------------
 # Script:
 #
 project_ugroup	ugroup_anonymous_users_desc_key	Anonymous
@@ -812,10 +738,12 @@ project_desc_desc	int_prop	If your project is covered by Patents or IPs list the
 #
 project_privacy	private	Private
 project_privacy	public	Public
-project_privacy	tooltip_private	<p class='project-privacy'>Project privacy set to <big><strong>private</strong></big>. <br />Only project members can access its content.</p>
-project_privacy	tooltip_public_w_anon	<p class='project-privacy'>Project privacy set to <big><strong>public</strong></big>. <br />By default, its content is available to everyone (authenticated or not).<br />Please note that more restrictive permissions might exist on some items.</p>
-project_privacy	tooltip_public_wo_anon	<p class='project-privacy'>Project privacy set to <big><strong>public</strong></big>. <br />By default, its content is available to all authenticated, but not restricted, users.<br />Please note that more restrictive permissions might exist on some items.</p>
 
+project_privacy	email_visibility_change_title	The privacy policy of the project $1 has changed
+project_privacy	email_visibility_change_body_private	The project $1 is now private.
+project_privacy	email_visibility_change_body_public	The project $1 is now public.
+project_privacy	email_visibility_change_body_unrestricted	The project $1 is now public and accessible to restricted users.
+project_privacy	email_visibility_change_body_private_unrestricted	The project $1 is now private and accessible to restricted users.
 
 project_service	service_not_used	$1 service is not enabled
 project	does_not_exist	The project doesn't exist

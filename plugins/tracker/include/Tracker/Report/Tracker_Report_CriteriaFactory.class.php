@@ -18,83 +18,84 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Report\dao\ReportCriteriaDao;
 
-class Tracker_Report_CriteriaFactory {
-    
+class Tracker_Report_CriteriaFactory
+{
+
     /**
      * A protected constructor; prevents direct creation of object
      */
-    protected function __construct() {
+    protected function __construct()
+    {
     }
 
     /**
      * Hold an instance of the class
      */
     protected static $_instance;
-    
+
     /**
      * The singleton method
      */
-    public static function instance() {
-        if (!isset(self::$_instance)) {
-            $c = __CLASS__;
-            self::$_instance = new $c;
+    public static function instance()
+    {
+        if (! isset(self::$_instance)) {
+            $c               = self::class;
+            self::$_instance = new $c();
         }
         return self::$_instance;
     }
-    
+
     /**
      * @param array the row allowing the construction of a criteria
-     * @return Criteria Object
+     * @return Tracker_Report_Criteria Object
      */
-    public function getInstanceFromRow($row) {
+    public function getInstanceFromRow($row)
+    {
         return new Tracker_Report_Criteria(
             $row['id'],
             $row['report'],
             $row['field'],
             $row['rank'],
-            $row['is_advanced']);
+            $row['is_advanced']
+        );
     }
-    
+
     /**
      * Creates a Tracker_Report_Criteria Object
-     * 
-     * @param SimpleXMLElement $xml         containing the structure of the imported criteria
-     * @param array            &$xmlMapping containig the newly created formElements idexed by their XML IDs
-     * 
-     * @return Tracker_Report_Criteria Object 
+     *
+     * @return null | Tracker_Report_Criteria Object
      */
-    public function getInstanceFromXML($xml, &$xmlMapping) {
-        $att = $xml->attributes();
+    public function getInstanceFromXML(SimpleXMLElement $xml, Tracker_Report $report, array &$xmlMapping)
+    {
+        $att  = $xml->attributes();
         $fatt = $xml->field->attributes();
-        $row = array('field' => $xmlMapping[(string)$fatt['REF']],
-                     'rank' => (int)$att['rank']);
-        $row['is_advanced'] = isset($att['is_advanced']) ? (int)$att['is_advanced'] : 0;
-        // in case old id values are important modify code here
-        if (false) {
-            foreach ($xml->attributes() as $key => $value) {
-                $row[$key] = (int)$value;
-            }
-        } else {
-            $row['id'] = 0;
-            $row['report'] = null;
+        if (! isset($xmlMapping[(string) $fatt['REF']])) {
+            return null;
         }
+        $row                = [
+            'field' => $xmlMapping[(string) $fatt['REF']],
+            'rank' => (int) $att['rank']
+        ];
+        $row['is_advanced'] = isset($att['is_advanced']) ? (int) $att['is_advanced'] : 0;
+        $row['id']          = 0;
+        $row['report']      = $report;
+
         return $this->getInstanceFromRow($row);
     }
-    
-    public function duplicate($from_report, $to_report, $fields_mapping) {
-        $this->getDao()->duplicate($from_report->id, $to_report->id, $fields_mapping);
+
+    public function duplicate(Tracker_Report $from_report, Tracker_Report $to_report, array $fields_mapping): void
+    {
+        $this->getReportCriteriaDao()->duplicate($from_report->id, $to_report->id, $fields_mapping);
     }
-    
-    /**
-     * 
-     */
-    public function saveObject($criteria) {
-        
+
+    public function saveObject($criteria)
+    {
     }
-    
-    protected function getDao() {
-        return new Tracker_Report_CriteriaDao();
+
+    private function getReportCriteriaDao(): ReportCriteriaDao
+    {
+        return new ReportCriteriaDao();
     }
 }
-?>

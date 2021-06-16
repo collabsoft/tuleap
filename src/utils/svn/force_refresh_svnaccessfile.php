@@ -1,7 +1,7 @@
-#!/usr/share/codendi/src/utils/php-launcher.sh
+#!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,10 +19,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('pre.php');
+require_once __DIR__ . '/../../www/include/pre.php';
 
 $project_manager = ProjectManager::instance();
 $backend_svn     = Backend::instance(Backend::SVN);
-foreach($project_manager->getAllPrivateProjects() as $project) {
+foreach ($project_manager->getAllPrivateProjects() as $project) {
     $backend_svn->updateProjectSVNAccessFile($project);
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,6 +29,5 @@ class Descriptor extends \PluginDescriptor
             false,
             dgettext('tuleap-bugzilla_reference', 'References between Bugzilla and Tuleap')
         );
-        $this->setVersionFromFile(BUGZILLA_REFERENCE_BASE_DIR . '/VERSION');
     }
 }

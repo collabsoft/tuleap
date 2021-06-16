@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
  *
  * This file is a part of Tuleap.
@@ -21,11 +21,11 @@
 
 namespace Tuleap\Git\GitPHP;
 
+use Git_Exec;
+
 /**
  * Project class
  *
- * @package GitPHP
- * @subpackage Git
  */
 class Project
 {
@@ -148,7 +148,7 @@ class Project
      *
      * @access protected
      */
-    protected $tags = array();
+    protected $tags = [];
 
     /**
      * heads
@@ -157,7 +157,7 @@ class Project
      *
      * @access protected
      */
-    protected $heads = array();
+    protected $heads = [];
 
     /**
      * readRefs
@@ -231,7 +231,7 @@ class Project
      *
      * @access protected
      */
-    protected $commitCache = array();
+    protected $commitCache = [];
 
 /* packfile internal variables {{{2*/
 
@@ -242,7 +242,7 @@ class Project
      *
      * @access protected
      */
-    protected $packs = array();
+    protected $packs = [];
 
     /**
      * packsRead
@@ -265,24 +265,26 @@ class Project
      */
     protected $compat = null;
 
-/*}}}1*/
-
-/* class methods {{{1*/
+    /**
+     * @var Git_Exec
+     */
+    private $git_exec;
 
     /**
      * __construct
      *
-     * Class constructor
+     *
      *
      * @access public
      * @param string $projectRoot project root
      * @param string $project project
-     * @throws Exception if project is invalid or outside of projectroot
+     * @throws \Exception if project is invalid or outside of projectroot
      */
-    public function __construct($projectRoot, $project)
+    public function __construct($projectRoot, $project, Git_Exec $git_exec)
     {
         $this->projectRoot = Util::AddSlash($projectRoot);
         $this->SetProject($project);
+        $this->git_exec = $git_exec;
     }
 
 /*}}}1*/
@@ -310,30 +312,30 @@ class Project
      * Attempts to set the project
      *
      * @access private
-     * @throws Exception if project is invalid or outside of projectroot
+     * @throws \Exception if project is invalid or outside of projectroot
      */
     private function SetProject($project) // @codingStandardsIgnoreLine
     {
         $realProjectRoot = realpath($this->projectRoot);
-        $path = $this->projectRoot . $project;
-        $fullPath = realpath($path);
+        $path            = $this->projectRoot . $project;
+        $fullPath        = realpath($path);
 
-        if (!is_dir($fullPath)) {
-            throw new \Exception(sprintf(__('%1$s is not a directory'), $project));
+        if (! is_dir($fullPath)) {
+            throw new RepositoryNotExistingException(sprintf(dgettext("gitphp", '%1$s is not a directory'), $project));
         }
 
-        if (!is_file($fullPath . '/HEAD')) {
-            throw new \Exception(sprintf(__('%1$s is not a git repository'), $project));
+        if (! is_file($fullPath . '/HEAD')) {
+            throw new RepositoryAccessException(sprintf(dgettext("gitphp", '%1$s is not a git repository'), $project));
         }
 
         if (preg_match('/(^|\/)\.{0,2}(\/|$)/', $project)) {
-            throw new \Exception(sprintf(__('%1$s is attempting directory traversal'), $project));
+            throw new RepositoryAccessException(sprintf(dgettext("gitphp", '%1$s is attempting directory traversal'), $project));
         }
 
         $pathPiece = substr($fullPath, 0, strlen($realProjectRoot));
 
-        if ((!is_link($path)) && (strcmp($pathPiece, $realProjectRoot) !== 0)) {
-            throw new \Exception(sprintf(__('%1$s is outside of the projectroot'), $project));
+        if ((! is_link($path)) && (strcmp($pathPiece, $realProjectRoot) !== 0)) {
+            throw new RepositoryAccessException(sprintf(dgettext("gitphp", '%1$s is outside of the projectroot'), $project));
         }
 
         $this->project = $project;
@@ -396,7 +398,7 @@ class Project
      * Returns whether gitdaemon is allowed for this project
      *
      * @access public
-     * @return boolean git-daemon-export-ok?
+     * @return bool git-daemon-export-ok?
      */
     public function GetDaemonEnabled() // @codingStandardsIgnoreLine
     {
@@ -420,7 +422,7 @@ class Project
         }
 
         $cloneurl = Util::AddSlash(Config::GetInstance()->GetValue('cloneurl', ''));
-        if (!empty($cloneurl)) {
+        if (! empty($cloneurl)) {
             $cloneurl .= $this->project;
         }
 
@@ -459,7 +461,7 @@ class Project
         }
 
         $pushurl = Util::AddSlash(Config::GetInstance()->GetValue('pushurl', ''));
-        if (!empty($pushurl)) {
+        if (! empty($pushurl)) {
             $pushurl .= $this->project;
         }
 
@@ -588,7 +590,7 @@ class Project
      */
     public function GetHeadCommit() // @codingStandardsIgnoreLine
     {
-        if (!$this->readHeadRef) {
+        if (! $this->readHeadRef) {
             $this->ReadHeadCommit();
         }
 
@@ -623,7 +625,7 @@ class Project
             $this->head = $regs[1];
         } elseif (preg_match('/^ref: (.+)$/', $head, $regs)) {
             /* standard pointer to head */
-            if (!$this->readRefs) {
+            if (! $this->readRefs) {
                 $this->ReadRefList();
             }
 
@@ -644,11 +646,11 @@ class Project
      * (time of last change)
      *
      * @access public
-     * @return integer timestamp
+     * @return int timestamp
      */
     public function GetEpoch() // @codingStandardsIgnoreLine
     {
-        if (!$this->epochRead) {
+        if (! $this->epochRead) {
             $this->ReadEpoch();
         }
 
@@ -662,11 +664,11 @@ class Project
      * (time since most recent change)
      *
      * @access public
-     * @return integer age
+     * @return int age
      */
     public function GetAge() // @codingStandardsIgnoreLine
     {
-        if (!$this->epochRead) {
+        if (! $this->epochRead) {
             $this->ReadEpoch();
         }
 
@@ -696,7 +698,7 @@ class Project
      */
     private function ReadEpochRaw() // @codingStandardsIgnoreLine
     {
-        if (!$this->readRefs) {
+        if (! $this->readRefs) {
             $this->ReadRefList();
         }
 
@@ -728,6 +730,8 @@ class Project
      * Get a commit for this project
      *
      * @access public
+     *
+     * @return Commit|null
      */
     public function GetCommit($hash) // @codingStandardsIgnoreLine
     {
@@ -755,16 +759,15 @@ class Project
             }
             return null;
         }
-
-        if (preg_match('/[0-9a-f]{40}/i', $hash)) {
-            if (!isset($this->commitCache[$hash])) {
-                    $this->commitCache[$hash] = new Commit($this, $hash);
+        if (preg_match('/^[0-9a-f]{40}$/i', $hash)) {
+            if (! isset($this->commitCache[$hash])) {
+                $this->commitCache[$hash] = new Commit($this, $hash);
             }
 
             return $this->commitCache[$hash];
         }
 
-        if (!$this->readRefs) {
+        if (! $this->readRefs) {
             $this->ReadRefList();
         }
 
@@ -794,7 +797,7 @@ class Project
      */
     public function GetRefs($type = '') // @codingStandardsIgnoreLine
     {
-        if (!$this->readRefs) {
+        if (! $this->readRefs) {
             $this->ReadRefList();
         }
 
@@ -842,7 +845,7 @@ class Project
 
             $hash = trim(file_get_contents($heads[$i]));
             if (preg_match('/^[0-9A-Fa-f]{40}$/', $hash)) {
-                $head = substr($key, strlen('refs/heads/'));
+                $head              = substr($key, strlen('refs/heads/'));
                 $this->heads[$key] = new Head($this, $head, $hash);
             }
         }
@@ -858,7 +861,7 @@ class Project
 
             $hash = trim(file_get_contents($tags[$i]));
             if (preg_match('/^[0-9A-Fa-f]{40}$/', $hash)) {
-                $tag = substr($key, strlen('refs/tags/'));
+                $tag              = substr($key, strlen('refs/tags/'));
                 $this->tags[$key] = $this->LoadTag($tag, $hash);
             }
         }
@@ -885,12 +888,12 @@ class Project
                     // standard tag/head
                     $key = 'refs/' . $regs[2] . '/' . $regs[3];
                     if ($regs[2] == 'tags') {
-                        if (!isset($this->tags[$key])) {
-                            $lastRef = $this->LoadTag($regs[3], $regs[1]);
+                        if (! isset($this->tags[$key])) {
+                            $lastRef          = $this->LoadTag($regs[3], $regs[1]);
                             $this->tags[$key] = $lastRef;
                         }
                     } elseif ($regs[2] == 'heads') {
-                        if (!isset($this->heads[$key])) {
+                        if (! isset($this->heads[$key])) {
                             $this->heads[$key] = new Head($this, $regs[3], $regs[1]);
                         }
                     }
@@ -910,7 +913,7 @@ class Project
      */
     private function ListDir($dir) // @codingStandardsIgnoreLine
     {
-        $files = array();
+        $files = [];
         if ($dh = opendir($dir)) {
             while (($file = readdir($dh)) !== false) {
                 if (($file == '.') || ($file == '..')) {
@@ -940,12 +943,12 @@ class Project
      * Gets list of tags for this project by age descending
      *
      * @access public
-     * @param integer $count number of tags to load
+     * @param int $count number of tags to load
      * @return array array of tags
      */
     public function GetTags($count = 0) // @codingStandardsIgnoreLine
     {
-        if (!$this->readRefs) {
+        if (! $this->readRefs) {
             $this->ReadRefList();
         }
         return $this->GetTagsRaw($count);
@@ -957,13 +960,12 @@ class Project
      * Gets list of tags for this project by age descending using raw git objects
      *
      * @access private
-     * @param integer $count number of tags to load
+     * @param int $count number of tags to load
      * @return array array of tags
      */
     private function GetTagsRaw($count = 0) // @codingStandardsIgnoreLine
     {
-        $tags = $this->tags;
-        usort($tags, array(Tag::class, 'CompareCreationEpoch'));
+        $tags = $this->git_exec->getAllTagsSortedByCreationDate();
 
         if (($count > 0) && (count($tags) > $count)) {
             $tags = array_slice($tags, 0, $count);
@@ -987,13 +989,13 @@ class Project
             return null;
         }
 
-        if (!$this->readRefs) {
+        if (! $this->readRefs) {
             $this->ReadRefList();
         }
 
         $key = 'refs/tags/' . $tag;
 
-        if (!isset($this->tags[$key])) {
+        if (! isset($this->tags[$key])) {
             $this->tags[$key] = $this->LoadTag($tag);
         }
 
@@ -1028,12 +1030,12 @@ class Project
      * Gets list of heads for this project by age descending
      *
      * @access public
-     * @param integer $count number of tags to load
+     * @param int $count number of tags to load
      * @return array array of heads
      */
     public function GetHeads($count = 0) // @codingStandardsIgnoreLine
     {
-        if (!$this->readRefs) {
+        if (! $this->readRefs) {
             $this->ReadRefList();
         }
         return $this->GetHeadsRaw($count);
@@ -1045,13 +1047,12 @@ class Project
      * Gets the list of sorted heads using raw git objects
      *
      * @access private
-     * @param integer $count number of tags to load
+     * @param int $count number of tags to load
      * @return array array of heads
      */
     private function GetHeadsRaw($count = 0) // @codingStandardsIgnoreLine
     {
-        $heads = $this->heads;
-        usort($heads, array(Head::class, 'CompareAge'));
+        $heads = $this->git_exec->getAllBranchesSortedByCreationDate();
 
         if (($count > 0) && (count($heads) > $count)) {
             $heads = array_slice($heads, 0, $count);
@@ -1074,13 +1075,13 @@ class Project
             return null;
         }
 
-        if (!$this->readRefs) {
+        if (! $this->readRefs) {
             $this->ReadRefList();
         }
 
         $key = 'refs/heads/' . $head;
 
-        if (!isset($this->heads[$key])) {
+        if (! isset($this->heads[$key])) {
             $this->heads[$key] = new Head($this, $head);
         }
 
@@ -1098,8 +1099,8 @@ class Project
      *
      * @access private
      * @param string $hash hash to start the log at
-     * @param integer $count number of entries to get
-     * @param integer $skip number of entries to skip
+     * @param int $count number of entries to get
+     * @param int $skip number of entries to skip
      * @return array array of hashes
      */
     private function GetLogHash($hash, $count = 50, $skip = 0) // @codingStandardsIgnoreLine
@@ -1114,8 +1115,8 @@ class Project
      *
      * @access public
      * @param string $hash hash to start the log at
-     * @param integer $count number of entries to get
-     * @param integer $skip number of entries to skip
+     * @param int $count number of entries to get
+     * @param int $skip number of entries to skip
      * @return array array of commit objects
      */
     public function GetLog($hash, $count = 50, $skip = 0) // @codingStandardsIgnoreLine
@@ -1134,8 +1135,8 @@ class Project
      *
      * @access private
      * @param string $hash hash to start the log at
-     * @param integer $count number of entries to get
-     * @param integer $skip number of entries to skip
+     * @param int $count number of entries to get
+     * @param int $skip number of entries to skip
      * @return array array of commit objects
      */
     private function GetLogGit($hash, $count = 50, $skip = 0) // @codingStandardsIgnoreLine
@@ -1160,15 +1161,15 @@ class Project
     {
         $total = $count + $skip;
 
-        $inc = array();
-        $num = 0;
-        $queue = array($this->GetCommit($hash));
+        $inc   = [];
+        $num   = 0;
+        $queue = [$this->GetCommit($hash)];
         while (($commit = array_shift($queue)) !== null) {
             $parents = $commit->GetParents();
             foreach ($parents as $parent) {
-                if (!isset($inc[$parent->GetHash()])) {
+                if (! isset($inc[$parent->GetHash()])) {
                     $inc[$parent->GetHash()] = 1;
-                    $queue[] = $parent;
+                    $queue[]                 = $parent;
                     $num++;
                 } else {
                     $inc[$parent->GetHash()]++;
@@ -1179,9 +1180,9 @@ class Project
             }
         }
 
-        $queue = array($this->GetCommit($hash));
-        $log = array();
-        $num = 0;
+        $queue = [$this->GetCommit($hash)];
+        $log   = [];
+        $num   = 0;
         while (($commit = array_pop($queue)) !== null) {
             array_push($log, $commit);
             $num++;
@@ -1215,6 +1216,7 @@ class Project
      *
      * @access public
      * @param string $hash blob hash
+     * @return Blob
      */
     public function GetBlob($hash) // @codingStandardsIgnoreLine
     {
@@ -1261,11 +1263,14 @@ class Project
      */
     public function GetObject($hash, &$type = 0) // @codingStandardsIgnoreLine
     {
-        if (!preg_match('/^[0-9A-Fa-f]{40}$/', $hash)) {
+        if (! preg_match('/^[0-9A-Fa-f]{40}$/', $hash)) {
             return false;
         }
 
         // first check if it's unpacked
+        /**
+         * @psalm-taint-escape file
+         */
         $path = $this->GetPath() . '/objects/' . substr($hash, 0, 2) . '/' . substr($hash, 2);
         if (file_exists($path)) {
             list($header, $data) = explode("\0", gzuncompress(file_get_contents($path)), 2);
@@ -1287,7 +1292,7 @@ class Project
             return $data;
         }
 
-        if (!$this->packsRead) {
+        if (! $this->packsRead) {
             $this->ReadPacks();
         }
 
@@ -1336,8 +1341,8 @@ class Project
      * @access public
      * @param string $pattern search pattern
      * @param string $hash hash to start searching from
-     * @param integer $count number of results to get
-     * @param integer $skip number of results to skip
+     * @param int $count number of results to get
+     * @param int $skip number of results to skip
      * @return array array of matching commits
      */
     public function SearchCommit($pattern, $hash = 'HEAD', $count = 50, $skip = 0) // @codingStandardsIgnoreLine
@@ -1346,7 +1351,7 @@ class Project
             return;
         }
 
-        $args = array();
+        $args = [];
 
         $args[] = '--regexp-ignore-case';
         $args[] = '--grep=' . escapeshellarg($pattern);
@@ -1368,8 +1373,8 @@ class Project
      * @access public
      * @param string $pattern search pattern
      * @param string $hash hash to start searching from
-     * @param integer $count number of results to get
-     * @param integer $skip number of results to skip
+     * @param int $count number of results to get
+     * @param int $skip number of results to skip
      * @return array array of matching commits
      */
     public function SearchAuthor($pattern, $hash = 'HEAD', $count = 50, $skip = 0) // @codingStandardsIgnoreLine
@@ -1378,7 +1383,7 @@ class Project
             return;
         }
 
-        $args = array();
+        $args = [];
 
         $args[] = '--regexp-ignore-case';
         $args[] = '--author=' . escapeshellarg($pattern);
@@ -1400,8 +1405,8 @@ class Project
      * @access public
      * @param string $pattern search pattern
      * @param string $hash hash to start searching from
-     * @param integer $count number of results to get
-     * @param integer $skip number of results to skip
+     * @param int $count number of results to get
+     * @param int $skip number of results to skip
      * @return array array of matching commits
      */
     public function SearchCommitter($pattern, $hash = 'HEAD', $count = 50, $skip = 0) // @codingStandardsIgnoreLine
@@ -1410,7 +1415,7 @@ class Project
             return;
         }
 
-        $args = array();
+        $args = [];
 
         $args[] = '--regexp-ignore-case';
         $args[] = '--committer=' . escapeshellarg($pattern);
@@ -1435,8 +1440,8 @@ class Project
      *
      * @access private
      * @param string $hash hash to list from
-     * @param integer $count number of results to get
-     * @param integer $skip number of results to skip
+     * @param int $count number of results to get
+     * @param int $skip number of results to skip
      * @param array $args args to give to rev-list
      * @return array array of hashes
      */
@@ -1453,11 +1458,11 @@ class Project
             $args[] = '--skip=' . escapeshellarg($skip);
         }
 
-        $args[] = $hash;
+        $args[] = escapeshellarg($hash);
 
         $revlist = explode("\n", $exe->Execute(GitExe::REV_LIST, $args));
 
-        if (!$revlist[count($revlist)-1]) {
+        if (! $revlist[count($revlist) - 1]) {
             /* the last newline creates a null entry */
             array_splice($revlist, -1, 1);
         }

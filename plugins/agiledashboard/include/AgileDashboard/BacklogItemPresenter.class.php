@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2013 - 2018. All rights reserved.
+ * Copyright Enalean (c) 2013-Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -21,6 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+use Tuleap\Tracker\Artifact\Artifact;
 
 class AgileDashboard_BacklogItemPresenter implements
     AgileDashboard_Milestone_Backlog_IBacklogItem,
@@ -60,46 +62,56 @@ class AgileDashboard_BacklogItemPresenter implements
     /** @var String */
     private $color;
 
-    /** @var Tracker_Artifact */
+    /** @var Artifact */
     private $artifact;
 
-    /** @var Tracker_Artifact */
+    /** @var Artifact */
     private $parent;
 
-    /** @var boolean */
+    /** @var bool */
     private $has_children = null;
     /**
-     * @var
+     * @var bool
      */
     private $is_inconsistent;
+    /**
+     * @var string
+     */
+    private $short_type;
 
-    public function __construct(Tracker_Artifact $artifact, $redirect_to_self, $is_inconsistent) {
+    public function __construct(Artifact $artifact, $redirect_to_self, bool $is_inconsistent)
+    {
         $this->id               = $artifact->getId();
-        $this->title            = $artifact->getTitle();
+        $this->title            = $artifact->getTitle() ?? '';
         $this->url              = $artifact->getUri();
         $this->redirect_to_self = $redirect_to_self;
         $this->artifact         = $artifact;
         $this->type             = $this->artifact->getTracker()->getName();
-        $this->color            = $this->artifact->getTracker()->getNormalizedColor();
+        $this->color            = $this->artifact->getTracker()->getColor()->getName();
+        $this->short_type       = $this->artifact->getTracker()->getItemName();
         $this->is_inconsistent  = $is_inconsistent;
     }
 
-    public function setParent(Tracker_Artifact $parent) {
+    public function setParent(Artifact $parent)
+    {
         $this->parent = $parent;
     }
 
     /**
-     * @return Tracker_Artifact
+     * @return Artifact
      */
-    public function getParent() {
+    public function getParent()
+    {
         return $this->parent;
     }
 
-    public function setInitialEffort($value) {
+    public function setInitialEffort($value)
+    {
         $this->initial_effort = $value;
     }
 
-    public function getInitialEffort() {
+    public function getInitialEffort()
+    {
         return $this->initial_effort;
     }
 
@@ -109,39 +121,47 @@ class AgileDashboard_BacklogItemPresenter implements
         $this->normalized_status_label = $status_semantic;
     }
 
-    public function id() {
+    public function id()
+    {
         return $this->id;
     }
 
-    public function title() {
+    public function title(): string
+    {
         return $this->title;
     }
 
-    public function type() {
+    public function type()
+    {
         return $this->type;
     }
 
-    public function url() {
+    public function url()
+    {
         return $this->getUrlWithRedirect($this->url);
     }
 
-    public function points() {
+    public function points()
+    {
         return $this->initial_effort;
     }
 
-    public function parent_title() {
+    public function parent_title()
+    {
         if ($this->parent) {
             return $this->parent->getTitle();
         }
     }
 
-    public function parent_url() {
+    public function parent_url()
+    {
         if ($this->parent) {
             return $this->getUrlWithRedirect($this->parent->getUri());
         }
     }
 
-    public function parent_id() {
+    public function parent_id()
+    {
         if ($this->parent) {
             return $this->parent->getId();
         }
@@ -152,29 +172,34 @@ class AgileDashboard_BacklogItemPresenter implements
         return $this->status;
     }
 
-    private function getUrlWithRedirect($url) {
+    private function getUrlWithRedirect($url)
+    {
         if ($this->redirect_to_self) {
-            return $url.'&'.$this->redirect_to_self;
+            return $url . '&' . $this->redirect_to_self;
         }
         return $url;
     }
 
     /**
-     * @return Tracker_Artifact
+     * @return Artifact
      */
-    public function getArtifact() {
+    public function getArtifact()
+    {
         return $this->artifact;
     }
 
-    public function color() {
+    public function color(): string
+    {
         return $this->color;
     }
 
-    public function setHasChildren($has_children) {
+    public function setHasChildren($has_children)
+    {
         $this->has_children = $has_children;
     }
 
-    public function hasChildren() {
+    public function hasChildren()
+    {
         if ($this->has_children === null) {
             return $this->artifact->hasChildren();
         }
@@ -211,5 +236,10 @@ class AgileDashboard_BacklogItemPresenter implements
     public function setRemainingEffort($value)
     {
         $this->remaining_effort = $value;
+    }
+
+    public function getShortType(): string
+    {
+        return $this->short_type;
     }
 }

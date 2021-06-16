@@ -1,6 +1,6 @@
 <?php
 /**
-* Copyright Enalean (c) 2013 - 2018. All rights reserved.
+* Copyright Enalean (c) 2013 - Present. All rights reserved.
 * Tuleap and Enalean names and logos are registrated trademarks owned by
 * Enalean SAS. All other trademarks or names are properties of their respective
 * owners.
@@ -55,7 +55,7 @@ class Tracker_SemanticCollection implements ArrayAccess, Iterator
             }
         }
 
-        array_splice($this->semantics, $position, 0, array($semantic));
+        array_splice($this->semantics, $position, 0, [$semantic]);
         $this->semantics_by_name[$semantic->getShortName()] = $semantic;
     }
 
@@ -97,7 +97,7 @@ class Tracker_SemanticCollection implements ArrayAccess, Iterator
 
     public function next()
     {
-        return next($this->semantics);
+        next($this->semantics);
     }
 
     public function key()
@@ -112,6 +112,6 @@ class Tracker_SemanticCollection implements ArrayAccess, Iterator
 
     public function rewind()
     {
-        return reset($this->semantics);
+        reset($this->semantics);
     }
 }

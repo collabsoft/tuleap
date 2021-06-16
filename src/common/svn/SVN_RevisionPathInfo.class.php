@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,33 +20,33 @@
 /**
  * Represents the revison info for a given svn path
  */
-class SVN_RevisionPathInfo {
-
-    private $revision_id;
+class SVN_RevisionPathInfo
+{
     private $path;
     private $author_id;
     private $timestamp;
     private $commit_message;
 
-    public function __construct($revision_id, $path, $author_id, $timestamp, $commit_message) {
-        $this->revision_id      = $revision_id;
-        $this->path             = $path;
-        $this->author_id        = $author_id;
-        $this->timestamp        = $timestamp;
-        $this->commit_message   = $commit_message;
+    public function __construct($path, $author_id, $timestamp, $commit_message)
+    {
+        $this->path           = $path;
+        $this->author_id      = $author_id;
+        $this->timestamp      = $timestamp;
+        $this->commit_message = $commit_message;
     }
 
-    public function exportToSoap() {
-        return array(
+    public function exportToSoap()
+    {
+        return [
             'path'      => $this->path,
             'author'    => (int) $this->author_id,
             'timestamp' => (int) $this->timestamp,
             'message'   => $this->commit_message,
-        );
+        ];
     }
 
-    public function getTimestamp() {
+    public function getTimestamp()
+    {
         return $this->timestamp;
     }
 }
-?>

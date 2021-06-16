@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,8 @@
  */
 
 
-class AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentations {
+class AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentations
+{
 
     /** @var array */
     public $backlog_items_representations;
@@ -28,17 +29,19 @@ class AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentations {
     public $total_size;
 
 
-    public function __construct(array $backlog_items_representations, $total_size) {
+    public function __construct(array $backlog_items_representations, $total_size)
+    {
         $this->backlog_items_representations = $backlog_items_representations;
         $this->total_size                    = $total_size;
     }
 
-    public function getBacklogItemsRepresentations() {
+    public function getBacklogItemsRepresentations()
+    {
         return $this->backlog_items_representations;
     }
 
-    public function getTotalSize() {
+    public function getTotalSize()
+    {
         return $this->total_size;
     }
-
 }

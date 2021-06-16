@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,20 +19,25 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class Tracker_ArtifactNotificationSubscriber {
+use Tuleap\Tracker\Artifact\Artifact;
 
-    /** @var Tracker_Artifact */
+class Tracker_ArtifactNotificationSubscriber
+{
+
+    /** @var Artifact */
     private $artifact;
 
     /** @var Tracker_ArtifactDao */
     private $artifact_dao;
 
-    public function __construct(Tracker_Artifact $artifact, Tracker_ArtifactDao $artifact_dao) {
+    public function __construct(Artifact $artifact, Tracker_ArtifactDao $artifact_dao)
+    {
         $this->artifact     = $artifact;
         $this->artifact_dao = $artifact_dao;
     }
 
-    public function unsubscribeUser(PFUser $user, Codendi_Request $request) {
+    public function unsubscribeUser(PFUser $user, Codendi_Request $request)
+    {
         if (! $this->doesUserCanViewArtifact($user, $request)) {
             return;
         }
@@ -41,14 +46,15 @@ class Tracker_ArtifactNotificationSubscriber {
         $this->sendResponse(
             $request,
             'info',
-            $GLOBALS['Language']->getText('plugin_tracker_artifact', 'user_unsubscribed'),
+            dgettext('tuleap-tracker', 'You will no-longer receive notifications for this artifact'),
             true
         );
 
         return;
     }
 
-    public function unsubscribeUserWithoutRedirect(PFUser $user, Codendi_Request $request) {
+    public function unsubscribeUserWithoutRedirect(PFUser $user, Codendi_Request $request)
+    {
         if (! $this->doesUserCanViewArtifact($user, $request)) {
             return;
         }
@@ -56,7 +62,8 @@ class Tracker_ArtifactNotificationSubscriber {
         $this->unsubscribe($user);
     }
 
-    public function subscribeUser(PFUser $user, Codendi_Request $request) {
+    public function subscribeUser(PFUser $user, Codendi_Request $request)
+    {
         if (! $this->doesUserCanViewArtifact($user, $request)) {
             return;
         }
@@ -65,19 +72,20 @@ class Tracker_ArtifactNotificationSubscriber {
         $this->sendResponse(
             $request,
             'info',
-            $GLOBALS['Language']->getText('plugin_tracker_artifact', 'user_subscribed'),
+            dgettext('tuleap-tracker', 'You are now receiving notifications for this artifact'),
             false
         );
 
         return;
     }
 
-    private function doesUserCanViewArtifact(PFUser $user, Codendi_Request $request) {
+    private function doesUserCanViewArtifact(PFUser $user, Codendi_Request $request)
+    {
         if (! $this->artifact->userCanView($user)) {
             $this->sendResponse(
                 $request,
                 'error',
-                $GLOBALS['Language']->getText('plugin_tracker_artifact', 'request_not_valid'),
+                dgettext('tuleap-tracker', 'The request is not valid'),
                 null
             );
             return false;
@@ -86,15 +94,18 @@ class Tracker_ArtifactNotificationSubscriber {
         return true;
     }
 
-    private function subscribe(PFUser $user) {
+    private function subscribe(PFUser $user)
+    {
         $this->artifact_dao->deleteUnsubscribeNotification($this->artifact->getId(), $user->getId());
     }
 
-    private function unsubscribe(PFUser $user) {
+    private function unsubscribe(PFUser $user)
+    {
         $this->artifact_dao->createUnsubscribeNotification($this->artifact->getId(), $user->getId());
     }
 
-    private function sendResponse(Codendi_Request $request, $feedback_level, $message, $unsubscribe) {
+    private function sendResponse(Codendi_Request $request, $feedback_level, $message, $unsubscribe)
+    {
         if ($request->isAjax()) {
             $this->sendAjaxResponse($unsubscribe, $message);
             return;
@@ -107,7 +118,8 @@ class Tracker_ArtifactNotificationSubscriber {
         $GLOBALS['Response']->redirect($this->artifact->getUri());
     }
 
-    private function sendAjaxResponse($unsubscribe, $message) {
+    private function sendAjaxResponse($unsubscribe, $message)
+    {
         $response["notification"] = ! $unsubscribe;
         $response["message"]      = $message;
         $GLOBALS['Response']->sendJSON($response);

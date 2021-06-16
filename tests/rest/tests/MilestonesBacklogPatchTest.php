@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014-Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-require_once __DIR__.'/../lib/autoload.php';
-
 use Tuleap\REST\MilestoneBase;
 
 /**
  * @group MilestonesTest
  */
-class MilestonesBacklogPatchTest extends MilestoneBase
+class MilestonesBacklogPatchTest extends MilestoneBase //phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace
 {
     /** @var Test\Rest\Tracker\Tracker */
     private $release;
@@ -45,17 +43,17 @@ class MilestonesBacklogPatchTest extends MilestoneBase
     private $releases;
     private $sprints;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
-        $this->stories = $this->getArtifactIdsIndexedByTitle('dragndrop', 'story');
+        $this->stories         = $this->getArtifactIdsIndexedByTitle('dragndrop', 'story');
         $this->story_add['id'] = $this->stories["add two integers"];
         $this->story_sub['id'] = $this->stories["sub two integers"];
         $this->story_mul['id'] = $this->stories["mul two integers"];
         $this->story_div['id'] = $this->stories["div two integers"];
 
-        $this->epics = $this->getArtifactIdsIndexedByTitle('dragndrop', 'epic');
+        $this->epics            = $this->getArtifactIdsIndexedByTitle('dragndrop', 'epic');
         $this->epic_basic['id'] = $this->epics['Basic calculator'];
         $this->epic_adv['id']   = $this->epics['Advanced calculator'];
         $this->epic_log['id']   = $this->epics['Logarithm calculator'];
@@ -63,199 +61,204 @@ class MilestonesBacklogPatchTest extends MilestoneBase
         $this->epic_fin['id']   = $this->epics['Finance calculator'];
         $this->epic_sta['id']   = $this->epics['Stats calculator'];
 
-        $this->releases = $this->getArtifactIdsIndexedByTitle('dragndrop', 'rel');
+        $this->releases      = $this->getArtifactIdsIndexedByTitle('dragndrop', 'rel');
         $this->release['id'] = $this->releases['Release 2014 12 02'];
 
         $this->sprints = $this->getArtifactIdsIndexedByTitle('dragndrop', 'sprint');
 
-        $this->uri     = 'milestones/'.$this->release['id'].'/backlog';
+        $this->uri = 'milestones/' . $this->release['id'] . '/backlog';
     }
 
-    public function testPatchBacklogAfter() {
-        $response = $this->getResponse($this->client->patch($this->uri, null, json_encode(array(
-            'order' => array(
-                'ids'         => array($this->story_mul['id'], $this->story_div['id']),
+    public function testPatchBacklogForbiddenForRESTReadOnlyUserNotInvolvedInProject(): void
+    {
+        $response = $this->getResponse(
+            $this->client->patch($this->uri, null, null),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testPatchBacklogAfter()
+    {
+        $response = $this->getResponse($this->client->patch($this->uri, null, json_encode([
+            'order' => [
+                'ids'         => [$this->story_mul['id'], $this->story_div['id']],
                 'direction'   => 'after',
                 'compared_to' => $this->story_add['id']
-            )
-        ))));
+            ]
+        ])));
         $this->assertEquals($response->getStatusCode(), 200);
 
         $this->assertEquals(
-            array(
+            [
                 $this->story_add['id'],
                 $this->story_mul['id'],
                 $this->story_div['id'],
                 $this->story_sub['id'],
-            ),
+            ],
             $this->getIdsOrderedByPriority($this->uri)
         );
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
-    public function testPatchBacklogWithoutPermission() {
-        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_2_NAME, $this->client->patch($this->uri, null, json_encode(array(
-            'order' => array(
-                'ids'         => array($this->story_div['id'], $this->story_mul['id']),
+    public function testPatchBacklogWithoutPermission()
+    {
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_2_NAME, $this->client->patch($this->uri, null, json_encode([
+            'order' => [
+                'ids'         => [$this->story_div['id'], $this->story_mul['id']],
                 'direction'   => 'after',
                 'compared_to' => $this->story_add['id']
-            )
-        ))));
+            ]
+        ])));
         $this->assertEquals($response->getStatusCode(), 403);
 
-        $this->assertEquals(
-            array(
+        $this->assertEqualsCanonicalizing(
+            [
                 $this->story_add['id'],
                 $this->story_sub['id'],
                 $this->story_mul['id'],
                 $this->story_div['id'],
-            ),
+            ],
             $this->getIdsOrderedByPriority($this->uri)
         );
     }
 
-    public function testPatchBacklogBefore() {
-        $response = $this->getResponse($this->client->patch($this->uri, null, json_encode(array(
-            'order' => array(
-                'ids'         => array($this->story_mul['id'], $this->story_sub['id']),
+    public function testPatchBacklogBefore()
+    {
+        $response = $this->getResponse($this->client->patch($this->uri, null, json_encode([
+            'order' => [
+                'ids'         => [$this->story_mul['id'], $this->story_sub['id']],
                 'direction'   => 'before',
                 'compared_to' => $this->story_add['id']
-            )
-        ))));
+            ]
+        ])));
         $this->assertEquals($response->getStatusCode(), 200);
 
         $this->assertEquals(
-            array(
+            [
                 $this->story_mul['id'],
                 $this->story_sub['id'],
                 $this->story_add['id'],
                 $this->story_div['id'],
-            ),
+            ],
             $this->getIdsOrderedByPriority($this->uri)
         );
     }
 
-    public function testPatchBacklogWithItemNotInBacklogRaiseErrors() {
-        $exception_thrown = false;
-
-        try {
-            $this->getResponse($this->client->patch($this->uri, null, json_encode(array(
-                'order' => array(
-                    'ids'         => array($this->story_mul['id'], $this->story_sub['id']),
-                    'direction'   => 'before',
-                    'compared_to' => 1
-                )
-            ))));
-        } catch (Guzzle\Http\Exception\ClientErrorResponseException $exception) {
-            $exception_thrown = true;
-            $this->assertEquals(409, $exception->getResponse()->getStatusCode());
-        }
-        $this->assertTrue($exception_thrown, "An exception should have been thrown");
+    public function testPatchBacklogWithItemNotInBacklogRaiseErrors()
+    {
+        $response = $this->getResponse($this->client->patch($this->uri, null, json_encode([
+            'order' => [
+                'ids'         => [$this->story_mul['id'], $this->story_sub['id']],
+                'direction'   => 'before',
+                'compared_to' => 1
+            ]
+        ])));
+        $this->assertEquals(409, $response->getStatusCode());
     }
 
-    public function testPatchContentBefore() {
-        $uri = 'milestones/'.$this->release['id'].'/content';
+    public function testPatchContentBefore()
+    {
+        $uri = 'milestones/' . $this->release['id'] . '/content';
 
-        $response = $this->getResponse($this->client->patch($uri, null, json_encode(array(
-            'order' => array(
-                'ids'         => array($this->epic_basic['id'], $this->epic_log['id']),
+        $response = $this->getResponse($this->client->patch($uri, null, json_encode([
+            'order' => [
+                'ids'         => [$this->epic_basic['id'], $this->epic_log['id']],
                 'direction'   => 'before',
                 'compared_to' => $this->epic_fin['id']
-            )
-        ))));
+            ]
+        ])));
         $this->assertEquals($response->getStatusCode(), 200);
 
         $this->assertEquals(
-            array(
+            [
                 $this->epic_adv['id'],
                 $this->epic_exp['id'],
                 $this->epic_basic['id'],
                 $this->epic_log['id'],
                 $this->epic_fin['id'],
-            ),
+            ],
             $this->getIdsOrderedByPriority($uri)
         );
     }
 
-    public function testPatchContentAfter() {
-        $uri = 'milestones/'.$this->release['id'].'/content';
+    public function testPatchContentAfter()
+    {
+        $uri = 'milestones/' . $this->release['id'] . '/content';
 
-        $response = $this->getResponse($this->client->patch($uri, null, json_encode(array(
-            'order' => array(
-                'ids'         => array($this->epic_exp['id'], $this->epic_adv['id']),
+        $response = $this->getResponse($this->client->patch($uri, null, json_encode([
+            'order' => [
+                'ids'         => [$this->epic_exp['id'], $this->epic_adv['id']],
                 'direction'   => 'after',
                 'compared_to' => $this->epic_log['id']
-            )
-        ))));
+            ]
+        ])));
         $this->assertEquals($response->getStatusCode(), 200);
 
         $this->assertEquals(
-            array(
+            [
                 $this->epic_basic['id'],
                 $this->epic_log['id'],
                 $this->epic_exp['id'],
                 $this->epic_adv['id'],
                 $this->epic_fin['id'],
-            ),
+            ],
             $this->getIdsOrderedByPriority($uri)
         );
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
-    public function testPatchContentWithoutPermission() {
-        $uri = 'milestones/'.$this->release['id'].'/content';
+    public function testPatchContentWithoutPermission()
+    {
+        $uri = 'milestones/' . $this->release['id'] . '/content';
 
-        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_2_NAME, $this->client->patch($uri, null, json_encode(array(
-            'order' => array(
-                'ids'         => array($this->epic_adv['id'], $this->epic_exp['id']),
+        $response = $this->getResponseByName(REST_TestDataBuilder::TEST_USER_2_NAME, $this->client->patch($uri, null, json_encode([
+            'order' => [
+                'ids'         => [$this->epic_adv['id'], $this->epic_exp['id']],
                 'direction'   => 'after',
                 'compared_to' => $this->epic_log['id']
-            )
-        ))));
+            ]
+        ])));
         $this->assertEquals($response->getStatusCode(), 403);
 
         $this->assertEquals(
-            array(
+            [
                 $this->epic_basic['id'],
                 $this->epic_log['id'],
                 $this->epic_exp['id'],
                 $this->epic_adv['id'],
                 $this->epic_fin['id'],
-            ),
+            ],
             $this->getIdsOrderedByPriority($uri)
         );
     }
 
-    public function testPatchContentReMove() {
-        $uri = 'milestones/'.$this->release['id'].'/content';
+    public function testPatchContentReMove()
+    {
+        $uri = 'milestones/' . $this->release['id'] . '/content';
 
-        $another_release_id = $this->releases['Another release'];
-        $another_release_uri = 'milestones/'.$another_release_id.'/content';
+        $another_release_id  = $this->releases['Another release'];
+        $another_release_uri = 'milestones/' . $another_release_id . '/content';
 
-        $response = $this->getResponse($this->client->patch($another_release_uri, null, json_encode(array(
-            'add' => array(
-                array(
+        $response = $this->getResponse($this->client->patch($another_release_uri, null, json_encode([
+            'add' => [
+                [
                     'id'          => $this->epic_log['id'],
                     'remove_from' => $this->release['id'],
-                ),
-                array(
+                ],
+                [
                     'id'          => $this->epic_adv['id'],
                     'remove_from' => $this->release['id'],
-                )
-            ),
-        ))));
+                ]
+            ],
+        ])));
         $this->assertEquals($response->getStatusCode(), 200);
 
         $this->assertEquals(
-            array(
+            [
                 $this->epic_basic['id'],
                 $this->epic_exp['id'],
                 $this->epic_fin['id'],
-            ),
+            ],
             $this->getIdsOrderedByPriority($uri)
         );
 
@@ -268,30 +271,31 @@ class MilestonesBacklogPatchTest extends MilestoneBase
     /**
      * @depends testPatchContentReMove
      */
-    public function testPatchAddAndOrder() {
-        $uri = 'milestones/'.$this->release['id'].'/content';
+    public function testPatchAddAndOrder()
+    {
+        $uri = 'milestones/' . $this->release['id'] . '/content';
 
-        $response = $this->getResponse($this->client->patch($uri, null, json_encode(array(
-            'order'  => array(
-                'ids'         => array($this->epic_fin['id'], $this->epic_sta['id']),
+        $response = $this->getResponse($this->client->patch($uri, null, json_encode([
+            'order'  => [
+                'ids'         => [$this->epic_fin['id'], $this->epic_sta['id']],
                 'direction'   => 'after',
                 'compared_to' => $this->epic_basic['id']
-            ),
-            'add' => array(
-                array(
+            ],
+            'add' => [
+                [
                     'id' => $this->epic_sta['id'],
-                )
-            ),
-        ))));
+                ]
+            ],
+        ])));
         $this->assertEquals($response->getStatusCode(), 200);
 
         $this->assertEquals(
-            array(
+            [
                 $this->epic_basic['id'],
                 $this->epic_fin['id'],
                 $this->epic_sta['id'],
                 $this->epic_exp['id'],
-            ),
+            ],
             $this->getIdsOrderedByPriority($uri)
         );
     }
@@ -299,43 +303,47 @@ class MilestonesBacklogPatchTest extends MilestoneBase
     /**
      * @depends testPatchBacklogBefore
      */
-    public function testPatchBacklogAddAndOrder() {
+    public function testPatchBacklogAddAndOrder()
+    {
         $inconsistent_story['id'] = $this->stories['Created in sprint'];
-        $sprint_id = $this->sprints['Sprint 9001'];
+        $sprint_id                = $this->sprints['Sprint 9001'];
 
-        $response = $this->getResponse($this->client->patch($this->uri, null, json_encode(array(
-            'order'  => array(
-                'ids'         => array($inconsistent_story['id'], $this->story_div['id'], $this->story_sub['id']),
+        $patch_body = json_encode([
+            'order'  => [
+                'ids'         => [$inconsistent_story['id'], $this->story_div['id'], $this->story_sub['id']],
                 'direction'   => 'after',
                 'compared_to' => $this->story_mul['id']
-            ),
-            'add' => array(
-                array(
+            ],
+            'add' => [
+                [
                     'id'          => $inconsistent_story['id'],
                     'remove_from' => $sprint_id,
-                )
-            ),
-        ))));
-        $this->assertEquals($response->getStatusCode(), 200);
+                ]
+            ],
+        ]);
+
+        $response = $this->getResponse($this->client->patch($this->uri, null, $patch_body));
+        $this->assertEquals(200, $response->getStatusCode());
 
         $this->assertEquals(
-            array(
+            [
                 $this->story_mul['id'],
                 $inconsistent_story['id'],
                 $this->story_div['id'],
                 $this->story_sub['id'],
                 $this->story_add['id'],
-            ),
+            ],
             $this->getIdsOrderedByPriority($this->uri)
         );
 
-        $this->assertCount(0, $this->getResponse($this->client->get('milestones/'.$sprint_id.'/backlog'))->json());
+        $this->assertCount(0, $this->getResponse($this->client->get('milestones/' . $sprint_id . '/backlog'))->json());
     }
 
-    private function getIdsOrderedByPriority($uri) {
-        $response = $this->getResponse($this->client->get($uri));
-        $actual_order = array();
-        foreach($response->json() as $backlog_element) {
+    private function getIdsOrderedByPriority($uri)
+    {
+        $response     = $this->getResponse($this->client->get($uri));
+        $actual_order = [];
+        foreach ($response->json() as $backlog_element) {
             $actual_order[] = $backlog_element['id'];
         }
         return $actual_order;

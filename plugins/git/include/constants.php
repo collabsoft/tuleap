@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -35,25 +35,6 @@ define('REST_GIT_PULL_REQUEST_ENDPOINTS', 'rest_git_pull_request_endpoints');
 define('REST_GIT_PULL_REQUEST_GET_FOR_REPOSITORY', 'rest_git_pull_request_get_for_repository');
 
 /**
- * Allow a plugin to add additional info beside the repository name
- *
- * Parameters:
- *   'repository' => (Input)  GitRepository Git repository
- *   'info'       => (Output) String        Html string of the info to append
- */
-define('GIT_ADDITIONAL_INFO', 'git_additional_info');
-
-/**
- * Allow a plugin to add additional actions beside the clone bar
- *
- * Parameters:
- *   'repository' => (Input)  GitRepository Git repository
- *   'user'       => (Input)  PFUser        Current user
- *   'actions'    => (Output) String        Rendered template of the actions
- */
-define('GIT_ADDITIONAL_ACTIONS', 'git_additional_actions');
-
-/**
  * Allow a plugin to append his own classes to the body DOM element in git views
  *
  * Parameters:
@@ -73,15 +54,6 @@ define('GIT_ADDITIONAL_BODY_CLASSES', 'git_additional_body_classes');
 define('GIT_ADDITIONAL_PERMITTED_ACTIONS', 'git_additional_permitted_actions');
 
 /**
- * Allow a plugin to add additional help text in the clone url bar
- *
- * Parameters:
- *   'repository'=> (Input)  GitRepository Git repository
- *   'html'      => (Output) String        Help text
- */
-define('GIT_ADDITIONAL_HELP_TEXT', 'git_additional_help_text');
-
-/**
  * Allow plugins to add additional notifications setup for git
  *
  * Parameters:
@@ -90,37 +62,3 @@ define('GIT_ADDITIONAL_HELP_TEXT', 'git_additional_help_text');
  *   'output'     => (Output) String       The HTML to present
  */
 define('GIT_ADDITIONAL_NOTIFICATIONS', 'git_additional_notifications');
-
-/**
- * Allow plugins to do something when Tuleap receive a git push
- *
- * Parameters:
- *   'repository' => (Input) GitRepository Git repository currently modified
- */
-define('GIT_HOOK_POSTRECEIVE', 'git_hook_post_receive');
-
-/**
- * Allow plugins to do something when Tuleap receive a git push with a reference
- * update
- *
- * Parameters:
- *   'repository' => (Input) GitRepository Git repository currently modified
- *   'oldrev'     => (Input) The old revision of the currently updated reference
- *   'newrev'     => (Input) The new revision of the currently updated reference
- *   'refname'    => (Input) The name of the reference being updated
- *   'user'       => (Input) The user performing the action
- */
-define('GIT_HOOK_POSTRECEIVE_REF_UPDATE', 'git_hook_post_receive_ref_update');
-
-/**
- * Allow plugins to do something when Tuleap is notified
- * that a build has been triggered or finished.
- * Parameters:
- *     'repository'       => (Input) GitRepository Git repository currently modified
- *     'branch'           => (Input) The branch being built
- *     'commit_reference' => (Input) The sha1 of the commit being built
- *     'status'           => (Input) The status of the build
- *
- * @deprecated
- */
-define('REST_GIT_BUILD_STATUS', 'rest_git_build_status');

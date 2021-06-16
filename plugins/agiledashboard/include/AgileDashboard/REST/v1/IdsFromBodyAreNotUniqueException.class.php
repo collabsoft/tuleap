@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,12 +21,13 @@
 
 namespace Tuleap\AgileDashboard\REST\v1;
 
-use \Exception;
+use Exception;
 
-class IdsFromBodyAreNotUniqueException extends Exception {
+class IdsFromBodyAreNotUniqueException extends Exception
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct('There are duplicated ids');
     }
-
 }

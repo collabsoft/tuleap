@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -44,14 +44,12 @@ class NotInComparisonFromWhereBuilder implements FromWhereBuilder
     }
 
     /**
-     * @param Metadata $metadata
-     * @param Comparison $comparison
      * @param Tracker[] $trackers
      * @return IProvideParametrizedFromAndWhereSQLFragments
      */
     public function getFromWhere(Metadata $metadata, Comparison $comparison, array $trackers)
     {
-        $from = 'INNER JOIN tracker_semantic_contributor AS assigned_to_field_not_equal
+        $from            = 'INNER JOIN tracker_semantic_contributor AS assigned_to_field_not_equal
             ON (
               assigned_to_field_not_equal.tracker_id = tracker_artifact.tracker_id
             )
@@ -67,7 +65,7 @@ class NotInComparisonFromWhereBuilder implements FromWhereBuilder
             )';
         $from_parameters = [];
 
-        $tracker_ids = array_map(
+        $tracker_ids           = array_map(
             function (Tracker $tracker) {
                 return $tracker->getId();
             },

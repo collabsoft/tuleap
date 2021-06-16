@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,7 +22,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-interface AgileDashboard_Milestone_Backlog_BacklogRowPresenter {
+interface AgileDashboard_Milestone_Backlog_BacklogRowPresenter
+{
 
     public function title();
 
@@ -34,5 +35,3 @@ interface AgileDashboard_Milestone_Backlog_BacklogRowPresenter {
 
     public function parent_url();
 }
-
-?>

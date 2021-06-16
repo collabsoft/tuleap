@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,11 @@ namespace Tuleap\REST\Exceptions;
 
 use Exception;
 
-class NoAuthenticationHeadersException extends Exception {
+class NoAuthenticationHeadersException extends Exception
+{
 
-    public function __construct($header_name) {
-        parent::__construct($header_name.' HTTP header required');
+    public function __construct($header_name)
+    {
+        parent::__construct($header_name . ' HTTP header required');
     }
 }

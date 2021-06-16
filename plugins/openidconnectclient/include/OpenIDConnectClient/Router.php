@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,10 +21,12 @@
 namespace Tuleap\OpenIDConnectClient;
 
 use Feedback;
-use ForgeConfig;
 use HTTPRequest;
+use Tuleap\Layout\BaseLayout;
+use Tuleap\Request\DispatchableWithRequestNoAuthz;
 
-class Router {
+class Router implements DispatchableWithRequestNoAuthz
+{
 
     /**
      * @var Login\Controller
@@ -36,30 +38,19 @@ class Router {
      */
     private $account_linker_controller;
 
-    /**
-     * @var UserMapping\Controller
-     */
-    private $user_mapping_controller;
-
     public function __construct(
         Login\Controller $login_controller,
-        AccountLinker\Controller $account_linker_controller,
-        UserMapping\Controller $user_mapping_controller
+        AccountLinker\Controller $account_linker_controller
     ) {
         $this->login_controller          = $login_controller;
         $this->account_linker_controller = $account_linker_controller;
-        $this->user_mapping_controller   = $user_mapping_controller;
     }
 
-    public function route(HTTPRequest $request) {
+    public function process(HTTPRequest $request, BaseLayout $layout, array $variables)
+    {
         $action = $request->get('action');
 
-        if ($action === 'remove-user-mapping') {
-            $this->user_mapping_controller->removeMapping($request->get('user_mapping_id'));
-            return;
-        }
-
-        $this->checkTLSPresence($request);
+        $this->checkTLSPresence($request, $layout);
         switch ($action) {
             case 'link':
                 $this->account_linker_controller->showIndex($request);
@@ -68,18 +59,18 @@ class Router {
                 $this->account_linker_controller->linkExistingAccount($request);
                 break;
             default:
-                $this->login_controller->login($request->get('return_to'), $request->getTime());
+                $this->login_controller->login($request, $request->get('return_to'), $request->getTime());
         }
     }
 
-    private function checkTLSPresence(HTTPRequest $request) {
-        if(! $request->isSecure()) {
-            $GLOBALS['Response']->addFeedback(
+    private function checkTLSPresence(HTTPRequest $request, BaseLayout $layout)
+    {
+        if (! $request->isSecure()) {
+            $layout->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_openidconnectclient', 'only_https_possible')
+                dgettext('tuleap-openidconnectclient', 'The OpenID Connect plugin can only be used if the platform is accessible with HTTPS')
             );
-            $GLOBALS['Response']->redirect('/account/login.php');
+            $layout->redirect('/account/login.php');
         }
     }
-
 }

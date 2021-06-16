@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,11 @@ namespace Tuleap\Tracker\REST\Artifact;
 
 use Tuleap\REST\JsonCast;
 
-class FileInfoRepresentation {
+/**
+ * @psalm-immutable
+ */
+class FileInfoRepresentation
+{
     /**
      * @var int ID of the file
      */
@@ -63,7 +67,8 @@ class FileInfoRepresentation {
      */
     public $html_preview_url;
 
-    public function build($id, $submitted_by, $description, $name, $filesize, $filetype, $html_url, $html_preview_url) {
+    public function __construct($id, $submitted_by, $description, $name, $filesize, $filetype, $html_url, $html_preview_url)
+    {
         $this->id               = JsonCast::toInt($id);
         $this->submitted_by     = JsonCast::toInt($submitted_by);
         $this->description      = $description;
@@ -72,8 +77,6 @@ class FileInfoRepresentation {
         $this->type             = $filetype;
         $this->html_url         = $html_url;
         $this->html_preview_url = $html_preview_url;
-        $this->uri              = 'artifact_files/'.$this->id;
-
-        return $this;
+        $this->uri              = 'artifact_files/' . $this->id;
     }
 }

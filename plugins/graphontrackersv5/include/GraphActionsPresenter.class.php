@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -68,27 +68,33 @@ class GraphOnTrackersV5_GraphActionsPresenter
         $this->has_one_project_dashboard = count($project_dashboards) === 1;
     }
 
-    public function confirm_label() {
-        return $GLOBALS['Language']->getText('plugin_graphontrackersv5_include_report','confirm_del');
+    public function confirm_label()
+    {
+        return dgettext('tuleap-graphontrackersv5', '\'Are you sure that you want to delete this chart ?\'');
     }
 
-    public function delete_title() {
-        return $GLOBALS['Language']->getText('plugin_graphontrackersv5_include_report', 'tooltip_del');
+    public function delete_title()
+    {
+        return dgettext('tuleap-graphontrackersv5', 'Delete Chart');
     }
 
-    public function edit_title() {
-        return $GLOBALS['Language']->getText('plugin_graphontrackersv5_include_report', 'tooltip_edit');
+    public function edit_title()
+    {
+        return dgettext('tuleap-graphontrackersv5', 'Edit Chart');
     }
 
-    public function add_to_my_dashboard_label() {
-        return $GLOBALS['Language']->getText('plugin_graphontrackersv5_include_report', 'add_chart_dashboard');
+    public function add_to_my_dashboard_label()
+    {
+        return dgettext('tuleap-graphontrackersv5', 'Add to my dashboard');
     }
 
-    public function add_to_project_dashboard_label() {
-        return $GLOBALS['Language']->getText('plugin_graphontrackersv5_include_report', 'add_chart_project_dashboard');
+    public function add_to_project_dashboard_label()
+    {
+        return dgettext('tuleap-graphontrackersv5', 'Add to project dashboard');
     }
 
-    public function report_is_created() {
+    public function report_is_created()
+    {
         return $this->chart->getId() > 0;
     }
 }

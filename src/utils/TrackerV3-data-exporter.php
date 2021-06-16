@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,18 +18,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../www/include/pre.php';
 
-$debug           = false;
-$overwrite       = false;
-$atid            = null;
-$archive_path    = null;
-$debug_option    = getopt('d');
-$overwrite_option= getopt('o');
+$debug            = false;
+$overwrite        = false;
+$atid             = null;
+$archive_path     = null;
+$debug_option     = getopt('d');
+$overwrite_option = getopt('o');
 
 if (isset($debug_option['d'])) {
     $debug = true;
- }
+}
 
 if (isset($overwrite_option['o'])) {
     $overwrite = true;
@@ -47,22 +47,21 @@ for ($i = 1; $i < $argc; ++$i) {
 }
 
 if ($atid === null || $archive_path === null) {
-    echo 'Usage: '.basename($argv[0]).' [-d] tracker_id /path/to/archive.zip'.PHP_EOL;
+    echo 'Usage: ' . basename($argv[0]) . ' [-d] tracker_id /path/to/archive.zip' . PHP_EOL;
     exit(1);
 }
 
 if (! $overwrite && file_exists($archive_path)) {
-    echo "*** ERROR: File $archive_path already exists.".PHP_EOL;
+    echo "*** ERROR: File $archive_path already exists." . PHP_EOL;
     exit(1);
 }
 
 try {
-
-    $xml      = new DOMDocument("1.0", "UTF8");
-    $logger   = new Log_ConsoleLogger();
-    $archive  = new ZipArchive();
+    $xml     = new DOMDocument("1.0", "UTF8");
+    $logger  = new Log_ConsoleLogger();
+    $archive = new ZipArchive();
     if ($archive->open($archive_path, ZipArchive::CREATE) !== true) {
-        echo '*** ERROR: Cannot create archive: '.$archive_path;
+        echo '*** ERROR: Cannot create archive: ' . $archive_path;
         exit(1);
     }
 
@@ -75,24 +74,20 @@ try {
 
     if (! $debug) {
         $validator = new XML_RNGValidator();
-        $validator->validate(simplexml_import_dom($xml), realpath(dirname(TRACKER_BASE_DIR) . '/www/resources/artifacts.rng'));
+        $validator->validate(simplexml_import_dom($xml), realpath(__DIR__ . '/../../plugins/tracker/resources/artifacts.rng'));
     }
 
-    $xml_security = new XML_Security();
-    $xml_security->enableExternalLoadOfEntities();
-
     $xsl = new DOMDocument();
-    $xsl->load(dirname(__FILE__).'/xml/indent.xsl');
+    $xsl->loadXML(\file_get_contents(__DIR__ . '/xml/indent.xsl'));
 
     $proc = new XSLTProcessor();
     $proc->importStyleSheet($xsl);
 
     $archive->addFromString('artifacts.xml', $proc->transformToXML($xml));
-    $xml_security->disableExternalLoadOfEntities();
 
     $archive->close();
 } catch (XML_ParseException $exception) {
     foreach ($exception->getErrors() as $error) {
-        echo $error.PHP_EOL;
+        echo $error . PHP_EOL;
     }
 }

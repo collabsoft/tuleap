@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,26 +21,29 @@
 /**
  * Collection of Cardwall_Mapping
  */
-class Cardwall_MappingCollection implements IteratorAggregate {
+class Cardwall_MappingCollection implements IteratorAggregate
+{
 
     /**
      * @var array of Cardwall_Mapping
      */
-    private $mappings = array();
+    private $mappings = [];
 
     /**
      * @var array of array of Cardwall_Mapping indexed by field id
      */
-    private $mappings_by_field_id = array();
+    private $mappings_by_field_id = [];
 
     /**
      * @return Iterator
      */
-    public function getIterator() {
+    public function getIterator()
+    {
         return new ArrayObject($this->mappings);
     }
 
-    public function add(Cardwall_Mapping $mapping) {
+    public function add(Cardwall_Mapping $mapping)
+    {
         $this->mappings[]                                 = $mapping;
         $this->mappings_by_field_id[$mapping->field_id][] = $mapping;
     }
@@ -48,12 +51,13 @@ class Cardwall_MappingCollection implements IteratorAggregate {
 
     /**
      * Returns the list of static field values of the swimline
-     * 
+     *
      * @param int $field_id
      * @return array of int
      */
-    public function getSwimLineValues($field_id) {
-        $swim_line_values = array();
+    public function getSwimLineValues($field_id)
+    {
+        $swim_line_values = [];
         foreach ($this->getMappingsByFieldId($field_id) as $mapping) {
             $swim_line_values[] = $mapping->column_id;
         }
@@ -63,11 +67,11 @@ class Cardwall_MappingCollection implements IteratorAggregate {
     /**
      * @return array of Cardwall_Mapping
      */
-    private function getMappingsByFieldId($field_id) {
+    private function getMappingsByFieldId($field_id)
+    {
         if (isset($this->mappings_by_field_id[$field_id])) {
             return $this->mappings_by_field_id[$field_id];
         }
-        return array();
+        return [];
     }
 }
-?>

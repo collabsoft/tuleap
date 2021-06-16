@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -45,6 +45,10 @@ class UserNotificationSettingsDAO extends DataAccessObject
         $this->getDB()->beginTransaction();
         try {
             $this->deleteUserNotificationSettings($user_id, $tracker_id);
+            $this->getDB()->insert(
+                'plugin_tracker_involved_notification_subscribers',
+                ['user_id' => $user_id, 'tracker_id' => $tracker_id]
+            );
             $this->getDB()->commit();
         } catch (\Exception $ex) {
             $this->getDB()->rollBack();
@@ -54,18 +58,15 @@ class UserNotificationSettingsDAO extends DataAccessObject
 
     public function enableNotifyOnStatusChangeMode($user_id, $tracker_id)
     {
-        $this->getDB()->beginTransaction();
-        try {
-            $this->deleteUserNotificationSettings($user_id, $tracker_id);
-            $this->getDB()->insert(
-                'tracker_only_status_change_notification_subscribers',
-                ['user_id' => $user_id, 'tracker_id' => $tracker_id]
-            );
-            $this->getDB()->commit();
-        } catch (\Exception $ex) {
-            $this->getDB()->rollBack();
-            throw $ex;
-        }
+        $this->getDB()->tryFlatTransaction(
+            function () use ($user_id, $tracker_id): void {
+                $this->enableGlobalNotification($user_id, $tracker_id, true);
+                $this->getDB()->insert(
+                    'tracker_only_status_change_notification_subscribers',
+                    ['user_id' => $user_id, 'tracker_id' => $tracker_id]
+                );
+            }
+        );
     }
 
     public function enableNotifyOnArtifactCreationMode($user_id, $tracker_id)
@@ -80,25 +81,21 @@ class UserNotificationSettingsDAO extends DataAccessObject
 
     private function enableGlobalNotification($user_id, $tracker_id, $all_updates)
     {
-        $this->getDB()->beginTransaction();
-        try {
-            $check_permission = $this->getCurrentGlobalNotificationCheckPermissionSetting($user_id, $tracker_id);
-            $this->deleteUserNotificationSettings($user_id, $tracker_id);
-            $this->getDB()->insert(
-                'tracker_global_notification',
-                ['tracker_id' => $tracker_id, 'all_updates' => $all_updates, 'check_permissions' => $check_permission]
-            );
-            $notification_id = $this->getDB()->lastInsertId();
-            $this->getDB()->insert(
-                'tracker_global_notification_users',
-                ['notification_id' => $notification_id, 'user_id' => $user_id]
-            );
-
-            $this->getDB()->commit();
-        } catch (\Exception $ex) {
-            $this->getDB()->rollBack();
-            throw $ex;
-        }
+        $this->getDB()->tryFlatTransaction(
+            function () use ($user_id, $tracker_id, $all_updates): void {
+                $check_permission = $this->getCurrentGlobalNotificationCheckPermissionSetting($user_id, $tracker_id);
+                $this->deleteUserNotificationSettings($user_id, $tracker_id);
+                $this->getDB()->insert(
+                    'tracker_global_notification',
+                    ['tracker_id' => $tracker_id, 'all_updates' => $all_updates, 'check_permissions' => $check_permission]
+                );
+                $notification_id = $this->getDB()->lastInsertId();
+                $this->getDB()->insert(
+                    'tracker_global_notification_users',
+                    ['notification_id' => $notification_id, 'user_id' => $user_id]
+                );
+            }
+        );
     }
 
     private function deleteUserNotificationSettings($user_id, $tracker_id)
@@ -106,7 +103,14 @@ class UserNotificationSettingsDAO extends DataAccessObject
         $this->deleteUserFromUnsubscribers($user_id, $tracker_id);
         $this->deleteUserFromGlobalNotification($user_id, $tracker_id);
         $this->deleteUserFromStatusUpdateOnlyNotification($user_id, $tracker_id);
+        $this->deleteUserFromInvolvedNotification($user_id, $tracker_id);
         $this->cleanUpEmptyGlobalNotification($tracker_id);
+    }
+
+    private function deleteUserFromInvolvedNotification($user_id, $tracker_id)
+    {
+        $sql = 'DELETE FROM plugin_tracker_involved_notification_subscribers WHERE user_id = ? AND tracker_id = ?';
+        $this->getDB()->run($sql, $user_id, $tracker_id);
     }
 
     private function deleteUserFromUnsubscribers($user_id, $tracker_id)
@@ -137,6 +141,7 @@ class UserNotificationSettingsDAO extends DataAccessObject
                 LEFT OUTER JOIN tracker_global_notification_users ON (tracker_global_notification.id = tracker_global_notification_users.notification_id)
                 LEFT OUTER JOIN tracker_global_notification_ugroups ON (tracker_global_notification.id = tracker_global_notification_ugroups.notification_id)
                 WHERE tracker_global_notification_users.notification_id IS NULL AND tracker_global_notification_ugroups.notification_id IS NULL
+                  AND tracker_global_notification.addresses = \'\'
                   AND tracker_global_notification.tracker_id = ?';
         $this->getDB()->run($sql, $tracker_id);
     }

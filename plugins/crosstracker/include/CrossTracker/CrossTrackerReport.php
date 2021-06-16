@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -36,6 +36,14 @@ class CrossTrackerReport
      * @var Tracker[]
      */
     private $trackers;
+    /**
+     * @var Tracker[]|null
+     */
+    private $valid_trackers;
+    /**
+     * @var Tracker[]|null
+     */
+    private $invalid_trackers;
 
     public function __construct($id, $expert_query, array $trackers)
     {
@@ -63,9 +71,9 @@ class CrossTrackerReport
      */
     public function getProjects()
     {
-        $projects = array();
+        $projects = [];
         foreach ($this->getTrackers() as $tracker) {
-            $project = $tracker->getProject();
+            $project                     = $tracker->getProject();
             $projects[$project->getID()] = $project;
         }
         return array_values($projects);
@@ -76,7 +84,39 @@ class CrossTrackerReport
      */
     public function getTrackers()
     {
-        return $this->trackers;
+        if ($this->valid_trackers === null) {
+            $this->populateValidityTrackers();
+        }
+        return $this->valid_trackers;
+    }
+
+    /**
+     * @return Tracker[]
+     */
+    public function getInvalidTrackers()
+    {
+        if ($this->invalid_trackers === null) {
+            $this->populateValidityTrackers();
+        }
+        return $this->invalid_trackers;
+    }
+
+    /**
+     * @psalm-assert !null $this->valid_trackers
+     * @psalm-assert !null $this->invalid_trackers
+     */
+    private function populateValidityTrackers()
+    {
+        $this->valid_trackers   = [];
+        $this->invalid_trackers = [];
+        foreach ($this->trackers as $tracker) {
+            $project = $tracker->getProject();
+            if ($project === null || ! $project->isActive()) {
+                $this->invalid_trackers[] = $tracker;
+            } else {
+                $this->valid_trackers[] = $tracker;
+            }
+        }
     }
 
     /**
@@ -84,12 +124,12 @@ class CrossTrackerReport
      */
     public function getColumnFields()
     {
-        $fields = array();
+        $fields = [];
         foreach ($this->getTrackers() as $tracker) {
             $title_field       = $tracker->getTitleField();
             $status_field      = $tracker->getStatusField();
             $assigned_to_field = $tracker->getContributorField();
-            foreach (array($title_field, $status_field, $assigned_to_field) as $field) {
+            foreach ([$title_field, $status_field, $assigned_to_field] as $field) {
                 if ($field !== null) {
                     $fields[$field->getId()] = $field;
                 }
@@ -103,7 +143,7 @@ class CrossTrackerReport
      */
     public function getSearchFields()
     {
-        $fields = array();
+        $fields = [];
         foreach ($this->getTrackers() as $tracker) {
             $field = $tracker->getStatusField();
             if ($field !== null) {
@@ -111,5 +151,15 @@ class CrossTrackerReport
             }
         }
         return array_values($fields);
+    }
+
+    /**
+     * @return int[]
+     */
+    public function getTrackerIds()
+    {
+        return array_map(function (Tracker $tracker) {
+            return $tracker->getId();
+        }, $this->trackers);
     }
 }

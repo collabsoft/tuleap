@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Git_AdminMirrorEditPresenter extends Git_AdminMirrorPresenter{
+class Git_AdminMirrorEditPresenter extends Git_AdminMirrorPresenter
+{
 
     public $btn_submit;
 
@@ -38,20 +39,22 @@ class Git_AdminMirrorEditPresenter extends Git_AdminMirrorPresenter{
 
     private $owner;
 
-    public function __construct($title, CSRFSynchronizerToken $csrf, Git_Mirror_Mirror $mirror) {
+    public function __construct($title, CSRFSynchronizerToken $csrf, Git_Mirror_Mirror $mirror)
+    {
         parent::__construct($title, $csrf);
 
-        $this->id         = $mirror->id;
-        $this->url        = $mirror->url;
-        $this->hostname   = $mirror->hostname;
-        $this->name       = $mirror->name;
+        $this->id       = $mirror->id;
+        $this->url      = $mirror->url;
+        $this->hostname = $mirror->hostname;
+        $this->name     = $mirror->name;
 
         $this->owner      = $mirror->owner;
         $this->owner_name = $mirror->owner_name;
         $this->owner_id   = $mirror->owner_id;
     }
 
-    public function hostname() {
+    public function hostname()
+    {
         if ($this->hostname) {
             return $this->hostname;
         }
@@ -59,23 +62,28 @@ class Git_AdminMirrorEditPresenter extends Git_AdminMirrorPresenter{
         return "";
     }
 
-    public function update_button() {
-        return $GLOBALS['Language']->getText('plugin_git','admin_update_button');
+    public function update_button()
+    {
+        return dgettext('tuleap-git', 'Update');
     }
 
-    public function delete_button() {
-        return $GLOBALS['Language']->getText('plugin_git','admin_delete_button');
+    public function delete_button()
+    {
+        return dgettext('tuleap-git', 'Delete');
     }
 
-    public function or_action() {
-        return $GLOBALS['Language']->getText('plugin_git','or');
+    public function or_action()
+    {
+        return dgettext('tuleap-git', 'or');
     }
 
-    public function ssh_key() {
+    public function ssh_key()
+    {
         return ($this->owner->getAuthorizedKeysRaw()) ? $this->owner->getAuthorizedKeysRaw() : '';
     }
 
-    public function change() {
-        return $GLOBALS['Language']->getText('plugin_git','change_pwd');
+    public function change()
+    {
+        return dgettext('tuleap-git', 'click here to change');
     }
 }

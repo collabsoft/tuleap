@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,7 +26,7 @@ use Tuleap\PullRequest\GitExec;
 
 class GitPullRequestReferenceBulkConverter
 {
-    const STOP_CONVERSION_FILE = 'tuleap_plugin_pullrequest_stop_bulk_convert';
+    public const STOP_CONVERSION_FILE = 'tuleap_plugin_pullrequest_stop_bulk_convert';
 
     /**
      * @var GitPullRequestReferenceDAO
@@ -45,7 +45,7 @@ class GitPullRequestReferenceBulkConverter
      */
     private $git_repository_factory;
     /**
-     * @var \Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
 
@@ -54,7 +54,7 @@ class GitPullRequestReferenceBulkConverter
         GitPullRequestReferenceUpdater $updater,
         Factory $pull_request_factory,
         GitRepositoryFactory $git_repository_factory,
-        \Logger $logger
+        \Psr\Log\LoggerInterface $logger
     ) {
         $this->dao                    = $dao;
         $this->updater                = $updater;
@@ -107,7 +107,7 @@ class GitPullRequestReferenceBulkConverter
             } catch (\Git_Command_Exception $ex) {
                 $this->logger->error("PR #$pull_request_id marked as broken: " . $ex->getMessage());
             } catch (GitPullRequestReferenceNotFoundException $ex) {
-                $this->logger->error('Incoherent state found, did you run forgeupgrade?', $ex);
+                $this->logger->error('Incoherent state found, did you run forgeupgrade?', ['exception' => $ex]);
             }
         }
     }

@@ -1,43 +1,48 @@
 <?php
-
+/**
+ * Copyright (c) Enalean, 2018 - present. All Rights Reserved.
+ * Copyright (C) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
-/**
- * GitPHP Controller Blob
- *
- * Controller for displaying a blob
- *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Controller
- */
-
-use GeSHi;
+use EventManager;
+use Tuleap\Git\BinaryDetector;
+use Tuleap\Git\CommonMarkExtension\LinkToGitFileBlobFinder;
+use Tuleap\Git\CommonMarkExtension\LinkToGitFileExtension;
+use Tuleap\Git\GitPHP\Events\DisplayFileContentInGitView;
+use Tuleap\Git\Repository\View\LanguageDetectorForPrismJS;
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Layout\JavascriptAsset;
+use Tuleap\Markdown\CommonMarkInterpreter;
+use Tuleap\Markdown\EnhancedCodeBlockExtension;
 
 /**
  * Blob controller class
  *
- * @package GitPHP
- * @subpackage Controller
  */
 class Controller_Blob extends ControllerBase // @codingStandardsIgnoreLine
 {
-
-    /**
-     * __construct
-     *
-     * Constructor
-     *
-     * @access public
-     * @return controller
-     */
     public function __construct()
     {
         parent::__construct();
-        if (!$this->project) {
-            throw new MessageException(__('Project is required'), true);
+        if (! $this->project) {
+            throw new MessageException(dgettext("gitphp", 'Project is required'), true);
         }
     }
 
@@ -54,7 +59,7 @@ class Controller_Blob extends ControllerBase // @codingStandardsIgnoreLine
         if (isset($this->params['plain']) && $this->params['plain']) {
             return 'blobplain.tpl';
         }
-        return 'blob.tpl';
+        return 'tuleap/blob.tpl';
     }
 
     /**
@@ -63,13 +68,13 @@ class Controller_Blob extends ControllerBase // @codingStandardsIgnoreLine
      * Gets the name of this controller's action
      *
      * @access public
-     * @param boolean $local true if caller wants the localized action name
+     * @param bool $local true if caller wants the localized action name
      * @return string action name
      */
     public function GetName($local = false) // @codingStandardsIgnoreLine
     {
         if ($local) {
-            return __('blob');
+            return dgettext("gitphp", 'blob');
         }
         return 'blob';
     }
@@ -94,6 +99,7 @@ class Controller_Blob extends ControllerBase // @codingStandardsIgnoreLine
         if (isset($_GET['h'])) {
             $this->params['hash'] = $_GET['h'];
         }
+        $this->params['show_source'] = isset($_GET['show_source']);
     }
 
     /**
@@ -112,12 +118,12 @@ class Controller_Blob extends ControllerBase // @codingStandardsIgnoreLine
                 $saveas = $this->params['hash'] . ".txt";
             }
 
-            $headers = array();
+            $headers = [];
 
             $mime = null;
             if (Config::GetInstance()->GetValue('filemimetype', true)) {
-                if ((!isset($this->params['hash'])) && (isset($this->params['file']))) {
-                    $commit = $this->project->GetCommit($this->params['hashbase']);
+                if ((! isset($this->params['hash'])) && (isset($this->params['file']))) {
+                    $commit               = $this->project->GetCommit($this->params['hashbase']);
                     $this->params['hash'] = $commit->PathToHash($this->params['file']);
                 }
 
@@ -133,11 +139,19 @@ class Controller_Blob extends ControllerBase // @codingStandardsIgnoreLine
                 $headers[] = "Content-type: text/plain; charset=UTF-8";
             }
 
-            $headers[] = "Content-disposition: attachment; filename=\"" . $saveas . "\"";
+            $headers[] = "Content-disposition: attachment; filename=\"" . self::removeNonASCIICharFromFilenameToBeUsedAsAttachmentHeaderFilename($saveas) . "\"";
             $headers[] = "X-Content-Type-Options: nosniff";
 
             $this->headers = $headers;
         }
+    }
+
+    /**
+     * @psalm-taint-escape header
+     */
+    private static function removeNonASCIICharFromFilenameToBeUsedAsAttachmentHeaderFilename(string $save_as): string
+    {
+        return str_replace('"', '\"', preg_replace('/[^(\x20-\x7F)]*/', '', $save_as));
     }
 
     /**
@@ -152,14 +166,32 @@ class Controller_Blob extends ControllerBase // @codingStandardsIgnoreLine
         $commit = $this->project->GetCommit($this->params['hashbase']);
         $this->tpl->assign('commit', $commit);
 
-        if ((!isset($this->params['hash'])) && (isset($this->params['file']))) {
+        if ((! isset($this->params['hash'])) && (isset($this->params['file']))) {
             $this->params['hash'] = $commit->PathToHash($this->params['file']);
         }
 
         $blob = $this->project->GetBlob($this->params['hash']);
-        if (!empty($this->params['file'])) {
+        if (! $blob) {
+            throw new NotFoundException();
+        }
+
+        if (! empty($this->params['file'])) {
             $blob->SetPath($this->params['file']);
         }
+
+        $pathtree = [];
+        $path     = dirname($blob->GetPath());
+        while ($path !== '.') {
+            $name                = basename($path);
+            $pathtreepiece       = new \stdClass();
+            $pathtreepiece->name = $name;
+            $pathtreepiece->path = $path;
+            $pathtree[]          = $pathtreepiece;
+
+            $path = dirname($path);
+        }
+        $this->tpl->assign('pathtree', array_reverse($pathtree));
+
         $blob->SetCommit($commit);
         $this->tpl->assign('blob', $blob);
 
@@ -173,6 +205,15 @@ class Controller_Blob extends ControllerBase // @codingStandardsIgnoreLine
         $this->tpl->assign('tree', $commit->GetTree());
 
         if (Config::GetInstance()->GetValue('filemimetype', true)) {
+            $event = new DisplayFileContentInGitView($this->getTuleapGitRepository(), $blob);
+            EventManager::instance()->processEvent($event);
+
+            if ($event->isFileInSpecialFormat()) {
+                $this->tpl->assign('is_file_in_special_format', true);
+                $this->tpl->assign('special_download_url', $event->getSpecialDownloadUrl());
+                return;
+            }
+
             $mime = $blob->FileMime();
             if ($mime) {
                 $mimetype = strtok($mime, '/');
@@ -185,28 +226,41 @@ class Controller_Blob extends ControllerBase // @codingStandardsIgnoreLine
             }
         }
 
-        $this->tpl->assign('extrascripts', array('blame'));
-
-        if (Config::GetInstance()->GetValue('geshi', true)) {
-            $geshi = new GeSHi("", 'php');
-            if ($geshi) {
-                $lang = $geshi->get_language_name_from_extension(substr(strrchr($blob->GetName(), '.'), 1));
-                if (!empty($lang)) {
-                    $geshi->enable_classes();
-                    $geshi->enable_strict_mode(GESHI_MAYBE);
-                    $geshi->set_source($blob->GetData());
-                    $geshi->set_language($lang);
-                    $geshi->set_header_type(GESHI_HEADER_PRE_TABLE);
-                    $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
-                    $geshi->set_overall_id('blobData');
-                    $this->tpl->assign('geshiout', $geshi->parse_code());
-                    $this->tpl->assign('extracss', $geshi->get_stylesheet());
-                    $this->tpl->assign('geshi', true);
-                    return;
-                }
-            }
+        if (BinaryDetector::isBinary($blob->GetData())) {
+            $this->tpl->assign('is_binaryfile', true);
+            return;
         }
 
-        $this->tpl->assign('bloblines', $blob->GetData(true));
+        $core_assets = new \Tuleap\Layout\IncludeCoreAssets();
+
+        $this->tpl->assign('extrascripts', ['blame']);
+
+        $detector          = new LanguageDetectorForPrismJS();
+        $detected_language = $detector->getLanguage($blob->GetName());
+        $this->tpl->assign('language', $detected_language);
+        $can_file_be_rendered = $detected_language === 'md' || $detected_language === 'markdown';
+        $this->tpl->assign('can_be_rendered', $can_file_be_rendered);
+        if ($can_file_be_rendered && ! $this->params['show_source']) {
+            $code_block_features = new \Tuleap\Markdown\CodeBlockFeatures();
+            $content_interpretor = CommonMarkInterpreter::build(
+                \Codendi_HTMLPurifier::instance(),
+                new EnhancedCodeBlockExtension($code_block_features),
+                new LinkToGitFileExtension(new LinkToGitFileBlobFinder($blob->GetPath(), $commit))
+            );
+            $this->tpl->assign(
+                'rendered_file',
+                $content_interpretor->getInterpretedContent(
+                    $blob->GetData()
+                )
+            );
+            if ($code_block_features->isMermaidNeeded()) {
+                $GLOBALS['HTML']->addJavascriptAsset(new JavascriptAsset($core_assets, 'mermaid.js'));
+            }
+        } else {
+            $this->tpl->assign('bloblines', $blob->GetData(true));
+        }
+        $GLOBALS['HTML']->addJavascriptAsset(new JavascriptAsset($core_assets, 'syntax-highlight.js'));
+        $git_assets = new IncludeAssets(__DIR__ . '/../../../../../src/www/assets/git', '/assets/git');
+        $GLOBALS['Response']->addJavascriptAsset(new JavascriptAsset($git_assets, 'line-highlight.js'));
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,6 @@
 
 require_once 'DataAccessException.class.php';
 
-class DataAccessQueryException extends DataAccessException {
+class DataAccessQueryException extends DataAccessException
+{
 }
-
-?>

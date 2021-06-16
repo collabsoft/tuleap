@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All rights reserved
+ * Copyright (c) Enalean, 2013 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class GitPresenters_MirroringPresenter {
+class GitPresenters_MirroringPresenter
+{
 
     /**
      * @var GitRepository
@@ -29,42 +30,55 @@ class GitPresenters_MirroringPresenter {
      * @var GitPresenters_MirrorPresenter[]
      */
     public $mirror_presenters;
+    /**
+     * @psalm-readonly
+     */
+    public \Tuleap\CSRFSynchronizerTokenPresenter $csrf_token;
 
-    public function __construct(GitRepository $repository, array $mirror_presenters) {
+    public function __construct(\Tuleap\CSRFSynchronizerTokenPresenter $csrf_token, GitRepository $repository, array $mirror_presenters)
+    {
         $this->repository        = $repository;
         $this->mirror_presenters = $mirror_presenters;
+        $this->csrf_token        = $csrf_token;
     }
 
-    public function repository_id() {
+    public function repository_id()
+    {
         return $this->repository->getId();
     }
 
-    public function project_id() {
+    public function project_id()
+    {
         return $this->repository->getProjectId();
     }
 
-    public function mirroring_title() {
-        return $GLOBALS['Language']->getText('plugin_git', 'mirroring_title');
+    public function mirroring_title()
+    {
+        return dgettext('tuleap-git', 'Mirroring');
     }
 
-    public function mirroring_info() {
-        return $GLOBALS['Language']->getText('plugin_git', 'mirroring_info', array($this->repository->getName()));
+    public function mirroring_info()
+    {
+        return sprintf(dgettext('tuleap-git', 'Select the mirrors where you want to replicate the repository <b>%1$s</b>:'), $this->repository->getName());
     }
 
-    public function mirroring_mirror_name() {
-        return $GLOBALS['Language']->getText('plugin_git', 'mirroring_mirror_name');
+    public function mirroring_mirror_name()
+    {
+        return dgettext('tuleap-git', 'Name');
     }
 
-    public function mirroring_mirror_url() {
-        return $GLOBALS['Language']->getText('plugin_git', 'identifier');
+    public function mirroring_mirror_url()
+    {
+        return dgettext('tuleap-git', 'Identifier');
     }
 
-    public function mirroring_mirror_used() {
-        return $GLOBALS['Language']->getText('plugin_git', 'mirroring_mirror_used');
+    public function mirroring_mirror_used()
+    {
+        return dgettext('tuleap-git', 'Used by this repository?');
     }
 
-    public function mirroring_update_mirroring() {
-        return $GLOBALS['Language']->getText('plugin_git', 'mirroring_update_mirroring');
+    public function mirroring_update_mirroring()
+    {
+        return dgettext('tuleap-git', 'Update mirroring of this repository');
     }
-
 }

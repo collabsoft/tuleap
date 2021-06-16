@@ -1,42 +1,41 @@
 <?php
+/**
+ * Copyright (c) Enalean, 2018 - present. All Rights Reserved.
+ * Copyright (C) 2010 Christopher Han <xiphux@gmail.com>
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
 
-/**
- * GitPHP Controller Blame
- *
- * Controller for displaying blame
- *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Controller
- */
-
-use GeSHi;
+use Tuleap\Git\Repository\View\LanguageDetectorForPrismJS;
+use Tuleap\Layout\IncludeAssets;
+use Tuleap\Layout\JavascriptAsset;
 
 /**
  * Blame controller class
  *
- * @package GitPHP
- * @subpackage Controller
  */
 class Controller_Blame extends ControllerBase // @codingStandardsIgnoreLine
 {
-
-    /**
-     * __construct
-     *
-     * Constructor
-     *
-     * @access public
-     * @return controller
-     */
     public function __construct()
     {
         parent::__construct();
-        if (!$this->project) {
-            throw new MessageException(__('Project is required'), true);
+        if (! $this->project) {
+            throw new MessageException(dgettext("gitphp", 'Project is required'), true);
         }
     }
 
@@ -50,10 +49,7 @@ class Controller_Blame extends ControllerBase // @codingStandardsIgnoreLine
      */
     protected function GetTemplate() // @codingStandardsIgnoreLine
     {
-        if (isset($this->params['js']) && $this->params['js']) {
-            return 'blamedata.tpl';
-        }
-        return 'blame.tpl';
+        return 'tuleap/blame.tpl';
     }
 
     /**
@@ -62,13 +58,13 @@ class Controller_Blame extends ControllerBase // @codingStandardsIgnoreLine
      * Gets the name of this controller's action
      *
      * @access public
-     * @param boolean $local true if caller wants the localized action name
+     * @param bool $local true if caller wants the localized action name
      * @return string action name
      */
     public function GetName($local = false) // @codingStandardsIgnoreLine
     {
         if ($local) {
-            return __('blame');
+            return dgettext("gitphp", 'blame');
         }
         return 'blame';
     }
@@ -113,55 +109,47 @@ class Controller_Blame extends ControllerBase // @codingStandardsIgnoreLine
         $commit = $this->project->GetCommit($this->params['hashbase']);
         $this->tpl->assign('commit', $commit);
 
-        if ((!isset($this->params['hash'])) && (isset($this->params['file']))) {
+        if ((! isset($this->params['hash'])) && (isset($this->params['file']))) {
             $this->params['hash'] = $commit->PathToHash($this->params['file']);
         }
 
         $blob = $this->project->GetBlob($this->params['hash']);
+        if (! $blob) {
+            throw new NotFoundException();
+        }
+
         if ($this->params['file']) {
             $blob->SetPath($this->params['file']);
         }
         $blob->SetCommit($commit);
         $this->tpl->assign('blob', $blob);
 
-        $blame = $blob->GetBlame();
         $this->tpl->assign('blame', $blob->GetBlame());
 
         if (isset($this->params['js']) && $this->params['js']) {
             return;
         }
 
+        $pathtree = [];
+        $path     = dirname($blob->GetPath());
+        while ($path !== '.') {
+            $name                = basename($path);
+            $pathtreepiece       = new \stdClass();
+            $pathtreepiece->name = $name;
+            $pathtreepiece->path = $path;
+            $pathtree[]          = $pathtreepiece;
+
+            $path = dirname($path);
+        }
+        $this->tpl->assign('pathtree', array_reverse($pathtree));
         $this->tpl->assign('tree', $commit->GetTree());
 
-        if (Config::GetInstance()->GetValue('geshi', true)) {
-            $geshi = new GeSHi("", 'php');
-            if ($geshi) {
-                $lang = $geshi->get_language_name_from_extension(substr(strrchr($blob->GetName(), '.'), 1));
-                if (!empty($lang)) {
-                    $geshi->enable_classes();
-                    $geshi->enable_strict_mode(GESHI_MAYBE);
-                    $geshi->set_source($blob->GetData());
-                    $geshi->set_language($lang);
-                    $geshi->set_header_type(GESHI_HEADER_PRE_TABLE);
-                    $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
-                    $output = $geshi->parse_code();
-
-                    $bodystart = strpos($output, '<td');
-                    $bodyend = strrpos($output, '</tr>');
-
-                    if (($bodystart !== false) && ($bodyend !== false)) {
-                        $geshihead = substr($output, 0, $bodystart);
-                        $geshifoot = substr($output, $bodyend);
-                        $geshibody = substr($output, $bodystart, $bodyend);
-
-                        $this->tpl->assign('geshihead', $geshihead);
-                        $this->tpl->assign('geshibody', $geshibody);
-                        $this->tpl->assign('geshifoot', $geshifoot);
-                        $this->tpl->assign('extracss', $geshi->get_stylesheet());
-                        $this->tpl->assign('geshi', true);
-                    }
-                }
-            }
-        }
+        $detector = new LanguageDetectorForPrismJS();
+        $this->tpl->assign('language', $detector->getLanguage($blob->GetName()));
+        $this->tpl->assign('bloblines', $blob->GetData(true));
+        $core_assets = new \Tuleap\Layout\IncludeCoreAssets();
+        $GLOBALS['HTML']->addJavascriptAsset(new JavascriptAsset($core_assets, 'syntax-highlight.js'));
+        $git_assets = new IncludeAssets(__DIR__ . '/../../../../../src/www/assets/git', '/assets/git');
+        $GLOBALS['Response']->addJavascriptAsset(new JavascriptAsset($git_assets, 'line-highlight.js'));
     }
 }

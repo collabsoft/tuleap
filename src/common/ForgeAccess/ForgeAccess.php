@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2015. All Rights Reserved.
+  * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
   *
   * This file is a part of Tuleap.
   *
@@ -18,15 +18,36 @@
   * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 
-class ForgeAccess {
-    const PROJECT_ADMIN_CAN_CHOOSE_VISIBILITY = 'project_admin_can_choose_visibility';
-    const SUPER_PUBLIC_PROJECTS               = 'super_public_projects';
+declare(strict_types=1);
 
-    const ANONYMOUS_CAN_SEE_SITE_HOMEPAGE = 'anonymous_can_see_site_homepage';
-    const ANONYMOUS_CAN_SEE_CONTACT       = 'anonymous_can_see_contact';
+class ForgeAccess
+{
+    public const SUPER_PUBLIC_PROJECTS = 'super_public_projects';
 
-    const CONFIG     = 'access_mode';
-    const ANONYMOUS  = 'anonymous';
-    const REGULAR    = 'regular';
-    const RESTRICTED = 'restricted';
+    /**
+     * Set to 1 if anonymous users should be allowed to site site home page
+     *
+     * @tlp-config-key
+     */
+    public const ANONYMOUS_CAN_SEE_SITE_HOMEPAGE = 'anonymous_can_see_site_homepage';
+    /**
+     * Set to 1 if anonymous users should be allowed to see Contact page
+     *
+     * @tlp-config-key
+     */
+    public const ANONYMOUS_CAN_SEE_CONTACT = 'anonymous_can_see_contact';
+
+    public const CONFIG     = 'access_mode';
+    public const ANONYMOUS  = 'anonymous';
+    public const REGULAR    = 'regular';
+    public const RESTRICTED = 'restricted';
+
+    public function doesPlatformRequireLogin(): bool
+    {
+        if (ForgeConfig::areAnonymousAllowed()) {
+            return false;
+        }
+
+        return true;
+    }
 }

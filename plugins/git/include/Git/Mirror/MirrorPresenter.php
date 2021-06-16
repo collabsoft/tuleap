@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS, 2016. All Rights Reserved.
+ * Copyright (c) Enalean SAS, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -53,26 +53,22 @@ class MirrorPresenter
         $this->owner_id               = $mirror->owner_id;
         $this->owner_name             = $mirror->owner_name;
         $this->ssh_key_value          = $mirror->ssh_key;
-        $this->ssh_key_ellipsis_value = substr($mirror->ssh_key, 0, 40) . '...' . substr($mirror->ssh_key, -40);
+        $this->ssh_key_ellipsis_value = mb_substr($mirror->ssh_key, 0, 40) . '...' . mb_substr($mirror->ssh_key, -40);
 
         $nb_repositories        = $this->getNbOfRepositories($repository_list_for_projects);
         $this->has_repositories = $nb_repositories > 0;
 
-        $this->number_of_repositories = $GLOBALS['Language']->getText(
-            'plugin_git',
-            'mirror_number_of_repositories',
-            $nb_repositories
-        );
+        $this->number_of_repositories = sprintf(dgettext('tuleap-git', '%1$s repositories'), $nb_repositories);
 
-        $this->repos_title          = $GLOBALS['Language']->getText('plugin_git', 'repos_mirror_title', $mirror->name);
-        $this->edit_title           = $GLOBALS['Language']->getText('plugin_git', 'edit_mirror_title', $mirror->name);
-        $this->delete_title         = $GLOBALS['Language']->getText('plugin_git', 'delete_mirror_title', $mirror->name);
+        $this->repos_title          = sprintf(dgettext('tuleap-git', 'Repositories on %1$s mirror'), $mirror->name);
+        $this->edit_title           = sprintf(dgettext('tuleap-git', 'Edit %1$s mirror'), $mirror->name);
+        $this->delete_title         = sprintf(dgettext('tuleap-git', 'Delete %1$s mirror'), $mirror->name);
         $this->purified_delete_desc = Codendi_HTMLPurifier::instance()->purify(
-            $GLOBALS['Language']->getText('plugin_git', 'delete_mirror_desc', $mirror->name),
+            sprintf(dgettext('tuleap-git', 'Wow, wait a minute. You are about to delete the <b>%1$s</b> mirror. Please confirm your action.'), $mirror->name),
             CODENDI_PURIFIER_LIGHT
         );
 
-        $this->already_used = $GLOBALS['Language']->getText('plugin_git', 'mirror_already_used');
+        $this->already_used = dgettext('tuleap-git', 'This mirror is used by repositories, you shall not delete it.');
 
         $this->repository_list_for_projects = $repository_list_for_projects;
     }

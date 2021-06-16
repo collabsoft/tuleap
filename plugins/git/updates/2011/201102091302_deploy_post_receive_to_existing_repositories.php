@@ -1,34 +1,53 @@
 <?php
-
 /**
+ * Copyright (c) Enalean, 2011-Present. All Rights Reserved.
  *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-class b201102091302_deploy_post_receive_to_existing_repositories extends ForgeUpgrade_Bucket {
 
-    public function description() {
+class b201102091302_deploy_post_receive_to_existing_repositories extends ForgeUpgrade_Bucket
+{
+
+    public function description()
+    {
         return <<<EOT
 Add Codendi post-receive hook to all existing git repositories
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $processUser = posix_getpwuid(posix_geteuid());
-        $username = $processUser['name'];
+        $username    = $processUser['name'];
         if ($username != 'root') {
             throw new Exception('Must be root to run this upgrade');
         }
     }
 
-    public function up() {
+    public function up()
+    {
         $dir = new DirectoryIterator('/var/lib/codendi/gitroot');
         foreach ($dir as $project) {
-            if (!$project->isDot() && $project->isDir()) {
+            if (! $project->isDot() && $project->isDir()) {
                 $prjIter = new DirectoryIterator($project->getPathname());
                 foreach ($prjIter as $repo) {
-                    $hooksDir = $repo->getPathname().DIRECTORY_SEPARATOR.'hooks';
-                    if (!$repo->isDot() && is_dir($hooksDir)) {
+                    $hooksDir = $repo->getPathname() . DIRECTORY_SEPARATOR . 'hooks';
+                    if (! $repo->isDot() && is_dir($hooksDir)) {
                         $groupName = basename($project->getPathname());
-                        $hook = $hooksDir.DIRECTORY_SEPARATOR.'post-receive';
+                        $hook      = $hooksDir . DIRECTORY_SEPARATOR . 'post-receive';
 
                         $this->log->info("Deploy $hook");
                         unlink($hook);
@@ -42,7 +61,8 @@ EOT;
         }
     }
 
-    protected function getHook() {
+    protected function getHook()
+    {
         return <<<EOT
 #!/bin/sh
 #
@@ -67,5 +87,3 @@ EOT;
 EOT;
     }
 }
-
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2012. All rights reserved
+  * Copyright (c) Enalean, 2012 - Present. All rights reserved
   *
   * This file is a part of Tuleap.
   *
@@ -25,36 +25,24 @@
  * then target field will be constrained to another value.
  *
  */
-class Tracker_Rule_Date extends Tracker_Rule {
+class Tracker_Rule_Date extends Tracker_Rule
+{
 
-    const COMPARATOR_EQUALS                 = '=';
-    const COMPARATOR_NOT_EQUALS             = '≠';
-    const COMPARATOR_LESS_THAN              = '<';
-    const COMPARATOR_LESS_THAN_OR_EQUALS    = '≤';
-    const COMPARATOR_GREATER_THAN           = '>';
-    const COMPARATOR_GREATER_THAN_OR_EQUALS = '≥';
+    public const COMPARATOR_EQUALS                 = '=';
+    public const COMPARATOR_NOT_EQUALS             = '≠';
+    public const COMPARATOR_LESS_THAN              = '<';
+    public const COMPARATOR_LESS_THAN_OR_EQUALS    = '≤';
+    public const COMPARATOR_GREATER_THAN           = '>';
+    public const COMPARATOR_GREATER_THAN_OR_EQUALS = '≥';
 
-    public static $allowed_comparators = array(
+    public static $allowed_comparators = [
         self::COMPARATOR_LESS_THAN,
         self::COMPARATOR_LESS_THAN_OR_EQUALS,
         self::COMPARATOR_EQUALS,
         self::COMPARATOR_GREATER_THAN_OR_EQUALS,
         self::COMPARATOR_GREATER_THAN,
         self::COMPARATOR_NOT_EQUALS,
-    );
-
-    /** @return mixed */
-    public function exportToSOAP() {
-        if (! $this->fieldsAreCompatibleWithSoap()) {
-            return;
-        }
-
-        return array(
-            'source_field_id' => $this->getSourceFieldId(),
-            'target_field_id' => $this->getTargetFieldId(),
-            'comparator'      => $this->getComparator(),
-        );
-    }
+    ];
 
     /**
      *
@@ -65,10 +53,11 @@ class Tracker_Rule_Date extends Tracker_Rule {
     /**
      *
      * @param string $comparator
-     * @throws Tracker_Rule_Date_Exception
+     * @throws Tracker_Rule_Date_InvalidComparatorException
      */
-    public function setComparator($comparator) {
-        if(! in_array($comparator, self::$allowed_comparators)) {
+    public function setComparator($comparator)
+    {
+        if (! in_array($comparator, self::$allowed_comparators)) {
             throw new Tracker_Rule_Date_InvalidComparatorException();
         }
 
@@ -80,52 +69,56 @@ class Tracker_Rule_Date extends Tracker_Rule {
      *
      * @return string
      */
-    public function getComparator() {
+    public function getComparator()
+    {
         return $this->comparator;
     }
-    
+
     /**
-     * 
-     * Checks that two given values satisfy the rule 
-     * 
+     *
+     * Checks that two given values satisfy the rule
+     *
      * @param string $source_value
      * @param string $target_value
-     * @return boolean
+     * @return bool
      */
-    public function validate($source_value, $target_value) {
+    public function validate($source_value, $target_value)
+    {
         //if one of the value is empty then return true
         if ($source_value == null || $target_value == null) {
             return true;
         }
 
-        $date_only   = $this->isOneValueDateOnly($source_value, $target_value);
+        $date_only = $this->isOneValueDateOnly($source_value, $target_value);
 
         $source_date = $this->getTimestamp($source_value, $date_only);
         $target_date = $this->getTimestamp($target_value, $date_only);
-        
+
         switch ($this->getComparator()) {
-            case self::COMPARATOR_EQUALS :
+            case self::COMPARATOR_EQUALS:
                 return $source_date == $target_date;
-            case self::COMPARATOR_NOT_EQUALS :
+            case self::COMPARATOR_NOT_EQUALS:
                 return $source_date != $target_date;
-            case self::COMPARATOR_GREATER_THAN :
+            case self::COMPARATOR_GREATER_THAN:
                 return $source_date > $target_date;
-            case self::COMPARATOR_GREATER_THAN_OR_EQUALS :
+            case self::COMPARATOR_GREATER_THAN_OR_EQUALS:
                 return $source_date >= $target_date;
-            case self::COMPARATOR_LESS_THAN :
+            case self::COMPARATOR_LESS_THAN:
                 return $source_date < $target_date;
-            case self::COMPARATOR_LESS_THAN_OR_EQUALS :
+            case self::COMPARATOR_LESS_THAN_OR_EQUALS:
                 return $source_date <= $target_date;
-            default :
+            default:
                 throw new Tracker_Rule_Date_MissingComparatorException();
         }
     }
 
-    private function isOneValueDateOnly($source_value, $target_value) {
+    private function isOneValueDateOnly($source_value, $target_value)
+    {
         return (preg_match(Rule_Date::DAY_REGEX, $source_value) || preg_match(Rule_Date::DAY_REGEX, $target_value));
     }
 
-    private function getTimestamp($date, $date_only) {
+    private function getTimestamp($date, $date_only)
+    {
         if (preg_match(Rule_Timestamp::TIMESTAMP_REGEX, $date) && $date_only) {
             //transform timestamps for "submitted on" and "last updated date"
             $date = date(Tracker_FormElement_DateFormatter::DATE_FORMAT, $date);
@@ -143,4 +136,3 @@ class Tracker_Rule_Date extends Tracker_Rule {
         }
     }
 }
-?>

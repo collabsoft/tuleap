@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,13 @@ namespace Tuleap\Tracker\REST;
 
 use Tuleap\REST\JsonCast;
 
-class WorkflowTransitionRepresentation {
+class WorkflowTransitionRepresentation
+{
+
+    /**
+     * @var int
+     */
+    public $id;
 
     /**
      * @var int
@@ -34,9 +40,10 @@ class WorkflowTransitionRepresentation {
      */
     public $to_id;
 
-    public function build($from_id, $to_id) {
+    public function build($id, $from_id, $to_id)
+    {
+        $this->id      = JsonCast::toInt($id);
         $this->from_id = JsonCast::toInt($from_id);
         $this->to_id   = JsonCast::toInt($to_id);
     }
 }
-

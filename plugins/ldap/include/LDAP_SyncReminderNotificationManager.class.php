@@ -19,15 +19,17 @@
  */
 
 
-class LDAP_SyncReminderNotificationManager {
+class LDAP_SyncReminderNotificationManager
+{
 
     private $userManager;
     private $projectManager;
 
-    function __construct(ProjectManager $projectManager, UserManager $userManager){
-        $this->userManager  = $userManager;
-        $this->ldapSyncMail = new LDAP_SyncMail($projectManager);
-        $this->projectManager  = $projectManager;
+    public function __construct(ProjectManager $projectManager, UserManager $userManager)
+    {
+        $this->userManager    = $userManager;
+        $this->ldapSyncMail   = new LDAP_SyncMail($projectManager);
+        $this->projectManager = $projectManager;
     }
 
     /**
@@ -35,12 +37,13 @@ class LDAP_SyncReminderNotificationManager {
      *
      * @return Array
      */
-    private function getUsersToBeDeleted() {
-        $suspendedUsers     = array();
+    private function getUsersToBeDeleted()
+    {
+        $suspendedUsers     = [];
         $suspendedUsersList = $this->getLDAPDirectoryCleanUpDao()->getUsersDeletedTomorrow();
         foreach ($suspendedUsersList as $suspendedUser) {
             $user = $this->userManager->getUserById($suspendedUser["user_id"]);
-            if (!$user->isDeleted()) {
+            if (! $user->isDeleted()) {
                 $suspendedUsers[] = $user;
             }
         }
@@ -54,7 +57,8 @@ class LDAP_SyncReminderNotificationManager {
      *
      * @return void
      */
-    public function processReminder(PFUser $user) {
+    public function processReminder(PFUser $user)
+    {
         $to = '';
         if ($user->getStatus() == 'S') {
             $adminsEmails = $this->ldapSyncMail->getNotificationRecipients($user);
@@ -72,7 +76,8 @@ class LDAP_SyncReminderNotificationManager {
      *
      * @return void
      */
-    public function processReminders() {
+    public function processReminders()
+    {
         $suspendedUsersList = $this->getUsersToBeDeleted();
         foreach ($suspendedUsersList as $suspendedUser) {
             $this->processReminder($suspendedUser);
@@ -84,7 +89,8 @@ class LDAP_SyncReminderNotificationManager {
      *
      * @return LDAP_DirectoryCleanUpDao
      */
-    private function getLDAPDirectoryCleanUpDao() {
+    private function getLDAPDirectoryCleanUpDao()
+    {
         return new LDAP_DirectoryCleanUpDao(CodendiDataAccess::instance());
     }
 
@@ -97,13 +103,14 @@ class LDAP_SyncReminderNotificationManager {
      *
      * @return String
      */
-    private function getBody($unixProjectName, $user) {
-        $server_url       = HTTPRequest::instance()->getServerUrl();
-        $project_url      = $server_url.'/projects/'.urlencode($unixProjectName);
-        $project = $this->projectManager->getProjectByUnixName($unixProjectName);
-        $publicProjectName = $project->getUnconvertedPublicName();
+    private function getBody($unixProjectName, $user)
+    {
+        $server_url                = HTTPRequest::instance()->getServerUrl();
+        $project_url               = $server_url . '/projects/' . urlencode($unixProjectName);
+        $project                   = $this->projectManager->getProjectByUnixName($unixProjectName);
+        $publicProjectName         = $project->getPublicName();
         $purifiedPublicProjectName = Codendi_HTMLPurifier::instance()->purify($publicProjectName, CODENDI_PURIFIER_LIGHT);
-        return $GLOBALS['Language']->getText('plugin_ldap','ldap_sync_reminder_mail_notification_body', array($user->getRealName(), $user->getEmail(), $project_url, $purifiedPublicProjectName, ForgeConfig::get('sys_name')));
+        return $GLOBALS['Language']->getOverridableText('plugin_ldap', 'ldap_sync_reminder_mail_notification_body', [$user->getRealName(), $user->getEmail(), $project_url, $purifiedPublicProjectName, ForgeConfig::get('sys_name')]);
     }
 
     /**
@@ -114,8 +121,8 @@ class LDAP_SyncReminderNotificationManager {
      *
      * @return String
      */
-    private function getSubject($projectName, $user) {
-        return  $GLOBALS['Language']->getText('plugin_ldap','ldap_sync_reminder_mail_notification_subject', array($user->getRealName(), $projectName));
+    private function getSubject($projectName, $user)
+    {
+        return sprintf(dgettext('tuleap-ldap', '[Reminder][LDAP Synch] The user %1$s will be deleted tomorrow'), $user->getRealName());
     }
 }
-?>

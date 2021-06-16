@@ -20,11 +20,10 @@
 
 /**
  * Description of SystemEvent_GIT_REPO_DELETE
- *
- * @author gstorchi
  */
-class SystemEvent_GIT_REPO_RESTORE extends SystemEvent {
-    const NAME = 'GIT_REPO_RESTORE';
+class SystemEvent_GIT_REPO_RESTORE extends SystemEvent
+{
+    public const NAME = 'GIT_REPO_RESTORE';
 
     /** @var GitRepositoryFactory */
     private $repository_factory;
@@ -32,40 +31,41 @@ class SystemEvent_GIT_REPO_RESTORE extends SystemEvent {
     /** @var Git_SystemEventManager */
     private $system_event_manager;
 
-    /** @var Logger */
-    private $logger;
-
     public function injectDependencies(
         GitRepositoryFactory $repository_factory,
-        Git_SystemEventManager $system_event_manager,
-        Logger $logger
+        Git_SystemEventManager $system_event_manager
     ) {
         $this->repository_factory   = $repository_factory;
         $this->system_event_manager = $system_event_manager;
-        $this->logger               = $logger;
     }
 
-    public function process() {
+    public function process()
+    {
         $parameters    = $this->getParametersAsArray();
         $repository_id = 0;
 
-        if (!empty($parameters[0])) {
+        if (! empty($parameters[0])) {
             $repository_id = (int) $parameters[0];
         } else {
             $this->error('Missing argument repository id');
             return false;
         }
 
-        $repository         = $this->repository_factory->getDeletedRepository($repository_id);
-        $active_repository  = $this->repository_factory->getRepositoryByPath($repository->getProject()->getId(), $repository->getPath());
+        $repository = $this->repository_factory->getDeletedRepository($repository_id);
+        if ($repository === null) {
+            $this->error('Cannot find deleted repository #' . $repository_id);
+            return false;
+        }
+
+        $active_repository = $this->repository_factory->getRepositoryByPath($repository->getProject()->getId(), $repository->getPath());
 
         if ($active_repository instanceof GitRepository) {
             $this->error('Repository with the same name already exsit');
             return false;
         }
 
-        if(!$repository->getBackend()->restoreArchivedRepository($repository)) {
-            $this->error('Unable to restore repository : '.$repository->getName());
+        if (! $repository->getBackend()->restoreArchivedRepository($repository)) {
+            $this->error('Unable to restore repository : ' . $repository->getName());
             return false;
         }
 
@@ -75,19 +75,22 @@ class SystemEvent_GIT_REPO_RESTORE extends SystemEvent {
         $this->done();
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         $repository = $this->getRepositoryFromParameters();
         if ($repository !== null) {
-            return '<a href="/plugins/git/?action=repo_management&group_id='.$repository->getProjectId().'&repo_id='.$repository->getId().'">'.$repository->getName().'</a>';
+            return '<a href="/plugins/git/?action=repo_management&group_id=' . $repository->getProjectId() . '&repo_id=' . $repository->getId() . '">' . $repository->getName() . '</a>';
         }
         return '';
     }
 
-    private function getRepositoryFromParameters() {
+    private function getRepositoryFromParameters()
+    {
         return $this->repository_factory->getRepositoryById($this->getRepositoryIdFromParameters());
     }
 
-    private function getRepositoryIdFromParameters() {
+    private function getRepositoryIdFromParameters()
+    {
         $parameters = $this->getParametersAsArray();
         return intval($parameters[0]);
     }

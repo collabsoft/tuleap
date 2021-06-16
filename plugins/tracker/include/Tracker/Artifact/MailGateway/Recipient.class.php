@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,10 +18,13 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
+
 /**
  * Value object of a the recipient of email gateway
  */
-class Tracker_Artifact_MailGateway_Recipient {
+class Tracker_Artifact_MailGateway_Recipient
+{
 
     /** @var string */
     private $email;
@@ -29,12 +32,12 @@ class Tracker_Artifact_MailGateway_Recipient {
     /** @var PFUser */
     private $user;
 
-    /** @var Tracker_Artifact */
+    /** @var Artifact */
     private $artifact;
 
     public function __construct(
         PFUser $user,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         $email
     ) {
         $this->user     = $user;
@@ -42,16 +45,18 @@ class Tracker_Artifact_MailGateway_Recipient {
         $this->email    = $email;
     }
 
-    public function getEmail() {
+    public function getEmail()
+    {
         return $this->email;
     }
 
-    public function getArtifact() {
+    public function getArtifact()
+    {
         return $this->artifact;
     }
 
-    public function getUser() {
+    public function getUser()
+    {
         return $this->user;
     }
-
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,11 +21,11 @@
 /**
  * I retrieve a milestone given a criteria
  */
-class AgileDashboard_Milestone_SelectedMilestoneProvider {
-
-    const FIELD_NAME             = AgileDashboard_Milestone_MilestoneReportCriterionProvider::FIELD_NAME;
-    const ANY                    = AgileDashboard_Milestone_MilestoneReportCriterionProvider::ANY;
-    const TOP_BACKLOG_IDENTIFIER = AgileDashboard_Milestone_MilestoneReportCriterionOptionsProvider::TOP_BACKLOG_IDENTIFIER;
+class AgileDashboard_Milestone_SelectedMilestoneProvider
+{
+    public const FIELD_NAME             = AgileDashboard_Milestone_MilestoneReportCriterionProvider::FIELD_NAME;
+    public const ANY                    = AgileDashboard_Milestone_MilestoneReportCriterionProvider::ANY;
+    public const TOP_BACKLOG_IDENTIFIER = AgileDashboard_Milestone_MilestoneReportCriterionOptionsProvider::TOP_BACKLOG_IDENTIFIER;
 
     /** @var Planning_MilestoneFactory */
     private $milestone_factory;
@@ -39,13 +39,14 @@ class AgileDashboard_Milestone_SelectedMilestoneProvider {
     /** @var Project */
     private $project;
 
-    /** @var Array */
+    /** @var array */
     private $additional_criteria;
 
-    /** @var Boolean */
+    /** @var bool */
     private $milestone_has_been_loaded = false;
 
-    public function __construct(array $additional_criteria, Planning_MilestoneFactory $milestone_factory, PFUser $user, Project $project) {
+    public function __construct(array $additional_criteria, Planning_MilestoneFactory $milestone_factory, PFUser $user, Project $project)
+    {
         $this->user                = $user;
         $this->project             = $project;
         $this->additional_criteria = $additional_criteria;
@@ -53,19 +54,21 @@ class AgileDashboard_Milestone_SelectedMilestoneProvider {
     }
 
 
-    public function getMilestone() {
+    public function getMilestone()
+    {
         if (! $this->milestone_has_been_loaded) {
             $this->loadMilestone();
         }
         return $this->milestone;
     }
 
-    private function loadMilestone() {
+    private function loadMilestone()
+    {
         if (! isset($this->additional_criteria[self::FIELD_NAME])) {
             return;
         }
 
-        if ( $this->additional_criteria[self::FIELD_NAME]->getValue() == self::TOP_BACKLOG_IDENTIFIER) {
+        if ($this->additional_criteria[self::FIELD_NAME]->getValue() == self::TOP_BACKLOG_IDENTIFIER) {
             $this->milestone = $this->milestone_factory->getVirtualTopMilestone($this->user, $this->project);
             return;
         }
@@ -78,7 +81,8 @@ class AgileDashboard_Milestone_SelectedMilestoneProvider {
         $this->milestone_has_been_loaded = true;
     }
 
-    public function getMilestoneId() {
+    public function getMilestoneId()
+    {
         if (! $this->milestone_has_been_loaded) {
             $this->loadMilestone();
         }

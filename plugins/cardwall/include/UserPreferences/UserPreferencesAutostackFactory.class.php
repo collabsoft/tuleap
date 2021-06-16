@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,9 +22,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Cardwall_UserPreferences_UserPreferencesAutostackFactory {
+class Cardwall_UserPreferences_UserPreferencesAutostackFactory
+{
 
-    public function setAutostack(Cardwall_OnTop_Config_ColumnCollection $columns, Cardwall_UserPreferences_UserPreferencesAutostack $autostack_preferences) {
+    public function setAutostack(Cardwall_OnTop_Config_ColumnCollection $columns, Cardwall_UserPreferences_UserPreferencesAutostack $autostack_preferences)
+    {
         $cardwall_has_preferences = false;
         foreach ($columns as $column) {
             $cardwall_has_preferences = $cardwall_has_preferences || $autostack_preferences->columnHasPreference($column);
@@ -36,14 +38,12 @@ class Cardwall_UserPreferences_UserPreferencesAutostackFactory {
         }
     }
 
-    private function forceAutoStackOnDone(Cardwall_OnTop_Config_ColumnCollection $columns, Cardwall_UserPreferences_UserPreferencesAutostack $autostack_preferences) {
+    private function forceAutoStackOnDone(Cardwall_OnTop_Config_ColumnCollection $columns, Cardwall_UserPreferences_UserPreferencesAutostack $autostack_preferences)
+    {
         foreach ($columns as $column) {
             if (strcasecmp($column->label, 'done') == 0) {
                 $autostack_preferences->forceColumnAutoStacked($column);
             }
         }
     }
-
 }
-
-?>

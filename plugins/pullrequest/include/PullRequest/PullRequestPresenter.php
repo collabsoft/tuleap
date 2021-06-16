@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -61,9 +61,9 @@ class PullRequestPresenter
     {
         $nb_open = $this->nb_pull_requests->getNbOpen();
         if ($nb_open <= 1) {
-            return $GLOBALS['Language']->getText('plugin_pullrequest', 'nb_pull_request_badge', array($nb_open));
+            return $GLOBALS['Language']->getText('plugin_pullrequest', 'nb_pull_request_badge', [$nb_open]);
         }
 
-        return $GLOBALS['Language']->getText('plugin_pullrequest', 'nb_pull_request_badge_plural', array($nb_open));
+        return $GLOBALS['Language']->getText('plugin_pullrequest', 'nb_pull_request_badge_plural', [$nb_open]);
     }
 }

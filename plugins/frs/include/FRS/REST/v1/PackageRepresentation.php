@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,6 +24,9 @@ use FRSPackage;
 use Project;
 use Tuleap\Project\REST\ProjectReference;
 
+/**
+ * @psalm-immutable
+ */
 class PackageRepresentation extends PackageMinimalRepresentation
 {
     /**
@@ -36,20 +39,23 @@ class PackageRepresentation extends PackageMinimalRepresentation
      */
     public $resources;
 
-    public function build(FRSPackage $package)
-    {
-        parent::build($package);
+    /**
+     * @var PermissionsForGroupsRepresentation | null
+     */
+    public $permissions_for_groups;
 
-        $this->resources = array(
-            'releases' => array(
-                'uri' => $this->uri .'/'. ReleaseRepresentation::ROUTE
-            )
-        );
-    }
-
-    public function setProject(Project $project)
+    public function __construct(FRSPackage $package, Project $project, ?PermissionsForGroupsRepresentation $permissions_for_groups)
     {
-        $this->project = new ProjectReference();
-        $this->project->build($project);
+        parent::__construct($package);
+
+        $this->project = new ProjectReference($project);
+
+        $this->permissions_for_groups = $permissions_for_groups;
+
+        $this->resources = [
+            'releases' => [
+                'uri' => $this->uri . '/' . ReleaseRepresentation::ROUTE
+            ]
+        ];
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,6 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+declare(strict_types=1);
 
 namespace Tuleap\Timetracking\Permissions;
 
@@ -36,10 +38,14 @@ class PermissionsRetriever
         $this->timetracking_ugroup_retriever = $timetracking_ugroup_retriever;
     }
 
-    public function userCanAddTimeInTracker(PFUser $user, Tracker $tracker)
+    public function userCanAddTimeInTracker(PFUser $user, Tracker $tracker): bool
     {
+        if ($this->isUserAdministratorOfTracker($user, $tracker)) {
+            return true;
+        }
+
         foreach ($this->timetracking_ugroup_retriever->getWriterIdsForTracker($tracker) as $ugroup_id) {
-            if ($user->isMemberOfUGroup($ugroup_id, $tracker->getGroupId(), $tracker->getId())) {
+            if ($user->isMemberOfUGroup($ugroup_id, $tracker->getGroupId())) {
                 return true;
             }
         }
@@ -47,14 +53,25 @@ class PermissionsRetriever
         return false;
     }
 
-    public function userCanSeeAggregatedTimesInTracker(PFUser $user, Tracker $tracker)
+    public function userCanSeeAllTimesInTracker(PFUser $user, Tracker $tracker): bool
     {
+        if ($this->isUserAdministratorOfTracker($user, $tracker)) {
+            return true;
+        }
+
         foreach ($this->timetracking_ugroup_retriever->getReaderIdsForTracker($tracker) as $ugroup_id) {
-            if ($user->isMemberOfUGroup($ugroup_id, $tracker->getGroupId(), $tracker->getId())) {
+            if ($user->isMemberOfUGroup($ugroup_id, (int) $tracker->getGroupId())) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private function isUserAdministratorOfTracker(PFUser $user, Tracker $tracker): bool
+    {
+        return $user->isSuperUser() ||
+            $user->isAdmin($tracker->getGroupId()) ||
+            $tracker->userIsAdmin($user);
     }
 }

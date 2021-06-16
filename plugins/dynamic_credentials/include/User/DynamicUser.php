@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,9 +20,11 @@
 
 namespace Tuleap\DynamicCredentials\User;
 
+use Tuleap\Cryptography\ConcealedString;
+
 class DynamicUser extends \PFUser
 {
-    const ID = 80;
+    public const ID = 80;
 
     /**
      * @var bool
@@ -54,7 +56,7 @@ class DynamicUser extends \PFUser
         return $this->is_logged_in;
     }
 
-    public function setPassword($password)
+    public function setPassword(ConcealedString $password): void
     {
     }
 

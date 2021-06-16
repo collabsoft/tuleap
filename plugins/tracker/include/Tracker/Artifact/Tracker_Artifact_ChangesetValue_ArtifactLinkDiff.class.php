@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -35,7 +35,7 @@ class Tracker_Artifact_ChangesetValue_ArtifactLinkDiff
      *  - artifact      => Tracker_Artifact
      *
      */
-    const HIDE_ARTIFACT = 'hide_artifact';
+    public const HIDE_ARTIFACT = 'hide_artifact';
 
     /** @var Tracker_ArtifactLinkInfo[] */
     private $previous;
@@ -62,23 +62,23 @@ class Tracker_Artifact_ChangesetValue_ArtifactLinkDiff
         Tracker $tracker,
         NaturePresenterFactory $nature_factory
     ) {
-        $this->previous       = $previous;
-        $this->next           = $next;
+        $this->previous = $previous;
+        $this->next     = $next;
         if ($this->hasChanges()) {
-            $formatter = new CollectionOfLinksFormatter();
-            $this->removed = new RemovedLinkCollection($formatter);
+            $formatter        = new CollectionOfLinksFormatter();
+            $this->removed    = new RemovedLinkCollection($formatter);
             $removed_elements = array_diff(array_keys($previous), array_keys($next));
             foreach ($removed_elements as $key) {
                 $this->removed->add($previous[$key]);
             }
 
-            $this->added_by_nature   = array();
-            $this->updated_by_nature = array();
+            $this->added_by_nature   = [];
+            $this->updated_by_nature = [];
             foreach ($next as $key => $artifactlinkinfo) {
-                if (isset($previous[$key])) {
-                    $this->fillUpdatedByNature($previous[$key], $artifactlinkinfo, $tracker, $nature_factory, $formatter);
-                } else {
+                if (! isset($previous[$key])) {
                     $this->fillAddedByNature($artifactlinkinfo, $nature_factory, $formatter);
+                } elseif ($previous[$key]->getNature() !== $artifactlinkinfo->getNature()) {
+                    $this->fillUpdatedByNature($previous[$key], $artifactlinkinfo, $tracker, $nature_factory, $formatter);
                 }
             }
         }
@@ -89,10 +89,13 @@ class Tracker_Artifact_ChangesetValue_ArtifactLinkDiff
         NaturePresenterFactory $nature_factory,
         CollectionOfLinksFormatter $formatter
     ) {
-        if($artifactlinkinfo->getNature() !== "" && $artifactlinkinfo->shouldLinkBeHidden($artifactlinkinfo->getNature())) {
+        if ($artifactlinkinfo->getNature() !== "" && $artifactlinkinfo->shouldLinkBeHidden($artifactlinkinfo->getNature())) {
             return;
         }
         $nature = $nature_factory->getFromShortname($artifactlinkinfo->getNature());
+        if ($nature === null) {
+            return;
+        }
         if (! isset($this->added_by_nature[$nature->shortname])) {
             $this->added_by_nature[$nature->shortname] = new AddedLinkByNatureCollection($nature, $formatter);
         }
@@ -127,14 +130,13 @@ class Tracker_Artifact_ChangesetValue_ArtifactLinkDiff
             return;
         }
 
-
         $previous_nature = $nature_factory->getFromShortname($previous_link->getNature());
         $next_nature     = $nature_factory->getFromShortname($next_link->getNature());
         if ($previous_nature == $next_nature) {
             return;
         }
 
-        $key = $previous_nature->shortname .'-'. $next_nature->shortname;
+        $key = $previous_nature->shortname . '-' . $next_nature->shortname;
         if (! isset($this->updated_by_nature[$key])) {
             $this->updated_by_nature[$key] = new UpdatedNatureLinkCollection(
                 $previous_nature,
@@ -146,7 +148,7 @@ class Tracker_Artifact_ChangesetValue_ArtifactLinkDiff
     }
 
     /**
-     * @return boolean
+     * @return bool
      */
     public function hasChanges()
     {
@@ -160,10 +162,10 @@ class Tracker_Artifact_ChangesetValue_ArtifactLinkDiff
         }
 
         if (empty($this->next)) {
-            return ' '.$GLOBALS['Language']->getText('plugin_tracker_artifact','cleared');
+            return ' ' . dgettext('tuleap-tracker', 'cleared');
         }
 
-        $formatted_messages = array();
+        $formatted_messages   = [];
         $formatted_messages[] = $this->removed->fetchFormatted($user, $format, $ignore_perms);
         foreach ($this->added_by_nature as $collection) {
             $formatted_messages[] = $collection->fetchFormatted($user, $format, $ignore_perms);
@@ -182,7 +184,7 @@ class Tracker_Artifact_ChangesetValue_ArtifactLinkDiff
         }
 
         if ($format === 'html') {
-            return '<ul><li>'. implode('</li><li>', $formatted_messages) .'</li></ul>';
+            return '<ul><li>' . implode('</li><li>', $formatted_messages) . '</li></ul>';
         } else {
             $separator = "\n    * ";
             return $separator . implode($separator, $formatted_messages) . "\n";

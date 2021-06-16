@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 
 namespace Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature;
 
-class NatureCreator {
+class NatureCreator implements NatureCreatorInterface
+{
 
     /** @var NatureDao */
     private $dao;
@@ -29,7 +30,8 @@ class NatureCreator {
     /** @var NatureValidator */
     private $validator;
 
-    public function __construct(NatureDao $dao, NatureValidator $validator) {
+    public function __construct(NatureDao $dao, NatureValidator $validator)
+    {
         $this->dao       = $dao;
         $this->validator = $validator;
     }
@@ -38,15 +40,21 @@ class NatureCreator {
      * @throws InvalidNatureParameterException
      * @throws UnableToCreateNatureException
      */
-    public function create($shortname, $forward_label, $reverse_label) {
+    public function create(string $shortname, string $forward_label, string $reverse_label): void
+    {
         $this->validator->checkShortname($shortname);
         $this->validator->checkForwardLabel($forward_label);
         $this->validator->checkReverseLabel($reverse_label);
 
         if (! $this->dao->create($shortname, $forward_label, $reverse_label)) {
             throw new UnableToCreateNatureException(
-                $GLOBALS['Language']->getText('plugin_tracker_artifact_links_natures', 'db_error')
+                dgettext('tuleap-tracker', 'error while playing with the database.  Help us improve your experience by sending an error report.')
             );
         }
+    }
+
+    public function createFromNature(NaturePresenter $nature): void
+    {
+        $this->create($nature->shortname, $nature->forward_label, $nature->reverse_label);
     }
 }

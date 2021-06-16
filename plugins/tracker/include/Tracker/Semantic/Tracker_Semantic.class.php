@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2016. All rights reserved.
+ * Copyright Enalean (c) 2016-Present. All rights reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,17 +19,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-abstract class Tracker_Semantic {
+use Tuleap\Tracker\REST\SemanticRepresentation;
+
+abstract class Tracker_Semantic
+{
 
     /**
      * @var Tracker
      */
     protected $tracker;
-
-    /**
-     * @var CSRFSynchronizerToken
-     */
-    private $csrf_token;
 
     /**
      * Cosntructor
@@ -38,8 +36,7 @@ abstract class Tracker_Semantic {
      */
     public function __construct(Tracker $tracker)
     {
-        $this->tracker    = $tracker;
-        $this->csrf_token = new CSRFSynchronizerToken($this->getUrl());
+        $this->tracker = $tracker;
     }
 
     /**
@@ -49,7 +46,8 @@ abstract class Tracker_Semantic {
      *
      * @return void
      */
-    public function setTracker($tracker) {
+    public function setTracker($tracker)
+    {
         $this->tracker = $tracker;
     }
     /**
@@ -57,101 +55,103 @@ abstract class Tracker_Semantic {
      *
      * @return Tracker The tracker
      */
-     public function getTracker() {
-         return $this->tracker;
-     }
+    public function getTracker()
+    {
+        return $this->tracker;
+    }
 
     /**
      * @return CSRFSynchronizerToken
      */
-     protected function getCSRFToken()
-     {
-         return $this->csrf_token;
-     }
+    protected function getCSRFToken()
+    {
+        return new CSRFSynchronizerToken($this->getUrl());
+    }
 
     /**
      * The short name of the semantic: tooltip, title, status, owner, ...
      *
      * @return string
      */
-    public abstract function getShortName();
+    abstract public function getShortName();
 
     /**
      * The label of the semantic: Tooltip, ...
      *
      * @return string
      */
-    public abstract function getLabel();
+    abstract public function getLabel();
 
     /**
      * The description of the semantics. Used for breadcrumbs
      *
      * @return string
      */
-    public abstract function getDescription();
+    abstract public function getDescription();
 
     /**
      * Display the basic info about this semantic
      *
-     * @return string html
+     * @return void
      */
-    public abstract function display();
+    abstract public function display();
 
     /**
      * Display the form to let the admin change the semantic
      *
-     * @param Tracker_SemanticManager $sm              The semantic manager
-     * @param TrackerManager          $tracker_manager The tracker manager
-     * @param Codendi_Request         $request         The request
-     * @param PFUser                    $current_user    The user who made the request
-     *
-     * @return string html
-     */
-    public abstract function displayAdmin(Tracker_SemanticManager $sm, TrackerManager $tracker_manager, Codendi_Request $request, PFUser $current_user);
-
-    /**
-     * Process the form
-     *
-     * @param Tracker_SemanticManager $sm              The semantic manager
+     * @param Tracker_SemanticManager $semantic_manager              The semantic manager
      * @param TrackerManager          $tracker_manager The tracker manager
      * @param Codendi_Request         $request         The request
      * @param PFUser                    $current_user    The user who made the request
      *
      * @return void
      */
-    public abstract function process(Tracker_SemanticManager $sm, TrackerManager $tracker_manager, Codendi_Request $request, PFUser $current_user);
+    abstract public function displayAdmin(Tracker_SemanticManager $semantic_manager, TrackerManager $tracker_manager, Codendi_Request $request, PFUser $current_user);
+
+    /**
+     * Process the form
+     *
+     * @param Tracker_SemanticManager $semantic_manager              The semantic manager
+     * @param TrackerManager          $tracker_manager The tracker manager
+     * @param Codendi_Request         $request         The request
+     * @param PFUser                    $current_user    The user who made the request
+     *
+     * @return void
+     */
+    abstract public function process(Tracker_SemanticManager $semantic_manager, TrackerManager $tracker_manager, Codendi_Request $request, PFUser $current_user);
 
     /**
      * Export semantic to XML
      *
      * @param SimpleXMLElement &$root      the node to which the semantic is attached (passed by reference)
-     * @param array            $xmlMapping correspondance between real ids and xml IDs
+     * @param array            $xml_mapping correspondance between real ids and xml IDs
      *
      * @return void
      */
-    public abstract function exportToXml(SimpleXMLElement $root, $xmlMapping);
+    abstract public function exportToXml(SimpleXMLElement $root, $xml_mapping);
 
     /**
      * Is the field used in semantics?
      *
      * @param Tracker_FormElement_Field the field to test if it is used in semantics or not
      *
-     * @return boolean returns true if the field is used in semantics, false otherwise
+     * @return bool returns true if the field is used in semantics, false otherwise
      */
-    public abstract function isUsedInSemantics($field);
+    abstract public function isUsedInSemantics(Tracker_FormElement_Field $field);
 
     /**
      * Get the url to this semantic
      *
      * @return string url (for html)
      */
-    public function getUrl() {
-        $query = http_build_query(array(
+    public function getUrl()
+    {
+        $query = http_build_query([
                 'tracker'  => $this->tracker->getId(),
                 'func'     => 'admin-semantic',
                 'semantic' => $this->getShortName(),
-            ));
-        return TRACKER_BASE_URL.'/?'. $query;
+            ]);
+        return TRACKER_BASE_URL . '/?' . $query;
     }
 
     /**
@@ -159,41 +159,27 @@ abstract class Tracker_Semantic {
      *
      * @return bool true if success, false otherwise
      */
-    public abstract function save();
+    abstract public function save();
 
-    /**
-    * Export the semantic to SOAP format
-    * @return array the SOAPification of the semantic
-    */
-    public function exportToSOAP(PFUser $user) {
-        $field_name = "";
-        $field = $this->getFieldUserCanRead($user);
-        if ($field) {
-            $field_name = $field->getName();
-        }
-
-        return array('field_name' => $field_name);
-    }
-
-    protected function getFieldUserCanRead(PFUser $user) {
-        $field      = $this->getField();
+    protected function getFieldUserCanRead(PFUser $user)
+    {
+        $field = $this->getField();
         if ($field && $field->userCanRead($user)) {
             return $field;
         }
         return null;
     }
 
-    public function exportToREST(PFUser $user) {
+    public function exportToREST(PFUser $user)
+    {
         $field = $this->getFieldUserCanRead($user);
         if (! $field) {
             return false;
         }
 
-        $classname_with_namespace = 'Tuleap\Tracker\REST\SemanticRepresentation';
-        $semantic_representation = new $classname_with_namespace;
+        $semantic_representation = new SemanticRepresentation();
         $semantic_representation->build($field->getId());
 
         return $semantic_representation;
     }
 }
-?>

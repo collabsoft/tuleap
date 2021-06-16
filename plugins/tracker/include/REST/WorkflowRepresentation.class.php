@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,13 @@
 namespace Tuleap\Tracker\REST;
 
 use Tuleap\REST\JsonCast;
+use Workflow;
 
-class WorkflowRepresentation {
+/**
+ * @psalm-immutable
+ */
+class WorkflowRepresentation
+{
 
     /**
      * @var int
@@ -30,23 +35,36 @@ class WorkflowRepresentation {
     public $field_id;
 
     /**
-     * @var bool
+     * @var string
      */
     public $is_used;
 
     /**
-     * @var Tuleap\Tracker\REST\WorkflowRulesRepresentation
+     * @var bool
+     */
+    public $is_legacy;
+
+    /**
+     * @var bool
+     */
+    public $is_advanced;
+
+    /**
+     * @var \Tuleap\Tracker\REST\WorkflowRulesRepresentation
      */
     public $rules;
 
     /**
-     * @var Array[Tuleap\Tracker\REST\WorkflowTransitionRepresentation]
+     * @var \Tuleap\Tracker\REST\WorkflowTransitionRepresentation[]
      */
-    public $transitions = array();
+    public $transitions = [];
 
-    public function build($id, $is_used, WorkflowRulesRepresentation $rules, array $transitions) {
-        $this->field_id    = JsonCast::toInt($id);
-        $this->is_used     = $is_used;
+    public function __construct(Workflow $workflow, WorkflowRulesRepresentation $rules, array $transitions)
+    {
+        $this->field_id    = JsonCast::toInt($workflow->getFieldId());
+        $this->is_used     = (string) $workflow->is_used;
+        $this->is_legacy   = JsonCast::toBoolean($workflow->isLegacy());
+        $this->is_advanced = JsonCast::toBoolean($workflow->isAdvanced());
         $this->rules       = $rules;
         $this->transitions = $transitions;
     }

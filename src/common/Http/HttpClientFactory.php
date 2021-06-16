@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,46 +18,81 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\Http;
 
-use Http\Client\Common\Plugin\ErrorPlugin;
+use Http\Adapter\Guzzle7\Client;
+use Http\Client\Common\Plugin;
+use Http\Client\Common\Plugin\RedirectPlugin;
 use Http\Client\Common\PluginClient;
-use Http\Adapter\Guzzle6\Client;
 
 class HttpClientFactory
 {
-    const TIMEOUT = 5;
+    private const TIMEOUT = 5;
 
-    /**
-     * @return \Http\Client\HttpClient|\Http\Client\HttpAsyncClient
-     */
-    public static function createClient()
+    public static function createClient(Plugin ...$plugins): \Psr\Http\Client\ClientInterface
     {
-        return self::createClientWithConfig([
-            'timeout' => self::TIMEOUT,
-            'proxy'   => \ForgeConfig::get('sys_proxy')
-        ]);
+        return self::createClientWithStandardConfig(...$plugins);
+    }
+
+    public static function createAsyncClient(Plugin ...$plugins): \Http\Client\HttpAsyncClient
+    {
+        return self::createClientWithStandardConfig(...$plugins);
     }
 
     /**
      * This client should only be used for Tuleap internal use to
      * query internal resources. Queries requested by users (e.g. webhooks)
      * MUST NOT use it.
-     *
-     * @return \Http\Client\HttpClient|\Http\Client\HttpAsyncClient
      */
-    public static function createClientForInternalTuleapUse()
+    public static function createClientForInternalTuleapUse(Plugin ...$plugins): \Psr\Http\Client\ClientInterface
     {
-        return self::createClientWithConfig(['timeout' => self::TIMEOUT]);
+        return self::createClientWithConfigForInternalTuleapUse(...$plugins);
     }
 
     /**
-     * @return \Http\Client\HttpClient|\Http\Client\HttpAsyncClient
+     * This client should only be used for Tuleap internal use to
+     * query internal resources. Queries requested by users (e.g. webhooks)
+     * MUST NOT use it.
      */
-    private static function createClientWithConfig(array $config)
+    public static function createAsyncClientForInternalTuleapUse(Plugin ...$plugins): \Http\Client\HttpAsyncClient
+    {
+        return self::createClientWithConfigForInternalTuleapUse(...$plugins);
+    }
+
+    /**
+     * @return \Http\Client\HttpAsyncClient&\Psr\Http\Client\ClientInterface
+     */
+    private static function createClientWithStandardConfig(Plugin ...$plugins)
+    {
+        return self::createClientWithConfig(
+            [
+                'timeout' => self::TIMEOUT,
+                'proxy'   => \ForgeConfig::get('sys_proxy')
+            ],
+            ...$plugins
+        );
+    }
+
+    /**
+     * @return \Http\Client\HttpAsyncClient&\Psr\Http\Client\ClientInterface
+     */
+    private static function createClientWithConfigForInternalTuleapUse(Plugin ...$plugins)
+    {
+        return self::createClientWithConfig(['timeout' => self::TIMEOUT], ...$plugins);
+    }
+
+    /**
+     * @return \Psr\Http\Client\ClientInterface&\Http\Client\HttpAsyncClient
+     */
+    private static function createClientWithConfig(array $config, Plugin ...$plugins)
     {
         $client = Client::createWithConfig($config);
 
-        return new PluginClient($client, [new ErrorPlugin()]);
+        return new PluginClient(
+            $client,
+            array_merge([new RedirectPlugin()], $plugins)
+        );
     }
 }

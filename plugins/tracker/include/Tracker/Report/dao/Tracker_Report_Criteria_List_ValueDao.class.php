@@ -18,40 +18,41 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Report_Criteria_List_ValueDao extends Tracker_Report_Criteria_ValueDao {
-    function __construct() {
+class Tracker_Report_Criteria_List_ValueDao extends Tracker_Report_Criteria_ValueDao
+{
+    public function __construct()
+    {
         parent::__construct();
         $this->table_name = 'tracker_report_criteria_list_value';
     }
-    
-    public function save($id, $values) {               
-        if ( is_array($values) ) {
+
+    public function save($id, $value)
+    {
+        if (is_array($value)) {
             $id = $this->da->escapeInt($id);
             //First clear the list
             $sql = "DELETE FROM $this->table_name WHERE criteria_id = $id";
             $this->update($sql);
-            
+
             //Then fill it with new values
-            $new_values = array();
-            if (is_array($values)) {
-                foreach($values as $val) {
+            $new_values = [];
+            if (is_array($value)) {
+                foreach ($value as $val) {
                     if ($v = $this->da->escapeInt($val)) {
-                        $new_values[] = "($id, $v)";                        
+                        $new_values[] = "($id, $v)";
                     }
                 }
             }
             $sql = '';
             if (count($new_values)) {
-                $sql = "INSERT INTO $this->table_name(criteria_id, value) VALUES ".implode(',', $new_values);
+                $sql = "INSERT INTO $this->table_name(criteria_id, value) VALUES " . implode(',', $new_values);
             }
             $r = null;
-            if ( $sql != '') {
+            if ($sql != '') {
                 $r = $this->update($sql);
             }
             return $r;
         }
         return false;
     }
-    
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -31,7 +31,7 @@ class AdminPresenter
     public $form_url;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $is_timetracking_enabled;
 
@@ -53,10 +53,10 @@ class AdminPresenter
         array $write_ugroups
     ) {
         $this->is_timetracking_enabled = $is_timetracking_enabled;
-        $this->form_url                = TIMETRACKING_BASE_URL . '/?' . http_build_query(array(
+        $this->form_url                = TIMETRACKING_BASE_URL . '/?' . http_build_query([
                 'tracker' => $tracker->getId(),
                 'action'  => 'edit-timetracking'
-        ));
+        ]);
 
         $this->csrf_token = $csrf_token;
 

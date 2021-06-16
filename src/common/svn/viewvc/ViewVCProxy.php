@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,9 @@
 
 namespace Tuleap\SvnCore\ViewVC;
 
-require_once('viewvc_utils.php');
-require_once('www/svn/svn_utils.php');
+require_once __DIR__ . '/../../../www/include/viewvc_utils.php';
+require_once __DIR__ . '/../../../www/svn/svn_utils.php';
 
-use ForgeConfig;
 use HTTPRequest;
 use Project;
 use Codendi_HTMLPurifier;
@@ -49,16 +48,19 @@ class ViewVCProxy
             return true;
         }
 
-        if ($this->isViewingPatch($request) ||
+        if (
+            $this->isViewingPatch($request) ||
             $this->isCheckoutingFile($request) ||
             strpos($request_uri, "view=graphimg") !== false ||
             strpos($request_uri, "view=redirect_path") !== false ||
             // ViewVC will redirect URLs with "&rev=" to "&revision=". This is needed by Hudson.
-            strpos($request_uri, "&rev=") !== false ) {
+            strpos($request_uri, "&rev=") !== false
+        ) {
             return false;
         }
 
-        if (strpos($request_uri, "/?") === false &&
+        if (
+            strpos($request_uri, "/?") === false &&
             strpos($request_uri, "&r1=") === false &&
             strpos($request_uri, "&r2=") === false &&
             strpos($request_uri, "view=") === false
@@ -128,11 +130,11 @@ class ViewVCProxy
         // parameter, used when browsing a directory at a certain revision number)
         $location_found = false;
 
-        while ($location_line && !$location_found && strlen($location_line) > 1) {
-            $matches = array();
+        while ($location_line && ! $location_found && strlen($location_line) > 1) {
+            $matches = [];
 
             if (preg_match('/^Location:(.*)$/', $location_line, $matches)) {
-                return $matches[1];
+                return trim($matches[1]);
             }
 
             $location_line = strtok("\n\t\r\0\x0B");
@@ -162,45 +164,23 @@ class ViewVCProxy
         return '/usr/bin/python';
     }
 
-    public function displayContent(Project $project, HTTPRequest $request)
+    public function displayContent(Project $project, HTTPRequest $request, string $path)
     {
         $user = $request->getCurrentUser();
-        if ($user->isAnonymous()) {
-            exit_error(
-                $GLOBALS['Language']->getText('svn_viewvc', 'access_denied'),
-                $GLOBALS['Language']->getText(
-                    'svn_viewvc',
-                    'acc_den_comment',
-                    session_make_url("/project/memberlist.php?group_id=" . urlencode($project->getID()))
-                )
-            );
-        }
 
         viewvc_utils_track_browsing($project->getID(), 'svn');
 
-        //this is very important. default path must be /
-        $path = "/";
-
-        if ($request->getFromServer('PATH_INFO') != "") {
-            $path = $request->getFromServer('PATH_INFO');
-
-            // hack: path must always end with /
-            if (strrpos($path, "/") != (strlen($path) - 1)) {
-                $path .= "/";
-            }
-        }
-
-        $command = 'REMOTE_USER_ID=' . escapeshellarg($user->getId()) . ' '.
-            'REMOTE_USER=' . escapeshellarg($this->getUsername($user, $project)) . ' '.
-            'PATH_INFO='.$this->setLocaleOnFileName($path).' '.
-            'QUERY_STRING='.escapeshellarg($this->buildQueryString($request)).' '.
-            'SCRIPT_NAME='.$this->escapeStringFromServer($request, 'SCRIPT_NAME').' '.
-            'HTTP_ACCEPT_ENCODING='.$this->escapeStringFromServer($request, 'HTTP_ACCEPT_ENCODING').' '.
-            'HTTP_ACCEPT_LANGUAGE='.$this->escapeStringFromServer($request, 'HTTP_ACCEPT_LANGUAGE').' '.
-            'TULEAP_PROJECT_NAME='.escapeshellarg($project->getUnixNameMixedCase()).' '.
-            'TULEAP_REPO_NAME='.escapeshellarg($project->getUnixNameMixedCase()).' '.
-            'TULEAP_REPO_PATH='.escapeshellarg($project->getSVNRootPath()).' '.
-            $this->getPythonLauncher() . ' ' . ForgeConfig::get('tuleap_dir').'/src/common/svn/viewvc/viewvc-epel.cgi 2>&1';
+        $command = 'REMOTE_USER_ID=' . escapeshellarg($user->getId()) . ' ' .
+            'REMOTE_USER=' . escapeshellarg($this->getUsername($user, $project)) . ' ' .
+            'PATH_INFO=' . $this->setLocaleOnFileName($path) . ' ' .
+            'QUERY_STRING=' . escapeshellarg($this->buildQueryString($request)) . ' ' .
+            'SCRIPT_NAME=/svn/viewvc.php ' .
+            'HTTP_ACCEPT_ENCODING=' . $this->escapeStringFromServer($request, 'HTTP_ACCEPT_ENCODING') . ' ' .
+            'HTTP_ACCEPT_LANGUAGE=' . $this->escapeStringFromServer($request, 'HTTP_ACCEPT_LANGUAGE') . ' ' .
+            'TULEAP_PROJECT_NAME=' . escapeshellarg($project->getUnixNameMixedCase()) . ' ' .
+            'TULEAP_REPO_NAME=' . escapeshellarg($project->getUnixNameMixedCase()) . ' ' .
+            'TULEAP_REPO_PATH=' . escapeshellarg($project->getSVNRootPath()) . ' ' .
+            $this->getPythonLauncher() . ' ' . __DIR__ . '/viewvc-epel.cgi 2>&1';
 
         $content = $this->setLocaleOnCommand($command, $return_var);
 
@@ -211,7 +191,7 @@ class ViewVCProxy
 
         list($headers, $body) = http_split_header_body($content);
 
-        $content_type_line   = strtok($content, "\n\t\r\0\x0B");
+        $content_type_line = strtok($content, "\n\t\r\0\x0B");
 
         $content = substr($content, strpos($content, $content_type_line));
 
@@ -241,30 +221,30 @@ class ViewVCProxy
 
     private function display(Project $project, $path, $body)
     {
-        svn_header(array(
+        svn_header($project, [
             'title' => $GLOBALS['Language']->getText('svn_utils', 'browse_tree'),
             'path' => urlencode($path),
-            'body_class' => array('viewvc-epel')
-        ));
+            'body_class' => ['viewvc-epel']
+        ]);
         echo util_make_reference_links(
             $body,
             $project->getID()
         );
-        site_footer(array());
+        site_footer([]);
     }
 
     private function getPermissionDeniedError(Project $project)
     {
         $purifier = Codendi_HTMLPurifier::instance();
-        $url      = session_make_url("/project/memberlist.php?group_id=" . urlencode($project->getID()));
+        $url      = session_make_url("/project/memberlist.php?group_id=" . urlencode((string) $project->getID()));
 
         $title  = $purifier->purify($GLOBALS['Language']->getText('svn_viewvc', 'access_denied'));
         $reason = $GLOBALS['Language']->getText('svn_viewvc', 'acc_den_comment', $purifier->purify($url));
 
         return '<link rel="stylesheet" href="/viewvc-theme-tuleap/style.css">
             <div class="tuleap-viewvc-header">
-                <h3>'. $title .'</h3>
-                '. $reason .'
+                <h3>' . $title . '</h3>
+                ' . $reason . '
             </div>';
     }
 }

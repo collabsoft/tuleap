@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2017. All rights reserved
+ * Copyright (c) Enalean, 2013 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,42 +18,42 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-require_once dirname(__FILE__).'/../lib/autoload.php';
-
 use Tuleap\REST\CardsBase;
 
 /**
  * @group CardsTests
  */
-class CardsTest extends CardsBase
+class CardsTest extends CardsBase //phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace
 {
-    public function testOPTIONSCards() {
+    public function testOPTIONSCards()
+    {
         $response = $this->getResponse($this->client->options('cards'));
-        $this->assertEquals(array('OPTIONS'), $response->getHeader('Allow')->normalize()->toArray());
+        $this->assertEquals(['OPTIONS'], $response->getHeader('Allow')->normalize()->toArray());
     }
 
-    public function testPUTCardsWithId() {
-        $card_id        = REST_TestDataBuilder::PLANNING_ID .'_'.$this->story_artifact_ids[1];
+    public function testPUTCardsWithId()
+    {
+        $card_id        = REST_TestDataBuilder::PLANNING_ID . '_' . $this->story_artifact_ids[1];
         $test_label     = "Ieatlaughingcow";
         $test_column_id = 2;
 
         // Keep original values
         $original_card = $this->findCardInCardwall(
-            $this->getResponse($this->client->get('milestones/'. $this->sprint_artifact_ids[1] .'/cardwall'))->json(),
+            $this->getResponse($this->client->get('milestones/' . $this->sprint_artifact_ids[1] . '/cardwall'))->json(),
             $card_id
         );
 
         $response_put = $this->getResponse($this->client->put("cards/$card_id", null, '
             {
                 "label": "' . $test_label . '",
-                "column_id": '. $test_column_id .',
+                "column_id": ' . $test_column_id . ',
                 "values": []
             }
         '));
         $this->assertEquals($response_put->getStatusCode(), 200);
 
         $card = $this->findCardInCardwall(
-            $this->getResponse($this->client->get('milestones/'. $this->sprint_artifact_ids[1] .'/cardwall'))->json(),
+            $this->getResponse($this->client->get('milestones/' . $this->sprint_artifact_ids[1] . '/cardwall'))->json(),
             $card_id
         );
 
@@ -64,13 +64,33 @@ class CardsTest extends CardsBase
         $this->getResponse($this->client->put("cards/$card_id", null, '
             {
                 "label": "' . $original_card['label'] . '",
-                "column_id": '. $original_card['column_id'] .',
+                "column_id": ' . $original_card['column_id'] . ',
                 "values": []
             }
         '));
     }
 
-    private function findCardInCardwall($cardwall, $id) {
+    public function testPUTCardsForReadOnlyUser(): void
+    {
+        $card_id      = REST_TestDataBuilder::PLANNING_ID . '_' . $this->story_artifact_ids[1];
+        $response_put = $this->getResponse(
+            $this->client->put(
+                "cards/$card_id",
+                null,
+                '
+                {
+                    "label": "Ieatlaughingcow",
+                    "column_id": 2,
+                    "values": []
+                } '
+            ),
+            REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+        $this->assertEquals(403, $response_put->getStatusCode());
+    }
+
+    private function findCardInCardwall($cardwall, $id)
+    {
         foreach ($cardwall['swimlanes'] as $swimlane) {
             foreach ($swimlane['cards'] as $card) {
                 if ($card['id'] == $id) {
@@ -80,8 +100,9 @@ class CardsTest extends CardsBase
         }
     }
 
-    public function testOPTIONSCardsWithId() {
-        $response = $this->getResponse($this->client->options('cards/'.$this->sprint_artifact_ids[1] .'_'.$this->story_artifact_ids[1]));
-        $this->assertEquals(array('OPTIONS', 'PUT'), $response->getHeader('Allow')->normalize()->toArray());
+    public function testOPTIONSCardsWithId()
+    {
+        $response = $this->getResponse($this->client->options('cards/' . $this->sprint_artifact_ids[1] . '_' . $this->story_artifact_ids[1]));
+        $this->assertEquals(['OPTIONS', 'PUT'], $response->getHeader('Allow')->normalize()->toArray());
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,37 +18,43 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Planning_ArtifactParentsSelector_SubChildrenBelongingToTrackerCommand extends Planning_ArtifactParentsSelector_Command {
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Planning_ArtifactParentsSelector_SubChildrenBelongingToTrackerCommand extends Planning_ArtifactParentsSelector_Command
+{
 
     /**
      * @see Planning_ArtifactParentsSelector_Command
      *
      * @return array of Tracker_Artifact
      */
-    public function getPossibleParents(Tracker $parent_tracker, Tracker_Artifact $source_artifact, PFUser $user) {
+    public function getPossibleParents(Tracker $parent_tracker, Artifact $source_artifact, PFUser $user)
+    {
         $sub_childs = $this->getSubChildrenBelongingToTracker($source_artifact, $parent_tracker, $user);
         if ($sub_childs) {
             return $sub_childs;
         }
     }
 
-    private function getSubChildrenBelongingToTracker(Tracker_Artifact $source_artifact, Tracker $expected_tracker, PFUser $user) {
+    private function getSubChildrenBelongingToTracker(Artifact $source_artifact, Tracker $expected_tracker, PFUser $user)
+    {
         $hierarchy = $this->getParentTrackersAndStopAtGivenTracker($expected_tracker, $source_artifact->getTracker());
         if ($hierarchy) {
             return $this->recursivelyFindChildrenBelongingToTracker($source_artifact, $expected_tracker, $user, $hierarchy);
         }
     }
 
-    private function recursivelyFindChildrenBelongingToTracker(Tracker_Artifact $source_artifact, Tracker $expected_tracker, PFUser $user, array $hierarchy) {
-        $artifacts = array();
-        $children = $source_artifact->getLinkedArtifactsOfHierarchy($user);
+    private function recursivelyFindChildrenBelongingToTracker(Artifact $source_artifact, Tracker $expected_tracker, PFUser $user, array $hierarchy)
+    {
+        $artifacts = [];
+        $children  = $source_artifact->getLinkedArtifactsOfHierarchy($user);
         if (isset($hierarchy[$source_artifact->getId()])) {
-            array_walk($children, array($this, 'keepOnlyArtifactsBelongingToParentTracker'), $hierarchy[$source_artifact->getId()]);
+            array_walk($children, [$this, 'keepOnlyArtifactsBelongingToParentTracker'], $hierarchy[$source_artifact->getId()]);
             array_filter($children);
         }
         if ($children) {
             foreach ($children as $child) {
-                if ($child->getTracker() == $expected_tracker) {
+                if ((int) $child->getTracker()->getId() === (int) $expected_tracker->getId()) {
                     $artifacts[] = $child;
                 } else {
                     $artifacts = array_merge($artifacts, $this->recursivelyFindChildrenBelongingToTracker($child, $expected_tracker, $user, $hierarchy));
@@ -58,16 +64,25 @@ class Planning_ArtifactParentsSelector_SubChildrenBelongingToTrackerCommand exte
         return $artifacts;
     }
 
-    private function getParentTrackersAndStopAtGivenTracker(Tracker $tracker, Tracker $stop) {
-        $hierarchy = array();
-        while (($parent = $this->hierarchy_factory->getParent($tracker)) && $parent != $stop) {
+    private function getParentTrackersAndStopAtGivenTracker(Tracker $tracker, Tracker $stop)
+    {
+        $hierarchy = [];
+        while (
+            ($parent = $this->hierarchy_factory->getParent($tracker)) &&
+            (int) $parent->getId() !== (int) $stop->getId()
+        ) {
             $hierarchy[$parent->getId()] = $tracker;
-            $tracker = $parent;
+            $tracker                     = $parent;
         }
-        if ($parent == $stop) {
+
+        if (! $parent) {
+            return null;
+        }
+
+        if ((int) $parent->getId() === (int) $stop->getId()) {
             $hierarchy[$stop->getId()] = $tracker;
+
             return $hierarchy;
         }
     }
 }
-?>

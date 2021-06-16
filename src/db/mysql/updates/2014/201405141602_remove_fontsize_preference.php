@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2014. All rights reserved
+ * Copyright (c) Enalean SAS 2014 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,16 +19,20 @@
 /**
  * Replace version date column values by timestamp
  */
-class b201405141602_remove_fontsize_preference extends ForgeUpgrade_Bucket {
-    public function description() {
+class b201405141602_remove_fontsize_preference extends ForgeUpgrade_Bucket
+{
+    public function description()
+    {
         return "Remove fontsize user preference";
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "ALTER TABLE user DROP COLUMN fontsize";
 
         $res = $this->db->dbh->exec($sql);

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class MediawikiGroupPresenter {
+class MediawikiGroupPresenter
+{
 
     /** @var ProjectUGroup[] */
     private $available_ugroups;
@@ -32,61 +33,68 @@ class MediawikiGroupPresenter {
     /** @var ProjectUGroup[] */
     private $current_mapping;
 
-    public function __construct($mediawiki_group_id, $mediawiki_group_label, $available_ugroups, $mapping) {
+    public function __construct($mediawiki_group_id, $mediawiki_group_label, $available_ugroups, $mapping)
+    {
         $this->mediawiki_group_id    = $mediawiki_group_id;
         $this->available_ugroups     = $available_ugroups;
         $this->mediawiki_group_label = $mediawiki_group_label;
         $this->current_mapping       = $mapping;
     }
 
-    public function tuleap_group_label() {
+    public function tuleap_group_label()
+    {
         return 'Tuleap groups';
     }
 
-    public function mediawiki_group_label() {
+    public function mediawiki_group_label()
+    {
         return $this->mediawiki_group_label . ' (Mediawiki)';
     }
 
-    public function available_groups() {
-        $selector = array(
-            'name'     => 'available_'.$this->mediawiki_group_id.'[]',
+    public function available_groups()
+    {
+        $selector = [
+            'name'     => 'available_' . $this->mediawiki_group_id . '[]',
             'class'    => 'forge_mw_available_groups',
-            'options'  => array()
-        );
+            'options'  => []
+        ];
         foreach ($this->available_ugroups as $ugroup) {
-            $selector['options'][] = array(
+            $selector['options'][] = [
                 'value'    => $ugroup->getId(),
                 'label'    => $ugroup->getTranslatedName(),
                 'selected' => false,
-            );
+            ];
         }
         return $selector;
     }
 
-    public function selected_groups() {
-        $selector = array(
-            'name'     => 'selected_'.$this->mediawiki_group_id.'[]',
+    public function selected_groups()
+    {
+        $selector = [
+            'name'     => 'selected_' . $this->mediawiki_group_id . '[]',
             'class'    => 'forge_mw_selected_groups',
-            'options'  => array()
-        );
+            'options'  => []
+        ];
 
         foreach ($this->current_mapping as $ugroup) {
-            $selector['options'][] = array(
+            $selector['options'][] = [
                 'value'    => $ugroup->getId(),
                 'label'    => $ugroup->getTranslatedName(),
                 'selected' => false,
-            );
+            ];
         }
 
         return $selector;
     }
 
-    public function hidden_selected_groups_name() {
-        return 'hidden_selected_'.$this->mediawiki_group_id;
+    public function hidden_selected_groups_name()
+    {
+        return 'hidden_selected_' . $this->mediawiki_group_id;
     }
 
-    public function hidden_selected_groups_value() {
-        $ids = array();
+    public function hidden_selected_groups_value()
+    {
+        $ids = [];
         foreach ($this->current_mapping as $ugroup) {
             $ids[] = $ugroup->getId();
         }

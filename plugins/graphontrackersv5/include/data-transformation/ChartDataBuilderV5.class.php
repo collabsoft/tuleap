@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,19 +19,20 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Color\TlpColorMapper;
-
-abstract class ChartDataBuilderV5 {
+abstract class ChartDataBuilderV5
+{
 
     protected $chart;
     protected $artifacts;
 
-    function __construct($chart, $artifacts) {
+    public function __construct($chart, $artifacts)
+    {
         $this->chart     = $chart;
         $this->artifacts = $artifacts;
     }
 
-    function buildProperties($engine) {
+    public function buildProperties($engine)
+    {
         $engine->title       = $this->chart->getTitle();
         $engine->description = $this->chart->getDescription();
         $engine->height      = $this->chart->getHeight();
@@ -39,42 +40,23 @@ abstract class ChartDataBuilderV5 {
     }
 
     /**
-     * @return string or array (r,g,b) color from $data if exist, else a null triple
+     * @return string|array string or array (r,g,b) color from $data if exist, else a null triple
      */
-    protected function getColor(array $data) {
+    protected function getColor(array $data)
+    {
         if (isset($data['tlp_color_name'])) {
             return $data['tlp_color_name'];
         }
 
         if (! isset($data['red'])) {
-            return array(null, null, null);
+            return [null, null, null];
         }
 
-        return array($data['red'], $data['green'], $data['blue']);
+        return [$data['red'], $data['green'], $data['blue']];
     }
 
-    protected function getColorForJPGraph(array $data) {
-        if (isset($data['tlp_color_name'])) {
-            return TlpColorMapper::getRGBColor($data['tlp_color_name']);
-        }
-
-        if (! isset($data['red'])) {
-            return array(null, null, null);
-        }
-
-        return array($data['red'], $data['green'], $data['blue']);
-    }
-
-    protected function getTracker() {
+    protected function getTracker()
+    {
         return TrackerFactory::instance()->getTrackerById($this->chart->renderer->report->tracker_id);
-    }
-
-    protected function displayNoFieldError() {
-        $error_message = $GLOBALS['Language']->getText(
-            'plugin_graphontrackersv5',
-            'field_not_found',
-            $this->chart->getTitle()
-        );
-        echo "<p class='feedback_error'>$error_message</p>";
     }
 }

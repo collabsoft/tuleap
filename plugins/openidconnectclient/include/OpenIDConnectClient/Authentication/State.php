@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,19 +18,29 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\OpenIDConnectClient\Authentication;
 
-use Firebase\JWT\JWT;
+use Lcobucci\JWT\Encoding\ChainedFormatter;
+use Lcobucci\JWT\Encoding\JoseEncoder;
+use Lcobucci\JWT\Token\Parser;
+use Lcobucci\JWT\Signer\Hmac\Sha256;
+use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\UnencryptedToken;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
+use Lcobucci\JWT\Validation\Validator;
+use Tuleap\Cryptography\ConcealedString;
 
-class State extends \InoOicClient\Oic\Authorization\State\State {
-    const SIGNATURE_ALGORITHM = 'HS256';
-
+class State
+{
     /**
      * @var int
      */
     private $provider_id;
     /**
-     * @var string
+     * @var string|null
      */
     private $return_to;
     /**
@@ -41,47 +51,58 @@ class State extends \InoOicClient\Oic\Authorization\State\State {
      * @var string
      */
     private $nonce;
+    /**
+     * @var ConcealedString
+     */
+    private $pkce_code_verifier;
 
-    public function __construct($provider_id, $return_to, $secret_key, $nonce)
+    public function __construct(int $provider_id, ?string $return_to, string $secret_key, string $nonce, ConcealedString $pkce_code_verifier)
     {
-        $this->provider_id = $provider_id;
-        $this->return_to   = $return_to;
-        $this->secret_key  = $secret_key;
-        $this->nonce       = $nonce;
+        $this->provider_id        = $provider_id;
+        $this->return_to          = $return_to;
+        $this->secret_key         = $secret_key;
+        $this->nonce              = $nonce;
+        $this->pkce_code_verifier = $pkce_code_verifier;
     }
 
-    /**
-     * @return State
-     */
-    public static function createFromSignature($signed_state, $return_to, $secret_key, $nonce) {
-        $provider_id = JWT::decode($signed_state, $secret_key, array(self::SIGNATURE_ALGORITHM));
-        return new State($provider_id, $return_to, $secret_key, $nonce);
+    public static function createFromSignature(string $signed_state, ?string $return_to, string $secret_key, string $nonce, ConcealedString $pkce_code_verifier): self
+    {
+        $token = (new Parser(new JoseEncoder()))->parse($signed_state);
+        assert($token instanceof UnencryptedToken);
+        if (! (new Validator())->validate($token, new SignedWith(new Sha256(), Key\InMemory::plainText($secret_key)))) {
+            throw new \RuntimeException('Signed state cannot be verified');
+        }
+        $provider_id = (int) $token->claims()->get('provider_id');
+        return new self($provider_id, $return_to, $secret_key, $nonce, $pkce_code_verifier);
     }
 
-    /**
-     * @return string
-     */
-    public function getSignedState() {
-        return JWT::encode($this->provider_id, $this->secret_key, self::SIGNATURE_ALGORITHM);
+    public function getSignedState(): string
+    {
+        return (new \Lcobucci\JWT\Token\Builder(new JoseEncoder(), ChainedFormatter::default()))->withClaim('provider_id', $this->provider_id)->getToken(new Sha256(), InMemory::plaintext($this->secret_key))->toString();
     }
 
-    public function getProviderId() {
+    public function getProviderId(): int
+    {
         return $this->provider_id;
     }
 
-    public function getReturnTo() {
+    public function getReturnTo(): ?string
+    {
         return $this->return_to;
     }
 
-    public function getSecretKey() {
+    public function getSecretKey(): string
+    {
         return $this->secret_key;
     }
 
-    /**
-     * @return string
-     */
-    public function getNonce()
+    public function getNonce(): string
     {
         return $this->nonce;
+    }
+
+    public function getPKCECodeVerifier(): ConcealedString
+    {
+        return $this->pkce_code_verifier;
     }
 }

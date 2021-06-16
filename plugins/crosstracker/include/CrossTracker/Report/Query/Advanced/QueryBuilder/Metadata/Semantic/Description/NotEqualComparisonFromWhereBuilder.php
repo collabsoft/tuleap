@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -44,7 +44,7 @@ class NotEqualComparisonFromWhereBuilder extends DescriptionFromWhereBuilder
                 "(tracker_changeset_value_description.value IS NULL
                     OR tracker_changeset_value_description.value NOT LIKE ?)",
                 [],
-                ['%' . DBFactory::getMainTuleapDB()->escapeLikeValue($value) . '%']
+                ['%' . DBFactory::getMainTuleapDBConnection()->getDB()->escapeLikeValue($value) . '%']
             );
         }
     }

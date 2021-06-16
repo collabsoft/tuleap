@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,31 +19,33 @@
  */
 
 
-require_once 'common/mvc2/PluginController.class.php';
+class Cardwall_UserPreferences_UserPreferencesController extends MVC2_PluginController
+{
 
-class Cardwall_UserPreferences_UserPreferencesController extends MVC2_PluginController {
-
-    public function __construct($request) {
+    public function __construct($request)
+    {
         parent::__construct('agiledashboard', $request);
     }
 
-    public function toggleUserDisplay() {
+    public function toggleUserDisplay()
+    {
         $this->getCurrentUser()->togglePreference(
-            Cardwall_UserPreferences_UserPreferencesDisplayUser::ASSIGNED_TO_USERNAME_PREFERENCE_NAME.$this->request->get('tracker_id'),
+            Cardwall_UserPreferences_UserPreferencesDisplayUser::ASSIGNED_TO_USERNAME_PREFERENCE_NAME . $this->request->get('tracker_id'),
             Cardwall_UserPreferences_UserPreferencesDisplayUser::DISPLAY_AVATARS,
             Cardwall_UserPreferences_UserPreferencesDisplayUser::DISPLAY_USERNAMES
         );
 
-        $this->redirect(array(
+        $this->redirect([
             'group_id'    => $this->request->getValidated('group_id', 'int'),
             'planning_id' => $this->request->get('planning_id'),
             'action'      => 'show',
             'aid'         => $this->request->get('aid'),
             'pane'        => 'cardwall'
-        ));
+        ]);
     }
 
-    public function toggleAutostack() {
+    public function toggleAutostack()
+    {
         $this->getCurrentUser()->togglePreference(
             $this->request->get('name'),
             Cardwall_UserPreferences_UserPreferencesAutostack::STACK,
@@ -51,5 +53,3 @@ class Cardwall_UserPreferences_UserPreferencesController extends MVC2_PluginCont
         );
     }
 }
-
-?>

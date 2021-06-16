@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,7 @@
  *
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../www/include/pre.php';
 
 $worker = new \Tuleap\Queue\Worker();
 $worker->main();

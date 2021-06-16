@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -59,14 +59,15 @@ class GitPermissionsManager
         FineGrainedDao $fine_grained_dao,
         FineGrainedRetriever $fine_grained_retriever
     ) {
-        $this->permissions_manager          = PermissionsManager::instance();
-        $this->git_permission_dao           = $git_permission_dao;
-        $this->git_system_event_manager     = $git_system_event_manager;
-        $this->fine_grained_dao             = $fine_grained_dao;
-        $this->fine_grained_retriever       = $fine_grained_retriever;
+        $this->permissions_manager      = PermissionsManager::instance();
+        $this->git_permission_dao       = $git_permission_dao;
+        $this->git_system_event_manager = $git_system_event_manager;
+        $this->fine_grained_dao         = $fine_grained_dao;
+        $this->fine_grained_retriever   = $fine_grained_retriever;
     }
 
-    public function userIsGitAdmin(PFUser $user, Project $project) {
+    public function userIsGitAdmin(PFUser $user, Project $project)
+    {
         $database_result = $this->getCurrentGitAdminPermissionsForProject($project);
 
         if (db_numrows($database_result) < 1) {
@@ -85,32 +86,38 @@ class GitPermissionsManager
      * @param Project $project
      * Return a DB list of ugroup_ids authorized to access the given object
      */
-    private function getCurrentGitAdminPermissionsForProject(Project $project) {
+    private function getCurrentGitAdminPermissionsForProject(Project $project)
+    {
         return permission_db_authorized_ugroups(Git::PERM_ADMIN, $project->getID());
     }
 
-    private function getDefaultGitAdminPermissions() {
+    private function getDefaultGitAdminPermissions()
+    {
+        /** @psalm-suppress DeprecatedFunction */
         return permission_db_get_defaults(Git::PERM_ADMIN);
     }
 
-    public function getCurrentGitAdminUgroups($project_id) {
+    public function getCurrentGitAdminUgroups($project_id)
+    {
         return $this->permissions_manager->getAuthorizedUgroupIds($project_id, Git::PERM_ADMIN);
     }
 
-    public function updateProjectAccess(Project $project, $old_access, $new_access) {
-        if ($new_access == Project::ACCESS_PRIVATE) {
+    public function updateProjectAccess(Project $project, $old_access, $new_access)
+    {
+        if ($new_access === Project::ACCESS_PRIVATE || $new_access === Project::ACCESS_PRIVATE_WO_RESTRICTED) {
             $this->git_permission_dao->disableAnonymousRegisteredAuthenticated($project->getID());
             $this->fine_grained_dao->disableAnonymousRegisteredAuthenticated($project->getID());
-            $this->git_system_event_manager->queueProjectsConfigurationUpdate(array($project->getID()));
+            $this->git_system_event_manager->queueProjectsConfigurationUpdate([$project->getID()]);
         }
-        if ($new_access == Project::ACCESS_PUBLIC && $old_access == Project::ACCESS_PUBLIC_UNRESTRICTED) {
+        if ($new_access === Project::ACCESS_PUBLIC && $old_access === Project::ACCESS_PUBLIC_UNRESTRICTED) {
             $this->git_permission_dao->disableAuthenticated($project->getID());
             $this->fine_grained_dao->disableAuthenticated($project->getID());
-            $this->git_system_event_manager->queueProjectsConfigurationUpdate(array($project->getID()));
+            $this->git_system_event_manager->queueProjectsConfigurationUpdate([$project->getID()]);
         }
     }
 
-    public function updateSiteAccess($old_value, $new_value) {
+    public function updateSiteAccess($old_value, $new_value)
+    {
         if ($old_value == ForgeAccess::ANONYMOUS) {
             $project_ids = $this->queueProjectsConfigurationUpdate($this->git_permission_dao->getAllProjectsWithAnonymousRepositories());
             if (count($project_ids)) {
@@ -127,8 +134,9 @@ class GitPermissionsManager
         }
     }
 
-    private function queueProjectsConfigurationUpdate(array $dar) {
-        $projects_ids = array();
+    private function queueProjectsConfigurationUpdate(array $dar)
+    {
+        $projects_ids = [];
         if (count($dar) > 0) {
             foreach ($dar as $row) {
                 $projects_ids[] = $row['group_id'];
@@ -143,11 +151,11 @@ class GitPermissionsManager
      */
     public function getDefaultPermissions(Project $project)
     {
-        return array(
+        return [
             Git::PERM_READ  => $this->getDefaultPermission($project, Git::DEFAULT_PERM_READ),
             Git::PERM_WRITE => $this->getDefaultPermission($project, Git::DEFAULT_PERM_WRITE),
             Git::PERM_WPLUS => $this->getDefaultPermission($project, Git::DEFAULT_PERM_WPLUS),
-        );
+        ];
     }
 
     private function getDefaultPermission(Project $project, $permission_name)
@@ -164,11 +172,12 @@ class GitPermissionsManager
      */
     public function getRepositoryGlobalPermissions(GitRepository $repository)
     {
-        $permissions =  array(
+        $permissions =  [
             Git::PERM_READ => $this->getGlobalPermission($repository, Git::PERM_READ)
-        );
+        ];
 
-        if (! $repository->isMigratedToGerrit() &&
+        if (
+            ! $repository->isMigratedToGerrit() &&
             ! $this->fine_grained_retriever->doesRepositoryUseFineGrainedPermissions($repository)
         ) {
             $permissions[Git::PERM_WRITE] = $this->getGlobalPermission($repository, Git::PERM_WRITE);
@@ -183,9 +192,9 @@ class GitPermissionsManager
      */
     public function getProjectGlobalPermissions(Project $project)
     {
-        $permissions =  array(
+        $permissions =  [
             Git::DEFAULT_PERM_READ => $this->getDefaultPermission($project, Git::DEFAULT_PERM_READ)
-        );
+        ];
 
         if (! $this->fine_grained_retriever->doesProjectUseFineGrainedPermissions($project)) {
             $permissions[Git::DEFAULT_PERM_WRITE] = $this->getDefaultPermission($project, Git::DEFAULT_PERM_WRITE);
@@ -203,5 +212,4 @@ class GitPermissionsManager
             $permission_name
         );
     }
-
 }

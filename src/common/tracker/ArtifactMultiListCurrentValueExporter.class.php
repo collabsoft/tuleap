@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,30 +23,33 @@
  * I retrieve the current value(s) for a multi selectbox in
  * Tracker v3 migration purpose
  */
-class ArtifactMultiListCurrentValueExporter {
-    const LABEL_VALUES_INDEX         = 'valueLabelList';
-    const TV3_VALUE_INDEX            = 'valueInt';
-    const TV3_BIND_TO_USER_DATA_TYPE = '5';
+class ArtifactMultiListCurrentValueExporter
+{
+    public const LABEL_VALUES_INDEX         = 'valueLabelList';
+    public const TV3_VALUE_INDEX            = 'valueInt';
+    public const TV3_BIND_TO_USER_DATA_TYPE = '5';
     /** This happens when a MSB is changed into a SB and back to a MSB */
-    const TV3_ALTERNATE_BIND_TO_USER_DATA_TYPE = '2';
+    public const TV3_ALTERNATE_BIND_TO_USER_DATA_TYPE = '2';
 
     /** @var array */
-    private $current_field_values = array();
+    private $current_field_values = [];
 
     /** @var array */
-    private $user_names = array();
+    private $user_names = [];
 
-     /** @var array() */
-    private $labels = array();
+     /** @var array */
+    private $labels = [];
 
     /** @var ArtifactXMLExporterDao */
     private $dao;
 
-    public function __construct(ArtifactXMLExporterDao $dao) {
+    public function __construct(ArtifactXMLExporterDao $dao)
+    {
         $this->dao = $dao;
     }
 
-    public function getCurrentFieldValue(array $field_value_row, $tracker_id) {
+    public function getCurrentFieldValue(array $field_value_row, $tracker_id)
+    {
         $this->fetchAllLabels($field_value_row, $tracker_id);
 
         $field_name = $this->getFieldNameFromRow($field_value_row);
@@ -57,22 +60,24 @@ class ArtifactMultiListCurrentValueExporter {
 
         $this->addCurrentValueLabel($field_value_row);
 
-        return $this->current_field_values[$field_name];
+        return $this->current_field_values[$field_name] ?? null;
     }
 
-    private function initCurrentFieldValues(array $field_value_row) {
+    private function initCurrentFieldValues(array $field_value_row)
+    {
         $field_name = $this->getFieldNameFromRow($field_value_row);
 
-        $this->current_field_values[$field_name] = $field_value_row;
+        $this->current_field_values[$field_name]                           = $field_value_row;
         $this->current_field_values[$field_name][self::LABEL_VALUES_INDEX] = null;
     }
 
-    private function addCurrentValueLabel(array $field_value_row) {
+    private function addCurrentValueLabel(array $field_value_row)
+    {
         $field_name     = $this->getFieldNameFromRow($field_value_row);
         $existing_value = $this->getExistingValueForCurrentField($field_value_row);
 
         if (! $existing_value) {
-            $current_value = $this->getCurrentValueLabel($field_value_row);
+            $current_value                                                     = $this->getCurrentValueLabel($field_value_row);
             $this->current_field_values[$field_name][self::LABEL_VALUES_INDEX] = $current_value;
             return;
         }
@@ -80,9 +85,10 @@ class ArtifactMultiListCurrentValueExporter {
         $this->updateFieldsValues($field_value_row);
     }
 
-    private function updateFieldsValues(array $field_value_row) {
-        $field_name     = $this->getFieldNameFromRow($field_value_row);
-        $current_value  = $this->getCurrentValueLabel($field_value_row);
+    private function updateFieldsValues(array $field_value_row)
+    {
+        $field_name    = $this->getFieldNameFromRow($field_value_row);
+        $current_value = $this->getCurrentValueLabel($field_value_row);
 
         $existing_field_property_values = explode(',', $this->current_field_values[$field_name][self::LABEL_VALUES_INDEX]);
 
@@ -91,7 +97,8 @@ class ArtifactMultiListCurrentValueExporter {
         }
     }
 
-    private function getCurrentValueLabel(array $field_value_row) {
+    private function getCurrentValueLabel(array $field_value_row)
+    {
         if ($this->fieldIsBindedToUser($field_value_row)) {
             if (! isset($this->user_names[$field_value_row[self::TV3_VALUE_INDEX]])) {
                 return '';
@@ -104,17 +111,20 @@ class ArtifactMultiListCurrentValueExporter {
         return $this->labels[$field_name][$field_value_row[self::TV3_VALUE_INDEX]];
     }
 
-    private function getExistingValueForCurrentField(array $field_value_row) {
+    private function getExistingValueForCurrentField(array $field_value_row)
+    {
         $field_name = $this->getFieldNameFromRow($field_value_row);
 
         return $this->current_field_values[$field_name][self::LABEL_VALUES_INDEX];
     }
 
-    private function getFieldNameFromRow(array $field_value_row) {
+    private function getFieldNameFromRow(array $field_value_row)
+    {
         return $field_value_row['field_name'];
     }
 
-    private function fetchAllUserNames() {
+    private function fetchAllUserNames()
+    {
         if (empty($this->user_names)) {
             $this->user_names[100] = '';
             foreach ($this->dao->getAllUsers() as $user_info) {
@@ -125,7 +135,8 @@ class ArtifactMultiListCurrentValueExporter {
         return $this->user_names;
     }
 
-    private function fetchListValueLabels(array $field_value_row, $tracker_id) {
+    private function fetchListValueLabels(array $field_value_row, $tracker_id)
+    {
         $field_name = $this->getFieldNameFromRow($field_value_row);
 
         if (empty($this->labels[$field_name])) {
@@ -136,21 +147,23 @@ class ArtifactMultiListCurrentValueExporter {
         }
     }
 
-    private function fieldIsBindedToUser(array $field_value_row) {
+    private function fieldIsBindedToUser(array $field_value_row)
+    {
         return $field_value_row['data_type'] === self::TV3_BIND_TO_USER_DATA_TYPE || $this->isMSBThatWasChangedIntoASB($field_value_row);
     }
 
-    private function isMSBThatWasChangedIntoASB(array $field_value_row) {
+    private function isMSBThatWasChangedIntoASB(array $field_value_row)
+    {
         return $field_value_row['data_type'] === self::TV3_ALTERNATE_BIND_TO_USER_DATA_TYPE &&
                $field_value_row['value_function'] != '';
     }
 
-    private function fetchAllLabels(array $field_value_row, $tracker_id) {
+    private function fetchAllLabels(array $field_value_row, $tracker_id)
+    {
         if ($this->fieldIsBindedToUser($field_value_row)) {
             $this->fetchAllUserNames();
         } else {
             $this->fetchListValueLabels($field_value_row, $tracker_id);
         }
     }
-
 }

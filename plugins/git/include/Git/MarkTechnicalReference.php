@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use Tuleap\Event\Dispatchable;
 
 class MarkTechnicalReference implements Dispatchable
 {
-    const NAME = 'markTechnicalReference';
+    public const NAME = 'markTechnicalReference';
 
     /**
      * @var string

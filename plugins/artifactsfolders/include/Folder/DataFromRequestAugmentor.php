@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -32,22 +32,15 @@ class DataFromRequestAugmentor
     private $request;
 
     /**
-     * @var Tracker_ArtifactFactory
-     */
-    private $artifact_factory;
-
-    /**
      * @var HierarchyOfFolderBuilder
      */
     private $hierarchy_builder;
 
     public function __construct(
         Codendi_Request $request,
-        Tracker_ArtifactFactory $artifact_factory,
         HierarchyOfFolderBuilder $hierarchy_builder
     ) {
         $this->request           = $request;
-        $this->artifact_factory  = $artifact_factory;
         $this->hierarchy_builder = $hierarchy_builder;
     }
 
@@ -92,7 +85,7 @@ class DataFromRequestAugmentor
         if (strlen($fields_data['new_values'])) {
             $fields_data['new_values'] .= ',';
         }
-        $fields_data['new_values'] .= $new_artifact_folder_id;
+        $fields_data['new_values']                      .= $new_artifact_folder_id;
         $fields_data['natures'][$new_artifact_folder_id] = NatureInFolderPresenter::NATURE_IN_FOLDER;
     }
 }

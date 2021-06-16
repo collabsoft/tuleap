@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,12 +28,13 @@ use Tuleap\Dashboard\User\UserDashboardController;
  */
 class Tracker_Widget_MyRenderer extends Tracker_Widget_Renderer
 {
-    const ID = 'plugin_tracker_myrenderer';
+    public const ID = 'plugin_tracker_myrenderer';
 
-    function __construct()
+    public function __construct()
     {
         parent::__construct(
-            self::ID, UserManager::instance()->getCurrentUser()->getId(),
+            self::ID,
+            UserManager::instance()->getCurrentUser()->getId(),
             UserDashboardController::LEGACY_DASHBOARD_TYPE
         );
     }

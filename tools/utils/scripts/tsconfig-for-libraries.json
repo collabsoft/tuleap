@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "target": "ES2019",
+        "module": "ES2015",
+        "lib": ["ES2015"],
+        "strict": true,
+        "isolatedModules": true,
+        "noImplicitOverride": true,
+        "declaration": true,
+        "emitDeclarationOnly": true,
+        "sourceMap": true,
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "Node",
+        "skipLibCheck": true,
+        "types": []
+    }
+}

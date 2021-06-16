@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,12 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/dao/include/DataAccessObject.class.php';
-
 /**
  * Manage artifacts priority in database
  *
- * @see PriorityDao.phpt for the test cases
+ * @see PriorityDaoTest for the test cases
  */
 class Tracker_Artifact_PriorityDao extends DataAccessObject
 {
@@ -40,7 +38,7 @@ class Tracker_Artifact_PriorityDao extends DataAccessObject
      */
     public function moveArtifactAfter($artifact_id, $predecessor_id)
     {
-        return $this->moveListOfArtifactsAfter(array($artifact_id), $predecessor_id);
+        return $this->moveListOfArtifactsAfter([$artifact_id], $predecessor_id);
     }
 
     /**
@@ -133,7 +131,7 @@ class Tracker_Artifact_PriorityDao extends DataAccessObject
                 WHERE artifact_id = $artifact_id";
 
         $result = $this->retrieve($sql);
-        if (!$result) {
+        if (! $result) {
             return;
         }
 
@@ -144,7 +142,7 @@ class Tracker_Artifact_PriorityDao extends DataAccessObject
     public function getGlobalRanks(array $list_of_artifact_ids)
     {
         $list_of_artifact_ids = $this->da->escapeIntImplode($list_of_artifact_ids);
-        $sql = "SELECT * FROM tracker_artifact_priority_rank
+        $sql                  = "SELECT * FROM tracker_artifact_priority_rank
                 WHERE artifact_id IN ($list_of_artifact_ids)";
         return $this->retrieve($sql);
     }
@@ -174,37 +172,38 @@ class Tracker_Artifact_PriorityDao extends DataAccessObject
             throw new Tracker_Artifact_Exception_CannotRankWithMyself($reference_id);
         }
 
-        $this->da->startTransaction();
+        try {
+            $transaction_executor = new \Tuleap\DB\DBTransactionExecutorWithConnection(\Tuleap\DB\DBFactory::getMainTuleapDBConnection());
+            $transaction_executor->execute(function () use ($reference_id, $offset, $list_of_artifact_ids) {
+                $rank  = $this->da->escapeInt($this->getGlobalRank($reference_id) + $offset);
+                $count = $this->da->escapeInt(count($list_of_artifact_ids));
 
-        $rank  = $this->da->escapeInt($this->getGlobalRank($reference_id) + $offset);
-        $count = $this->da->escapeInt(count($list_of_artifact_ids));
+                $sql = "UPDATE tracker_artifact_priority_rank
+                        SET rank = rank + $count
+                        WHERE rank >= $rank";
+                if (! $this->update($sql)) {
+                    throw new RuntimeException('Cannot update rank');
+                }
 
-        $sql = "UPDATE tracker_artifact_priority_rank
-                SET rank = rank + $count
-                WHERE rank >= $rank";
-        if (! $this->update($sql)) {
-            $this->da->rollback();
+                $new_ranks = [];
+                foreach (array_values($list_of_artifact_ids) as $position => $id) {
+                    $id       = $this->da->escapeInt($id);
+                    $new_rank = $this->da->escapeInt(((int) $rank) + $position);
+
+                    $new_ranks[] = "WHEN artifact_id = $id THEN $new_rank";
+                }
+                $ids = $this->da->escapeIntImplode($list_of_artifact_ids);
+
+                $sql = "UPDATE tracker_artifact_priority_rank
+                        SET rank = CASE " . implode(' ', $new_ranks) . " ELSE rank END
+                        WHERE artifact_id IN ($ids)";
+                if (! $this->update($sql)) {
+                    throw new RuntimeException('Cannot update rank');
+                }
+            });
+            return true;
+        } catch (Throwable $exception) {
             return false;
         }
-
-        $new_ranks = array();
-        foreach (array_values($list_of_artifact_ids) as $position => $id) {
-            $id       = $this->da->escapeInt($id);
-            $new_rank = $this->da->escapeInt($rank + $position);
-
-            $new_ranks[] = "WHEN artifact_id = $id THEN $new_rank";
-        }
-        $ids = $this->da->escapeIntImplode($list_of_artifact_ids);
-
-        $sql = "UPDATE tracker_artifact_priority_rank
-                SET rank = CASE ". implode(' ', $new_ranks). " ELSE rank END
-                WHERE artifact_id IN ($ids)";
-        if (! $this->update($sql)) {
-            $this->da->rollback();
-            return false;
-        }
-
-        $this->da->commit();
-        return true;
     }
 }

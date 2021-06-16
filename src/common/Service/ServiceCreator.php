@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,19 +22,28 @@ namespace Tuleap\Service;
 
 use ProjectManager;
 use ReferenceManager;
+use ServiceDao;
 
 class ServiceCreator
 {
+    /** @var ServiceDao */
+    private $dao;
+
+    public function __construct(ServiceDao $dao)
+    {
+        $this->dao = $dao;
+    }
+
     public function createService($arr, $group_id, $template, $force_enable = false)
     {
         // Convert link to real values
-        // NOTE: if you change link variables here, change them also in src/www/project/admin/servicebar.php and src/www/include/Layout.class.php
+        // NOTE: if you change link variables here, change them also in ServicePOSTDataBuilder::substituteVariablesInLink and ProjectSidebarBuilder::getLink
         $link = $arr['link'];
         $pm   = ProjectManager::instance();
         if ($template['system']) {
-            $link = str_replace('$projectname', $pm->getProject($group_id)->getUnixName(), $link);
-            $link = str_replace('$sys_default_domain', $GLOBALS['sys_default_domain'], $link);
-            $link = str_replace('$group_id', $group_id, $link);
+            $link                 = str_replace('$projectname', $pm->getProject($group_id)->getUnixName(), $link);
+            $link                 = str_replace('$sys_default_domain', \ForgeConfig::get('sys_default_domain'), $link);
+            $link                 = str_replace('$group_id', $group_id, $link);
             $sys_default_protocol = 'http';
             if (\ForgeConfig::get('sys_https_host')) {
                 $sys_default_protocol = 'https';
@@ -42,15 +51,27 @@ class ServiceCreator
             $link = str_replace('$sys_default_protocol', $sys_default_protocol, $link);
         } else {
             //for non-system templates
+            require_once __DIR__ . '/../../www/include/service.php';
             $link = service_replace_template_name_in_link($link, $template, $pm->getProject($group_id));
         }
 
         $is_used   = isset($template['is_used'])   ? $template['is_used'] : $arr['is_used'];
         $is_active = isset($template['is_active']) ? $template['is_active'] : $arr['is_active'];
-        $server_id = isset($template['server_id']) ? $template['server_id'] : $arr['server_id'];
+        $is_used   = $force_enable ? 1 : $is_used;
 
-        $sql       = "INSERT INTO service (group_id, label, description, short_name, link, is_active, is_used, scope, rank, location, server_id, is_in_iframe) VALUES (".db_ei($group_id).", '".db_es($arr['label'])."', '".db_es($arr['description'])."', '".db_es($arr['short_name'])."', '".db_es($link)."', ".db_ei($is_active).", ". ($force_enable ? 1 : db_ei($is_used)) .", '".db_es($arr['scope'])."', ".db_ei($arr['rank']).",  '".db_es($arr['location'])."', ". db_ei($server_id) .", ". db_ei($arr['is_in_iframe']) .")";
-        $result    = db_query($sql);
+        $result = $this->dao->create(
+            $group_id,
+            $arr['label'],
+            $arr['icon'],
+            $arr['description'],
+            $arr['short_name'],
+            $link,
+            $is_active,
+            $is_used,
+            $arr['scope'],
+            $arr['rank'],
+            $arr['is_in_new_tab']
+        );
 
         if ($result) {
             // activate corresponding references

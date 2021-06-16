@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,17 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Exporter_ChangesetValuesXMLExporter {
+use Tuleap\Tracker\Artifact\Artifact;
 
-    const ARTIFACT_XML_KEY  = 'artifact_xml';
-    const CHANGESET_XML_KEY = 'changeset_xml';
-    const ARTIFACT_KEY      = 'artifact';
-    const EXPORT_MODE_KEY   = 'export_mode';
-    const EXPORT_SNAPSHOT   = true;
-    const EXPORT_CHANGES    = false;
+class Tracker_XML_Exporter_ChangesetValuesXMLExporter
+{
+
+    public const ARTIFACT_XML_KEY  = 'artifact_xml';
+    public const CHANGESET_XML_KEY = 'changeset_xml';
+    public const ARTIFACT_KEY      = 'artifact';
+    public const EXPORT_MODE_KEY   = 'export_mode';
+    public const EXPORT_SNAPSHOT   = true;
+    public const EXPORT_CHANGES    = false;
 
     /**
      * @var Tracker_XML_Exporter_ChangesetValueXMLExporterVisitor
@@ -48,14 +51,12 @@ class Tracker_XML_Exporter_ChangesetValuesXMLExporter {
     /**
      *
      * @param Tracker_FormElement_Field $field
-     * @param SimpleXMLElement $artifact_xml
-     * @param SimpleXMLElement $changeset_xml
      * @param Tracker_Artifact_ChangesetValue[] $changeset_values
      */
     public function exportSnapshot(
         SimpleXMLElement $artifact_xml,
         SimpleXMLElement $changeset_xml,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         array $changeset_values
     ) {
         $this->exportValues($artifact_xml, $changeset_xml, $artifact, $changeset_values, self::EXPORT_SNAPSHOT);
@@ -64,7 +65,7 @@ class Tracker_XML_Exporter_ChangesetValuesXMLExporter {
     public function exportChangedFields(
         SimpleXMLElement $artifact_xml,
         SimpleXMLElement $changeset_xml,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         array $changeset_values
     ) {
         $this->exportValues($artifact_xml, $changeset_xml, $artifact, $changeset_values, self::EXPORT_CHANGES);
@@ -73,16 +74,16 @@ class Tracker_XML_Exporter_ChangesetValuesXMLExporter {
     private function exportValues(
         SimpleXMLElement $artifact_xml,
         SimpleXMLElement $changeset_xml,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         array $changeset_values,
         $export_mode
     ) {
-        $params = array(
+        $params = [
             self::ARTIFACT_KEY      => $artifact,
             self::ARTIFACT_XML_KEY  => $artifact_xml,
             self::CHANGESET_XML_KEY => $changeset_xml,
             self::EXPORT_MODE_KEY   => $export_mode
-        );
+        ];
 
         foreach ($changeset_values as $changeset_value) {
             if ($changeset_value === null) {
@@ -114,7 +115,8 @@ class Tracker_XML_Exporter_ChangesetValuesXMLExporter {
             return true;
         }
 
-        if ($this->is_in_archive_context &&
+        if (
+            $this->is_in_archive_context &&
             $this->isComputedField($changeset_value) &&
             $changeset_value->getChangeset()->isLastChangesetOfArtifact()
         ) {
@@ -132,7 +134,8 @@ class Tracker_XML_Exporter_ChangesetValuesXMLExporter {
         return false;
     }
 
-    private function isFileField(Tracker_Artifact_ChangesetValue $changeset_value) {
+    private function isFileField(Tracker_Artifact_ChangesetValue $changeset_value)
+    {
         $field = $changeset_value->getField();
 
         return is_a($field, 'Tracker_FormElement_Field_File');

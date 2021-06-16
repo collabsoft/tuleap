@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2015. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class GitPresenters_AdminMassUpdatePresenter extends GitPresenters_AdminPresenter {
+class GitPresenters_AdminMassUpdatePresenter extends GitPresenters_AdminPresenter
+{
 
     /**
      * @var CSRFSynchronizerToken
@@ -43,14 +44,14 @@ class GitPresenters_AdminMassUpdatePresenter extends GitPresenters_AdminPresente
     public function __construct(
         CSRFSynchronizerToken $csrf,
         $project_id,
+        array $external_pane_presenters,
         array $repositories,
         GitPresenters_AdminMassUdpdateMirroringPresenter $mirroring_presenter
     ) {
         $are_mirrors_defined = true;
-        parent::__construct($project_id, $are_mirrors_defined);
+        parent::__construct($project_id, $are_mirrors_defined, $external_pane_presenters);
 
         $this->csrf_token          = $csrf;
-        $this->manage_mass_update  = true;
         $this->mirroring_presenter = $mirroring_presenter;
 
         $nb_mirrors     = count($mirroring_presenter->mirror_presenters);
@@ -66,42 +67,50 @@ class GitPresenters_AdminMassUpdatePresenter extends GitPresenters_AdminPresente
         }
     }
 
-    public function title() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_title');
+    public function title()
+    {
+        return dgettext('tuleap-git', 'Mass update of repositories');
     }
 
-    public function has_more_than_one_repository() {
+    public function has_more_than_one_repository()
+    {
         return count($this->repositories) > 1;
     }
 
-    public function info_mass_update() {
+    public function info_mass_update()
+    {
         $nb_selected_repositories = count($this->repositories);
         if ($nb_selected_repositories > 1) {
-            return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_selected_repositories', $nb_selected_repositories);
+            return sprintf(dgettext('tuleap-git', 'You are about to update <span>%1$s repositories</span>. For now, only mirroring settings can be updated.'), $nb_selected_repositories);
         }
 
         $repository = $this->repositories[0];
 
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_selected_repository', $repository->name);
+        return sprintf(dgettext('tuleap-git', 'You are about to update the repository <b>%1$s</b>. For now, only mirroring settings can be updated.'), $repository->name);
     }
 
-    public function submit_mass_change() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_submit_mass_change');
+    public function submit_mass_change()
+    {
+        return dgettext('tuleap-git', 'Update repositories');
     }
 
-    public function previous_state_used() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_previous_state_used');
+    public function previous_state_used()
+    {
+        return dgettext('tuleap-git', 'Was used');
     }
 
-    public function previous_state_unused() {
-        return $GLOBALS['Language']->getText('plugin_git', 'view_admin_mass_update_previous_state_unused');
+    public function previous_state_unused()
+    {
+        return dgettext('tuleap-git', 'Was unused');
     }
 
-    public function exceed_max_input_vars_message() {
-        return $GLOBALS['Language']->getText('plugin_git', 'exceed_max_input_vars_message', count($this->repositories));
+    public function exceed_max_input_vars_message()
+    {
+        return sprintf(dgettext('tuleap-git', 'We cannot handle the mass update of all selected repositoies therefore we kept only %1$s repositories in your selection.'), count($this->repositories));
     }
 
-    public function form_action() {
-        return '/plugins/git/?group_id='. $this->project_id .'&action=admin-mass-update';
+    public function form_action(): string
+    {
+        return '/plugins/git/?group_id=' . $this->project_id . '&action=admin-mass-update';
     }
 }

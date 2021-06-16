@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,6 @@
 
 namespace Tuleap\SVN\REST;
 
-use REST_TestDataBuilder;
 use RestBase;
 
 /**
@@ -28,9 +27,11 @@ use RestBase;
  */
 class TestBase extends RestBase
 {
-    const PROJECT_NAME  = 'svn-plugin-test';
-    const UGROUP_NAME_1 = 'svn_ugroup_1';
-    const UGROUP_NAME_2 = 'svn_ugroup_2';
+    public const PROJECT_NAME  = 'svn-plugin-test';
+    public const UGROUP_NAME_1 = 'svn_ugroup_1';
+    public const UGROUP_NAME_2 = 'svn_ugroup_2';
+
+    protected $svn_domain = 'https://localhost';
 
     /**
      * @var array
@@ -67,7 +68,7 @@ class TestBase extends RestBase
      */
     protected $svn_project_id;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -77,7 +78,7 @@ class TestBase extends RestBase
         $this->user_group_1_id = $user_groups[self::UGROUP_NAME_1];
         $this->user_group_2_id = $user_groups[self::UGROUP_NAME_2];
 
-        $this->user_102 = array(
+        $this->user_102 = [
             "id"           => 102,
             "uri"          => "users/102",
             "user_url"     => "/users/rest_api_tester_1",
@@ -85,11 +86,12 @@ class TestBase extends RestBase
             "display_name" => "Test User 1 (rest_api_tester_1)",
             "username"     => "rest_api_tester_1",
             "ldap_id"      => "tester1",
-            "avatar_url"   => "https://localhost/themes/common/images/avatar_default.png",
-            "is_anonymous" => false
-        );
+            "avatar_url"   => "https://localhost/users/rest_api_tester_1/avatar.png",
+            "is_anonymous" => false,
+            "has_avatar"   => true
+        ];
 
-        $this->user_103 = array(
+        $this->user_103 = [
             "id"           => 103,
             "uri"          => "users/103",
             "user_url"     => "/users/rest_api_tester_2",
@@ -98,25 +100,30 @@ class TestBase extends RestBase
             "username"     => "rest_api_tester_2",
             "ldap_id"      => "",
             "avatar_url"   => "https://localhost/themes/common/images/avatar_default.png",
-            "is_anonymous" => false
-        );
+            "is_anonymous" => false,
+            "has_avatar"   => false
+        ];
 
-        $this->user_group_101 = array(
+        $this->user_group_101 = [
             "id"         => $this->user_group_1_id,
             "uri"        => "user_groups/" . $this->user_group_1_id,
             "label"      => self::UGROUP_NAME_1,
-            "users_uri"  => "user_groups/".$this->user_group_1_id."/users",
+            "users_uri"  => "user_groups/" . $this->user_group_1_id . "/users",
             "short_name" => self::UGROUP_NAME_1,
             "key"        => self::UGROUP_NAME_1,
-        );
+        ];
 
-        $this->user_group_102 = array(
+        $this->user_group_102 = [
             "id"         => $this->user_group_2_id,
             "uri"        => "user_groups/" . $this->user_group_2_id,
             "label"      =>  self::UGROUP_NAME_2,
-            "users_uri"  => "user_groups/".$this->user_group_2_id."/users",
+            "users_uri"  => "user_groups/" . $this->user_group_2_id . "/users",
             "short_name" => self::UGROUP_NAME_2,
             "key"        =>  self::UGROUP_NAME_2
-        );
+        ];
+
+        if (isset($_ENV['TULEAP_HOST'])) {
+            $this->svn_domain = $_ENV['TULEAP_HOST'];
+        }
     }
 }

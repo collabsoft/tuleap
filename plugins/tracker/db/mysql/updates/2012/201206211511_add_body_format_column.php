@@ -16,36 +16,37 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- *
- */
-class b201206211511_add_body_format_column extends ForgeUpgrade_Bucket {
+class b201206211511_add_body_format_column extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Add new column to tracker_changeset_comment to manage follow ups types.
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
-        if (!$this->db->columnNameExists('tracker_changeset_comment', 'body_format')) {
+    public function up()
+    {
+        if (! $this->db->columnNameExists('tracker_changeset_comment', 'body_format')) {
             $sql = "ALTER TABLE tracker_changeset_comment
                     ADD COLUMN body_format varchar(16) NOT NULL default 'text' AFTER body";
             $res = $this->db->dbh->exec($sql);
             if ($res === false) {
-                throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while adding column body_format to tracker_changeset_comment table: '.implode(', ', $this->db->dbh->errorInfo()));
+                throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while adding column body_format to tracker_changeset_comment table: ' . implode(', ', $this->db->dbh->errorInfo()));
             }
         }
     }
 
-    public function postUp() {
-        if (!$this->db->columnNameExists('tracker_changeset_comment', 'body_format')) {
+    public function postUp()
+    {
+        if (! $this->db->columnNameExists('tracker_changeset_comment', 'body_format')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('An error occured while adding column original_field_id to tracker_field table');
         }
     }
 }
-?>

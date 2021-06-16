@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Permission_ChainOfResponsibility_DoNothing extends Tracker_Permission_Command {
+class Tracker_Permission_ChainOfResponsibility_DoNothing extends Tracker_Permission_Command
+{
 
-    public function __construct() {}
+    public function __construct()
+    {
+    }
 
-    public function apply(Tracker_Permission_PermissionRequest $request, Tracker_Permission_PermissionSetter $permissions_setter) {}
+    public function apply(Tracker_Permission_PermissionRequest $request, Tracker_Permission_PermissionSetter $permissions_setter)
+    {
+    }
 }

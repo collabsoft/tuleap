@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -103,7 +103,7 @@ class LatestHeartbeatsCollector
 
     private function getHTMLMessage(GitRepository $repository, $push_row)
     {
-        $nb_commits      = (int)$push_row['commits_number'];
+        $nb_commits      = (int) $push_row['commits_number'];
         $pushed_by       = $this->user_manager->getUserById($push_row['user_id']);
         $repository_link = $repository->getHTMLLink($this->git_url_manager);
 

@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -19,65 +18,72 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class Tracker_Artifact_Attachment_TemporaryFile {
+class Tracker_Artifact_Attachment_TemporaryFile
+{
 
     private $id;
     private $name;
     private $tempname;
     private $description;
-    private $last_modified;
     private $current_offset;
     private $creator_id;
     private $size;
     private $mimetype;
 
-    public function __construct($id, $name, $tempname, $description, $last_modified, $current_offset, $creator_id, $size, $mimetype) {
+    public function __construct($id, $name, $tempname, $description, $current_offset, $creator_id, $size, $mimetype)
+    {
         $this->id             = $id;
         $this->name           = $name;
         $this->tempname       = $tempname;
         $this->description    = $description;
-        $this->last_modified  = $last_modified;
         $this->current_offset = $current_offset;
         $this->creator_id     = $creator_id;
         $this->size           = $size;
         $this->mimetype       = $mimetype;
     }
 
-    public function getTemporaryName() {
+    public function getTemporaryName()
+    {
         return $this->tempname;
     }
 
-    public function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
-    public function getCurrentChunkOffset() {
+    public function getCurrentChunkOffset()
+    {
         return $this->current_offset;
     }
 
-    public function getCreatorId() {
+    public function getCreatorId()
+    {
         return $this->creator_id;
     }
 
-    public function getSize() {
+    public function getSize()
+    {
         return $this->size;
     }
 
-    public function getName() {
+    public function getName()
+    {
         return $this->name;
     }
 
-    public function getType() {
+    public function getType()
+    {
         return $this->mimetype;
     }
 
-    public function setSize($size) {
+    public function setSize($size)
+    {
         $this->size = $size;
     }
 
-    public function getDescription() {
+    public function getDescription()
+    {
         return $this->description;
     }
-
 }
-?>

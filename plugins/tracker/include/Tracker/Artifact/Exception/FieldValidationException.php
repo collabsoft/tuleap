@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,7 +26,7 @@ class FieldValidationException extends \Tracker_Exception
     {
         $message = '';
         if (empty($errors)) {
-            $message = $GLOBALS['Language']->getText('plugin_tracker_artifact', 'fields_not_valid');
+            $message = dgettext('tuleap-tracker', 'Fields are not valid');
         }
 
         foreach ($errors as $error) {

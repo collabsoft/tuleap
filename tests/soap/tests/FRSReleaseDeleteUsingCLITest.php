@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,6 @@
 
 namespace Tuleap\Tests\SOAP;
 
-require_once __DIR__.'/../lib/autoload.php';
-
 use SOAP_TestDataBuilder;
 use SOAPBase;
 
@@ -40,7 +38,7 @@ class FRSReleaseDeleteUsingCLITest extends SOAPBase
 
     private $session_hash;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -51,7 +49,7 @@ class FRSReleaseDeleteUsingCLITest extends SOAPBase
         $this->session_hash = $this->getSessionHash();
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         unset($_SERVER['SERVER_NAME']);
         unset($_SERVER['SERVER_PORT']);
@@ -71,6 +69,8 @@ class FRSReleaseDeleteUsingCLITest extends SOAPBase
             false
         );
 
+        $this->assertTrue($package_id > 0);
+
         return $package_id;
     }
 
@@ -89,6 +89,8 @@ class FRSReleaseDeleteUsingCLITest extends SOAPBase
             1,
             time()
         );
+
+        $this->assertTrue($release_id > 0);
 
         return $release_id;
     }
@@ -143,6 +145,8 @@ class FRSReleaseDeleteUsingCLITest extends SOAPBase
             md5($this->content),
             ''
         );
+
+        $this->assertTrue($file_id > 0);
 
         return $file_id;
     }

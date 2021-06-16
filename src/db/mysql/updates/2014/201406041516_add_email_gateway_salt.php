@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2014. All rights reserved
+ * Copyright (c) Enalean SAS 2014 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,22 +19,26 @@
 /**
  * Replace version date column values by timestamp
  */
-class b201406041516_add_email_gateway_salt extends ForgeUpgrade_Bucket {
-    public function description() {
+class b201406041516_add_email_gateway_salt extends ForgeUpgrade_Bucket
+{
+    public function description()
+    {
         return "Adding salt in database";
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
-
+    public function up()
+    {
         $this->createTable();
         $this->initSalt();
     }
 
-    private function createTable() {
+    private function createTable()
+    {
         $sql = "
             CREATE TABLE email_gateway_salt (
                 salt VARCHAR(255)
@@ -48,8 +52,9 @@ class b201406041516_add_email_gateway_salt extends ForgeUpgrade_Bucket {
         }
     }
 
-    private function initSalt() {
-        $salt = hash("sha256",  uniqid(rand(), true));
+    private function initSalt()
+    {
+        $salt = bin2hex(random_bytes(32));
 
         $sql = "
             INSERT INTO email_gateway_salt (salt)
@@ -62,5 +67,4 @@ class b201406041516_add_email_gateway_salt extends ForgeUpgrade_Bucket {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while saving email_gateway_salt.');
         }
     }
-
 }

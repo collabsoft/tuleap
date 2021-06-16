@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,18 +18,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/backend/BackendService.class.php';
-
 /**
  * I process the clean up of the gitolite admin working copy
  */
-class Git_GitoliteHousekeeping_GitoliteHousekeepingRunner {
+class Git_GitoliteHousekeeping_GitoliteHousekeepingRunner
+{
 
     /** @var Git_GitoliteHousekeeping_GitoliteHousekeepingDao */
     private $housekeeping_dao;
-
-    /** @var SystemEventDao */
-    private $system_event_dao;
 
     /** @var Git_GitoliteHousekeeping_GitoliteHousekeepingResponse */
     private $response;
@@ -55,32 +51,35 @@ class Git_GitoliteHousekeeping_GitoliteHousekeepingRunner {
         $this->remote_admin_repository = $remote_admin_repository;
     }
 
-    public function run() {
+    public function run()
+    {
         $this->getChain()->execute();
     }
 
     /** @return Git_GitoliteHousekeeping_ChainOfResponsibility_Command */
-    public function getChain() {
-        $commands = array(
+    public function getChain()
+    {
+        $commands = [
             new Git_GitoliteHousekeeping_ChainOfResponsibility_ServiceStopper($this->response, $this->backend_service),
             new Git_GitoliteHousekeeping_ChainOfResponsibility_CheckRunningEvents($this->response, $this->process_manager, $this->process),
             new Git_GitoliteHousekeeping_ChainOfResponsibility_CleanUpGitoliteAdminRepo($this->response, $this->gitolite_var_path, $this->remote_admin_repository),
             new Git_GitoliteHousekeeping_ChainOfResponsibility_EnableGitGc($this->response, $this->housekeeping_dao),
             new Git_GitoliteHousekeeping_ChainOfResponsibility_ServiceRestarter($this->response, $this->backend_service)
-        );
+        ];
         $this->setUpChainFromArrayOfCommands($commands);
         $head_of_chain = $commands[0];
 
         return $head_of_chain;
     }
 
-    private function setUpChainFromArrayOfCommands(array $commands) {
-        reset($commands);
-        $current = current($commands);
-        next($commands);
-        while (list(,$next) = each($commands)) {
-            $current->setNextCommand($next);
-            $current = $next;
+    private function setUpChainFromArrayOfCommands(array $commands)
+    {
+        $current_command = null;
+        foreach ($commands as $next_command) {
+            if ($current_command !== null) {
+                $current_command->setNextCommand($next_command);
+            }
+            $current_command = $next_command;
         }
     }
 }

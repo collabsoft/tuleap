@@ -1,27 +1,32 @@
 <?php
+/**
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
+ * Copyright (c) 2010 Christopher Han
+ *
+ * This file is a part of Tuleap.
+ *
+ * Tuleap is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Tuleap is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 namespace Tuleap\Git\GitPHP;
-
-/**
- * GitPHP Filesystem Object
- *
- * Base class for all git objects that represent
- * a filesystem item
- *
- * @author Christopher Han <xiphux@gmail.com>
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Git
- */
 
 /**
  * Git Filesystem object class
  *
  * @abstract
- * @package GitPHP
- * @subpackage Git
  */
-abstract class FilesystemObject extends GitObject
+abstract class FilesystemObject extends GitObject implements GitObjectType
 {
 
     /**
@@ -58,7 +63,7 @@ abstract class FilesystemObject extends GitObject
      *
      * @access protected
      */
-    protected $pathTree;
+    protected $pathTree = [];
 
     /**
      * pathTreeRead
@@ -78,7 +83,7 @@ abstract class FilesystemObject extends GitObject
      * @param mixed $project the project
      * @param string $hash object hash
      * @return mixed git filesystem object
-     * @throws Exception exception on invalid hash
+     * @throws \Exception exception on invalid hash
      */
     public function __construct($project, $hash)
     {
@@ -95,7 +100,7 @@ abstract class FilesystemObject extends GitObject
      */
     public function GetName() // @codingStandardsIgnoreLine
     {
-        if (!empty($this->path)) {
+        if (! empty($this->path)) {
             return basename($this->path);
         }
 
@@ -112,11 +117,21 @@ abstract class FilesystemObject extends GitObject
      */
     public function GetPath() // @codingStandardsIgnoreLine
     {
-        if (!empty($this->path)) {
+        if (! empty($this->path)) {
             return $this->path;
         }
 
         return '';
+    }
+
+
+    public function GetFullPath() // @codingStandardsIgnoreLine
+    {
+        if (! (isset($_GET['f']))) {
+            return $this->path;
+        }
+
+        return $_GET['f'] . "/" . $this->path;
     }
 
     /**
@@ -229,7 +244,7 @@ abstract class FilesystemObject extends GitObject
      */
     public function GetPathTree() // @codingStandardsIgnoreLine
     {
-        if (!$this->pathTreeRead) {
+        if (! $this->pathTreeRead) {
             $this->ReadPathTree();
         }
 
@@ -255,9 +270,9 @@ abstract class FilesystemObject extends GitObject
         $path = $this->path;
 
         while (($pos = strrpos($path, '/')) !== false) {
-            $path = substr($path, 0, $pos);
+            $path     = substr($path, 0, $pos);
             $pathhash = $this->commit->PathToHash($path);
-            if (!empty($pathhash)) {
+            if (! empty($pathhash)) {
                 $parent = $this->GetProject()->GetTree($pathhash);
                 $parent->SetPath($path);
                 $this->pathTree[] = $parent;
@@ -278,7 +293,7 @@ abstract class FilesystemObject extends GitObject
      * @static
      * @param mixed $a first object
      * @param mixed $b second object
-     * @return integer comparison result
+     * @return int comparison result
      */
     public static function ComparePath($a, $b) // @codingStandardsIgnoreLine
     {

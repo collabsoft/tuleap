@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,18 +18,29 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_ChangesetFactoryBuilder {
+declare(strict_types=1);
 
-   /**
-    * @return Tracker_Artifact_ChangesetFactory
-    */
-   public static function build() {
-       return new Tracker_Artifact_ChangesetFactory(
-           new Tracker_Artifact_ChangesetDao(),
-           new Tracker_Artifact_Changeset_ValueDao(),
-           new Tracker_Artifact_Changeset_CommentDao(),
-           new Tracker_Artifact_ChangesetJsonFormatter(TemplateRendererFactory::build()->getRenderer(dirname(TRACKER_BASE_DIR) . '/templates')),
-           Tracker_FormElementFactory::instance()
-       );
-   }
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\CachingTrackerPrivateCommentInformationRetriever;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentInformationRetriever;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentUGroupEnabledDao;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentUGroupPermissionDao;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentUGroupPermissionRetriever;
+
+class Tracker_Artifact_ChangesetFactoryBuilder
+{
+    public static function build(): Tracker_Artifact_ChangesetFactory
+    {
+        return new Tracker_Artifact_ChangesetFactory(
+            new Tracker_Artifact_ChangesetDao(),
+            new Tracker_Artifact_Changeset_ValueDao(),
+            new Tracker_Artifact_Changeset_CommentDao(),
+            new Tracker_Artifact_ChangesetJsonFormatter(TemplateRendererFactory::build()->getRenderer(dirname(TRACKER_BASE_DIR) . '/templates')),
+            Tracker_FormElementFactory::instance(),
+            new TrackerPrivateCommentUGroupPermissionRetriever(
+                new TrackerPrivateCommentUGroupPermissionDao(),
+                new CachingTrackerPrivateCommentInformationRetriever(new TrackerPrivateCommentInformationRetriever(new TrackerPrivateCommentUGroupEnabledDao())),
+                new UGroupManager()
+            )
+        );
+    }
 }

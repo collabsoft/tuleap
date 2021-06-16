@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,22 +22,22 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_ReadOnlyRenderer extends Tracker_Artifact_EditRenderer {
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Tracker_Artifact_ReadOnlyRenderer extends Tracker_Artifact_EditRenderer
+{
 
     /**
-     * Returns HTML code to display the artifact fields
-     *
-     * @param array $submitted_values array of submitted values
-     *
      * @return string The HTML code for artifact fields
      */
-    public function fetchFields(Tracker_Artifact $artifact, $submitted_values = array()) {
+    public function fetchFields(Artifact $artifact, array $submitted_values)
+    {
         $submitted_artifact = '';
 
-        if ($submitted_values) {
+        if (! empty($submitted_values)) {
             $submitted_artifact = "submitted_artifact";
         }
 
-        return "<div class='".$submitted_artifact."'>".$artifact->getTracker()->fetchFormElementsReadOnly($artifact, array($submitted_values))."</div>";
+        return "<div class='" . $submitted_artifact . "'>" . $artifact->getTracker()->fetchFormElementsReadOnly($artifact, $submitted_values) . "</div>";
     }
 }

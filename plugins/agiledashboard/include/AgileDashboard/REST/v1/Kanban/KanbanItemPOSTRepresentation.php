@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,13 @@
 
 namespace Tuleap\AgileDashboard\REST\v1\Kanban;
 
-class KanbanItemPOSTRepresentation {
+/**
+ * @psalm-immutable
+ */
+class KanbanItemPOSTRepresentation
+{
 
-    const ROUTE = 'kanban_items';
+    public const ROUTE = 'kanban_items';
 
     /**
      * @var int {@type int}

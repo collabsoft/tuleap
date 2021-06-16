@@ -1,6 +1,6 @@
 <?php
-/*
- * Copyright Enalean (c) 2014 - 2018. All rights reserved.
+/**
+ * Copyright Enalean (c) 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,29 +22,33 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\Artifact\RecentlyVisited\VisitRecorder;
+use Tuleap\Tracker\Artifact\Renderer\ListPickerIncluder;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureIsChildLinkRetriever;
-use Tuleap\Tracker\RecentlyVisited\VisitRecorder;
+use Tuleap\Tracker\Workflow\PostAction\HiddenFieldsets\HiddenFieldsetsDetector;
 
-class Tracker_Artifact_CopyRenderer extends Tracker_Artifact_ReadOnlyRenderer {
+class Tracker_Artifact_CopyRenderer extends Tracker_Artifact_ReadOnlyRenderer
+{
 
     public function __construct(
         EventManager $event_manager,
-        Tracker_Artifact $artifact,
-        Tracker_FormElementFactory $formelement_factory,
+        Artifact $artifact,
         Tracker_IDisplayTrackerLayout $layout,
         NatureIsChildLinkRetriever $retriever,
-        VisitRecorder $visit_recorder
+        VisitRecorder $visit_recorder,
+        HiddenFieldsetsDetector $hidden_fieldsets_detector
     ) {
-        parent::__construct($event_manager, $artifact, $formelement_factory, $layout, $retriever, $visit_recorder);
-        $this->redirect->query_parameters = array(
-            'tracker' => $artifact->getTrackerId(),
+        parent::__construct($event_manager, $artifact, $layout, $retriever, $visit_recorder, $hidden_fieldsets_detector);
+        $this->redirect->query_parameters = [
+            'tracker' => (string) $artifact->getTrackerId(),
             'func'    => 'submit-copy-artifact',
-        );
+        ];
     }
 
     public function fetchFormContent(Codendi_Request $request, PFUser $current_user)
     {
-        $html = '';
+        $html  = '';
         $html .= $this->fetchLastChangesetId();
         $html .= $this->fetchFromArtifactId();
         $html .= parent::fetchFormContent($request, $current_user);
@@ -53,44 +57,55 @@ class Tracker_Artifact_CopyRenderer extends Tracker_Artifact_ReadOnlyRenderer {
         return $this->fetchArtifactForm($html);
     }
 
-    protected function displayHeader() {
-        $title       = $GLOBALS['Language']->getText('plugin_tracker', 'copy_of', $this->artifact->getXRef());
-        $breadcrumbs = array(
-            array(
+    protected function displayHeader()
+    {
+        $title       = sprintf(dgettext('tuleap-tracker', 'Copy of %1$s'), $this->artifact->getXRef());
+        $breadcrumbs = [
+            [
                 'title' => $title,
-                'url'   => TRACKER_BASE_URL.'/?aid='. $this->artifact->getId().'&func=copy-artifact'
-            )
+                'url'   => TRACKER_BASE_URL . '/?aid=' . $this->artifact->getId() . '&func=copy-artifact'
+            ]
+        ];
+
+        ListPickerIncluder::includeListPickerAssets(HTTPRequest::instance(), $this->tracker->getId());
+        $this->tracker->displayHeader(
+            $this->layout,
+            $title,
+            $breadcrumbs,
+            [],
+            ['body_class' => ['widgetable', 'tracker-artifact-view-body']]
         );
-        $this->tracker->displayHeader($this->layout, $title, $breadcrumbs, null, array('body_class' => array('widgetable')));
     }
 
-    public function display(Codendi_Request $request, PFUser $current_user) {
+    public function display(Codendi_Request $request, PFUser $current_user)
+    {
         parent::display($request, $current_user);
     }
 
     /**
      * @see Tracker_Artifact_ArtifactRenderer::fetchSubmitButton()
      */
-    public function fetchSubmitButton(PFUser $current_user) {
+    public function fetchSubmitButton(PFUser $current_user)
+    {
         $purifier            = Codendi_HTMLPurifier::instance();
-        $copy_label          = $GLOBALS['Language']->getText('plugin_tracker_artifact', 'copy_submit_button');
-        $copy_children_label = $GLOBALS['Language']->getText('plugin_tracker_artifact', 'copy_submit_button_children');
-        $copy_children_title = $GLOBALS['Language']->getText('plugin_tracker_artifact', 'copy_submit_button_children_title');
+        $copy_label          = dgettext('tuleap-tracker', 'Copy');
+        $copy_children_label = dgettext('tuleap-tracker', 'Copy with children');
+        $copy_children_title = dgettext('tuleap-tracker', 'The copy of the children will be done "as is", you won\'t be able to edit them during the copy process.');
 
-        $button = '<button class="btn btn-large btn-primary" type="submit">'. $copy_label .'</button>';
+        $button = '<button class="btn btn-large btn-primary" type="submit" data-test="artifact-copy">' . $copy_label . '</button>';
 
         if (count($this->artifact->getChildrenForUser($current_user)) > 0) {
             $button = '<div class="btn-group dropup">
-                <button class="btn btn-large btn-primary" type="submit">'. $copy_label .'</button>
+                <button class="btn btn-large btn-primary" type="submit">' . $copy_label . '</button>
                 <button class="btn btn-large btn-primary dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
                 <ul class="dropdown-menu pull-right">
                     <li>
                         <input type="hidden" name="copy_children" id="copy_children" value="0" />
                         <a
                             href="#"
-                            title="'. $purifier->purify($copy_children_title) .'"
+                            title="' . $purifier->purify($copy_children_title) . '"
                             id="copy_children_button">
-                            '. $copy_children_label .'
+                            ' . $copy_children_label . '
                         </a>
                     </li>
                 </ul>
@@ -98,19 +113,21 @@ class Tracker_Artifact_CopyRenderer extends Tracker_Artifact_ReadOnlyRenderer {
         }
         return '<div class="artifact-copy-button">
                     <input type="hidden" id="submit-type" />
-                    '. $button
-                    . $this->getConcurrentEditMessage() .'
+                    ' . $button
+                    . $this->getConcurrentEditMessage() . '
                 </div>';
     }
 
-    protected function fetchView(Codendi_Request $request, PFUser $user) {
+    protected function fetchView(Codendi_Request $request, PFUser $user)
+    {
         $view_collection = new Tracker_Artifact_View_ViewCollection();
-        $view_collection->add(new Tracker_Artifact_View_Copy($this->artifact, $request, $user, $this, $this->event_manager));
+        $view_collection->add(new Tracker_Artifact_View_Copy($this->artifact, $request, $user, $this));
 
         return $view_collection->fetchRequestedView($request);
     }
 
-    protected function fetchTitle() {
+    protected function fetchTitle()
+    {
         $hp    = Codendi_HTMLPurifier::instance();
         $html  = '';
         $html .= '<div class="tracker_artifact_title">';
@@ -120,11 +137,13 @@ class Tracker_Artifact_CopyRenderer extends Tracker_Artifact_ReadOnlyRenderer {
         return $html;
     }
 
-    private function fetchLastChangesetId() {
-        return '<input type="hidden" name="from_changeset_id" value="'.$this->artifact->getLastChangeset()->getId().'"/>';
+    private function fetchLastChangesetId()
+    {
+        return '<input type="hidden" name="from_changeset_id" value="' . $this->artifact->getLastChangeset()->getId() . '"/>';
     }
 
-    private function fetchFromArtifactId() {
-        return '<input type="hidden" name="from_artifact_id" value="'.$this->artifact->getId().'"/>';
+    private function fetchFromArtifactId()
+    {
+        return '<input type="hidden" name="from_artifact_id" value="' . $this->artifact->getId() . '"/>';
     }
 }

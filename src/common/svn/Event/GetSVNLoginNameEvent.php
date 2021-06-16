@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use Tuleap\Event\Dispatchable;
 
 class GetSVNLoginNameEvent implements Dispatchable
 {
-    const NAME = 'get_svn_login_name';
+    public const NAME = 'get_svn_login_name';
 
     /**
      * @var \PFUser

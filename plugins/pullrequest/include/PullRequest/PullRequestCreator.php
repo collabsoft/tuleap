@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,6 +26,7 @@ use Tuleap\PullRequest\Exception\PullRequestCannotBeCreatedException;
 use Tuleap\PullRequest\Exception\PullRequestRepositoryMigratedOnGerritException;
 use Tuleap\PullRequest\Exception\PullRequestAlreadyExistsException;
 use Tuleap\PullRequest\Exception\PullRequestAnonymousUserException;
+use Tuleap\PullRequest\Exception\PullRequestTargetException;
 use Tuleap\PullRequest\GitReference\GitPullRequestReferenceCreator;
 
 class PullRequestCreator
@@ -84,7 +85,7 @@ class PullRequestCreator
         }
 
         if ($repository_src->getId() != $repository_dest->getId() && $repository_src->getParentId() != $repository_dest->getId()) {
-            throw new \Exception('Pull requests can only target the same repository or its parent.');
+            throw new PullRequestTargetException();
         }
 
         if ($repository_dest->isMigratedToGerrit()) {
@@ -135,7 +136,7 @@ class PullRequestCreator
             $pull_request->getSha1Src(),
             $pull_request->getSha1Dest()
         );
-        $pull_request->setMergeStatus($merge_status);
+        $pull_request = $pull_request->updateMergeStatus($merge_status);
         $this->pull_request_factory->updateMergeStatus($pull_request, $merge_status);
 
         $event = new GetCreatePullRequest($pull_request, $creator, $repository_dest->getProject());

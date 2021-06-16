@@ -1,6 +1,6 @@
 <?php
 /**
-* Copyright Enalean (c) 2013. All rights reserved.
+* Copyright Enalean (c) 2013 - Present. All rights reserved.
 * Tuleap and Enalean names and logos are registrated trademarks owned by
 * Enalean SAS. All other trademarks or names are properties of their respective
 * owners.
@@ -21,19 +21,13 @@
 * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
 */
 
-require_once('common/dao/include/DataAccessObject.class.php');
-
-class Cardwall_Semantic_Dao_CardFieldsDao extends DataAccessObject implements Tracker_Semantic_IRetrieveSemanticDARByTracker {
-
-    public function __construct() {
-        parent::__construct();
-        $this->table_name = 'plugin_cardwall_semantic_cardfields';
-    }
-
+class Cardwall_Semantic_Dao_CardFieldsDao extends DataAccessObject implements Tracker_Semantic_IRetrieveSemanticDARByTracker
+{
     /**
      * @return mixed either false if error or object DataAccessResult
      */
-    public function searchByTrackerId($tracker_id) {
+    public function searchByTrackerId($tracker_id)
+    {
         $tracker_id = $this->da->escapeInt($tracker_id);
 
         $sql = "SELECT *
@@ -45,13 +39,14 @@ class Cardwall_Semantic_Dao_CardFieldsDao extends DataAccessObject implements Tr
     }
 
     /**
-     * @return boolean true if success
+     * @return bool true if success
      */
-    public function add($tracker_id, $field_id, $rank) {
+    public function add($tracker_id, $field_id, $rank)
+    {
         $tracker_id = $this->da->escapeInt($tracker_id);
         $field_id   = $this->da->escapeInt($field_id);
-        $rank       = $this->da->escapeInt($this->prepareRanking(0, $tracker_id, $rank, 'id', 'tracker_id'));
-        $sql = "REPLACE INTO plugin_cardwall_semantic_cardfields (tracker_id, field_id, rank)
+        $rank       = $this->da->escapeInt($this->prepareRanking('plugin_cardwall_semantic_cardfields', 0, (int) $tracker_id, $rank, 'id', 'tracker_id'));
+        $sql        = "REPLACE INTO plugin_cardwall_semantic_cardfields (tracker_id, field_id, rank)
                 VALUES ($tracker_id, $field_id, $rank)";
 
         return $this->update($sql);
@@ -59,9 +54,10 @@ class Cardwall_Semantic_Dao_CardFieldsDao extends DataAccessObject implements Tr
 
 
     /**
-     * @return boolean true if success
+     * @return bool true if success
      */
-    public function remove($tracker_id, $field_id) {
+    public function remove($tracker_id, $field_id)
+    {
         $tracker_id = $this->da->escapeInt($tracker_id);
         $field_id   = $this->da->escapeInt($field_id);
 
@@ -72,4 +68,3 @@ class Cardwall_Semantic_Dao_CardFieldsDao extends DataAccessObject implements Tr
         return $this->update($sql);
     }
 }
-?>

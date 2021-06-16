@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -36,7 +36,7 @@ class WidgetKanbanConfigDAO extends DataAccessObject
             WHERE widget_id = ?
         ";
 
-        return $this->getDB()->single($sql, [ $kanban_widget_id ]);
+        return $this->getDB()->single($sql, [$kanban_widget_id]);
     }
 
     public function createNewConfigForWidgetId($widget_id, $tracker_report_id)

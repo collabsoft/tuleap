@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,15 +23,13 @@ namespace Tuleap\TrackerEncryption;
 use Codendi_Diff;
 use Codendi_HTMLPurifier;
 use Codendi_HtmlUnifiedDiffFormatter;
-use Codendi_UnifiedDiffFormatter;
-use Encoding_SupportedXmlCharEncoding;
 use PFUser;
 use Tracker_Artifact_Changeset;
 use Tracker_Artifact_ChangesetValue;
 use Tracker_Artifact_ChangesetValueVisitor;
 use Tracker_FormElementFactory;
-use Tracker_XML_Exporter_ChangesetValue_ChangesetValueUnknownXMLExporter;
 use Tuleap;
+use Tuleap\Tracker\REST\Artifact\EncryptedRepresentation;
 
 class ChangesetValue extends Tracker_Artifact_ChangesetValue
 {
@@ -56,9 +54,9 @@ class ChangesetValue extends Tracker_Artifact_ChangesetValue
     }
 
     /**
-     * @return string
+     * @return string|false
      */
-    public function diff($changeset_value, $format = 'html', PFUser $user = null, $ignore_perms = false)
+    public function diff($changeset_value, $format = 'html', ?PFUser $user = null, $ignore_perms = false)
     {
         $previous = explode(PHP_EOL, $changeset_value->getValue());
         $next     = explode(PHP_EOL, $this->getValue());
@@ -82,7 +80,7 @@ class ChangesetValue extends Tracker_Artifact_ChangesetValue
 
     private function getFormatedDiff($previous, $next)
     {
-        $callback = array(Codendi_HTMLPurifier::instance(), 'purify');
+        $callback = [Codendi_HTMLPurifier::instance(), 'purify'];
         $formater = new Codendi_HtmlUnifiedDiffFormatter();
         $diff     = new Codendi_Diff(
             array_map($callback, $previous, array_fill(0, count($previous), CODENDI_PURIFIER_CONVERT_HTML)),
@@ -103,24 +101,6 @@ class ChangesetValue extends Tracker_Artifact_ChangesetValue
     }
 
     /**
-     * @param PFUser $user
-     *
-     * @return string
-     */
-    public function getSoapValue(PFUser $user)
-    {
-        return $this->encapsulateRawSoapValue($this->getValue());
-    }
-
-    protected function encapsulateRawSoapValue($value)
-    {
-        $value = Encoding_SupportedXmlCharEncoding::getXMLCompatibleString($value);
-
-        return array('value' => $value);
-    }
-
-    /**
-     * @param PFUser $user
      *
      * @return Tuleap\Tracker\REST\Artifact\ArtifactFieldValueRepresentation
      */
@@ -130,7 +110,6 @@ class ChangesetValue extends Tracker_Artifact_ChangesetValue
     }
 
     /**
-     * @param PFUser $user
      *
      * @return Tuleap\Tracker\REST\Artifact\ArtifactFieldValueRepresentation
      */
@@ -141,9 +120,7 @@ class ChangesetValue extends Tracker_Artifact_ChangesetValue
 
     protected function getFullRESTRepresentation($value)
     {
-        $classname_with_namespace = 'Tuleap\Tracker\REST\Artifact\EncryptedRepresentation';
-
-        $artifact_field_value_full_representation = new $classname_with_namespace;
+        $artifact_field_value_full_representation = new EncryptedRepresentation();
         $artifact_field_value_full_representation->build(
             $this->field->getId(),
             Tracker_FormElementFactory::instance()->getType($this->field),

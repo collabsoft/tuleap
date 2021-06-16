@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Git_RemoteServer_Dao extends \Tuleap\DB\DataAccessObject {
+class Git_RemoteServer_Dao extends \Tuleap\DB\DataAccessObject
+{
 
     /**
      * @var StandardPasswordHandler
@@ -138,8 +139,7 @@ class Git_RemoteServer_Dao extends \Tuleap\DB\DataAccessObject {
         $replication_key,
         $use_ssl,
         $gerrit_version,
-        $http_password,
-        $auth_type
+        $http_password
     ) {
         if ($id == 0) {
             $this->getDB()->insert(
@@ -154,8 +154,7 @@ class Git_RemoteServer_Dao extends \Tuleap\DB\DataAccessObject {
                     'use_ssl'              => $use_ssl,
                     'gerrit_version'       => $gerrit_version,
                     'http_password'        => $http_password,
-                    'replication_password' => '',
-                    'auth_type'            => $auth_type
+                    'replication_password' => ''
                 ]
             );
         } else {
@@ -170,8 +169,7 @@ class Git_RemoteServer_Dao extends \Tuleap\DB\DataAccessObject {
                     'ssh_key'        => $replication_key,
                     'use_ssl'        => $use_ssl,
                     'gerrit_version' => $gerrit_version,
-                    'http_password'  => $http_password,
-                    'auth_type'      => $auth_type
+                    'http_password'  => $http_password
                 ],
                 ['id' => $id]
             );

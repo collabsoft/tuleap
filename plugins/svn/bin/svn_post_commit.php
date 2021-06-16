@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2016 - 2017. All rights reserved.
+ * Copyright Enalean (c) 2016 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,34 +22,36 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/svnPlugin.php';
+
 use Tuleap\Mail\MailFilter;
 use Tuleap\Mail\MailLogger;
-use Tuleap\Svn\AccessControl\AccessFileHistoryDao;
-use Tuleap\Svn\AccessControl\AccessFileHistoryFactory;
-use Tuleap\Svn\Admin\Destructor;
-use Tuleap\Svn\Commit\Svnlook;
-use Tuleap\Svn\Dao;
-use Tuleap\Svn\Logs\LastAccessDao;
-use Tuleap\Svn\Logs\LastAccessUpdater;
-use Tuleap\Svn\Notifications\EmailsToBeNotifiedRetriever;
-use Tuleap\Svn\Notifications\NotificationsEmailsBuilder;
-use Tuleap\Svn\Notifications\UgroupsToNotifyDao;
-use Tuleap\Svn\Notifications\UsersToNotifyDao;
-use Tuleap\Svn\Repository\RepositoryManager;
-use Tuleap\Svn\Repository\RepositoryRegexpBuilder;
-use Tuleap\Svn\Admin\MailHeaderManager;
-use Tuleap\Svn\Admin\MailHeaderDao;
-use Tuleap\Svn\Admin\MailNotificationManager;
-use Tuleap\Svn\Admin\MailNotificationDao;
-use Tuleap\Svn\Hooks\PostCommit;
-use Tuleap\Svn\Commit\CommitInfo;
-use Tuleap\Svn\Commit\CommitInfoEnhancer;
-use Tuleap\Svn\SvnAdmin;
-use Tuleap\Svn\SvnLogger;
+use Tuleap\Project\ProjectAccessChecker;
+use Tuleap\Project\RestrictedUserCanAccessProjectVerifier;
+use Tuleap\SVN\AccessControl\AccessFileHistoryDao;
+use Tuleap\SVN\AccessControl\AccessFileHistoryFactory;
+use Tuleap\SVN\Repository\Destructor;
+use Tuleap\SVN\Commit\Svnlook;
+use Tuleap\SVN\Dao;
+use Tuleap\SVN\Logs\LastAccessDao;
+use Tuleap\SVN\Logs\LastAccessUpdater;
+use Tuleap\SVN\Notifications\EmailsToBeNotifiedRetriever;
+use Tuleap\SVN\Notifications\NotificationsEmailsBuilder;
+use Tuleap\SVN\Notifications\UgroupsToNotifyDao;
+use Tuleap\SVN\Notifications\UsersToNotifyDao;
+use Tuleap\SVN\Repository\RepositoryManager;
+use Tuleap\SVN\Repository\RepositoryRegexpBuilder;
+use Tuleap\SVN\Admin\MailHeaderManager;
+use Tuleap\SVN\Admin\MailHeaderDao;
+use Tuleap\SVN\Admin\MailNotificationManager;
+use Tuleap\SVN\Admin\MailNotificationDao;
+use Tuleap\SVN\Hooks\PostCommit;
+use Tuleap\SVN\Commit\CommitInfo;
+use Tuleap\SVN\Commit\CommitInfoEnhancer;
+use Tuleap\SVN\SvnAdmin;
 
 try {
-    require_once 'pre.php';
-
     $repository   = $argv[1];
     $revision     = $argv[2];
     $old_revision = $revision - 1;
@@ -59,15 +61,15 @@ try {
         new RepositoryManager(
             new Dao(),
             ProjectManager::instance(),
-            new SvnAdmin(new System_Command(), new SvnLogger(), Backend::instance(Backend::SVN)),
-            new SvnLogger(),
+            new SvnAdmin(new System_Command(), SvnPlugin::getLogger(), Backend::instanceSVN()),
+            SvnPlugin::getLogger(),
             new System_Command(),
             new Destructor(
                 new Dao(),
-                new SvnLogger()
+                SvnPlugin::getLogger()
             ),
             EventManager::instance(),
-            Backend::instance(Backend::SVN),
+            Backend::instanceSVN(),
             new AccessFileHistoryFactory(new AccessFileHistoryDao())
         ),
         new MailHeaderManager(new MailHeaderDao()),
@@ -79,17 +81,20 @@ try {
                 new ProjectHistoryDao(),
                 new NotificationsEmailsBuilder(),
                 new UGroupManager()
-            ),
-            new UsersToNotifyDao(),
-            new UgroupsToNotifyDao(),
-            new UGroupManager(),
-            UserManager::instance()
+            )
         ),
         new MailBuilder(
             TemplateRendererFactory::build(),
-            new MailFilter(UserManager::instance(), new URLVerification(), new MailLogger())
+            new MailFilter(
+                UserManager::instance(),
+                new ProjectAccessChecker(
+                    new RestrictedUserCanAccessProjectVerifier(),
+                    EventManager::instance()
+                ),
+                new MailLogger()
+            )
         ),
-        new CommitInfoEnhancer(new SVNLook(new System_Command()), new CommitInfo()),
+        new CommitInfoEnhancer(new Svnlook(new System_Command()), new CommitInfo()),
         new LastAccessUpdater(new LastAccessDao()),
         UserManager::instance(),
         EventManager::instance()

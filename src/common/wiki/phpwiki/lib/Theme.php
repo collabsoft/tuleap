@@ -1,29 +1,29 @@
-<?php rcs_id('$Id: Theme.php,v 1.131 2005/06/10 06:09:06 rurban Exp $');
+<?php
 /* Copyright (C) 2002,2004,2005 $ThePhpWikiProgrammingTeam
  *
  * This file is part of PhpWiki.
- * 
+ *
  * PhpWiki is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * PhpWiki is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with PhpWiki; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 /**
- * Customize output by themes: templates, css, special links functions, 
+ * Customize output by themes: templates, css, special links functions,
  * and more formatting.
  */
 
-require_once(dirname(__FILE__).'/HtmlElement.php');
+require_once(dirname(__FILE__) . '/HtmlElement.php');
 
 /**
  * Make a link to a wiki page (in this wiki).
@@ -53,7 +53,8 @@ require_once(dirname(__FILE__).'/HtmlElement.php');
  *
  * @return XmlContent The link
  */
-function WikiLink ($page_or_rev, $type = 'known', $label = false) {
+function WikiLink($page_or_rev, $type = 'known', $label = false)
+{
     global $WikiTheme, $request;
 
     if ($type == 'button') {
@@ -61,47 +62,44 @@ function WikiLink ($page_or_rev, $type = 'known', $label = false) {
     }
 
     $version = false;
-    
+
     if (isa($page_or_rev, 'WikiDB_PageRevision')) {
         $version = $page_or_rev->getVersion();
-        if ($page_or_rev->isCurrent())
+        if ($page_or_rev->isCurrent()) {
             $version = false;
-        $page = $page_or_rev->getPage();
+        }
+        $page     = $page_or_rev->getPage();
         $pagename = $page->getName();
         $wikipage = $pagename;
-        $exists = true;
-    }
-    elseif (isa($page_or_rev, 'WikiDB_Page')) {
-        $page = $page_or_rev;
+        $exists   = true;
+    } elseif (isa($page_or_rev, 'WikiDB_Page')) {
+        $page     = $page_or_rev;
         $pagename = $page->getName();
         $wikipage = $pagename;
-    }
-    elseif (isa($page_or_rev, 'WikiPageName')) {
+    } elseif (isa($page_or_rev, 'WikiPageName')) {
         $wikipage = $page_or_rev;
         $pagename = $wikipage->name;
-        if (!$wikipage->isValid('strict'))
+        if (! $wikipage->isValid('strict')) {
             return $WikiTheme->linkBadWikiWord($wikipage, $label);
-    }
-    else {
+        }
+    } else {
         $wikipage = new WikiPageName($page_or_rev, $request->getPage());
         $pagename = $wikipage->name;
-        if (!$wikipage->isValid('strict'))
+        if (! $wikipage->isValid('strict')) {
             return $WikiTheme->linkBadWikiWord($wikipage, $label);
+        }
     }
-    
+
     if ($type == 'auto' or $type == 'if_known') {
         if (isset($page)) {
             $exists = $page->exists();
-        }
-        else {
-	    $dbi =& $request->_dbi;
+        } else {
+            $dbi    = $request->_dbi;
             $exists = $dbi->isWikiPage($wikipage->name);
         }
-    }
-    elseif ($type == 'unknown') {
+    } elseif ($type == 'unknown') {
         $exists = false;
-    }
-    else {
+    } else {
         $exists = true;
     }
 
@@ -109,41 +107,47 @@ function WikiLink ($page_or_rev, $type = 'known', $label = false) {
     // WikiLink makes A link, not a string of fancy ones.
     // (I think that the fancy split links are just confusing.)
     // Todo: test external ImageLinks http://some/images/next.gif
-    if (isa($wikipage, 'WikiPageName') and 
-        ! $label and 
-        strchr(substr($wikipage->shortName,1), SUBPAGE_SEPARATOR))
-    {
-        $parts = explode(SUBPAGE_SEPARATOR, $wikipage->shortName);
+    if (
+        isa($wikipage, 'WikiPageName') and
+        ! $label and
+        strchr(substr($wikipage->shortName, 1), SUBPAGE_SEPARATOR)
+    ) {
+        $parts     = explode(SUBPAGE_SEPARATOR, $wikipage->shortName);
         $last_part = array_pop($parts);
-        $sep = '';
-        $link = HTML::span();
+        $sep       = '';
+        $link      = HTML::span();
         foreach ($parts as $part) {
             $path[] = $part;
             $parent = join(SUBPAGE_SEPARATOR, $path);
-            if ($WikiTheme->_autosplitWikiWords)
+            if ($WikiTheme->_autosplitWikiWords) {
                 $part = " " . $part;
-            if ($part)
+            }
+            if ($part) {
                 $link->pushContent($WikiTheme->linkExistingWikiWord($parent, $sep . $part));
-            $sep = $WikiTheme->_autosplitWikiWords 
+            }
+            $sep = $WikiTheme->_autosplitWikiWords
                    ? ' ' . SUBPAGE_SEPARATOR : SUBPAGE_SEPARATOR;
         }
-        if ($exists)
-            $link->pushContent($WikiTheme->linkExistingWikiWord($wikipage, $sep . $last_part, 
-                                                                $version));
-        else
+        if ($exists) {
+            $link->pushContent($WikiTheme->linkExistingWikiWord(
+                $wikipage,
+                $sep . $last_part,
+                $version
+            ));
+        } else {
             $link->pushContent($WikiTheme->linkUnknownWikiWord($wikipage, $sep . $last_part));
+        }
         return $link;
     }
 
     if ($exists) {
         return $WikiTheme->linkExistingWikiWord($wikipage, $label, $version);
-    }
-    elseif ($type == 'if_known') {
-        if (!$label && isa($wikipage, 'WikiPageName'))
+    } elseif ($type == 'if_known') {
+        if (! $label && isa($wikipage, 'WikiPageName')) {
             $label = $wikipage->shortName;
+        }
         return HTML($label ? $label : $pagename);
-    }
-    else {
+    } else {
         return $WikiTheme->linkUnknownWikiWord($wikipage, $label);
     }
 }
@@ -179,74 +183,87 @@ function WikiLink ($page_or_rev, $type = 'known', $label = false) {
  * </dl>
  * ($Page_or_rev is ignored for submit buttons.)
  */
-function Button ($action, $label = false, $page_or_rev = false) {
+function Button($action, $label = false, $page_or_rev = false)
+{
     global $WikiTheme;
 
-    if (!is_array($action) && preg_match('/^submit:(.*)/', $action, $m))
+    if (! is_array($action) && preg_match('/^submit:(.*)/', $action, $m)) {
         return $WikiTheme->makeSubmitButton($label, $m[1], $page_or_rev);
-    else
+    } else {
         return $WikiTheme->makeActionButton($action, $label, $page_or_rev);
+    }
 }
 
 
-class Theme {
-    var $HTML_DUMP_SUFFIX = '';
-    var $DUMP_MODE = false, $dumped_images, $dumped_css; 
+class PHPWikiTheme
+{
+    public $HTML_DUMP_SUFFIX = '';
+    public $DUMP_MODE        = false;
+    public $dumped_images;
+    public $dumped_css;
 
-    function __construct ($theme_name = 'default') {
-        $this->_name = $theme_name;
+    public function __construct($theme_name = 'default')
+    {
+        $this->_name       = $theme_name;
         $this->_themes_dir = NormalizeLocalFileName("themes");
-        $this->_path  = defined('PHPWIKI_DIR') ? NormalizeLocalFileName("") : "";
-        $this->_theme = "themes/$theme_name";
+        $this->_path       = defined('PHPWIKI_DIR') ? NormalizeLocalFileName("") : "";
+        $this->_theme      = "themes/$theme_name";
 
-        if ($theme_name != 'default')
-            $this->_default_theme = new Theme;
+        if ($theme_name != 'default') {
+            $this->_default_theme = new PHPWikiTheme();
+        }
 
         // by pixels
-        if ((is_object($GLOBALS['request']) // guard against unittests
+        if (
+            (is_object($GLOBALS['request']) // guard against unittests
              and $GLOBALS['request']->getPref('doubleClickEdit'))
-            or ENABLE_DOUBLECLICKEDIT)
+            or ENABLE_DOUBLECLICKEDIT
+        ) {
             $this->initDoubleClickEdit();
+        }
 
         // will be replaced by acDropDown
         if (ENABLE_LIVESEARCH) { // by bitflux.ch
             $this->initLiveSearch();
         }
-        $this->_css = array();
+        $this->_css = [];
     }
 
-    function file ($file) {
+    public function file($file)
+    {
         return $this->_path . "$this->_theme/$file";
-   } 
+    }
 
-    function _findFile ($file, $missing_okay = false) {
-        if (file_exists($this->file($file)))
+    public function _findFile($file, $missing_okay = false)
+    {
+        if (file_exists($this->file($file))) {
             return "$this->_theme/$file";
+        }
 
         // FIXME: this is a short-term hack.  Delete this after all files
         // get moved into themes/...
-        if (file_exists($this->_path . $file))
+        if (file_exists($this->_path . $file)) {
             return $file;
+        }
 
         if (isset($this->_default_theme)) {
             return $this->_default_theme->_findFile($file, $missing_okay);
-        }
-        else if (!$missing_okay) {
-            if (DEBUG & function_exists('debug_backtrace')) { // >= 4.3.0
-                echo "<pre>", printSimpleTrace(debug_backtrace()), "</pre>\n";
-            }
+        } elseif (! $missing_okay) {
             trigger_error("$this->_theme/$file: not found", E_USER_NOTICE);
         }
         return false;
     }
 
-    function _findData ($file, $missing_okay = false) {
+    public function _findData($file, $missing_okay = false)
+    {
         $path = $this->_findFile($file, $missing_okay);
-        if (!$path)
+        if (! $path) {
             return false;
+        }
 
-        if (defined('DATA_PATH'))
+        if (defined('DATA_PATH')) {
             return DATA_PATH . "/$path";
+        }
         return $path;
     }
 
@@ -257,15 +274,15 @@ class Theme {
     ////////////////////////////////////////////////////////////////
 
     // Note:  Windows' implemetation of strftime does not include certain
-	// format specifiers, such as %e (for date without leading zeros).  In
-	// general, see:
-	// http://msdn.microsoft.com/library/default.asp?url=/library/en-us/vclib/html/_crt_strftime.2c_.wcsftime.asp
-	// As a result, we have to use %d, and strip out leading zeros ourselves.
+    // format specifiers, such as %e (for date without leading zeros).  In
+    // general, see:
+    // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/vclib/html/_crt_strftime.2c_.wcsftime.asp
+    // As a result, we have to use %d, and strip out leading zeros ourselves.
 
-    var $_dateFormat = "%B %d, %Y";
-    var $_timeFormat = "%I:%M %p";
+    public $_dateFormat = "%B %d, %Y";
+    public $_timeFormat = "%I:%M %p";
 
-    var $_showModTime = true;
+    public $_showModTime = true;
 
     /**
      * Set format string used for dates.
@@ -276,8 +293,9 @@ class Theme {
      * are included in the messages generated by getLastModifiedMessage(),
      * otherwise, only the date of last modification will be shown.
      */
-    function setDateFormat ($fs, $show_mod_time = true) {
-        $this->_dateFormat = $fs;
+    public function setDateFormat($fs, $show_mod_time = true)
+    {
+        $this->_dateFormat  = $fs;
         $this->_showModTime = $show_mod_time;
     }
 
@@ -286,7 +304,8 @@ class Theme {
      *
      * @param $fs string Format string for times.
      */
-    function setTimeFormat ($fs) {
+    public function setTimeFormat($fs)
+    {
         $this->_timeFormat = $fs;
     }
 
@@ -300,13 +319,17 @@ class Theme {
      *
      * @return string The date.
      */
-    function formatDate ($time_t) {
+    public function formatDate($time_t)
+    {
         global $request;
-        
+
         $offset_time = $time_t + 3600 * $request->getPref('timeOffset');
         // strip leading zeros from date elements (ie space followed by zero)
-        return preg_replace('/ 0/', ' ', 
-                            strftime($this->_dateFormat, $offset_time));
+        return preg_replace(
+            '/ 0/',
+            ' ',
+            strftime($this->_dateFormat, $offset_time)
+        );
     }
 
     /**
@@ -319,12 +342,16 @@ class Theme {
      *
      * @return string The time.
      */
-    function formatTime ($time_t) {
+    public function formatTime($time_t)
+    {
         //FIXME: make 24-hour mode configurable?
         global $request;
         $offset_time = $time_t + 3600 * $request->getPref('timeOffset');
-        return preg_replace('/^0/', ' ',
-                            strtolower(strftime($this->_timeFormat, $offset_time)));
+        return preg_replace(
+            '/^0/',
+            ' ',
+            strtolower(strftime($this->_timeFormat, $offset_time))
+        );
     }
 
     /**
@@ -337,7 +364,8 @@ class Theme {
      *
      * @return string The date and time.
      */
-    function formatDateTime ($time_t) {
+    public function formatDateTime($time_t)
+    {
         return $this->formatDate($time_t) . ' ' . $this->formatTime($time_t);
     }
 
@@ -354,15 +382,16 @@ class Theme {
      *
      * @return string The day.
      */
-    function getDay ($time_t) {
+    public function getDay($time_t)
+    {
         global $request;
-        
+
         if ($request->getPref('relativeDates') && ($date = $this->_relativeDay($time_t))) {
             return ucfirst($date);
         }
         return $this->formatDate($time_t);
     }
-    
+
     /**
      * Format the "last modified" message for a page revision.
      *
@@ -375,64 +404,83 @@ class Theme {
      *
      * @return string The "last modified" message.
      */
-    function getLastModifiedMessage ($revision, $show_version = 'auto') {
+    public function getLastModifiedMessage($revision, $show_version = 'auto')
+    {
         global $request;
-        if (!$revision) return '';
-        
-        // dates >= this are considered invalid.
-        if (! defined('EPOCH'))
-            define('EPOCH', 0); // seconds since ~ January 1 1970
-        
-        $mtime = $revision->get('mtime');
-        if ($mtime <= EPOCH)
-            return fmt("Never edited");
-
-        if ($show_version == 'auto')
-            $show_version = !$revision->isCurrent();
-
-        if ($request->getPref('relativeDates') && ($date = $this->_relativeDay($mtime))) {
-            if ($this->_showModTime)
-                $date =  sprintf(_("%s at %s"),
-                                 $date, $this->formatTime($mtime));
-            
-            if ($show_version)
-                return fmt("Version %s, saved %s", $revision->getVersion(), $date);
-            else
-                return fmt("Last edited %s", $date);
+        if (! $revision) {
+            return '';
         }
 
-        if ($this->_showModTime)
+        // dates >= this are considered invalid.
+        if (! defined('EPOCH')) {
+            define('EPOCH', 0); // seconds since ~ January 1 1970
+        }
+
+        $mtime = $revision->get('mtime');
+        if ($mtime <= EPOCH) {
+            return fmt("Never edited");
+        }
+
+        if ($show_version == 'auto') {
+            $show_version = ! $revision->isCurrent();
+        }
+
+        if ($request->getPref('relativeDates') && ($date = $this->_relativeDay($mtime))) {
+            if ($this->_showModTime) {
+                $date =  sprintf(
+                    _("%s at %s"),
+                    $date,
+                    $this->formatTime($mtime)
+                );
+            }
+
+            if ($show_version) {
+                return fmt("Version %s, saved %s", $revision->getVersion(), $date);
+            } else {
+                return fmt("Last edited %s", $date);
+            }
+        }
+
+        if ($this->_showModTime) {
             $date = $this->formatDateTime($mtime);
-        else
+        } else {
             $date = $this->formatDate($mtime);
-        
-        if ($show_version)
+        }
+
+        if ($show_version) {
             return fmt("Version %s, saved on %s", $revision->getVersion(), $date);
-        else
+        } else {
             return fmt("Last edited on %s", $date);
+        }
     }
-    
-    function _relativeDay ($time_t) {
+
+    public function _relativeDay($time_t)
+    {
         global $request;
-        
-        if (is_numeric($request->getPref('timeOffset')))
-          $offset = 3600 * $request->getPref('timeOffset');
-        else 
-          $offset = 0;  	
 
-        $now = time() + $offset;
+        if (is_numeric($request->getPref('timeOffset'))) {
+            $offset = 3600 * $request->getPref('timeOffset');
+        } else {
+            $offset = 0;
+        }
+
+        $now   = time() + $offset;
         $today = localtime($now, true);
-        $time = localtime($time_t + $offset, true);
+        $time  = localtime($time_t + $offset, true);
 
-        if ($time['tm_yday'] == $today['tm_yday'] && $time['tm_year'] == $today['tm_year'])
+        if ($time['tm_yday'] == $today['tm_yday'] && $time['tm_year'] == $today['tm_year']) {
             return _("today");
-        
+        }
+
         // Note that due to daylight savings chages (and leap seconds), $now minus
         // 24 hours is not guaranteed to be yesterday.
         $yesterday = localtime($now - (12 + $today['tm_hour']) * 3600, true);
-        if ($time['tm_yday'] == $yesterday['tm_yday'] 
-            and $time['tm_year'] == $yesterday['tm_year'])
+        if (
+            $time['tm_yday'] == $yesterday['tm_yday']
+            and $time['tm_year'] == $yesterday['tm_year']
+        ) {
             return _("yesterday");
+        }
 
         return false;
     }
@@ -440,15 +488,17 @@ class Theme {
     /**
      * Format the "Author" and "Owner" messages for a page revision.
      */
-    function getOwnerMessage ($page) {
-        if (!ENABLE_PAGEPERM or !class_exists("PagePermission"))
+    public function getOwnerMessage($page)
+    {
+        if (! ENABLE_PAGEPERM or ! class_exists("PagePermission")) {
             return '';
-    	$dbi =& $GLOBALS['request']->_dbi;
+        }
+        $dbi   = $GLOBALS['request']->_dbi;
         $owner = $page->getOwner();
-    	if ($owner <> ADMIN_USER) {
+        if ($owner <> ADMIN_USER) {
             //display owner user_name according to the user choice: real name, or Codendi login
-    		$owner = UserHelper::instance()->getDisplayNameFromUserName($owner);
-    	}            
+            $owner = UserHelper::instance()->getDisplayNameFromUserName($owner);
+        }
         if ($owner) {
             /*
             if ( mayAccessPage('change',$page->getName()) )
@@ -456,26 +506,37 @@ class Theme {
                                                                       's' => $page->getName()),
                                                                 $owner, $page));
             */
-            if ( $dbi->isWikiPage($owner) )
+            if ($dbi->isWikiPage($owner)) {
                 return fmt("Owner: %s", WikiLink($owner));
-            else
-                return fmt("Owner: %s", '"'.$owner.'"');
+            } else {
+                return fmt("Owner: %s", '"' . $owner . '"');
+            }
         }
     }
 
-    function getAuthorMessage ($revision, $only_authenticated = true) {
-        if (!$revision) return '';
-        $dbi =& $GLOBALS['request']->_dbi;
+    public function getAuthorMessage($revision, $only_authenticated = true)
+    {
+        if (! $revision) {
+            return '';
+        }
+        $dbi    = $GLOBALS['request']->_dbi;
         $author = $revision->get('author_id');
-        if ( $author or $only_authenticated ) {
-            if (!$author) $author = $revision->get('author');
-            if (!$author) return '';
+        if ($author or $only_authenticated) {
+            if (! $author) {
+                $author = $revision->get('author');
+            }
+            if (! $author) {
+                return '';
+            }
             //display revision author user_name according to the user choice: real name, or Codendi login
-            if ($author <> "The PhpWiki programming team") $author = UserHelper::instance()->getDisplayNameFromUserName($author);            
-            if ( $dbi->isWikiPage($author) )
+            if ($author <> "The PhpWiki programming team") {
+                $author = UserHelper::instance()->getDisplayNameFromUserName($author);
+            }
+            if ($dbi->isWikiPage($author)) {
                 return fmt("by %s", WikiLink($author));
-            else
-                return fmt("by %s", '"'.$author.'"');
+            } else {
+                return fmt("by %s", '"' . $author . '"');
+            }
         }
     }
 
@@ -489,10 +550,12 @@ class Theme {
     //lib/Theme.php:84: Notice[8]: The call_user_method() function is deprecated,
     //use the call_user_func variety with the array(&$obj, "method") syntax instead
 
-    function getFormatter ($type, $format) {
+    public function getFormatter($type, $format)
+    {
         $method = strtolower("get${type}Formatter");
-        if (method_exists($this, $method))
+        if (method_exists($this, $method)) {
             return $this->{$method}($format);
+        }
         return false;
     }
 
@@ -502,101 +565,109 @@ class Theme {
     //
     ////////////////////////////////////////////////////////////////
 
-    var $_autosplitWikiWords = false;
-    function setAutosplitWikiWords($autosplit=true) {
+    public $_autosplitWikiWords = false;
+    public function setAutosplitWikiWords($autosplit = true)
+    {
         $this->_autosplitWikiWords = $autosplit ? true : false;
     }
 
-    function maybeSplitWikiWord ($wikiword) {
-        if ($this->_autosplitWikiWords)
+    public function maybeSplitWikiWord($wikiword)
+    {
+        if ($this->_autosplitWikiWords) {
             return SplitPagename($wikiword);
-        else
+        } else {
             return $wikiword;
+        }
     }
 
-    var $_anonEditUnknownLinks = true;
-    function setAnonEditUnknownLinks($anonedit=true) {
+    public $_anonEditUnknownLinks = true;
+    public function setAnonEditUnknownLinks($anonedit = true)
+    {
         $this->_anonEditUnknownLinks = $anonedit ? true : false;
     }
 
-    function linkExistingWikiWord($wikiword, $linktext = '', $version = false) {
+    public function linkExistingWikiWord($wikiword, $linktext = '', $version = false)
+    {
         global $request;
 
-        if ($version !== false and !$this->HTML_DUMP_SUFFIX)
-            $url = WikiURL($wikiword, array('version' => $version));
-        else
+        if ($version !== false and ! $this->HTML_DUMP_SUFFIX) {
+            $url = WikiURL($wikiword, ['version' => $version]);
+        } else {
             $url = WikiURL($wikiword);
+        }
 
         // Extra steps for dumping page to an html file.
         if ($this->HTML_DUMP_SUFFIX) {
             $url = preg_replace('/^\./', '%2e', $url); // dot pages
         }
 
-        $link = HTML::a(array('href' => $url));
+        $link = HTML::a(['href' => $url]);
 
-        if (isa($wikiword, 'WikiPageName'))
+        if (isa($wikiword, 'WikiPageName')) {
              $default_text = $wikiword->shortName;
-         else
-             $default_text = $wikiword;
-         
-        if (!empty($linktext)) {
+        } else {
+            $default_text = $wikiword;
+        }
+
+        if (! empty($linktext)) {
             $link->pushContent($linktext);
             $link->setAttr('class', 'named-wiki');
             $link->setAttr('title', $this->maybeSplitWikiWord($default_text));
-        }
-        else {
+        } else {
             $link->pushContent($this->maybeSplitWikiWord($default_text));
             $link->setAttr('class', 'wiki');
         }
-        if ($request->getArg('frame'))
+        if ($request->getArg('frame')) {
             $link->setAttr('target', '_top');
+        }
         return $link;
     }
 
-    function linkUnknownWikiWord($wikiword, $linktext = '') {
+    public function linkUnknownWikiWord($wikiword, $linktext = '')
+    {
         global $request;
 
         // Get rid of anchors on unknown wikiwords
         if (isa($wikiword, 'WikiPageName')) {
             $default_text = $wikiword->shortName;
-            $wikiword = $wikiword->name;
-        }
-        else {
+            $wikiword     = $wikiword->name;
+        } else {
             $default_text = $wikiword;
         }
-        
+
         if ($this->DUMP_MODE) { // HTML, PDF or XML
-            $link = HTML::u( empty($linktext) ? $wikiword : $linktext);
+            $link = HTML::u(empty($linktext) ? $wikiword : $linktext);
             $link->addTooltip(sprintf(_("Empty link to: %s"), $wikiword));
             $link->setAttr('class', empty($linktext) ? 'wikiunknown' : 'named-wikiunknown');
             return $link;
         } else {
             // if AnonEditUnknownLinks show "?" only users which are allowed to edit this page
-            if (! $this->_anonEditUnknownLinks and 
-                ( ! $request->_user->isSignedIn() 
-                  or ! mayAccessPage('edit', $request->getArg('pagename')))) 
-            {
-                $text = HTML::span( empty($linktext) ? $wikiword : $linktext);
+            if (
+                ! $this->_anonEditUnknownLinks and
+                ( ! $request->_user->isSignedIn()
+                  or ! mayAccessPage('edit', $request->getArg('pagename')))
+            ) {
+                $text = HTML::span(empty($linktext) ? $wikiword : $linktext);
                 $text->setAttr('class', empty($linktext) ? 'wikiunknown' : 'named-wikiunknown');
                 return $text;
             } else {
-                $url = WikiURL($wikiword, array('action' => 'create'));
+                $url    = WikiURL($wikiword, ['action' => 'create']);
                 $button = $this->makeButton('?', $url);
                 $button->addTooltip(sprintf(_("Create: %s"), $wikiword));
             }
         }
 
         $link = HTML::span();
-        if (!empty($linktext)) {
+        if (! empty($linktext)) {
             $link->pushContent(HTML::u($linktext));
             $link->setAttr('class', 'named-wikiunknown');
-        }
-        else {
+        } else {
             $link->pushContent(HTML::u($this->maybeSplitWikiWord($default_text)));
             $link->setAttr('class', 'wikiunknown');
         }
-        if (!isa($button, "ImageButton"))
+        if (! isa($button, "ImageButton")) {
             $button->setAttr('rel', 'nofollow');
+        }
         $link->pushContent($button);
         if ($request->getPref('googleLink')) {
             $gbutton = $this->makeButton('G', "http://www.google.com/search?q="
@@ -604,134 +675,156 @@ class Theme {
             $gbutton->addTooltip(sprintf(_("Google:%s"), $wikiword));
             $link->pushContent($gbutton);
         }
-        if ($request->getArg('frame'))
+        if ($request->getArg('frame')) {
             $link->setAttr('target', '_top');
+        }
 
         return $link;
     }
 
-    function linkBadWikiWord($wikiword, $linktext = '') {
+    public function linkBadWikiWord($wikiword, $linktext = '')
+    {
         global $ErrorManager;
-        
+
         if ($linktext) {
             $text = $linktext;
-        }
-        elseif (isa($wikiword, 'WikiPageName')) {
+        } elseif (isa($wikiword, 'WikiPageName')) {
             $text = $wikiword->shortName;
-        }
-        else {
+        } else {
             $text = $wikiword;
         }
 
-        if (isa($wikiword, 'WikiPageName'))
+        if (isa($wikiword, 'WikiPageName')) {
             $message = $wikiword->getWarnings();
-        else
+        } else {
             $message = sprintf(_("'%s': Bad page name"), $wikiword);
+        }
         $ErrorManager->warning($message);
-        
-        return HTML::span(array('class' => 'badwikiword'), $text);
+
+        return HTML::span(['class' => 'badwikiword'], $text);
     }
-    
+
     ////////////////////////////////////////////////////////////////
     //
     // Images and Icons
     //
     ////////////////////////////////////////////////////////////////
-    var $_imageAliases = array();
-    var $_imageAlt = array();
+    public $_imageAliases = [];
+    public $_imageAlt     = [];
 
     /**
      *
      * (To disable an image, alias the image to <code>false</code>.
      */
-    function addImageAlias ($alias, $image_name) {
+    public function addImageAlias($alias, $image_name)
+    {
         // fall back to the PhpWiki-supplied image if not found
-        if ($this->_findFile("images/$image_name", true))
+        if ($this->_findFile("images/$image_name", true)) {
             $this->_imageAliases[$alias] = $image_name;
+        }
     }
 
-    function addImageAlt ($alias, $alt_text) {
+    public function addImageAlt($alias, $alt_text)
+    {
         $this->_imageAlt[$alias] = $alt_text;
     }
-    function getImageAlt ($alias) {
+    public function getImageAlt($alias)
+    {
         return $this->_imageAlt[$alias];
     }
 
-    function getImageURL ($image) {
+    public function getImageURL($image)
+    {
         $aliases = &$this->_imageAliases;
 
         if (isset($aliases[$image])) {
             $image = $aliases[$image];
-            if (!$image)
+            if (! $image) {
                 return false;
+            }
         }
 
         // If not extension, default to .png.
-        if (!preg_match('/\.\w+$/', $image))
+        if (! preg_match('/\.\w+$/', $image)) {
             $image .= '.png';
+        }
 
         // FIXME: this should probably be made to fall back
         //        automatically to .gif, .jpg.
         //        Also try .gif before .png if browser doesn't like png.
 
         $path = $this->_findData("images/$image", 'missing okay');
-        if (!$path) // search explicit images/ or button/ links also
+        if (! $path) { // search explicit images/ or button/ links also
             $path = $this->_findData("$image", 'missing okay');
+        }
 
         if ($this->DUMP_MODE) {
-            if (empty($this->dumped_images)) $this->dumped_images = array();
-            $path = "images/". basename($path);
-            if (!in_array($path,$this->dumped_images)) 
+            if (empty($this->dumped_images)) {
+                $this->dumped_images = [];
+            }
+            $path = "images/" . basename($path);
+            if (! in_array($path, $this->dumped_images)) {
                 $this->dumped_images[] = $path;
+            }
         }
-        return $path;	
+        return $path;
     }
 
-    function setLinkIcon($proto, $image = false) {
-        if (!$image)
+    public function setLinkIcon($proto, $image = false)
+    {
+        if (! $image) {
             $image = $proto;
+        }
 
         $this->_linkIcons[$proto] = $image;
     }
 
-    function getLinkIconURL ($proto) {
+    public function getLinkIconURL($proto)
+    {
         $icons = &$this->_linkIcons;
-        if (!empty($icons[$proto]))
+        if (! empty($icons[$proto])) {
             return $this->getImageURL($icons[$proto]);
-        elseif (!empty($icons['*']))
+        } elseif (! empty($icons['*'])) {
             return $this->getImageURL($icons['*']);
+        }
         return false;
     }
 
-    var $_linkIcon = 'front'; // or 'after' or 'no'. 
-    // maybe also 'spanall': there is a scheme currently in effect with front, which 
+    public $_linkIcon = 'front'; // or 'after' or 'no'.
+    // maybe also 'spanall': there is a scheme currently in effect with front, which
     // spans the icon only to the first, to let the next words wrap on line breaks
     // see stdlib.php:PossiblyGlueIconToText()
-    function getLinkIconAttr () {
+    public function getLinkIconAttr()
+    {
         return $this->_linkIcon;
     }
-    function setLinkIconAttr ($where) {
+    public function setLinkIconAttr($where)
+    {
         $this->_linkIcon = $where;
     }
 
-    function addButtonAlias ($text, $alias = false) {
+    public function addButtonAlias($text, $alias = false)
+    {
         $aliases = &$this->_buttonAliases;
 
-        if (is_array($text))
+        if (is_array($text)) {
             $aliases = array_merge($aliases, $text);
-        elseif ($alias === false)
+        } elseif ($alias === false) {
             unset($aliases[$text]);
-        else
+        } else {
             $aliases[$text] = $alias;
+        }
     }
 
-    function getButtonURL ($text) {
+    public function getButtonURL($text)
+    {
         $aliases = &$this->_buttonAliases;
-        if (isset($aliases[$text]))
+        if (isset($aliases[$text])) {
             $text = $aliases[$text];
+        }
 
         $qtext = urlencode($text);
-        $url = $this->_findButton("$qtext.png");
+        $url   = $this->_findButton("$qtext.png");
         if ($url && strstr($url, '%')) {
             $url = preg_replace_callback(
                 '|([^/]+)$|',
@@ -741,7 +834,7 @@ class Theme {
                 $url
             );
         }
-        if (!$url) {// Jeff complained about png not supported everywhere. 
+        if (! $url) {// Jeff complained about png not supported everywhere.
                     // This was not PC until 2005.
             $url = $this->_findButton("$qtext.gif");
             if ($url && strstr($url, '%')) {
@@ -755,56 +848,71 @@ class Theme {
             }
         }
         if ($url and $this->DUMP_MODE) {
-            if (empty($this->dumped_buttons)) $this->dumped_buttons = array();
+            if (empty($this->dumped_buttons)) {
+                $this->dumped_buttons = [];
+            }
             $file = $url;
-            if (defined('DATA_PATH'))
-                $file = substr($url,strlen(DATA_PATH)+1);
-            $url = "images/buttons/".basename($file);
-            if (!array_key_exists($text, $this->dumped_buttons))
+            if (defined('DATA_PATH')) {
+                $file = substr($url, strlen(DATA_PATH) + 1);
+            }
+            $url = "images/buttons/" . basename($file);
+            if (! array_key_exists($text, $this->dumped_buttons)) {
                 $this->dumped_buttons[$text] = $file;
+            }
         }
         return $url;
     }
 
-    function _findButton ($button_file) {
-        if (empty($this->_button_path))
+    public function _findButton($button_file)
+    {
+        if (empty($this->_button_path)) {
             $this->_button_path = $this->_getButtonPath();
+        }
 
         foreach ($this->_button_path as $dir) {
-            if ($path = $this->_findData("$dir/$button_file", 1))
-                return $path; 
+            if ($path = $this->_findData("$dir/$button_file", 1)) {
+                return $path;
+            }
         }
         return false;
     }
 
-    function _getButtonPath () {
+    public function _getButtonPath()
+    {
         $button_dir = $this->_findFile("buttons");
-        $path_dir = $this->_path . $button_dir;
-        if (!file_exists($path_dir) || !is_dir($path_dir))
-            return array();
-        $path = array($button_dir);
-        
+        $path_dir   = $this->_path . $button_dir;
+        if (! file_exists($path_dir) || ! is_dir($path_dir)) {
+            return [];
+        }
+        $path = [$button_dir];
+
         $dir = dir($path_dir);
         while (($subdir = $dir->read()) !== false) {
-            if ($subdir[0] == '.')
+            if ($subdir[0] == '.') {
                 continue;
-            if ($subdir == 'CVS')
+            }
+            if ($subdir == 'CVS') {
                 continue;
-            if (is_dir("$path_dir/$subdir"))
+            }
+            if (is_dir("$path_dir/$subdir")) {
                 $path[] = "$button_dir/$subdir";
+            }
         }
         $dir->close();
         // add default buttons
-        $path[] = "themes/default/buttons";
+        $path[]   = "themes/default/buttons";
         $path_dir = $this->_path . "themes/default/buttons";
-        $dir = dir($path_dir);
+        $dir      = dir($path_dir);
         while (($subdir = $dir->read()) !== false) {
-            if ($subdir[0] == '.')
+            if ($subdir[0] == '.') {
                 continue;
-            if ($subdir == 'CVS')
+            }
+            if ($subdir == 'CVS') {
                 continue;
-            if (is_dir("$path_dir/$subdir"))
+            }
+            if (is_dir("$path_dir/$subdir")) {
                 $path[] = "themes/default/buttons/$subdir";
+            }
         }
         $dir->close();
 
@@ -817,28 +925,33 @@ class Theme {
     //
     ////////////////////////////////////////////////////////////////
 
-    function makeButton ($text, $url, $class = false) {
+    public function makeButton($text, $url, $class = false)
+    {
         // FIXME: don't always try for image button?
 
         // Special case: URLs like 'submit:preview' generate form
         // submission buttons.
-        if (preg_match('/^submit:(.*)$/', $url, $m))
+        if (preg_match('/^submit:(.*)$/', $url, $m)) {
             return $this->makeSubmitButton($text, $m[1], $class);
+        }
 
         $imgurl = $this->getButtonURL($text);
-        if ($imgurl)
+        if ($imgurl) {
             return new ImageButton($text, $url, $class, $imgurl);
-        else
+        } else {
             return new Button($this->maybeSplitWikiWord($text), $url, $class);
+        }
     }
 
-    function makeSubmitButton ($text, $name, $class = false) {
+    public function makeSubmitButton($text, $name, $class = false)
+    {
         $imgurl = $this->getButtonURL($text);
 
-        if ($imgurl)
+        if ($imgurl) {
             return new SubmitImageButton($text, $name, $class, $imgurl);
-        else
+        } else {
             return new SubmitButton($text, $name, $class);
+        }
     }
 
     /**
@@ -865,25 +978,29 @@ class Theme {
      *
      * @return object A Button object.
      */
-    function makeActionButton ($action, $label = false, $page_or_rev = false) {
+    public function makeActionButton($action, $label = false, $page_or_rev = false)
+    {
         extract($this->_get_name_and_rev($page_or_rev));
 
         if (is_array($action)) {
-            $attr = $action;
+            $attr   = $action;
             $action = isset($attr['action']) ? $attr['action'] : 'browse';
-        }
-        else
+        } else {
             $attr['action'] = $action;
+        }
 
         $class = is_safe_action($action) ? 'wikiaction' : 'wikiadmin';
-        if ( !$label )
+        if (! $label) {
             $label = $this->_labelForAction($action);
+        }
 
-        if ($version)
+        if ($version) {
             $attr['version'] = $version;
+        }
 
-        if ($action == 'browse')
+        if ($action == 'browse') {
             unset($attr['action']);
+        }
 
         return $this->makeButton($label, WikiURL($pagename, $attr), $class);
     }
@@ -908,53 +1025,66 @@ class Theme {
      *
      * @return object A Button object.
      */
-    function makeLinkButton ($page_or_rev, $label = false, $action = false) {
+    public function makeLinkButton($page_or_rev, $label = false, $action = false)
+    {
         extract($this->_get_name_and_rev($page_or_rev));
 
-        $args = $version ? array('version' => $version) : false;
-        if ($action) $args['action'] = $action;
+        $args = $version ? ['version' => $version] : false;
+        if ($action) {
+            $args['action'] = $action;
+        }
 
-        return $this->makeButton($label ? $label : $pagename, 
-                                 WikiURL($pagename, $args), 'wiki');
+        return $this->makeButton(
+            $label ? $label : $pagename,
+            WikiURL($pagename, $args),
+            'wiki'
+        );
     }
 
-    function _get_name_and_rev ($page_or_rev) {
+    public function _get_name_and_rev($page_or_rev)
+    {
         $version = false;
 
         if (empty($page_or_rev)) {
             global $request;
             $pagename = $request->getArg("pagename");
-            $version = $request->getArg("version");
-        }
-        elseif (is_object($page_or_rev)) {
+            $version  = $request->getArg("version");
+        } elseif (is_object($page_or_rev)) {
             if (isa($page_or_rev, 'WikiDB_PageRevision')) {
-                $rev = $page_or_rev;
+                $rev  = $page_or_rev;
                 $page = $rev->getPage();
-                if (!$rev->isCurrent()) $version = $rev->getVersion();
-            }
-            else {
+                if (! $rev->isCurrent()) {
+                    $version = $rev->getVersion();
+                }
+            } else {
                 $page = $page_or_rev;
             }
             $pagename = $page->getName();
-        }
-        elseif (is_numeric($page_or_rev)) {
+        } elseif (is_numeric($page_or_rev)) {
             $version = $page_or_rev;
-        }
-        else {
+        } else {
             $pagename = (string) $page_or_rev;
         }
         return compact('pagename', 'version');
     }
 
-    function _labelForAction ($action) {
+    public function _labelForAction($action)
+    {
         switch ($action) {
-            case 'edit':   return _("Edit");
-            case 'diff':   return _("Diff");
-            case 'logout': return _("Sign Out");
-            case 'login':  return _("Sign In");
-            case 'lock':   return _("Lock Page");
-            case 'unlock': return _("Unlock Page");
-            case 'remove': return _("Remove Page");
+            case 'edit':
+                return _("Edit");
+            case 'diff':
+                return _("Diff");
+            case 'logout':
+                return _("Sign Out");
+            case 'login':
+                return _("Sign In");
+            case 'lock':
+                return _("Lock Page");
+            case 'unlock':
+                return _("Unlock Page");
+            case 'remove':
+                return _("Remove Page");
             default:
                 // I don't think the rest of these actually get used.
                 // 'setprefs'
@@ -965,13 +1095,15 @@ class Theme {
     }
 
     //----------------------------------------------------------------
-    var $_buttonSeparator = "\n | ";
+    public $_buttonSeparator = "\n | ";
 
-    function setButtonSeparator($separator) {
+    public function setButtonSeparator($separator)
+    {
         $this->_buttonSeparator = $separator;
     }
 
-    function getButtonSeparator() {
+    public function getButtonSeparator()
+    {
         return $this->_buttonSeparator;
     }
 
@@ -1017,26 +1149,34 @@ class Theme {
     //
     ////////////////////////////////////////////////////////////////
 
-    function _CSSlink($title, $css_file, $media, $is_alt = false) {
+    public function _CSSlink($title, $css_file, $media, $is_alt = false)
+    {
         // Don't set title on default style.  This makes it clear to
         // the user which is the default (i.e. most supported) style.
-        if ($is_alt and isBrowserKonqueror())
+        if ($is_alt and isBrowserKonqueror()) {
             return HTML();
-        $link = HTML::link(array('rel'     => $is_alt ? 'alternate stylesheet' : 'stylesheet',
+        }
+        $link = HTML::link(['rel'     => $is_alt ? 'alternate stylesheet' : 'stylesheet',
                                  'type'    => 'text/css',
                                  'charset' => $GLOBALS['charset'],
-                                 'href'    => $this->_findData($css_file)));
-        if ($is_alt)
+                                 'href'    => $this->_findData($css_file)]);
+        if ($is_alt) {
             $link->setAttr('title', $title);
+        }
 
-        if ($media) 
+        if ($media) {
             $link->setAttr('media', $media);
+        }
         if ($this->DUMP_MODE) {
-            if (empty($this->dumped_css)) $this->dumped_css = array();
-            if (!in_array($css_file,$this->dumped_css)) $this->dumped_css[] = $css_file;
+            if (empty($this->dumped_css)) {
+                $this->dumped_css = [];
+            }
+            if (! in_array($css_file, $this->dumped_css)) {
+                $this->dumped_css[] = $css_file;
+            }
             $link->setAttr('href', basename($link->getAttr('href')));
         }
-        
+
         return $link;
     }
 
@@ -1060,12 +1200,14 @@ class Theme {
      * between media types and CSS file names.  Use a key of '' (the empty string)
      * to set the default CSS for non-specified media.  (See above for an example.)
      */
-    function setDefaultCSS ($title, $css_files) {
-        if (!is_array($css_files))
-            $css_files = array('' => $css_files);
+    public function setDefaultCSS($title, $css_files)
+    {
+        if (! is_array($css_files)) {
+            $css_files = ['' => $css_files];
+        }
         // Add to the front of $this->_css
         unset($this->_css[$title]);
-        $this->_css = array_merge(array($title => $css_files), $this->_css);
+        $this->_css = array_merge([$title => $css_files], $this->_css);
     }
 
     /** Set alternate CSS source for this theme.
@@ -1073,87 +1215,104 @@ class Theme {
      * @param string $title Name of style.
      * @param string $css_files Name of CSS file.
      */
-    function addAlternateCSS ($title, $css_files) {
-        if (!is_array($css_files))
-            $css_files = array('' => $css_files);
+    public function addAlternateCSS($title, $css_files)
+    {
+        if (! is_array($css_files)) {
+            $css_files = ['' => $css_files];
+        }
         $this->_css[$title] = $css_files;
     }
 
     /**
      * @return string HTML for CSS.
      */
-    function getCSS () {
-        $css = array();
+    public function getCSS()
+    {
+        $css    = [];
         $is_alt = false;
         foreach ($this->_css as $title => $css_files) {
             ksort($css_files); // move $css_files[''] to front.
             foreach ($css_files as $media => $css_file) {
                 $css[] = $this->_CSSlink($title, $css_file, $media, $is_alt);
-                if ($is_alt) break;
-                
+                if ($is_alt) {
+                    break;
+                }
             }
             $is_alt = true;
         }
         return HTML($css);
     }
 
-    function findTemplate ($name) {
-    	if ($tmp = $this->_findFile("templates/$name.tmpl", 1))
+    public function findTemplate($name)
+    {
+        if ($tmp = $this->_findFile("templates/$name.tmpl", 1)) {
             return $this->_path . $tmp;
-        else {
+        } else {
             $f1 = $this->file("templates/$name.tmpl");
-            trigger_error("pwd: ".getcwd(), E_USER_ERROR);
+            trigger_error("pwd: " . getcwd(), E_USER_ERROR);
             if (isset($this->_default_theme)) {
-               $f2 = $this->_default_theme->file("templates/$name.tmpl");
-               trigger_error("$f1 nor $f2 found", E_USER_ERROR);
-            } else 
-               trigger_error("$f1 not found", E_USER_ERROR);
+                $f2 = $this->_default_theme->file("templates/$name.tmpl");
+                trigger_error("$f1 nor $f2 found", E_USER_ERROR);
+            } else {
+                trigger_error("$f1 not found", E_USER_ERROR);
+            }
             return false;
         }
     }
 
-    var $_MoreHeaders = array();
-    function addMoreHeaders ($element) {
+    public $_MoreHeaders = [];
+    public function addMoreHeaders($element)
+    {
         array_push($this->_MoreHeaders, $element);
     }
-    function getMoreHeaders () {
-        if (empty($this->_MoreHeaders))
+    public function getMoreHeaders()
+    {
+        if (empty($this->_MoreHeaders)) {
             return '';
+        }
         $out = '';
         //$out = "<!-- More Headers -->\n";
         foreach ($this->_MoreHeaders as $h) {
-            if (is_object($h))
+            if (is_object($h)) {
                 $out .= printXML($h);
-            else
+            } else {
                 $out .= "$h\n";
+            }
         }
         return $out;
     }
 
-    var $_MoreAttr = array();
+    public $_MoreAttr = [];
     // new arg: named elements to be able to remove them. such as DoubleClickEdit for htmldumps
-    function addMoreAttr ($tag, $name, $element) {
+    public function addMoreAttr($tag, $name, $element)
+    {
         // protect from duplicate attr (body jscript: themes, prefs, ...)
-        static $_attr_cache = array();
-        $hash = md5($tag."/".$element);
-        if (!empty($_attr_cache[$hash])) return;
+        static $_attr_cache = [];
+        $hash               = md5($tag . "/" . $element);
+        if (! empty($_attr_cache[$hash])) {
+            return;
+        }
         $_attr_cache[$hash] = 1;
 
-        if (empty($this->_MoreAttr) or !is_array($this->_MoreAttr[$tag]))
-            $this->_MoreAttr[$tag] = array($name => $element);
-        else
+        if (empty($this->_MoreAttr) or ! is_array($this->_MoreAttr[$tag])) {
+            $this->_MoreAttr[$tag] = [$name => $element];
+        } else {
             $this->_MoreAttr[$tag][$name] = $element;
+        }
     }
 
-    function getMoreAttr ($tag) {
-        if (empty($this->_MoreAttr[$tag]))
+    public function getMoreAttr($tag)
+    {
+        if (empty($this->_MoreAttr[$tag])) {
             return '';
+        }
         $out = '';
         foreach ($this->_MoreAttr[$tag] as $name => $element) {
-            if (is_object($element))
+            if (is_object($element)) {
                 $out .= printXML($element);
-            else
+            } else {
                 $out .= "$element";
+            }
         }
         return $out;
     }
@@ -1161,14 +1320,17 @@ class Theme {
     /**
      * Custom UserPreferences:
      * A list of name => _UserPreference class pairs.
-     * Rationale: Certain themes should be able to extend the predefined list 
+     * Rationale: Certain themes should be able to extend the predefined list
      * of preferences. Display/editing is done in the theme specific userprefs.tmpl
      * but storage/sanification/update/... must be extended to the Get/SetPreferences methods.
      * These values are just ignored if another theme is used.
      */
-    function customUserPreferences($array) {
+    public function customUserPreferences($array)
+    {
         global $customUserPreferenceColumns; // FIXME: really a global?
-        if (empty($customUserPreferenceColumns)) $customUserPreferenceColumns = array();
+        if (empty($customUserPreferenceColumns)) {
+            $customUserPreferenceColumns = [];
+        }
         //array('wikilens' => new _UserPreference_wikilens());
         foreach ($array as $field => $prefobj) {
             $customUserPreferenceColumns[$field] = $prefobj;
@@ -1176,39 +1338,50 @@ class Theme {
     }
 
     /** addPageListColumn(array('rating' => new _PageList_Column_rating('rating', _("Rate"))))
-     *  Register custom PageList types for special themes, like 
+     *  Register custom PageList types for special themes, like
      *  'rating' for wikilens
      */
-    function addPageListColumn ($array) {
+    public function addPageListColumn($array)
+    {
         global $customPageListColumns;
-        if (empty($customPageListColumns)) $customPageListColumns = array();
+        if (empty($customPageListColumns)) {
+            $customPageListColumns = [];
+        }
         foreach ($array as $column => $obj) {
             $customPageListColumns[$column] = $obj;
         }
     }
 
     // Works only on action=browse. Patch #970004 by pixels
-    // Usage: call $WikiTheme->initDoubleClickEdit() from theme init or 
+    // Usage: call $WikiTheme->initDoubleClickEdit() from theme init or
     // define ENABLE_DOUBLECLICKEDIT
-    function initDoubleClickEdit() {
-        if (!$this->HTML_DUMP_SUFFIX)
+    public function initDoubleClickEdit()
+    {
+        if (! $this->HTML_DUMP_SUFFIX) {
             $this->addMoreAttr('body', 'DoubleClickEdit', HTML::Raw(" ondblclick=\"url = document.URL; url2 = url; if (url.indexOf('?') != -1) url2 = url.slice(0, url.indexOf('?')); if ((url.indexOf('action') == -1) || (url.indexOf('action=browse') != -1)) document.location = url2 + '?action=edit';\""));
+        }
     }
 
     // Immediate title search results via XMLHTML(HttpRequest
     // by Bitflux GmbH, bitflux.ch. You need to install the livesearch.js seperately.
     // Google's or acdropdown is better.
-    function initLiveSearch() {
-        if (!$this->HTML_DUMP_SUFFIX) {
-            $this->addMoreAttr('body', 'LiveSearch', 
-                               HTML::Raw(" onload=\"liveSearchInit()"));
+    public function initLiveSearch()
+    {
+        if (! $this->HTML_DUMP_SUFFIX) {
+            $this->addMoreAttr(
+                'body',
+                'LiveSearch',
+                HTML::Raw(" onload=\"liveSearchInit()")
+            );
             $this->addMoreHeaders(JavaScript('var liveSearchURI="'
-                                             .WikiURL(_("TitleSearch"),false,true).'";'));
-            $this->addMoreHeaders(JavaScript('', array
-                                             ('src' => $this->_findData('livesearch.js'))));
+                                             . WikiURL(_("TitleSearch"), false, true) . '";'));
+            $this->addMoreHeaders(JavaScript(
+                '',
+                ['src' => $this->_findData('livesearch.js')]
+            ));
         }
     }
-};
+}
 
 
 /**
@@ -1217,39 +1390,42 @@ class Theme {
  * In it's simplest (default) form, a "button" is just a link associated
  * with some sort of wiki-action.
  */
-class Button extends HtmlElement {
+class Button extends HtmlElement
+{
     /** Constructor
      *
      * @param $text string The text for the button.
      * @param $url string The url (href) for the button.
      * @param $class string The CSS class for the button.
      */
-    function __construct ($text, $url, $class = false) {
+    public function __construct($text, $url, $class = false)
+    {
         global $request;
         //php5 workaround
-        if (check_php_version(5)) {
-            $this->_init('a', array('href' => $url));
-        } else {
-            parent::__construct('a', array('href' => $url));
-        }
-        if ($class)
+        $this->_init('a', ['href' => $url]);
+        if ($class) {
             $this->setAttr('class', $class);
-        if ($request->getArg('frame'))
+        }
+        if ($request->getArg('frame')) {
             $this->setAttr('target', '_top');
+        }
         // Google honors this
-        if (in_array(strtolower($text), array('edit','create','diff'))
-            and !$request->_user->isAuthenticated())
+        if (
+            in_array(strtolower($text), ['edit', 'create', 'diff'])
+            and ! $request->_user->isAuthenticated()
+        ) {
             $this->setAttr('rel', 'nofollow');
+        }
         $this->pushContent($GLOBALS['WikiTheme']->maybeSplitWikiWord($text));
     }
-
-};
+}
 
 
 /**
  * A clickable image button.
  */
-class ImageButton extends Button {
+class ImageButton extends Button
+{
     /** Constructor
      *
      * @param $text string The text for the button.
@@ -1258,51 +1434,61 @@ class ImageButton extends Button {
      * @param $img_url string URL for button's image.
      * @param $img_attr array Additional attributes for the &lt;img&gt; tag.
      */
-    function __construct ($text, $url, $class, $img_url, $img_attr = false) {
-        parent::__construct('a', array('href' => $url));
-        if ($class)
+    public function __construct($text, $url, $class, $img_url, $img_attr = false)
+    {
+        parent::__construct('a', ['href' => $url]);
+        if ($class) {
             $this->setAttr('class', $class);
+        }
         // Google honors this
-        if (in_array(strtolower($text), array('edit','create','diff'))
-            and !$GLOBALS['request']->_user->isAuthenticated())
+        if (
+            in_array(strtolower($text), ['edit', 'create', 'diff'])
+            and ! $GLOBALS['request']->_user->isAuthenticated()
+        ) {
             $this->setAttr('rel', 'nofollow');
+        }
 
-        if (!is_array($img_attr))
-            $img_attr = array();
-        $img_attr['src'] = $img_url;
-        $img_attr['alt'] = $text;
-        $img_attr['class'] = 'wiki-button';
+        if (! is_array($img_attr)) {
+            $img_attr = [];
+        }
+        $img_attr['src']    = $img_url;
+        $img_attr['alt']    = $text;
+        $img_attr['class']  = 'wiki-button';
         $img_attr['border'] = 0;
         $this->pushContent(HTML::img($img_attr));
     }
-};
+}
 
 /**
  * A class representing a form <samp>submit</samp> button.
  */
-class SubmitButton extends HtmlElement {
+class SubmitButton extends HtmlElement
+{
     /** Constructor
      *
      * @param $text string The text for the button.
      * @param $name string The name of the form field.
      * @param $class string The CSS class for the button.
      */
-    function __construct ($text, $name = false, $class = false) {
-        parent::__construct('input', array('type' => 'submit',
-                                          'value' => $text));
-        if ($name)
+    public function __construct($text, $name = false, $class = false)
+    {
+        parent::__construct('input', ['type' => 'submit',
+                                          'value' => $text]);
+        if ($name) {
             $this->setAttr('name', $name);
-        if ($class)
+        }
+        if ($class) {
             $this->setAttr('class', $class);
+        }
     }
-
-};
+}
 
 
 /**
  * A class representing an image form <samp>submit</samp> button.
  */
-class SubmitImageButton extends SubmitButton {
+class SubmitImageButton extends SubmitButton
+{
     /** Constructor
      *
      * @param $text string The text for the button.
@@ -1311,23 +1497,25 @@ class SubmitImageButton extends SubmitButton {
      * @param $img_url string URL for button's image.
      * @param $img_attr array Additional attributes for the &lt;img&gt; tag.
      */
-    function __construct ($text, $name = false, $class = false, $img_url) {
-        parent::__construct('input', array('type'  => 'image',
+    public function __construct($text, $name, $class, $img_url)
+    {
+        parent::__construct('input', ['type'  => 'image',
                                           'src'   => $img_url,
                                           'value' => $text,
-                                          'alt'   => $text));
-        if ($name)
+                                          'alt'   => $text]);
+        if ($name) {
             $this->setAttr('name', $name);
-        if ($class)
+        }
+        if ($class) {
             $this->setAttr('class', $class);
+        }
     }
+}
 
-};
-
-/** 
+/**
  * A sidebar box with title and body, narrow fixed-width.
  * To represent abbrevated content of plugins, links or forms,
- * like "Getting Started", "Search", "Sarch Pagename", 
+ * like "Getting Started", "Search", "Sarch Pagename",
  * "Login", "Menu", "Recent Changes", "Last comments", "Last Blogs"
  * "Calendar"
  * ... See http://tikiwiki.org/
@@ -1337,101 +1525,127 @@ class SubmitImageButton extends SubmitButton {
  *   $menu = SidebarBox("Menu",HTML::dl(HTML::dt(...))); $menu->format();
  *   $menu = PluginSidebarBox("RecentChanges",array('limit'=>10)); $menu->format();
  */
-class SidebarBox {
+class SidebarBox
+{
 
-    function __construct($title, $body) {
+    public function __construct($title, $body)
+    {
         require_once('lib/WikiPlugin.php');
         $this->title = $title;
-        $this->body = $body;
+        $this->body  = $body;
     }
-    function format() {
+    public function format()
+    {
         return WikiPlugin::makeBox($this->title, $this->body);
     }
 }
 
-/** 
+/**
  * A sidebar box for plugins.
  * Any plugin may provide a box($args=false, $request=false, $basepage=false)
  * method, with the help of WikiPlugin::makeBox()
  */
-class PluginSidebarBox extends SidebarBox {
+class PluginSidebarBox extends SidebarBox
+{
 
-    var $_plugin, $_args = false, $_basepage = false;
+    public $_plugin;
+    public $_args     = false;
+    public $_basepage = false;
 
-    function __construct($name, $args = false, $basepage = false) {
+    public function __construct($name, $args = false, $basepage = false)
+    {
         $loader = new WikiPluginLoader();
         $plugin = $loader->getPlugin($name);
-        if (!$plugin) {
-            return $loader->_error(sprintf(_("Plugin %s: undefined"),
-                                          $name));
+        if (! $plugin) {
+            return $loader->_error(sprintf(
+                _("Plugin %s: undefined"),
+                $name
+            ));
         }/*
         if (!method_exists($plugin, 'box')) {
             return $loader->_error(sprintf(_("%s: has no box method"),
                                            get_class($plugin)));
         }*/
-        $this->_plugin   =& $plugin;
-        $this->_args     = $args ? $args : array();
+        $this->_plugin   = $plugin;
+        $this->_args     = $args ? $args : [];
         $this->_basepage = $basepage;
     }
 
-    function format($args = false) {
-        return $this->_plugin->box($args ? array_merge($this->_args, $args) : $this->_args,
-                                   $GLOBALS['request'], 
-                                   $this->_basepage);
+    public function format($args = false)
+    {
+        return $this->_plugin->box(
+            $args ? array_merge($this->_args, $args) : $this->_args,
+            $GLOBALS['request'],
+            $this->_basepage
+        );
     }
 }
 
 // Various boxes which are no plugins
-class RelatedLinksBox extends SidebarBox {
-    function __construct($title = false, $body = '', $limit = 20) {
+class RelatedLinksBox extends SidebarBox
+{
+    public function __construct($title = false, $body = '', $limit = 20)
+    {
         global $request;
-        $this->title = $title ? $title : _("Related Links");
-        $this->body = HTML($body);
-        $page = $request->getPage($request->getArg('pagename'));
-        $revision = $page->getCurrentRevision();
+        $this->title  = $title ? $title : _("Related Links");
+        $this->body   = HTML($body);
+        $page         = $request->getPage($request->getArg('pagename'));
+        $revision     = $page->getCurrentRevision();
         $page_content = $revision->getTransformedContent();
         //$cache = &$page->_wikidb->_cache;
         $counter = 0;
-        $sp = HTML::Raw('&middot; ');
+        $sp      = HTML::Raw('&middot; ');
         foreach ($page_content->getWikiPageLinks() as $link) {
-            if (!$request->_dbi->isWikiPage($link)) continue;
+            if (! $request->_dbi->isWikiPage($link)) {
+                continue;
+            }
             $this->body->pushContent($sp, WikiLink($link), HTML::br());
             $counter++;
-            if ($limit and $counter > $limit) continue;
-        }
-    }
-}
-
-class RelatedExternalLinksBox extends SidebarBox {
-    function __construct($title = false, $body = '', $limit = 20) {
-        global $request;
-        $this->title = $title ? $title : _("External Links");
-        $this->body = HTML($body);
-        $page = $request->getPage($request->getArg('pagename'));
-        $cache = &$page->_wikidb->_cache;
-        $counter = 0;
-        $sp = HTML::Raw('&middot; ');
-        foreach ($cache->getWikiPageLinks() as $link) {
-            if ($link) {
-                $this->body->pushContent($sp, WikiLink($link), HTML::br());
-                $counter++;
-                if ($limit and $counter > $limit) continue;
+            if ($limit and $counter > $limit) {
+                continue;
             }
         }
     }
 }
 
-function listAvailableThemes() {
-    $available_themes = array(); 
-    $dir_root = 'themes';
-    if (defined('PHPWIKI_DIR'))
+class RelatedExternalLinksBox extends SidebarBox
+{
+    public function __construct($title = false, $body = '', $limit = 20)
+    {
+        global $request;
+        $this->title = $title ? $title : _("External Links");
+        $this->body  = HTML($body);
+        $page        = $request->getPage($request->getArg('pagename'));
+        $cache       = &$page->_wikidb->_cache;
+        $counter     = 0;
+        $sp          = HTML::Raw('&middot; ');
+        foreach ($cache->getWikiPageLinks() as $link) {
+            if ($link) {
+                $this->body->pushContent($sp, WikiLink($link), HTML::br());
+                $counter++;
+                if ($limit and $counter > $limit) {
+                    continue;
+                }
+            }
+        }
+    }
+}
+
+function listAvailableThemes()
+{
+    $available_themes = [];
+    $dir_root         = 'themes';
+    if (defined('PHPWIKI_DIR')) {
         $dir_root = PHPWIKI_DIR . "/$dir_root";
+    }
     $dir = dir($dir_root);
     if ($dir) {
-        while($entry = $dir->read()) {
-            if (is_dir($dir_root.'/'.$entry)
-                && (substr($entry,0,1) != '.')
-                && $entry != 'CVS') {
+        while ($entry = $dir->read()) {
+            if (
+                is_dir($dir_root . '/' . $entry)
+                && (substr($entry, 0, 1) != '.')
+                && $entry != 'CVS'
+            ) {
                 array_push($available_themes, $entry);
             }
         }
@@ -1440,18 +1654,21 @@ function listAvailableThemes() {
     return $available_themes;
 }
 
-function listAvailableLanguages() {
-    $available_languages = array('en');
-    $dir_root = 'locale';
-    if (defined('PHPWIKI_DIR'))
+function listAvailableLanguages()
+{
+    $available_languages = ['en'];
+    $dir_root            = 'locale';
+    if (defined('PHPWIKI_DIR')) {
         $dir_root = PHPWIKI_DIR . "/$dir_root";
+    }
     if ($dir = dir($dir_root)) {
-        while($entry = $dir->read()) {
-            if (is_dir($dir_root."/".$entry)
-                && (substr($entry,0,1) != '.')
+        while ($entry = $dir->read()) {
+            if (
+                is_dir($dir_root . "/" . $entry)
+                && (substr($entry, 0, 1) != '.')
                 && $entry != 'po'
-                && $entry != 'CVS') 
-            {
+                && $entry != 'CVS'
+            ) {
                 array_push($available_languages, $entry);
             }
         }
@@ -1806,8 +2023,6 @@ function listAvailableLanguages() {
 //
 // Revision 1.59  2003/01/04 22:30:16  carstenklapp
 // New: display a "Never edited." message instead of an invalid epoch date.
-//
-
 // (c-file-style: "gnu")
 // Local Variables:
 // mode: php
@@ -1816,4 +2031,3 @@ function listAvailableLanguages() {
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

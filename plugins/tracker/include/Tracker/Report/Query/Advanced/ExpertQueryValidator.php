@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,7 +37,6 @@ class ExpertQueryValidator
 
     /**
      * @param string $expert_query
-     * @param IBuildInvalidSearchablesCollection $invalid_searchables_collection_builder
      * @throws SearchablesAreInvalidException
      * @throws SearchablesDoNotExistException
      */

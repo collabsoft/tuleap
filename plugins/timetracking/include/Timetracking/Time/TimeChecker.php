@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,7 +28,7 @@ use Tuleap\Timetracking\Exceptions\TimeTrackingBadDateFormatException;
 
 class TimeChecker
 {
-    const TIME_PATTERN = '^[0-9]{2}[:][0-9]{2}$';
+    public const TIME_PATTERN = '^[0-9]{2}[:][0-9]{2}$';
 
     public function doesTimeBelongsToUser(Time $time, PFUser $user)
     {
@@ -44,7 +44,7 @@ class TimeChecker
         $pattern = "/" . self::TIME_PATTERN . "/";
         if (! $time_value) {
             throw new TimeTrackingMissingTimeException();
-        } else if (! preg_match($pattern, $time_value)) {
+        } elseif (! preg_match($pattern, $time_value)) {
             throw new TimeTrackingBadTimeFormatException();
         }
     }

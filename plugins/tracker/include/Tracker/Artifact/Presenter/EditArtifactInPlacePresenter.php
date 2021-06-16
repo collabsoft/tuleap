@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -17,7 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
-class Tracker_Artifact_Presenter_EditArtifactInPlacePresenter {
+
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\Workflow\PostAction\HiddenFieldsets\HiddenFieldsetsDetector;
+
+class Tracker_Artifact_Presenter_EditArtifactInPlacePresenter
+{
 
     public $artifact_title;
 
@@ -29,7 +34,7 @@ class Tracker_Artifact_Presenter_EditArtifactInPlacePresenter {
 
     public $form_elements;
 
-    /** @var Tracker_Artifact */
+    /** @var Artifact */
     private $artifact;
 
     public $artifact_id;
@@ -39,57 +44,71 @@ class Tracker_Artifact_Presenter_EditArtifactInPlacePresenter {
     /** @var PFUser */
     private $user;
 
+    /** @var HiddenFieldsetsDetector */
+    private $hidden_fieldsets_detector;
+
     public function __construct(
         $follow_ups,
         $artifact_links,
         $form_elements,
-        Tracker_Artifact $artifact,
-        PFUser $user
+        Artifact $artifact,
+        PFUser $user,
+        HiddenFieldsetsDetector $hidden_fieldsets_detector
     ) {
-        $this->follow_ups        = $follow_ups;
-        $this->artifact_links    = $artifact_links;
-        $this->artifact          = $artifact;
-        $this->artifact_id       = $artifact->getId();
-        $this->artifact_title    = $this->getEmptyStringIfNull($artifact->getTitle());
-        $this->artifact_uri      = $artifact->getUri();
-        $this->last_changeset_id = $artifact->getLastChangeset()->getId();
-        $this->form_elements     = $form_elements;
-        $this->user              = $user;
+        $this->follow_ups                = $follow_ups;
+        $this->artifact_links            = $artifact_links;
+        $this->artifact                  = $artifact;
+        $this->artifact_id               = $artifact->getId();
+        $this->artifact_title            = $this->getEmptyStringIfNull($artifact->getTitle());
+        $this->artifact_uri              = $artifact->getUri();
+        $this->last_changeset_id         = $artifact->getLastChangeset()->getId();
+        $this->form_elements             = $form_elements;
+        $this->user                      = $user;
+        $this->hidden_fieldsets_detector = $hidden_fieldsets_detector;
     }
 
-    public function artifact_links_title() {
-        return $GLOBALS['Language']->getText('plugin_tracker_modal_artifact', 'artifact_links_title');
+    public function artifact_links_title()
+    {
+        return dgettext('tuleap-tracker', 'Artifact links');
     }
 
-    public function artifact_links_readonly() {
-        return $GLOBALS['Language']->getText('plugin_tracker_modal_artifact', 'artifact_links_readonly', array($this->artifact_uri));
+    public function artifact_links_readonly()
+    {
+        return sprintf(dgettext('tuleap-tracker', 'In order to edit artifact links, please <a href="%1$s">switch to the full edit mode</a>.'), $this->artifact_uri);
     }
 
-    public function no_artifact_links() {
-        return $GLOBALS['Language']->getText('plugin_tracker_modal_artifact', 'no_artifact_links');
+    public function no_artifact_links()
+    {
+        return dgettext('tuleap-tracker', 'No artifact links');
     }
 
-    public function add_followup_placeholder() {
-        return $GLOBALS['Language']->getText('plugin_tracker_modal_artifact', 'add_followup_placeholder');
+    public function add_followup_placeholder()
+    {
+        return dgettext('tuleap-tracker', 'Add a new comment...');
     }
 
-    public function followups_title() {
-        return $GLOBALS['Language']->getText('plugin_tracker_modal_artifact', 'followups_title');
+    public function followups_title()
+    {
+        return dgettext('tuleap-tracker', 'Follow-ups');
     }
 
-    public function javascript_rules() {
+    public function javascript_rules()
+    {
         return $this->artifact->getTracker()->displayRulesAsJavascript();
     }
 
-    public function submit() {
-        return $GLOBALS['Language']->getText('plugin_tracker_modal_artifact', 'submit');
+    public function submit()
+    {
+        return dgettext('tuleap-tracker', 'Submit');
     }
 
-    public function cancel() {
-        return $GLOBALS['Language']->getText('plugin_tracker_modal_artifact', 'cancel');
+    public function cancel()
+    {
+        return dgettext('tuleap-tracker', 'Cancel');
     }
 
-    public function user_is_logged_in() {
+    public function user_is_logged_in()
+    {
         return $this->user->isLoggedIn();
     }
 
@@ -106,7 +125,7 @@ class Tracker_Artifact_Presenter_EditArtifactInPlacePresenter {
 
     public function parent_artifact_presenter()
     {
-        $parent_artifact_presenter = array();
+        $parent_artifact_presenter = [];
         $parent_artifact           = $this->artifact->getParent($this->user);
 
         if ($parent_artifact) {
@@ -119,6 +138,11 @@ class Tracker_Artifact_Presenter_EditArtifactInPlacePresenter {
 
     public function parent_artifact_label()
     {
-        return $GLOBALS['Language']->getText('plugin_tracker_modal_artifact', 'parent_artifact');
+        return dgettext('tuleap-tracker', 'Parent artifact:');
+    }
+
+    public function has_hidden_fieldsets(): bool
+    {
+        return $this->hidden_fieldsets_detector->doesArtifactContainHiddenFieldsets($this->artifact);
     }
 }

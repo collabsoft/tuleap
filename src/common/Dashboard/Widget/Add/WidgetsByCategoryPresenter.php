@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -30,7 +30,7 @@ class WidgetsByCategoryPresenter
 
     public function __construct($name, array $widgets)
     {
-        $this->name    = $GLOBALS['Language']->getText('widget_categ_label', $name);
+        $this->name    = $name;
         $this->widgets = $widgets;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,23 +18,24 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class CardwallConfigXml {
-    const NODE_CARDWALL = 'cardwall';
-    const NODE_TRACKERS = 'trackers';
-    const NODE_TRACKER  = 'tracker';
-    const NODE_COLUMNS  = 'columns';
-    const NODE_COLUMN   = 'column';
-    const NODE_MAPPINGS = 'mappings';
-    const NODE_MAPPING  = 'mapping';
-    const NODE_VALUES   = 'values';
-    const NODE_VALUE    = 'value';
+class CardwallConfigXml
+{
+    public const NODE_CARDWALL = 'cardwall';
+    public const NODE_TRACKERS = 'trackers';
+    public const NODE_TRACKER  = 'tracker';
+    public const NODE_COLUMNS  = 'columns';
+    public const NODE_COLUMN   = 'column';
+    public const NODE_MAPPINGS = 'mappings';
+    public const NODE_MAPPING  = 'mapping';
+    public const NODE_VALUES   = 'values';
+    public const NODE_VALUE    = 'value';
 
-    const ATTRIBUTE_COLUMN_LABEL          = 'label';
-    const ATTRIBUTE_COLUMN_ID             = 'id';
-    const ATTRIBUTE_COLUMN_BG_RED         = 'bg_red';
-    const ATTRIBUTE_COLUMN_BG_GREEN       = 'bg_green';
-    const ATTRIBUTE_COLUMN_BG_BLUE        = 'bg_blue';
-    const ATTRIBUTE_COLUMN_TLP_COLOR_NAME = 'tlp_color_name';
+    public const ATTRIBUTE_COLUMN_LABEL          = 'label';
+    public const ATTRIBUTE_COLUMN_ID             = 'id';
+    public const ATTRIBUTE_COLUMN_BG_RED         = 'bg_red';
+    public const ATTRIBUTE_COLUMN_BG_GREEN       = 'bg_green';
+    public const ATTRIBUTE_COLUMN_BG_BLUE        = 'bg_blue';
+    public const ATTRIBUTE_COLUMN_TLP_COLOR_NAME = 'tlp_color_name';
 
-    const ATTRIBUTE_TRACKER_ID = 'id';
+    public const ATTRIBUTE_TRACKER_ID = 'id';
 }

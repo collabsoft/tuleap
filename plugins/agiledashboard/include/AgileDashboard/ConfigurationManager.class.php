@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,21 +19,34 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class AgileDashboard_ConfigurationManager {
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Tuleap\AgileDashboard\BlockScrumAccess;
 
-    const DEFAULT_SCRUM_TITLE  = 'Scrum';
-    const DEFAULT_KANBAN_TITLE = 'Kanban';
+class AgileDashboard_ConfigurationManager
+{
+
+    public const DEFAULT_SCRUM_TITLE  = 'Scrum';
+    public const DEFAULT_KANBAN_TITLE = 'Kanban';
 
     /**
      * @var AgileDashboard_ConfigurationDao
      */
     private $dao;
+    /**
+     * @var EventDispatcherInterface
+     */
+    private $event_dispatcher;
 
-    public function __construct(AgileDashboard_ConfigurationDao $dao) {
-        $this->dao = $dao;
+    public function __construct(
+        AgileDashboard_ConfigurationDao $dao,
+        Psr\EventDispatcher\EventDispatcherInterface $event_dispatcher
+    ) {
+        $this->dao              = $dao;
+        $this->event_dispatcher = $event_dispatcher;
     }
 
-    public function kanbanIsActivatedForProject($project_id) {
+    public function kanbanIsActivatedForProject($project_id)
+    {
         $row = $this->dao->isKanbanActivated($project_id)->getRow();
         if ($row) {
             return $row['kanban'];
@@ -42,8 +55,14 @@ class AgileDashboard_ConfigurationManager {
         return false;
     }
 
-    public function scrumIsActivatedForProject($project_id) {
-        $row = $this->dao->isScrumActivated($project_id)->getRow();
+    public function scrumIsActivatedForProject(Project $project): bool
+    {
+        $block_scrum_access = new BlockScrumAccess($project);
+        $this->event_dispatcher->dispatch($block_scrum_access);
+        if (! $block_scrum_access->isScrumAccessEnabled()) {
+            return false;
+        }
+        $row = $this->dao->isScrumActivated($project->getID())->getRow();
         if ($row) {
             return $row['scrum'];
         }
@@ -51,7 +70,8 @@ class AgileDashboard_ConfigurationManager {
         return true;
     }
 
-    public function getScrumTitle($project_id) {
+    public function getScrumTitle($project_id)
+    {
         $row = $this->dao->getScrumTitle($project_id);
 
         if ($row) {
@@ -61,7 +81,8 @@ class AgileDashboard_ConfigurationManager {
         return self::DEFAULT_SCRUM_TITLE;
     }
 
-    public function getKanbanTitle($project_id) {
+    public function getKanbanTitle($project_id)
+    {
         $row = $this->dao->getKanbanTitle($project_id);
 
         if ($row) {
@@ -87,7 +108,8 @@ class AgileDashboard_ConfigurationManager {
         );
     }
 
-    public function duplicate($project_id, $template_id) {
+    public function duplicate($project_id, $template_id)
+    {
         $this->dao->duplicate($project_id, $template_id);
     }
 }

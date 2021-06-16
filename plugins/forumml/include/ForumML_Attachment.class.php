@@ -20,14 +20,16 @@
 
 require_once 'ForumML_AttachmentDao.class.php';
 
-class ForumML_Attachment {
+class ForumML_Attachment
+{
     private $_dao;
 
-    function getById($id) {
+    public function getById($id)
+    {
         $attach = null;
         $dar    = $this->getDao()->getById($id);
-        if ($dar && !$dar->isError()) {
-            $attch = $dar->current();
+        if ($dar && ! $dar->isError()) {
+            $attch         = $dar->current();
             $attch['type'] = $this->getType($attch);
         }
         return $attch;
@@ -38,57 +40,56 @@ class ForumML_Attachment {
      *
      * Try to get it from the db and if it fails, try with filename
      */
-    function getType($row) {
+    public function getType($row)
+    {
         if (preg_match('/^[ ]*(.*\/.*)[ ]*;?.*$/', $row['file_type'], $matches)) {
             $type = $matches[1];
         } else {
             // Retrieve the uploaded file type
-            switch(strtoupper(strrchr($row['file_name'], "."))) {
-            case ".GZ":
-                $type = "application/x-gzip";
-                break;
-            case ".TGZ":
-                $type = "application/x-gzip";
-                break;
-            case ".ZIP":
-                $type = "application/zip";
-                break;
-            case ".PDF":
-                $type = "application/pdf";
-                break;
-            case ".PNG":
-                $type = "image/png";
-                break;
-            case ".GIF":
-                $type = "image/gif";
-                break;
-            case ".JPG":
-                $type = "image/jpeg";
-                break;
-            case ".TXT":
-                $type = "text/plain";
-                break;
-            case ".HTM":
-                $type = "text/html";
-                break;
-            case ".HTML":
-                $type = "text/html";
-                break;
-            default:
-                $type = "application/octet-stream";
-                break;
+            switch (strtoupper(strrchr($row['file_name'], "."))) {
+                case ".GZ":
+                    $type = "application/x-gzip";
+                    break;
+                case ".TGZ":
+                    $type = "application/x-gzip";
+                    break;
+                case ".ZIP":
+                    $type = "application/zip";
+                    break;
+                case ".PDF":
+                    $type = "application/pdf";
+                    break;
+                case ".PNG":
+                    $type = "image/png";
+                    break;
+                case ".GIF":
+                    $type = "image/gif";
+                    break;
+                case ".JPG":
+                    $type = "image/jpeg";
+                    break;
+                case ".TXT":
+                    $type = "text/plain";
+                    break;
+                case ".HTM":
+                    $type = "text/html";
+                    break;
+                case ".HTML":
+                    $type = "text/html";
+                    break;
+                default:
+                    $type = "application/octet-stream";
+                    break;
             }
         }
         return $type;
     }
 
-    function getDao() {
-        if (!isset($this->_dao)) {
+    public function getDao()
+    {
+        if (! isset($this->_dao)) {
             $this->_dao = new ForumML_AttachmentDao(CodendiDataAccess::instance());
         }
         return $this->_dao;
     }
-
 }
-
-?>

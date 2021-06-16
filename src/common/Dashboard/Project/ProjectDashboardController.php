@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -22,27 +22,32 @@ namespace Tuleap\Dashboard\Project;
 
 use Codendi_HTMLPurifier;
 use CSRFSynchronizerToken;
+use EventManager;
 use Exception;
 use Feedback;
 use ForgeConfig;
-use HttpRequest;
+use HTTPRequest;
 use PFUser;
 use Project;
 use ProjectManager;
 use TemplateRendererFactory;
+use Tuleap\Dashboard\AssetsIncluder;
 use Tuleap\Dashboard\DashboardDoesNotExistException;
-use Tuleap\Dashboard\JavascriptFilesIncluder;
 use Tuleap\Dashboard\NameDashboardAlreadyExistsException;
 use Tuleap\Dashboard\NameDashboardDoesNotExistException;
 use Tuleap\Dashboard\Widget\DashboardWidgetPresenterBuilder;
 use Tuleap\Dashboard\Widget\DashboardWidgetRetriever;
 use Tuleap\Dashboard\Widget\OwnerInfo;
+use Tuleap\Event\Events\ProjectProviderEvent;
+use Tuleap\Layout\BaseLayout;
+use Tuleap\Layout\CssAsset;
+use Tuleap\Layout\IncludeAssets;
 use Tuleap\TroveCat\TroveCatLinkDao;
 
 class ProjectDashboardController
 {
-    const DASHBOARD_TYPE = 'project';
-    const LEGACY_DASHBOARD_TYPE = 'g';
+    public const DASHBOARD_TYPE        = 'project';
+    public const LEGACY_DASHBOARD_TYPE = 'g';
 
     /**
      * @var CSRFSynchronizerToken
@@ -77,9 +82,26 @@ class ProjectDashboardController
      */
     private $widget_minimizor;
     /**
-     * @var JavascriptFilesIncluder
+     * @var AssetsIncluder
      */
-    private $javascript_files_includer;
+    private $assets_includer;
+
+    /**
+     * @var EventManager
+     */
+    private $event_manager;
+    /**
+     * @var BaseLayout
+     */
+    private $layout;
+    /**
+     * @var IncludeAssets
+     */
+    private $javascript_assets;
+    /**
+     * @var CssAsset
+     */
+    private $css_asset;
 
     public function __construct(
         CSRFSynchronizerToken $csrf,
@@ -90,22 +112,27 @@ class ProjectDashboardController
         DashboardWidgetPresenterBuilder $widget_presenter_builder,
         WidgetDeletor $widget_deletor,
         WidgetMinimizor $widget_minimizor,
-        JavascriptFilesIncluder $javascript_files_includer
+        AssetsIncluder $assets_includer,
+        EventManager $event_manager,
+        BaseLayout $layout,
+        IncludeAssets $core_assets,
+        CssAsset $css_asset
     ) {
-        $this->csrf                      = $csrf;
-        $this->project                   = $project;
-        $this->retriever                 = $retriever;
-        $this->saver                     = $saver;
-        $this->widget_retriever          = $widget_retriever;
-        $this->widget_presenter_builder  = $widget_presenter_builder;
-        $this->widget_deletor            = $widget_deletor;
-        $this->widget_minimizor          = $widget_minimizor;
-        $this->javascript_files_includer = $javascript_files_includer;
+        $this->csrf                     = $csrf;
+        $this->project                  = $project;
+        $this->retriever                = $retriever;
+        $this->saver                    = $saver;
+        $this->widget_retriever         = $widget_retriever;
+        $this->widget_presenter_builder = $widget_presenter_builder;
+        $this->widget_deletor           = $widget_deletor;
+        $this->widget_minimizor         = $widget_minimizor;
+        $this->assets_includer          = $assets_includer;
+        $this->event_manager            = $event_manager;
+        $this->layout                   = $layout;
+        $this->javascript_assets        = $core_assets;
+        $this->css_asset                = $css_asset;
     }
 
-    /**
-     * @param HTTPRequest $request
-     */
     public function display(HTTPRequest $request)
     {
         $project            = $request->getProject();
@@ -113,56 +140,60 @@ class ProjectDashboardController
         $dashboard_id       = $request->get('dashboard_id');
         $project_dashboards = $this->retriever->getAllProjectDashboards($this->project);
 
+        $should_display_project_created_modal = $request->get("should-display-created-project-modal");
+
+        if ($should_display_project_created_modal) {
+            $this->layout->includeFooterJavascriptFile(
+                $this->javascript_assets->getFileURL('project/project-registration-creation.js')
+            );
+            $this->layout->addCssAsset($this->css_asset);
+        }
+
         if ($dashboard_id && ! $this->doesDashboardIdExist($dashboard_id, $project_dashboards)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
                 _('The requested dashboard does not exist.')
             );
         }
-
         $project_dashboards_presenter = $this->getProjectDashboardsPresenter(
             $user,
             $project,
             $dashboard_id,
             $project_dashboards
         );
-        $trove_cats                   = array();
+        $trove_cats                   = [];
         if (ForgeConfig::get('sys_use_trove')) {
             $trove_dao = new TroveCatLinkDao();
             foreach ($trove_dao->searchTroveCatForProject($project->getID()) as $row_trovecat) {
                 $trove_cats[] = $row_trovecat['fullname'];
             }
-
-            if (ForgeConfig::get('sys_trove_cat_mandatory')
-                && $request->getCurrentUser()->isAdmin($project->getID())
-                && empty($trove_cats)
-            ) {
-                $trove_url = '/project/admin/group_trove.php?group_id='.$project->getID();
-                $GLOBALS['Response']->addFeedback(
-                    Feedback::WARN,
-                    $GLOBALS['Language']->getText('include_html', 'no_trovcat', $trove_url),
-                    CODENDI_PURIFIER_DISABLED
-                );
-            }
         }
+
+        $this->assets_includer->includeAssets($project_dashboards_presenter);
 
         $purifier = Codendi_HTMLPurifier::instance();
         $title    = $purifier->purify($this->getPageTitle($project_dashboards_presenter, $project));
+
         site_project_header(
-            array(
-                'title'  => $title,
-                'group'  => $project->getID(),
-                'toptab' => 'summary'
-            )
+            [
+                'title'                          => $title,
+                'group'                          => $project->getID(),
+                'toptab'                         => 'summary',
+                'without-project-in-breadcrumbs' => true,
+            ]
         );
         $renderer = TemplateRendererFactory::build()->getRenderer(
             ForgeConfig::get('tuleap_dir') . '/src/templates/dashboard'
         );
+
+        $event = new ProjectProviderEvent($this->project);
+        $this->event_manager->processEvent($event);
+
         $renderer->renderToPage(
             'project',
             new ProjectPagePresenter(
                 $this->csrf,
-                '/projects/'.urlencode($this->project->getUnixName()).'/',
+                '/projects/' . urlencode($this->project->getUnixName()) . '/',
                 new ProjectPresenter(
                     $this->project,
                     ProjectManager::instance(),
@@ -170,17 +201,13 @@ class ProjectDashboardController
                     $trove_cats
                 ),
                 $project_dashboards_presenter,
-                $this->canUpdateDashboards($user, $project)
+                $this->canUpdateDashboards($user, $project),
+                $should_display_project_created_modal
             )
         );
-
-        $this->javascript_files_includer->includeJavascriptFiles($project_dashboards_presenter);
-        $GLOBALS['Response']->footer(array());
+        $GLOBALS['Response']->footer([]);
     }
 
-    /**
-     * @param HttpRequest $request
-     */
     public function createDashboard(HTTPRequest $request)
     {
         $this->csrf->check();
@@ -201,7 +228,7 @@ class ProjectDashboardController
                 Feedback::ERROR,
                 sprintf(
                     _('You have not rights to update dashboards of the project "%s".'),
-                    $project->getUnconvertedPublicName()
+                    $project->getPublicName()
                 )
             );
         } catch (NameDashboardAlreadyExistsException $exception) {
@@ -227,9 +254,6 @@ class ProjectDashboardController
         $this->redirectToDefaultDashboard();
     }
 
-    /**
-     * @param HttpRequest $request
-     */
     public function editDashboard(HTTPRequest $request)
     {
         $this->csrf->check();
@@ -253,7 +277,7 @@ class ProjectDashboardController
                 Feedback::ERROR,
                 sprintf(
                     _('You have not rights to update dashboards of the project "%s".'),
-                    $project->getUnconvertedPublicName()
+                    $project->getPublicName()
                 )
             );
         } catch (NameDashboardAlreadyExistsException $exception) {
@@ -288,9 +312,6 @@ class ProjectDashboardController
         $this->redirectToDashboard($dashboard_id);
     }
 
-    /**
-     * @param HttpRequest $request
-     */
     public function deleteDashboard(HTTPRequest $request)
     {
         $this->csrf->check();
@@ -313,7 +334,7 @@ class ProjectDashboardController
                 Feedback::ERROR,
                 sprintf(
                     _('You have not rights to update dashboards of the project "%s".'),
-                    $project->getUnconvertedPublicName()
+                    $project->getPublicName()
                 )
             );
         } catch (DashboardDoesNotExistException $exception) {
@@ -344,7 +365,7 @@ class ProjectDashboardController
      */
     private function getProjectDashboardsPresenter(PFUser $user, Project $project, $dashboard_id, array $project_dashboards)
     {
-        $project_dashboards_presenter = array();
+        $project_dashboards_presenter = [];
 
         foreach ($project_dashboards as $index => $dashboard) {
             if (! $dashboard_id && $index === 0) {
@@ -353,7 +374,7 @@ class ProjectDashboardController
                 $is_active = $dashboard->getId() === $dashboard_id;
             }
 
-            $widgets_presenter = array();
+            $widgets_presenter = [];
             if ($is_active) {
                 $widgets_lines = $this->widget_retriever->getAllWidgets($dashboard->getId(), self::DASHBOARD_TYPE);
                 if ($widgets_lines) {
@@ -396,13 +417,11 @@ class ProjectDashboardController
     private function redirectToDashboard($dashboard_id)
     {
         $GLOBALS['Response']->redirect(
-            '/projects/' . urlencode($this->project->getUnixName()) . '/?dashboard_id='. urlencode($dashboard_id)
+            '/projects/' . urlencode($this->project->getUnixName()) . '/?dashboard_id=' . urlencode($dashboard_id)
         );
     }
 
     /**
-     * @param PFUser $user
-     * @param Project $project
      * @return bool
      */
     private function canUpdateDashboards(PFUser $user, Project $project)
@@ -500,7 +519,7 @@ class ProjectDashboardController
                 $title = $presenter->name . ' - ';
             }
         }
-        $title .= $project->getUnconvertedPublicName();
+        $title .= $project->getPublicName();
 
         return $title;
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class AgileDashboardConfigurationResponse {
+class AgileDashboardConfigurationResponse
+{
 
     /** @var Project */
     private $project;
@@ -26,20 +27,29 @@ class AgileDashboardConfigurationResponse {
     /** @var bool */
     private $redirect_to_home_on_success;
 
-    public function __construct(Project $project, $redirect_to_home_on_success) {
+    public function __construct(Project $project, $redirect_to_home_on_success)
+    {
         $this->project                     = $project;
         $this->redirect_to_home_on_success = $redirect_to_home_on_success;
     }
 
-    public function missingKanbanTitle() {
+    public function missingKanbanTitle()
+    {
         $this->notifyErrorAndRedirectToAdmin('kanban');
     }
 
-    public function missingScrumTitle() {
+    public function missingScrumTitle()
+    {
         $this->notifyErrorAndRedirectToAdmin('scrum');
     }
 
-    public function kanbanConfigurationUpdated() {
+    public function deactivateExplicitTopBacklogNotAllowed()
+    {
+        $this->notifyErrorAndRedirectToAdmin('scrum');
+    }
+
+    public function kanbanConfigurationUpdated()
+    {
         if ($this->redirect_to_home_on_success) {
             $this->redirectToHome();
             return;
@@ -48,7 +58,8 @@ class AgileDashboardConfigurationResponse {
         $this->redirectToAdmin('kanban');
     }
 
-    public function scrumConfigurationUpdated() {
+    public function scrumConfigurationUpdated()
+    {
         if ($this->redirect_to_home_on_success) {
             $this->redirectToHome();
             return;
@@ -57,60 +68,72 @@ class AgileDashboardConfigurationResponse {
         $this->redirectToAdmin('scrum');
     }
 
-    public function kanbanActivated() {
-        $this->info($GLOBALS['Language']->getText('plugin_agiledashboard', 'kanban_activated'));
+    public function kanbanActivated()
+    {
+        $this->info(dgettext('tuleap-agiledashboard', 'Kanban successfully activated.'));
     }
 
-    public function scrumActivated() {
-        $this->info($GLOBALS['Language']->getText('plugin_agiledashboard', 'scrum_activated'));
+    public function scrumActivated()
+    {
+        $this->info(dgettext('tuleap-agiledashboard', 'Scrum successfully activated.'));
     }
 
-    public function emptyKanbanTitle() {
-        $this->warn($GLOBALS['Language']->getText('plugin_agiledashboard', 'kanban_title_empty'));
+    public function emptyKanbanTitle()
+    {
+        $this->warn(dgettext('tuleap-agiledashboard', 'Kanban title is empty.'));
     }
 
-    public function emptyScrumTitle() {
-        $this->warn($GLOBALS['Language']->getText('plugin_agiledashboard', 'scrum_title_empty'));
+    public function emptyScrumTitle()
+    {
+        $this->warn(dgettext('tuleap-agiledashboard', 'Scrum title is empty.'));
     }
 
-    public function kanbanTitleChanged() {
-        $this->info($GLOBALS['Language']->getText('plugin_agiledashboard', 'kanban_title_changed'));
+    public function kanbanTitleChanged()
+    {
+        $this->info(dgettext('tuleap-agiledashboard', 'Kanban title successfully modified.'));
     }
 
-    public function scrumTitleChanged() {
-        $this->info($GLOBALS['Language']->getText('plugin_agiledashboard', 'scrum_title_changed'));
+    public function scrumTitleChanged()
+    {
+        $this->info(dgettext('tuleap-agiledashboard', 'Scrum title successfully modified.'));
     }
 
-    private function notifyErrorAndRedirectToAdmin($pane) {
-        $this->error($GLOBALS['Language']->getText('plugin_agiledashboard', 'invalid_request'));
+    private function notifyErrorAndRedirectToAdmin($pane)
+    {
+        $this->error(dgettext('tuleap-agiledashboard', 'The request is invalid.'));
         $this->redirectToAdmin($pane);
     }
 
-    private function info($message) {
+    private function info($message)
+    {
         $GLOBALS['Response']->addFeedback(Feedback::INFO, $message);
     }
 
-    private function warn($message) {
+    private function warn($message)
+    {
         $GLOBALS['Response']->addFeedback(Feedback::WARN, $message);
     }
 
-    private function error($message) {
+    private function error($message)
+    {
         $GLOBALS['Response']->addFeedback(Feedback::ERROR, $message);
     }
 
-    private function redirectToAdmin($pane) {
-        $query_parts = array(
+    private function redirectToAdmin($pane)
+    {
+        $query_parts = [
             'group_id' => $this->project->getId(),
             'action'   => 'admin',
             'pane'     => $pane
-        );
-        $GLOBALS['Response']->redirect('/plugins/agiledashboard/?'. http_build_query($query_parts));
+        ];
+        $GLOBALS['Response']->redirect('/plugins/agiledashboard/?' . http_build_query($query_parts));
     }
 
-    private function redirectToHome() {
-        $query_parts = array(
+    private function redirectToHome()
+    {
+        $query_parts = [
             'group_id' => $this->project->getId()
-        );
-        $GLOBALS['Response']->redirect('/plugins/agiledashboard/?'. http_build_query($query_parts));
+        ];
+        $GLOBALS['Response']->redirect('/plugins/agiledashboard/?' . http_build_query($query_parts));
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,41 +18,46 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Git_AdminPresenter {
+class Git_AdminPresenter
+{
 
     public $title;
 
     public $csrf_token;
 
-    public $manage_gerrit                         = false;
-    public $manage_mirrors                        = false;
-    public $manage_gitolite_config                = false;
-    public $migrate_to_tuleap_ssh_keys_management = false;
-    public $manage_general_settings               = false;
+    public $manage_gerrit           = false;
+    public $manage_mirrors          = false;
+    public $manage_gitolite_config  = false;
+    public $manage_general_settings = false;
 
     public $mirrors_active          = '';
     public $general_settings_active = '';
     public $gerrit_active           = '';
     public $gitolite_config_active  = '';
 
-    public function __construct($title, CSRFSynchronizerToken $csrf_token) {
+    public function __construct($title, CSRFSynchronizerToken $csrf_token)
+    {
         $this->title      = $title;
         $this->csrf_token = $csrf_token;
     }
 
-    public function gerrit_tab_name() {
-        return $GLOBALS['Language']->getText('plugin_git','gerrit_tab_name');
+    public function gerrit_tab_name()
+    {
+        return dgettext('tuleap-git', 'Gerrit');
     }
 
-    public function general_settings_tab_name() {
-        return $GLOBALS['Language']->getText('plugin_git','general_settings_tab_name');
+    public function general_settings_tab_name()
+    {
+        return dgettext('tuleap-git', 'General settings');
     }
 
-    public function mirror_tab_name() {
-        return $GLOBALS['Language']->getText('plugin_git','mirror_tab_name');
+    public function mirror_tab_name()
+    {
+        return dgettext('tuleap-git', 'Mirrors');
     }
 
-    public function gitolite_config_tab_name() {
-        return $GLOBALS['Language']->getText('plugin_git','gitolite_config_tab_name');
+    public function gitolite_config_tab_name()
+    {
+        return dgettext('tuleap-git', 'Gitolite');
     }
 }

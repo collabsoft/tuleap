@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,28 +19,31 @@
  */
 
 use Tuleap\BurningParrotCompatiblePageDetector;
+use Tuleap\Instrument\Prometheus\Prometheus;
 use Tuleap\Layout\ErrorRendering;
 use Tuleap\Request\CurrentPage;
 use Tuleap\Request\FrontRouter;
+use Tuleap\Request\RequestInstrumentation;
 use Tuleap\Request\RouteCollector;
 
 define('FRONT_ROUTER', true);
 
-require_once __DIR__.'/include/pre.php';
+require_once __DIR__ . '/include/pre.php';
 
 $router = new FrontRouter(
     new RouteCollector($event_manager),
     new URLVerificationFactory($event_manager),
-    new BackendLogger(),
+    BackendLogger::getDefaultLogger(),
     new ErrorRendering(),
     new ThemeManager(
         new BurningParrotCompatiblePageDetector(
             new CurrentPage(),
-            new Admin_Homepage_Dao(),
             new User_ForgeUserGroupPermissionsManager(
                 new User_ForgeUserGroupPermissionsDao()
             )
         )
-    )
+    ),
+    PluginManager::instance(),
+    new RequestInstrumentation(Prometheus::instance())
 );
 $router->route($request);

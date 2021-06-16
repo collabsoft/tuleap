@@ -7,12 +7,12 @@
 >
     <div class="tlp-modal-header">
         <h1 class="tlp-modal-title" id="delete-widget-modal-label-{{ widget_id }}">
-            <i class="fa fa-trash-o tlp-modal-title-icon"></i>
+            <i class="far fa-trash-alt tlp-modal-title-icon"></i>
             {{ delete_widget_label }}
         </h1>
-        <div class="tlp-modal-close" data-dismiss="modal" aria-label="{{ close }}">
+        <button class="tlp-modal-close" type="button" data-dismiss="modal" aria-label="{{ close }}">
             ×
-        </div>
+        </button>
     </div>
     <div class="tlp-modal-body">
         <input type="hidden" name="dashboard-id" value="{{ id }}">
@@ -29,7 +29,7 @@
             {{ cancel }}
         </button>
         <button type="submit" class="tlp-button-danger tlp-modal-action">
-            <i class="fa fa-trash-o tlp-button-icon"></i> {{ delete_widget_label }}
+            <i class="far fa-trash-alt tlp-button-icon"></i> {{ delete_widget_label }}
         </button>
     </div>
 </form>

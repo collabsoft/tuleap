@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupRepresentat
 class RepositoryFineGrainedRepresentation
 {
     /**
-     * @var boolean
+     * @var bool
      */
     public $has_fined_grained_permissions;
     /**

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,10 +18,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-abstract class Tracker_Artifact_Exception_CannotCreateChangeset extends Tracker_Artifact_Exception_XMLImportException {
-    public function __construct($message) {
+abstract class Tracker_Artifact_Exception_CannotCreateChangeset extends Tracker_Artifact_Exception_XMLImportException
+{
+    public function __construct($message)
+    {
         $feedback = $GLOBALS['Response']->getRawFeedback();
         $GLOBALS['Response']->clearFeedback();
-        parent::__construct($message.': '.$feedback);
+        parent::__construct($message . ': ' . $feedback);
     }
 }

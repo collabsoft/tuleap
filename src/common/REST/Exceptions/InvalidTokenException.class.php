@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,10 @@
  */
 
 
-class Rest_Exception_InvalidTokenException extends Exception {
-    public function __construct() {
+class Rest_Exception_InvalidTokenException extends Exception
+{
+    public function __construct()
+    {
         parent::__construct("Invalid Token");
     }
 }
-?>

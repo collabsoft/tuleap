@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -88,15 +88,6 @@ class CrossTrackerReportDao extends DataAccessObject
         }
     }
 
-    public function deleteTrackersByGroupId($group_id)
-    {
-        $sql = 'DELETE report.* FROM plugin_crosstracker_report_tracker report
-                  INNER JOIN tracker ON report.tracker_id = tracker.id
-                WHERE tracker.group_id = ?';
-
-        $this->getDB()->run($sql, $group_id);
-    }
-
     public function searchTrackersIdUsedByCrossTrackerByProjectId($project_id)
     {
         $sql = 'SELECT tracker.id
@@ -118,8 +109,10 @@ class CrossTrackerReportDao extends DataAccessObject
         return $this->getDB()->run($sql, $report_id);
     }
 
-
-    public function searchCrossTrackerWidgetByCrossTrackerReportId($content_id)
+    /**
+     * @psalm-return array{dashboard_id: int, dashboard_type: string, user_id: int, project_id: int}|null
+     */
+    public function searchCrossTrackerWidgetByCrossTrackerReportId($content_id): ?array
     {
         $sql = "SELECT dashboard_id, dashboard_type, user_id, project_dashboards.project_id
                   FROM plugin_crosstracker_report

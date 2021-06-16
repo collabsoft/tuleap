@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,22 +22,25 @@
  * VersionFactory is a transport object (aka container) used to share data between
  * Model/Controler and View layer of the application
  */
-class Docman_LinkVersionFactory {
+class Docman_LinkVersionFactory
+{
 
     /**
      * @var Docman_LinkVersionDao
      */
     private $dao;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->dao = new Docman_LinkVersionDao();
     }
 
     /**
      * @return Docman_LinkVersion[]
      */
-    public function getAllVersionForItem(Docman_Link $item) {
-        $versions = array();
+    public function getAllVersionForItem(Docman_Link $item)
+    {
+        $versions = [];
         $rows     = $this->dao->searchByItemId($item->getId());
 
         foreach ($rows as $row) {
@@ -50,7 +53,8 @@ class Docman_LinkVersionFactory {
     /**
      * @return Docman_LinkVersion|null
      */
-    public function getSpecificVersion(Docman_Link $item, $number) {
+    public function getSpecificVersion(Docman_Link $item, $number)
+    {
         $row = $this->dao->searchByNumber($item->getId(), $number)->getRow();
         if (! $row) {
             return null;
@@ -59,16 +63,26 @@ class Docman_LinkVersionFactory {
         return new Docman_LinkVersion($row);
     }
 
-    public function create(Docman_Link $link, $label, $changelog, $date) {
+    public function create(Docman_Link $link, $label, $changelog, $date)
+    {
         return $this->dao->createNewLinkVersion($link, $label, $changelog, $date);
     }
 
+    public function createLinkWithSpecificVersion(Docman_Link $link, string $label, string $changelog, int $date, int $version)
+    {
+        return $this->dao->createLinkWithSpecificVersion($link, $label, $changelog, $date, $version);
+    }
+
     /**
-     * @return Docman_LinkVersion
+     * @return Docman_LinkVersion|null
      */
-    public function getLatestVersion(Docman_Link $link) {
+    public function getLatestVersion(Docman_Link $link)
+    {
         $row = $this->dao->searchByItemId($link->getId())->getRow();
 
+        if (! $row) {
+            return null;
+        }
         return new Docman_LinkVersion($row);
     }
 }

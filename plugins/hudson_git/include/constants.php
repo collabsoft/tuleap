@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,4 +18,4 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-define('HUDSON_GIT_BASE_DIR', realpath(__DIR__.'/..'));
+define('HUDSON_GIT_BASE_DIR', realpath(__DIR__ . '/..'));

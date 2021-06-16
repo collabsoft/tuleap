@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -35,7 +35,6 @@ use Tuleap\Tracker\Report\Query\Advanced\Grammar\ValueWrapperVisitor;
 class ListValueExtractor implements ValueWrapperVisitor
 {
     /**
-     * @param Comparison $comparison
      * @return array
      */
     public function extractCollectionOfValues(Comparison $comparison)

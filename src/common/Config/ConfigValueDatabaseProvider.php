@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,20 +18,23 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ConfigValueDatabaseProvider implements ConfigValueProvider {
+class ConfigValueDatabaseProvider implements ConfigValueProvider
+{
 
     /** @var ConfigDao */
     private $dao;
 
-    public function __construct(ConfigDao $dao) {
+    public function __construct(ConfigDao $dao)
+    {
         $this->dao = $dao;
     }
 
     /**
      * @see ConfigValueProvider::getVariables()
      */
-    public function getVariables() {
-        $variables = array();
+    public function getVariables()
+    {
+        $variables = [];
 
         foreach ($this->dao->searchAll() as $row) {
             $variables[$row['name']] = $row['value'];

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -47,8 +47,6 @@ class NotEqualComparisonFromWhereBuilder implements FromWhereBuilder
     }
 
     /**
-     * @param Metadata $metadata
-     * @param Comparison $comparison
      * @param Tracker[] $trackers
      * @return IProvideParametrizedFromAndWhereSQLFragments
      */
@@ -119,7 +117,7 @@ class NotEqualComparisonFromWhereBuilder implements FromWhereBuilder
         array $trackers,
         $value
     ) {
-        $tracker_ids = array_map(
+        $tracker_ids           = array_map(
             function (Tracker $tracker) {
                 return $tracker->getId();
             },

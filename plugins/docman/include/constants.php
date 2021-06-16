@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -60,14 +60,6 @@ define('PLUGIN_DOCMAN_EVENT_NEW_LINK', 'plugin_docman_event_new_link');
 define('PLUGIN_DOCMAN_EVENT_NEW_FOLDER', 'plugin_docman_event_new_folder');
 
 /**
- * Event raised when a docman item is copied
- *
- * Parameters:
- *      'item' => Docman_Item
- */
-define('PLUGIN_DOCMAN_EVENT_COPY', 'plugin_docman_event_copy');
-
-/**
  * Event raised when a docman link item ihas new version
  *
  * Parameters:
@@ -75,6 +67,34 @@ define('PLUGIN_DOCMAN_EVENT_COPY', 'plugin_docman_event_copy');
  *      'version' => Docman_LinkVersion
  */
 define('PLUGIN_DOCMAN_EVENT_NEW_LINKVERSION', 'plugin_docman_event_new_linkVersion');
+
+/**
+ * Event raised when a new Docman wiki item is created
+ *
+ * Parameters:
+ *      'item'      => Docman_Item
+ *      'group_id'  => integer
+ *      'wiki_page' => string
+ */
+define('PLUGIN_DOCMAN_EVENT_NEW_PHPWIKI_PAGE', 'plugin_docman_event_new_wikipage');
+
+/**
+ * Event raised when a new Docman embedded file/file  item is created
+ *
+ * Parameters:
+ *      'item'            => Docman_Item,
+ *      'version'         => Docman_Version,
+ */
+define('PLUGIN_DOCMAN_EVENT_NEW_FILE', 'plugin_docman_after_new_document');
+
+/**
+ * Event raised when a new Docman embedded file/file version is created
+ *
+ * Parameters:
+ *      'item'            => Docman_Item,
+ *      'version'         => Docman_Version,
+ */
+define('PLUGIN_DOCMAN_EVENT_NEW_FILE_VERSION', 'plugin_docman_event_new_version');
 
 /**
  * Event raised when docman need to get a phpwiki page
@@ -88,16 +108,26 @@ define('PLUGIN_DOCMAN_EVENT_GET_PHPWIKI_PAGE', 'plugin_docman_event_get_phpwiki_
 
 
 define('PLUGIN_DOCMAN_APPROVAL_TABLE_DISABLED', 0);
-define('PLUGIN_DOCMAN_APPROVAL_TABLE_ENABLED',  1);
-define('PLUGIN_DOCMAN_APPROVAL_TABLE_CLOSED',   2);
-define('PLUGIN_DOCMAN_APPROVAL_TABLE_DELETED',  3);
+define('PLUGIN_DOCMAN_APPROVAL_TABLE_ENABLED', 1);
+define('PLUGIN_DOCMAN_APPROVAL_TABLE_CLOSED', 2);
+define('PLUGIN_DOCMAN_APPROVAL_TABLE_DELETED', 3);
 
-define('PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET',   0);
+define('PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET', 0);
 define('PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED', 1);
 define('PLUGIN_DOCMAN_APPROVAL_STATE_REJECTED', 2);
 define('PLUGIN_DOCMAN_APPROVAL_STATE_COMMENTED', 3);
 define('PLUGIN_DOCMAN_APPROVAL_STATE_DECLINED', 4);
 
-define('PLUGIN_DOCMAN_APPROVAL_NOTIF_DISABLED',   0);
-define('PLUGIN_DOCMAN_APPROVAL_NOTIF_ALLATONCE',  1);
+define('PLUGIN_DOCMAN_APPROVAL_NOTIF_DISABLED', 0);
+define('PLUGIN_DOCMAN_APPROVAL_NOTIF_ALLATONCE', 1);
 define('PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL', 2);
+
+define('PLUGIN_DOCMAN_METADATA_TYPE_DATE_LABEL', 'date');
+
+define('PLUGIN_DOCMAN_METADATA_TYPE_TEXT', 1);
+define('PLUGIN_DOCMAN_METADATA_TYPE_STRING', 6);
+define('PLUGIN_DOCMAN_METADATA_TYPE_DATE', 4);
+define('PLUGIN_DOCMAN_METADATA_TYPE_LIST', 5);
+
+define('PLUGIN_DOCMAN_METADATA_UNUSED', 0);
+define('PLUGIN_DOCMAN_METADATA_USED', 1);

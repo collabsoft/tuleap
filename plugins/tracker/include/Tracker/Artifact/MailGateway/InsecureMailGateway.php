@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Artifact_MailGateway_InsecureMailGateway extends Tracker_Artifact_MailGateway_MailGateway {
+class Tracker_Artifact_MailGateway_InsecureMailGateway extends Tracker_Artifact_MailGateway_MailGateway
+{
 
-    protected function canCreateArtifact(Tracker $tracker) {
+    protected function canCreateArtifact(Tracker $tracker)
+    {
         return $this->tracker_artifactbyemail->canCreateArtifact($tracker);
     }
 
-    protected function canUpdateArtifact(Tracker $tracker) {
+    protected function canUpdateArtifact(Tracker $tracker)
+    {
         return $this->tracker_artifactbyemail->canUpdateArtifactInInsecureMode($tracker);
     }
 }

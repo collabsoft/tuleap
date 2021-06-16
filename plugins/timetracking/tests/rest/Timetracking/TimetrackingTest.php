@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -24,162 +24,137 @@
 
 namespace Tuleap\Timetracking\REST;
 
-use Guzzle\Http\Exception\ClientErrorResponseException;
-
 require_once dirname(__FILE__) . '/../bootstrap.php';
 
 class TimetrackingTest extends TimetrackingBase
 {
-    public function testGetTimesForUserWithDates()
+    public function testGetTimesForUserWithDates(): void
     {
-        $query = urlencode(
+        $query               = urlencode(
             json_encode([
-                "start_date" => "2018-03-01T00:00:00+01",
-                "end_date"   => "2018-03-10T00:00:00+01"
+                "start_date" => "2018-04-01T00:00:00+01",
+                "end_date"   => "2018-04-10T00:00:00+01"
             ])
         );
-
-        $response = $this->getResponse(
-            $this->client->get("timetracking?query=$query"),
-            TimetrackingDataBuilder::USER_TESTER_NAME
+        $response            = $this->getResponseByName(
+            TimetrackingDataBuilder::USER_TESTER_NAME,
+            $this->client->get("users/" . $this->user_ids[TimetrackingDataBuilder::USER_TESTER_NAME] . "/timetracking?query=$query")
         );
-
         $times_by_artifact   = $response->json();
         $current_artifact_id = key($times_by_artifact);
-        $times               = $times_by_artifact[ $current_artifact_id ];
+        $times               = $times_by_artifact[$current_artifact_id];
 
-        $this->assertTrue(count($times_by_artifact) === 1);
+        $this->assertTrue(count($times_by_artifact) === 2);
         $this->assertTrue(count($times) === 1);
         $this->assertEquals($times[0]['artifact']['id'], $current_artifact_id);
         $this->assertEquals($times[0]['id'], 1);
         $this->assertEquals($times[0]['minutes'], 600);
-        $this->assertEquals($times[0]['date'], '2018-03-01');
+        $this->assertEquals($times[0]['date'], '2018-04-01');
+    }
+
+    public function testGetTimesForUserWithDatesWithReadOnlySiteAdmin(): void
+    {
+        $query    = urlencode(
+            json_encode([
+                "start_date" => "2018-04-01T00:00:00+01",
+                "end_date"   => "2018-04-10T00:00:00+01"
+            ])
+        );
+        $response = $this->getResponse(
+            $this->client->get("users/" . $this->user_ids[TimetrackingDataBuilder::USER_TESTER_NAME] . "/timetracking?query=$query"),
+            \REST_TestDataBuilder::TEST_BOT_USER_NAME
+        );
+
+        $this->assertEquals(403, $response->getStatusCode());
+    }
+
+    public function testGetTimesForUserForOneDay()
+    {
+        $query = urlencode(
+            json_encode([
+                "start_date" => "2018-04-01T00:00:00+01",
+                "end_date"   => "2018-04-01T00:00:00+01"
+            ])
+        );
+
+        $response            = $this->getResponseByName(
+            TimetrackingDataBuilder::USER_TESTER_NAME,
+            $this->client->get("users/" . $this->user_ids[TimetrackingDataBuilder::USER_TESTER_NAME] . "/timetracking?query=$query")
+        );
+        $times_by_artifact   = $response->json();
+        $current_artifact_id = key($times_by_artifact);
+        $times               = $times_by_artifact[$current_artifact_id];
+
+        $this->assertTrue(count($times_by_artifact) === 2);
+        $this->assertTrue(count($times) === 1);
+        $this->assertEquals($times[0]['artifact']['id'], $current_artifact_id);
+        $this->assertEquals($times[0]['id'], 1);
+        $this->assertEquals($times[0]['minutes'], 600);
+        $this->assertEquals($times[0]['date'], '2018-04-01');
     }
 
     public function testExceptionWhenStartDateMissing()
     {
         $query = urlencode(
             json_encode([
-                "end_date" => "2018-03-10T00:00:00+01"
+                "end_date" => "2018-04-10T00:00:00+01"
             ])
         );
 
-        $exception_thrown = false;
+        $response = $this->getResponseByName(
+            TimetrackingDataBuilder::USER_TESTER_NAME,
+            $this->client->get('users/' . $this->user_ids[TimetrackingDataBuilder::USER_TESTER_NAME] . "/timetracking?query=$query")
+        );
+        $body     = $response->json();
 
-        try {
-            $this->getResponse(
-                $this->client->get("timetracking?query=$query"),
-                TimetrackingDataBuilder::USER_TESTER_NAME
-            );
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $body     = $response->json();
-
-            $this->assertEquals(400, $response->getStatusCode());
-            $this->assertContains(
-                'Missing start_date entry in the query parameter',
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-
-        $this->assertTrue($exception_thrown);
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertStringContainsString(
+            'Missing start_date entry in the query parameter',
+            $body['error']['message']
+        );
     }
 
     public function testExceptionWhenEndDateMissing()
     {
         $query = urlencode(
             json_encode([
-                "start_date" => "2018-03-01T00:00:00+01"
+                "start_date" => "2018-04-01T00:00:00+01"
             ])
         );
 
-        $exception_thrown = false;
+        $response = $this->getResponseByName(
+            TimetrackingDataBuilder::USER_TESTER_NAME,
+            $this->client->get('users/' . $this->user_ids[TimetrackingDataBuilder::USER_TESTER_NAME] . "/timetracking?query=$query")
+        );
+        $body     = $response->json();
 
-        try {
-            $this->getResponse(
-                $this->client->get("timetracking?query=$query"),
-                TimetrackingDataBuilder::USER_TESTER_NAME
-            );
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $body     = $response->json();
-
-            $this->assertEquals(400, $response->getStatusCode());
-            $this->assertContains(
-                'Missing end_date entry in the query parameter',
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-
-        $this->assertTrue($exception_thrown);
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertStringContainsString(
+            'Missing end_date entry in the query parameter',
+            $body['error']['message']
+        );
     }
 
     public function testExceptionWhenStartDateGreaterThanEndDate()
     {
         $query = urlencode(
             json_encode([
-                "start_date" => "2018-03-10T00:00:00+01",
-                "end_date"   => "2018-03-01T00:00:00+01"
+                "start_date" => "2018-04-10T00:00:00+01",
+                "end_date"   => "2018-04-01T00:00:00+01"
             ])
         );
 
-        $exception_thrown = false;
-
-        try {
-            $this->getResponse(
-                $this->client->get("timetracking?query=$query"),
-                TimetrackingDataBuilder::USER_TESTER_NAME
-            );
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $body     = $response->json();
-
-            $this->assertEquals(400, $response->getStatusCode());
-            $this->assertContains(
-                'end_date must be greater than start_date',
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-
-        $this->assertTrue($exception_thrown);
-    }
-
-    public function testExceptionWhenDayOffsetLessThanOneDay()
-    {
-        $query = urlencode(
-            json_encode([
-                "start_date" => "2018-03-01T00:00:00+01",
-                "end_date"   => "2018-03-01T00:00:00+01"
-            ])
+        $response = $this->getResponseByName(
+            TimetrackingDataBuilder::USER_TESTER_NAME,
+            $this->client->get('users/' . $this->user_ids[TimetrackingDataBuilder::USER_TESTER_NAME] . "/timetracking?query=$query")
         );
+        $body     = $response->json();
 
-        $exception_thrown = false;
-
-        try {
-            $this->getResponse(
-                $this->client->get("timetracking?query=$query"),
-                TimetrackingDataBuilder::USER_TESTER_NAME
-            );
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $body     = $response->json();
-
-            $this->assertEquals(400, $response->getStatusCode());
-            $this->assertContains(
-                'There must be one day offset between the both dates',
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-
-        $this->assertTrue($exception_thrown);
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertStringContainsString(
+            'end_date must be greater than start_date',
+            $body['error']['message']
+        );
     }
 
     public function testExceptionWhenDatesAreInvalid()
@@ -191,27 +166,17 @@ class TimetrackingTest extends TimetrackingBase
             ])
         );
 
-        $exception_thrown = false;
+        $response = $this->getResponseByName(
+            TimetrackingDataBuilder::USER_TESTER_NAME,
+            $this->client->get('users/' . $this->user_ids[TimetrackingDataBuilder::USER_TESTER_NAME] . "/timetracking?query=$query")
+        );
+        $body     = $response->json();
 
-        try {
-            $this->getResponse(
-                $this->client->get("timetracking?query=$query"),
-                TimetrackingDataBuilder::USER_TESTER_NAME
-            );
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $body     = $response->json();
-
-            $this->assertEquals(400, $response->getStatusCode());
-            $this->assertContains(
-                'Please provide valid ISO-8601 dates',
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-
-        $this->assertTrue($exception_thrown);
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertStringContainsString(
+            'Please provide valid ISO-8601 dates',
+            $body['error']['message']
+        );
     }
 
     public function testExceptionWhenDatesAreNotISO8601()
@@ -225,102 +190,175 @@ class TimetrackingTest extends TimetrackingBase
             )
         );
 
-        $exception_thrown = false;
+        $response = $this->getResponseByName(
+            TimetrackingDataBuilder::USER_TESTER_NAME,
+            $this->client->get('users/' . $this->user_ids[TimetrackingDataBuilder::USER_TESTER_NAME] . "/timetracking?query=$query")
+        );
+        $body     = $response->json();
 
-        try {
-            $this->getResponse(
-                $this->client->get("timetracking?query=$query"),
-                TimetrackingDataBuilder::USER_TESTER_NAME
-            );
-        } catch (ClientErrorResponseException $exception) {
-            $response = $exception->getResponse();
-            $body     = $response->json();
-
-            $this->assertEquals(400, $response->getStatusCode());
-            $this->assertContains(
-                'Please provide valid ISO-8601 dates',
-                $body['error']['message']
-            );
-
-            $exception_thrown = true;
-        }
-
-        $this->assertTrue($exception_thrown);
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertStringContainsString(
+            'Please provide valid ISO-8601 dates',
+            $body['error']['message']
+        );
     }
 
     public function testGetTimesPaginated()
     {
         $query = urlencode(
             json_encode([
-                "start_date" => "2018-03-01T00:00:00+01",
-                "end_date"   => "2018-03-31T00:00:00+01"
+                "start_date" => "2010-04-01T00:00:00+01",
+                "end_date"   => "2018-05-31T00:00:00+01"
             ])
         );
 
-        $times_ids = [ 1, 2 ];
+        $times_ids = [1, 2];
 
-        for ($offset = 0; $offset <= 1; $offset ++) {
-            $response = $this->getResponse(
-                $this->client->get("timetracking?limit=1&offset=$offset&query=$query"),
-                TimetrackingDataBuilder::USER_TESTER_NAME
+        for ($offset = 0; $offset <= 1; $offset++) {
+            $response = $this->getResponseByName(
+                TimetrackingDataBuilder::USER_TESTER_NAME,
+                $this->client->get('users/' . $this->user_ids[TimetrackingDataBuilder::USER_TESTER_NAME] . "/timetracking?limit=1&offset=$offset&query=$query")
             );
 
             $artifact_times      = $response->json();
             $current_artifact_id = key($artifact_times);
-            $times               = $artifact_times[ $current_artifact_id ];
+            $times               = $artifact_times[$current_artifact_id];
 
             $this->assertTrue(count($artifact_times) === 1);
             $this->assertTrue(count($times) === 1);
             $this->assertEquals($times[0]['artifact']['id'], $current_artifact_id);
-            $this->assertEquals($times[0]['id'], $times_ids[ $offset ]);
+            $this->assertEquals($times[0]['id'], $times_ids[$offset]);
         }
     }
-
     public function testAddTimeSuccess()
     {
-        $query = json_encode([
-            "date_time"   => "2018-03-01",
+        $query    = json_encode([
+            "date_time"   => "2018-04-01",
             "artifact_id" => $this->timetracking_artifact_ids[1]["id"],
             "time_value"  => "11:11",
             "step"        => "etape"
         ]);
         $response = $this->getResponse($this->client->post('/api/v1/timetracking', null, $query), TimetrackingDataBuilder::USER_TESTER_NAME);
-
         $this->assertEquals($response->getStatusCode(), 201);
     }
 
     /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
+     * @depends testAddTimeSuccess
      */
+    public function testGetTimeOnArtifact()
+    {
+        $query    = urlencode(json_encode([
+            "artifact_id" => $this->timetracking_artifact_ids[1]["id"],
+        ], JSON_FORCE_OBJECT));
+        $response = $this->getResponse($this->client->get('/api/v1/timetracking?query=' . $query), TimetrackingDataBuilder::USER_TESTER_NAME);
+        $this->assertEquals($response->getStatusCode(), 200);
+        $payload = $response->json();
+        $this->assertTrue(count($payload) >= 2);
+        $this->assertEquals(200, $payload[0]['minutes']);
+        $this->assertEquals(600, $payload[1]['minutes']);
+        $this->assertEquals('test', $payload[1]['step']);
+    }
+
     public function testAddTimeReturnBadTimeFormatExceptionWrongSeparator()
     {
-        $query = json_encode([
-             "date_time"   => "2018-03-01",
+        $query    = json_encode([
+             "date_time"   => "2018-04-01",
              "artifact_id" => $this->timetracking_artifact_ids[1]["id"],
              "time_value"  => "11/11",
              "step"        => "etape"
          ]);
-        $this->getResponse($this->client->post('timetracking', null, $query), TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponse(
+            $this->client->post('timetracking', null, $query),
+            TimetrackingDataBuilder::USER_TESTER_NAME
+        );
+
+        $this->assertEquals(400, $response->getStatusCode());
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
+    public function testGetProjects()
+    {
+        $query = urlencode(
+            json_encode([
+                "with_time_tracking" => true
+            ])
+        );
+
+        $this->initUserId(TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponseByName(
+            TimetrackingDataBuilder::USER_TESTER_NAME,
+            $this->client->get("projects?query=$query")
+        );
+        $projects = $response->json();
+        $this->assertTrue(count($projects) === 1);
+        $this->assertEquals($projects[0]["label"], "Timetracking");
+    }
+
+    public function testGetTrackers()
+    {
+        $query = urlencode(
+            json_encode([
+                'with_time_tracking' => true
+            ])
+        );
+
+        $this->initUserId(TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponseByName(
+            TimetrackingDataBuilder::USER_TESTER_NAME,
+            $this->client->get('projects/' . $this->timetracking_project_id . '/trackers?query=' . $query)
+        );
+        $trackers =  $response->json();
+        $this->assertTrue(count($trackers) === 1);
+        $this->assertEquals($trackers[0]["id"], $this->tracker_timetracking);
+    }
+
+    public function testGetProjectsRaiseException()
+    {
+        $query = urlencode(
+            json_encode([
+                "with_time_tracking" => false
+            ])
+        );
+
+        $this->initUserId(TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponse($this->client->get("projects?query=$query"));
+
+        $this->assertEquals(400, $response->getStatusCode());
+    }
+
+    public function testGetTrackersRaiseException()
+    {
+        $query = urlencode(
+            json_encode([
+                "with_time_tracking" => false
+            ])
+        );
+
+        $this->initUserId(TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponse($this->client->get("projects/" . $this->timetracking_project_id . "/trackers?query=$query"));
+
+        $this->assertEquals(400, $response->getStatusCode());
+    }
+
     public function testAddTimeReturnBadDateFormatException()
     {
-        $query = json_encode([
+        $query    = json_encode([
              "date_time"   => "oui",
              "artifact_id" => $this->timetracking_artifact_ids[1]["id"],
              "time_value"  => "11:11",
              "step"        => "etape"
          ]);
-        $this->getResponse($this->client->post('timetracking', null, $query), TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponse(
+            $this->client->post('timetracking', null, $query),
+            TimetrackingDataBuilder::USER_TESTER_NAME
+        );
+
+        $this->assertEquals(400, $response->getStatusCode());
     }
 
     public function testEditTimeSuccess()
     {
-        $query = json_encode([
-            "date_time"   => "2018-03-01",
+        $query    = json_encode([
+            "date_time"   => "2018-04-01",
             "time_value"  => "11:11",
             "step"        => "etape"
         ]);
@@ -329,43 +367,49 @@ class TimetrackingTest extends TimetrackingBase
         $this->assertEquals($response->getStatusCode(), 201);
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
     public function testEditTimeReturnBadTimeFormatException()
     {
-        $query = json_encode([
-            "date_time"   => "2018-03-01",
+        $query    = json_encode([
+            "date_time"   => "2018-04-01",
             "time_value"  => "11/11",
             "step"        => "etape"
         ]);
-        $response = $this->getResponse($this->client->put('/api/v1/timetracking/1', null, $query), TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponse(
+            $this->client->put('/api/v1/timetracking/1', null, $query),
+            TimetrackingDataBuilder::USER_TESTER_NAME
+        );
+
+        $this->assertEquals(400, $response->getStatusCode());
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
     public function testEditTimeReturnBadDateFormatException()
     {
-        $query = json_encode([
-            "date_time"   => "201803-01",
+        $query    = json_encode([
+            "date_time"   => "201804-01",
             "time_value"  => "11:11",
             "step"        => "etape"
         ]);
-        $this->getResponse($this->client->put('/api/v1/timetracking/1', null, $query), TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponse(
+            $this->client->put('/api/v1/timetracking/1', null, $query),
+            TimetrackingDataBuilder::USER_TESTER_NAME
+        );
+
+        $this->assertEquals(400, $response->getStatusCode());
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
     public function testEditTimeReturnNoTimeException()
     {
-        $query = json_encode([
-            "date_time"   => "2018-03-01",
+        $query    = json_encode([
+            "date_time"   => "2018-04-01",
             "time_value"  => "11:11",
             "step"        => "etape"
         ]);
-        $this->getResponse($this->client->put('/api/v1/timetracking/8000', null, $query), TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponse(
+            $this->client->put('/api/v1/timetracking/8000', null, $query),
+            TimetrackingDataBuilder::USER_TESTER_NAME
+        );
+
+        $this->assertEquals(404, $response->getStatusCode());
     }
 
     public function testDeleteTimeSuccess()
@@ -375,11 +419,13 @@ class TimetrackingTest extends TimetrackingBase
         $this->assertEquals($response->getStatusCode(), 200);
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
     public function testDeleteTimeReturnNoTimeException()
     {
-        $this->getResponse($this->client->put('/api/v1/timetracking/8000', null), TimetrackingDataBuilder::USER_TESTER_NAME);
+        $response = $this->getResponse(
+            $this->client->put('/api/v1/timetracking/8000', null),
+            TimetrackingDataBuilder::USER_TESTER_NAME
+        );
+
+        $this->assertEquals(400, $response->getStatusCode());
     }
 }

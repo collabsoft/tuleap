@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,8 +21,8 @@
 namespace Tuleap\Timetracking\ArtifactView;
 
 use CSRFSynchronizerToken;
-use Tracker_Artifact;
 use Tuleap\Timetracking\Time\TimeChecker;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class ArtifactViewPresenter
 {
@@ -37,7 +37,7 @@ class ArtifactViewPresenter
     public $csrf_token;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $user_can_add_time;
 
@@ -47,7 +47,7 @@ class ArtifactViewPresenter
     public $times;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $has_times;
 
@@ -82,26 +82,26 @@ class ArtifactViewPresenter
     public $pattern;
 
     public function __construct(
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         CSRFSynchronizerToken $csrf,
         array $times,
         $formatted_total_time,
         $user_can_add_time
     ) {
-        $this->add_url = TIMETRACKING_BASE_URL . '/?' . http_build_query(array(
+        $this->add_url = TIMETRACKING_BASE_URL . '/?' . http_build_query([
             'artifact' => $artifact->getId(),
             'action'   => 'add-time'
-        ));
+        ]);
 
-        $this->base_delete_url = TIMETRACKING_BASE_URL . '/?' . http_build_query(array(
+        $this->base_delete_url = TIMETRACKING_BASE_URL . '/?' . http_build_query([
             'artifact' => $artifact->getId(),
             'action'   => 'delete-time'
-        ));
+        ]);
 
-        $this->edit_url = TIMETRACKING_BASE_URL . '/?' . http_build_query(array(
+        $this->edit_url = TIMETRACKING_BASE_URL . '/?' . http_build_query([
             'artifact' => $artifact->getId(),
             'action'   => 'edit-time'
-        ));
+        ]);
 
         $this->csrf_token        = $csrf;
         $this->user_can_add_time = $user_can_add_time;

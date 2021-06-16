@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  *
- * 
+ *
  */
 
 
@@ -25,46 +25,46 @@
 * System Event classes
 *
 */
-class SystemEvent_MAILING_LIST_DELETE extends SystemEvent {
-    
+class SystemEvent_MAILING_LIST_DELETE extends SystemEvent
+{
+
     /**
-     * Verbalize the parameters so they are readable and much user friendly in 
+     * Verbalize the parameters so they are readable and much user friendly in
      * notifications
-     * 
-     * @param bool $with_link true if you want links to entities. The returned 
+     *
+     * @param bool $with_link true if you want links to entities. The returned
      * string will be html instead of plain/text
      *
      * @return string
      */
-    public function verbalizeParameters($with_link) {
-        $txt = '';
-        $txt .= 'mailing list: #'. $this->getIdFromParam($this->parameters);
+    public function verbalizeParameters($with_link)
+    {
+        $txt  = '';
+        $txt .= 'mailing list: #' . $this->getIdFromParam($this->parameters);
         return $txt;
     }
-    
-    /** 
+
+    /**
      * Process stored event
      */
-    function process() {
+    public function process()
+    {
         // Check parameters
-        $group_list_id=$this->getIdFromParam($this->parameters);
+        $group_list_id = $this->getIdFromParam($this->parameters);
 
         if ($group_list_id == 0) {
             return $this->setErrorBadParam();
         }
 
-        if (!Backend::instance('MailingList')->deleteList($group_list_id)) {
+        if (! Backend::instance('MailingList')->deleteList($group_list_id)) {
             $this->error("Could not delete mailing list $group_list_id");
             return false;
         }
-            
+
         // Need to add list aliases
         Backend::instance('Aliases')->setNeedUpdateMailAliases();
-            
+
         $this->done();
         return true;
     }
-
 }
-
-?>

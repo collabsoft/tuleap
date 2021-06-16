@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,19 +18,20 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Updater_FieldChange_FieldChangeOpenListXMLUpdater extends Tracker_XML_Updater_FieldChange_FieldChangeListXMLUpdater {
+class Tracker_XML_Updater_FieldChange_FieldChangeOpenListXMLUpdater extends Tracker_XML_Updater_FieldChange_FieldChangeListXMLUpdater
+{
      /**
-     * @param SimpleXMLElement $field_change_xml
      * @param string            $submitted_value
      */
-    public function update(SimpleXMLElement $field_change_xml, $submitted_value) {
+    public function update(SimpleXMLElement $field_change_xml, $submitted_value)
+    {
         $this->removeExistingValuesNodes($field_change_xml);
 
         $submitted_value = explode(',', $submitted_value);
 
         array_walk(
             $submitted_value,
-            array($this, 'appendValuesToFieldChangeNode'),
+            [$this, 'appendValuesToFieldChangeNode'],
             $field_change_xml
         );
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,15 +20,15 @@
 
 namespace Tuleap\Template\Plugin;
 
-class PluginDescriptor extends \PluginDescriptor {
+class PluginDescriptor extends \PluginDescriptor
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct(
             $GLOBALS['Language']->getText('plugin_template', 'descriptor_name'),
             false,
             $GLOBALS['Language']->getText('plugin_template', 'descriptor_description')
         );
-
-        $this->setVersionFromFile(TEMPLATE_BASE_DIR.'/VERSION');
     }
 }

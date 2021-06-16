@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class MailPresenter {
+class MailPresenter
+{
 
     /** @var string */
     public $platform_name;
@@ -30,7 +30,8 @@ class MailPresenter {
     /** @var string */
     public $service_shortname;
 
-    public function __construct($service_shortname, $goto_link, $platform_name) {
+    public function __construct($service_shortname, $goto_link, $platform_name)
+    {
         $this->service_shortname = $service_shortname;
         $this->goto_link         = $goto_link;
 
@@ -39,7 +40,5 @@ class MailPresenter {
         }
 
         $this->platform_name = $platform_name;
-
     }
-
 }

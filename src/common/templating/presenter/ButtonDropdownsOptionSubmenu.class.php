@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,7 @@
 class Templating_Presenter_ButtonDropdownsOptionSubmenu extends Templating_Presenter_ButtonDropdownsOption
 {
 
-    public $sub_options = array();
+    public $sub_options = [];
 
     public function __construct($id, $label, array $sub_options)
     {

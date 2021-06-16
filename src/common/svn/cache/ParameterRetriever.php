@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,10 +22,10 @@ namespace Tuleap\SvnCore\Cache;
 
 class ParameterRetriever
 {
-    const MAXIMUM_CREDENTIALS         = 'maximum_credentials';
-    const LIFETIME                    = 'lifetime';
-    const MAXIMUM_CREDENTIALS_DEFAULT = 10;
-    const LIFETIME_DEFAULT            = 5;
+    public const MAXIMUM_CREDENTIALS         = 'maximum_credentials';
+    public const LIFETIME                    = 'lifetime';
+    public const MAXIMUM_CREDENTIALS_DEFAULT = 10;
+    public const LIFETIME_DEFAULT            = 5;
 
     /**
      * @var ParameterDao
@@ -54,10 +54,10 @@ class ParameterRetriever
         foreach ($rows as $row) {
             switch ($row['name']) {
                 case self::MAXIMUM_CREDENTIALS:
-                    $maximum_credentials = $row['value'];
+                    $maximum_credentials = (int) $row['value'];
                     break;
                 case self::LIFETIME:
-                    $lifetime = $row['value'];
+                    $lifetime = (int) $row['value'];
                     break;
             }
         }

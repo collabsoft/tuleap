@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,20 +18,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- *
- */
-class b201209121717_turn_tables_innodb extends ForgeUpgrade_Bucket {
-    
-    public function description() {
+class b201209121717_turn_tables_innodb extends ForgeUpgrade_Bucket
+{
+
+    public function description()
+    {
         return 'Turn all tracker tables to innodb';
     }
-    
-    public function preUp() {
+
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
-    
-    public function up() {
+
+    public function up()
+    {
         if ($this->indexNameExists('tracker_fileinfo', 'fltxt')) {
             $sql    = 'ALTER TABLE tracker_fileinfo DROP INDEX fltxt';
             $result = $this->db->dbh->exec($sql);
@@ -41,7 +42,7 @@ class b201209121717_turn_tables_innodb extends ForgeUpgrade_Bucket {
             }
         }
 
-        $tables = array(
+        $tables = [
             'tracker_workflow ',
             'tracker_workflow_transition ',
             'tracker_workflow_transition_postactions_field_date ',
@@ -91,7 +92,7 @@ class b201209121717_turn_tables_innodb extends ForgeUpgrade_Bucket {
             'tracker_report_criteria_openlist_value',
             'tracker_report_criteria_permissionsonartifact_value',
             'tracker_field_list_bind_decorator',
-            'tracker_artifact',
+            'Tuleap\Artifact\Artifact',
             'tracker_tooltip',
             'tracker_global_notification',
             'tracker_watcher',
@@ -108,13 +109,13 @@ class b201209121717_turn_tables_innodb extends ForgeUpgrade_Bucket {
             'tracker_perm ',
             'tracker_rule',
             'tracker_hierarchy ',
-            'tracker_reminder');
+            'tracker_reminder'];
         foreach ($tables as $table) {
-            if (!$this->isTableInnoDB($table)) {
+            if (! $this->isTableInnoDB($table)) {
                 $this->log->info("Convert $table");
-                $sql = "ALTER TABLE $table ENGINE = InnoDB";
+                $sql    = "ALTER TABLE $table ENGINE = InnoDB";
                 $result = $this->db->dbh->exec($sql);
-        
+
                 if ($result === false) {
                     $error_message = implode(', ', $this->db->dbh->errorInfo());
                     throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete($error_message);
@@ -123,14 +124,16 @@ class b201209121717_turn_tables_innodb extends ForgeUpgrade_Bucket {
         }
     }
 
-    private function isTableInnoDB($table) {
-        $sql = "SHOW TABLE STATUS WHERE Name = '$table' AND Engine = 'InnoDB'";
+    private function isTableInnoDB($table)
+    {
+        $sql    = "SHOW TABLE STATUS WHERE Name = '$table' AND Engine = 'InnoDB'";
         $result = $this->db->dbh->query($sql);
         return ($result->fetch() !== false);
     }
 
-    private function indexNameExists($tableName, $index) {
-        $sql = 'SHOW INDEX FROM '.$tableName.' WHERE Key_name LIKE '.$this->db->dbh->quote($index);
+    private function indexNameExists($tableName, $index)
+    {
+        $sql = 'SHOW INDEX FROM ' . $tableName . ' WHERE Key_name LIKE ' . $this->db->dbh->quote($index);
         $res = $this->db->dbh->query($sql);
         if ($res && $res->fetch() !== false) {
             return true;
@@ -139,4 +142,3 @@ class b201209121717_turn_tables_innodb extends ForgeUpgrade_Bucket {
         }
     }
 }
-?>

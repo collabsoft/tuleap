@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201308051707_correct_plugin_git_service_short_name extends ForgeUpgrade_Bucket {
+class b201308051707_correct_plugin_git_service_short_name extends ForgeUpgrade_Bucket
+{
 
     /**
      * Description of the bucket
      *
      * @return String
      */
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Correct the wrong plugin Git reference service short name
 EOT;
@@ -36,7 +38,8 @@ EOT;
      *
      * @return void
      */
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
@@ -45,8 +48,9 @@ EOT;
      *
      * @return void
      */
-    public function up() {
-        $sql    = "UPDATE reference
+    public function up()
+    {
+        $sql = "UPDATE reference
                    SET service_short_name = 'plugin_git'
                    WHERE id = 30
                      AND keyword = 'git'
@@ -60,4 +64,3 @@ EOT;
         }
     }
 }
-?>

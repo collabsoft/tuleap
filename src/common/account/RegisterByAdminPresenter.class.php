@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class Account_RegisterByAdminPresenter extends Account_RegisterPresenter {
+class Account_RegisterByAdminPresenter extends Account_RegisterPresenter
+{
 
     public $title;
     public $submit;
@@ -26,10 +27,11 @@ class Account_RegisterByAdminPresenter extends Account_RegisterPresenter {
     public $send_email;
     public $expiry_date;
     public $expiry_date_directions;
-    public $form_url = '/admin/register_admin.php?page=admin_creation';
+    public $form_url               = '/admin/register_admin.php?page=admin_creation';
     public $should_display_purpose = true;
 
-    public function __construct(Account_RegisterAdminPrefillValuesPresenter $prefill_values, $extra_plugin_field) {
+    public function __construct(Account_RegisterAdminPrefillValuesPresenter $prefill_values, $extra_plugin_field)
+    {
         parent::__construct($prefill_values, $extra_plugin_field);
         $this->title                  = $GLOBALS['Language']->getText('account_register', 'title_admin');
         $this->submit                 = $GLOBALS['Language']->getText('account_register', 'btn_activate');

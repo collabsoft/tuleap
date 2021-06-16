@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,12 +26,12 @@ use Tuleap\Event\Dispatchable;
 
 class LabeledItemCollection implements Dispatchable
 {
-    const NAME = 'collect_labeled_items';
+    public const NAME = 'collect_labeled_items';
 
     /**
      * @var array LabeledItem[]
      */
-    private $labeled_items = array();
+    private $labeled_items = [];
     /**
      * @var Project
      */

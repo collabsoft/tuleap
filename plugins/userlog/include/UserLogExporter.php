@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,7 @@
 
 namespace Tuleap\Userlog;
 
-require_once('www/project/export/project_export_utils.php');
+require_once __DIR__ . '/../../../src/www/project/export/project_export_utils.php';
 
 class UserLogExporter
 {
@@ -39,7 +39,7 @@ class UserLogExporter
         header('Content-Type: text/csv');
         header('Content-Disposition:attachment; filename=users_logs.csv');
         $eol             = "\n";
-        $documents_title = array(
+        $documents_title = [
             'date'                => $GLOBALS['Language']->getText('plugin_userlog', 'label_time'),
             'group_id'            => $GLOBALS['Language']->getText('plugin_userlog', 'label_project'),
             'user_id'             => $GLOBALS['Language']->getText('plugin_userlog', 'label_user'),
@@ -47,7 +47,7 @@ class UserLogExporter
             'http_request_uri'    => $GLOBALS['Language']->getText('plugin_userlog', 'label_uri'),
             'http_remote_addr'    => $GLOBALS['Language']->getText('plugin_userlog', 'label_adress'),
             'http_referrer'       => $GLOBALS['Language']->getText('plugin_userlog', 'label_referrer')
-        );
+        ];
 
         echo build_csv_header($this->getColumnList(), $documents_title) . $eol;
 
@@ -58,7 +58,7 @@ class UserLogExporter
 
     private function getColumnList()
     {
-        return array(
+        return [
             'date',
             'group_id',
             'user_id',
@@ -66,6 +66,6 @@ class UserLogExporter
             'http_request_uri',
             'http_remote_addr',
             'http_referrer'
-        );
+        ];
     }
 }

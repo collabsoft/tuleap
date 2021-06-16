@@ -22,14 +22,12 @@ use Tuleap\Git\GitRepositoryDeletionEvent;
 use Tuleap\Git\Notifications\UgroupsToNotifyDao;
 use Tuleap\Git\Notifications\UsersToNotifyDao;
 
-require_once('common/system_event/SystemEvent.class.php');
 /**
  * Description of SystemEvent_GIT_REPO_DELETE
- *
- * @author gstorchi
  */
-class SystemEvent_GIT_REPO_DELETE extends SystemEvent {
-    const NAME = 'GIT_REPO_DELETE';
+class SystemEvent_GIT_REPO_DELETE extends SystemEvent
+{
+    public const NAME = 'GIT_REPO_DELETE';
 
     /** @var EventManager */
     private $event_manager;
@@ -37,7 +35,7 @@ class SystemEvent_GIT_REPO_DELETE extends SystemEvent {
     /** @var GitRepositoryFactory */
     private $repository_factory;
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
     /** @var Git_SystemEventManager */
@@ -51,7 +49,7 @@ class SystemEvent_GIT_REPO_DELETE extends SystemEvent {
 
     public function injectDependencies(
         GitRepositoryFactory $repository_factory,
-        Logger $logger,
+        \Psr\Log\LoggerInterface $logger,
         Git_SystemEventManager $system_event_manager,
         UgroupsToNotifyDao $ugroups_to_notify_dao,
         UsersToNotifyDao $users_to_notify_dao,
@@ -65,11 +63,12 @@ class SystemEvent_GIT_REPO_DELETE extends SystemEvent {
         $this->event_manager         = $event_manager;
     }
 
-    public function process() {
-        $parameters   = $this->getParametersAsArray();
+    public function process()
+    {
+        $parameters = $this->getParametersAsArray();
         //project id
-        $projectId    = 0;
-        if ( !empty($parameters[0]) ) {
+        $projectId = 0;
+        if (! empty($parameters[0])) {
             $projectId = (int) $parameters[0];
         } else {
             $this->error('Missing argument project id');
@@ -77,7 +76,7 @@ class SystemEvent_GIT_REPO_DELETE extends SystemEvent {
         }
         //repo id
         $repositoryId = 0;
-        if ( !empty($parameters[1]) ) {
+        if (! empty($parameters[1])) {
             $repositoryId = (int) $parameters[1];
         } else {
             $this->error('Missing argument repository id');
@@ -85,6 +84,10 @@ class SystemEvent_GIT_REPO_DELETE extends SystemEvent {
         }
 
         $repository = $this->repository_factory->getDeletedRepository($repositoryId);
+        if ($repository === null) {
+            $this->error('Cannot find deleted repository #' . $repositoryId);
+            return false;
+        }
         if ($repository->getProjectId() != $projectId) {
             $this->error('Bad project id');
             return false;
@@ -93,11 +96,12 @@ class SystemEvent_GIT_REPO_DELETE extends SystemEvent {
         return $this->deleteRepo($repository, $projectId, $parameters);
     }
 
-    private function deleteRepo(GitRepository $repository) {
+    private function deleteRepo(GitRepository $repository)
+    {
         $path = $repository->getPath();
 
         try {
-            $this->logger->debug("Deleting repository ". $path);
+            $this->logger->debug("Deleting repository " . $path);
             $this->users_to_notify_dao->deleteByRepositoryId($repository->getId());
             $this->ugroups_to_notify_dao->deleteByRepositoryId($repository->getId());
             $this->system_event_manager->queueGrokMirrorManifestRepoDelete($path);
@@ -111,8 +115,8 @@ class SystemEvent_GIT_REPO_DELETE extends SystemEvent {
         return true;
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         return $this->parameters;
     }
-
 }

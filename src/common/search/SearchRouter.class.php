@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Search_SearchRouter {
+class Search_SearchRouter
+{
     private $controller;
-    public function __construct() {
+    public function __construct()
+    {
         $this->controller = new Search_SearchController(EventManager::instance());
     }
 
-    public function route(Codendi_Request $request) {
+    public function route(Codendi_Request $request)
+    {
         if ($request->existAndNonEmpty('type_of_search')) {
             if ($request->isAjax()) {
                 $this->controller->ajaxResults($request);

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean 2016. All rights reserved
+ * Copyright (c) Enalean 2016 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class b201603071042_svn_repository_pre_commit_must_contain_reference extends ForgeUpgrade_Bucket {
+class b201603071042_svn_repository_pre_commit_must_contain_reference extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return 'Add pre_commit_must_contain_reference column to svn repository';
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE plugin_svn_hook_config( repository_id INT(11) UNSIGNED NOT NULL PRIMARY KEY, mandatory_reference BOOL DEFAULT false NOT NULL );";
 
         $res = $this->db->dbh->exec($sql);

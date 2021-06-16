@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,28 +18,33 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Git_Mirror_MirrorSystemEventQueue extends SystemEventQueue {
+class Git_Mirror_MirrorSystemEventQueue extends SystemEventQueue
+{
 
     /**
-     * @var Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
 
-    const NAME = 'grokmirror';
+    public const NAME = 'grokmirror';
 
-    public function __construct(Logger $logger) {
+    public function __construct(\Psr\Log\LoggerInterface $logger)
+    {
         $this->logger = $logger;
     }
 
-    public function getName() {
+    public function getName()
+    {
         return self::NAME;
     }
 
-    public function getLabel() {
-        return $GLOBALS['Language']->getText('plugin_git', 'mirror_system_event_queue');
+    public function getLabel()
+    {
+        return dgettext('tuleap-git', 'Grok Mirror');
     }
 
-    public function getLogger() {
+    public function getLogger()
+    {
         return $this->logger;
     }
 }

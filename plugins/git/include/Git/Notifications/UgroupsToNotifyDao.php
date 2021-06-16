@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2017-2018. All rights reserved.
+ * Copyright Enalean (c) 2017 - Present. All rights reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -82,7 +82,7 @@ class UgroupsToNotifyDao extends DataAccessObject
     {
         $this->updateNotificationUgroups(
             $project_id,
-            array(ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED),
+            [ProjectUGroup::ANONYMOUS, ProjectUGroup::REGISTERED, ProjectUGroup::AUTHENTICATED],
             ProjectUGroup::PROJECT_MEMBERS
         );
     }
@@ -91,7 +91,7 @@ class UgroupsToNotifyDao extends DataAccessObject
     {
         $this->updateNotificationUgroups(
             $project_id,
-            array(ProjectUGroup::AUTHENTICATED),
+            [ProjectUGroup::AUTHENTICATED],
             ProjectUGroup::REGISTERED
         );
     }
@@ -114,7 +114,6 @@ class UgroupsToNotifyDao extends DataAccessObject
             $params_update   = array_merge($params_update, $old_ugroup_ids_in_condition->values());
             $params_update[] = $project_id;
             $this->getDB()->safeQuery($sql, $params_update);
-
 
             $sql = "DELETE notif.*
                 FROM plugin_git_post_receive_notification_ugroup AS notif

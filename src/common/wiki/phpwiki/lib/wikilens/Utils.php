@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: Utils.php,v 1.2 2004/11/15 16:00:02 rurban Exp $');
 /*
  Copyright 2004 Mike Cassano
@@ -20,32 +21,34 @@ rcs_id('$Id: Utils.php,v 1.2 2004/11/15 16:00:02 rurban Exp $');
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/**
- */
 
-function addPageTextData($user, $dbi, $new_data, $START_DELIM, $DELIM) {
+function addPageTextData($user, $dbi, $new_data, $START_DELIM, $DELIM)
+{
     // This is largely lifted from the TranslateText plugin, which performs a
-    // similar set of functions (retrieves a user's homepage, modifies it 
+    // similar set of functions (retrieves a user's homepage, modifies it
     // progmatically, and saves the changes)
-    $homepage = $user->_HomePagehandle;
+    $homepage      = $user->_HomePagehandle;
     $transpagename = $homepage->getName();
-    $page    = $dbi->getPage($transpagename);
-    $current = $page->getCurrentRevision();
-    $version = $current->getVersion();
+    $page          = $dbi->getPage($transpagename);
+    $current       = $page->getCurrentRevision();
+    $version       = $current->getVersion();
     if ($version) {
         $text = $current->getPackedContent() . "\n";
         $meta = $current->_data;
     } else {
         $text = '';
-        $meta = array('markup' => 2.0,
-                      'author' => $user->getId());
+        $meta = ['markup' => 2.0,
+                      'author' => $user->getId()];
     }
 
     // add new data to the appropriate line
-    if(preg_match('/^' . preg_quote($START_DELIM, '/') . '/', $text)) {
+    if (preg_match('/^' . preg_quote($START_DELIM, '/') . '/', $text)) {
         // need multiline modifier to match EOL correctly
-        $text = preg_replace('/(^' . preg_quote($START_DELIM, '/') . '.*)$/m',
-                             '$1' . $DELIM . $new_data, $text);
+        $text = preg_replace(
+            '/(^' . preg_quote($START_DELIM, '/') . '.*)$/m',
+            '$1' . $DELIM . $new_data,
+            $text
+        );
     } else {
         // handle case where the line does not yet exist
         $text .= "\n" . $START_DELIM . $new_data . "\n";
@@ -54,36 +57,42 @@ function addPageTextData($user, $dbi, $new_data, $START_DELIM, $DELIM) {
     // advance version counter, save
     $page->save($text, $version + 1, $meta);
 }
- 
-function getMembers($groupName, $dbi, $START_DELIM = false, $DELIM = ",") {
-    if (!$START_DELIM) $START_DELIM = _("Members:");	
-    return getPageTextData($groupName, $dbi, $START_DELIM, $DELIM);	
+
+function getMembers($groupName, $dbi, $START_DELIM = false)
+{
+    if (! $START_DELIM) {
+        $START_DELIM = _("Members:");
+    }
+    return getPageTextData($groupName, $dbi, $START_DELIM);
 }
 
-function getPageTextData($fromUser, $dbi, $START_DELIM, $DELIM) {
-    if (is_object($fromUser))
+function getPageTextData($fromUser, $dbi, $START_DELIM)
+{
+    if (is_object($fromUser)) {
         $fromUser = $fromUser->getId();
-    if ($fromUser == "")
-    	return "";
-    $userPage = $dbi->getPage($fromUser);
+    }
+    if ($fromUser == "") {
+        return "";
+    }
+    $userPage    = $dbi->getPage($fromUser);
     $transformed = $userPage->getCurrentRevision();
-    $pageArray = $transformed->getContent();
-    $p = -1;
-    for ($i = 0; $i < count($pageArray); $i++){
-    	if($pageArray[$i] != ""){
-            if(!((strpos($pageArray[$i], $START_DELIM)) === FALSE)){
-            	$p = $i;
+    $pageArray   = $transformed->getContent();
+    $p           = -1;
+    for ($i = 0; $i < count($pageArray); $i++) {
+        if ($pageArray[$i] != "") {
+            if (! ((strpos($pageArray[$i], $START_DELIM)) === false)) {
+                $p = $i;
                 break;
-            }	
+            }
         }
     }
-    $retArray = array();
-    if ($p >= 0){
+    $retArray = [];
+    if ($p >= 0) {
         $singles = $pageArray[$p];
         $singles = substr($singles, strpos($singles, $START_DELIM) + strlen($START_DELIM));
-        
-        $retArray = split($DELIM, $singles);
-    }    
+
+        $retArray = explode(',', $singles);
+    }
     for ($i = 0; $i < count($retArray); $i++) {
         $retArray[$i] = trim($retArray[$i]);
     }
@@ -93,7 +102,8 @@ function getPageTextData($fromUser, $dbi, $START_DELIM, $DELIM) {
     return $retArray;
 }
 
-function notEmptyName($var) {
+function notEmptyName($var)
+{
     return $var != "";
 }
 
@@ -105,8 +115,6 @@ function notEmptyName($var) {
 //
 // Revision 1.1  2004/06/18 14:42:17  rurban
 // added wikilens libs (not yet merged good enough, some work for DanFr)
-// 
-
 // Local Variables:
 // mode: php
 // tab-width: 8
@@ -114,4 +122,3 @@ function notEmptyName($var) {
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

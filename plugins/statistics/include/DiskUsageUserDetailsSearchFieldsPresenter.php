@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -45,11 +45,11 @@ class DiskUsageUserDetailsSearchFieldsPresenter
         $this->end_date_value   = $end_date_value;
         $this->group_by_values  = $group_by_values;
 
-        $this->title                 = $GLOBALS['Language']->getText('global', 'search_title');
-        $this->user_id_label         = $GLOBALS['Language']->getText('plugin_statistics', 'user_id_label');
-        $this->start_date_label      = $GLOBALS['Language']->getText('plugin_statistics', 'start_date');
-        $this->end_date_label        = $GLOBALS['Language']->getText('plugin_statistics', 'end_date');
-        $this->search                = $GLOBALS['Language']->getText('global', 'btn_search');
-        $this->group_by_label        = $GLOBALS['Language']->getText('plugin_statistics', 'group_by_label');
+        $this->title            = $GLOBALS['Language']->getText('global', 'search_title');
+        $this->user_id_label    = dgettext('tuleap-statistics', 'User');
+        $this->start_date_label = dgettext('tuleap-statistics', 'Start date');
+        $this->end_date_label   = dgettext('tuleap-statistics', 'End date');
+        $this->search           = $GLOBALS['Language']->getText('global', 'btn_search');
+        $this->group_by_label   = dgettext('tuleap-statistics', 'Group by');
     }
 }

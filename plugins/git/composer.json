@@ -1,4 +1,5 @@
 {
+  "name": "tuleap/plugin-git",
   "autoload": {
     "psr-4": {
       "Tuleap\\Git\\": ["include/", "include/Git/"]
@@ -7,6 +8,14 @@
   },
   "require": {
     "smarty/smarty": "^2.6",
-    "geshi/geshi": "^1.0"
+    "smarty-gettext/smarty-gettext": "^1.5"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tuleap\\Git\\": ["tests/unit/", "tests/integration/"]
+    }
+  },
+  "config": {
+    "sort-packages": true
   }
 }

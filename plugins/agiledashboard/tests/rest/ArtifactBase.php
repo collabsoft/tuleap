@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,12 +26,12 @@ use Tuleap\REST\ArtifactBase as Base;
 
 class ArtifactBase extends Base
 {
-    const BURNUP_FIELD_SHORTNAME = 'burnup_field';
+    public const BURNUP_FIELD_SHORTNAME = 'burnup_field';
 
-    protected $burnup_artifact_ids = array();
+    protected $burnup_artifact_ids = [];
     private $burnup_tracker_id;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 

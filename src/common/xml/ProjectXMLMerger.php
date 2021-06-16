@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -32,6 +32,9 @@ class ProjectXMLMerger
 
         foreach ($source2->children() as $child) {
             $dom_service = dom_import_simplexml($child);
+            if ($dom_project->ownerDocument === null) {
+                continue;
+            }
             $dom_service = $dom_project->ownerDocument->importNode($dom_service, true);
             $dom_project->appendChild($dom_service);
         }

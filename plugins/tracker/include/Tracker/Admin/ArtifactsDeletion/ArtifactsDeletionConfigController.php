@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -29,8 +29,8 @@ use CSRFSynchronizerToken;
 use Feedback;
 use http\Exception;
 use PluginManager;
-use Response;
 use Tuleap\Admin\AdminPageRenderer;
+use Tuleap\Layout\BaseLayout;
 
 class ArtifactsDeletionConfigController
 {
@@ -67,7 +67,7 @@ class ArtifactsDeletionConfigController
 
     public function index(CSRFSynchronizerToken $csrf)
     {
-        $title                            = $GLOBALS['Language']->getText('plugin_tracker_config', 'title');
+        $title                            = dgettext('tuleap-tracker', 'Trackers');
         $artifacts_limit                  = $this->config->getArtifactsDeletionLimit();
         $archive_deleted_items_plugin     = $this->plugin_manager->getPluginByName('archivedeleteditems');
         $is_archive_deleted_items_enabled = ($archive_deleted_items_plugin)
@@ -86,7 +86,7 @@ class ArtifactsDeletionConfigController
         );
     }
 
-    public function update(Codendi_Request $request, Response $response)
+    public function update(Codendi_Request $request, BaseLayout $response)
     {
         $new_artifacts_limit = intval($request->get('artifacts_limit'));
 

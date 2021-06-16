@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,23 +20,26 @@
 
 require_once 'TreeNode.class.php';
 
-class TreeNode_GetStateVisitor {
-    
-    const STATE_NODE  = 0;
-    const STATE_LAST  = 1;
-    const STATE_BLANK = 2;
-    const STATE_PIPE  = 3;
-    
-    private $states = array();
-    
-    public function getState(TreeNode $node) {
+class TreeNode_GetStateVisitor
+{
+
+    public const STATE_NODE  = 0;
+    public const STATE_LAST  = 1;
+    public const STATE_BLANK = 2;
+    public const STATE_PIPE  = 3;
+
+    private $states = [];
+
+    public function getState(TreeNode $node)
+    {
         return $this->states[$node->getId()];
     }
-    
-    private function setState(TreeNode $node, $prefix) {
-        $children    = $node->getChildren();
-        $nb_children = count($children);
-        $i = 0;
+
+    private function setState(TreeNode $node, $prefix)
+    {
+        $children        = $node->getChildren();
+        $nb_children     = count($children);
+        $i               = 0;
         $children_prefix = $this->getDefaultChildrenPrefix($prefix);
         $child_state     = $this->getDefaultState($prefix);
         foreach ($children as $child) {
@@ -51,39 +54,45 @@ class TreeNode_GetStateVisitor {
         }
     }
 
-    protected function setChildState(TreeNode $child, $state) {
+    protected function setChildState(TreeNode $child, $state)
+    {
         $this->states[$child->getId()] = $state;
     }
 
-    private function getDefaultChildrenPrefix($prefix) {
+    private function getDefaultChildrenPrefix($prefix)
+    {
         $prefix[] = self::STATE_PIPE;
         return $prefix;
     }
-    
-    private function getChildrenPrefixForLastChild($prefix) {
+
+    private function getChildrenPrefixForLastChild($prefix)
+    {
         $prefix[] = self::STATE_BLANK;
         return $prefix;
     }
-    
-    private function getDefaultState($prefix) {
+
+    private function getDefaultState($prefix)
+    {
         $prefix[] = self::STATE_NODE;
         return $prefix;
     }
-    
-    private function getStateWhenChildIsTheLastOne($prefix) {
+
+    private function getStateWhenChildIsTheLastOne($prefix)
+    {
         $prefix[] = self::STATE_LAST;
         return $prefix;
     }
-    
-    private function isLastChildren($i, $nb_children) {
+
+    private function isLastChildren($i, $nb_children)
+    {
         return $i == $nb_children - 1;
     }
-    
-    public function visit(TreeNode $node, $prefix = null) {
-        if (!$prefix) {
-            $prefix = array();
+
+    public function visit(TreeNode $node, $prefix = null)
+    {
+        if (! $prefix) {
+            $prefix = [];
         }
         $this->setState($node, $prefix);
     }
 }
-?>

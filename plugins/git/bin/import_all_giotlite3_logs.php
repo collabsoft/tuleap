@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,7 @@
  *
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 use Tuleap\Git\Gitolite\Gitolite3LogParser;
 use Tuleap\Git\Gitolite\GitoliteFileLogsDao;
@@ -30,8 +30,8 @@ use Tuleap\Git\History\Dao;
 use Tuleap\Git\RemoteServer\Gerrit\HttpUserValidator;
 
 $console    = new Log_ConsoleLogger();
-$logger     = new GitBackendLogger();
-$broker_log = new BrokerLogger(array($logger, $console));
+$logger     = \BackendLogger::getDefaultLogger(GitPlugin::LOG_IDENTIFIER);
+$broker_log = new BrokerLogger([$logger, $console]);
 
 $detector = new VersionDetector();
 if (! $detector->isGitolite3()) {
@@ -42,7 +42,6 @@ if (! $detector->isGitolite3()) {
 $broker_log->info("Starting parse gitolite3 logs.");
 $gitolite_parser = new Gitolite3LogParser(
     $broker_log,
-    new System_Command(),
     new HttpUserValidator(),
     new Dao(),
     new GitRepositoryFactory(new GitDao(), ProjectManager::instance()),

@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -25,7 +25,6 @@
 namespace Tuleap\Tracker\PermissionsPerGroup;
 
 use Project;
-use ProjectUGroup;
 use Tracker;
 use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupRepresentationBuilder;
 use UGroupManager;
@@ -52,7 +51,7 @@ class TrackerPermissionPerGroupPermissionRepresentationBuilder
 
     public function build(Project $project, array $ugroups_permissions, $selected_ugroup_id = null)
     {
-        $indexed_permissions = array();
+        $indexed_permissions = [];
 
         foreach ($ugroups_permissions as $ugroup_permission) {
             $permissions = $ugroup_permission['permissions'];
@@ -66,7 +65,7 @@ class TrackerPermissionPerGroupPermissionRepresentationBuilder
             $permission_name = array_keys($permissions)[0];
 
             if (! array_key_exists($permission_name, $indexed_permissions)) {
-                $indexed_permissions[$permission_name] = array();
+                $indexed_permissions[$permission_name] = [];
             }
 
             array_push(
@@ -89,7 +88,7 @@ class TrackerPermissionPerGroupPermissionRepresentationBuilder
 
     private function getCollectionOfPermissionsRepresentations(array $indexed_permissions)
     {
-        $permissions_collection = array();
+        $permissions_collection = [];
 
         foreach ($indexed_permissions as $permission_name => $granted_groups) {
             $permissions_collection[] = new TrackerPermissionPerGroupPermissionRepresentation(
@@ -133,13 +132,13 @@ class TrackerPermissionPerGroupPermissionRepresentationBuilder
     /**
      * "Please note that project administrators and tracker administrators are granted full access to the tracker."
      */
-    private function appendTrackerVIPs(Project $project, array & $indexed_permissions)
+    private function appendTrackerVIPs(Project $project, array &$indexed_permissions)
     {
         if (! array_key_exists(Tracker::PERMISSION_FULL, $indexed_permissions)) {
             $indexed_permissions[Tracker::PERMISSION_FULL] = [];
         }
 
-        $project_admins = $this->ugroup_manager->getUGroup($project, ProjectUGroup::PROJECT_ADMIN);
+        $project_admins = $this->ugroup_manager->getProjectAdminsUGroup($project);
 
         array_unshift(
             $indexed_permissions[Tracker::PERMISSION_FULL],

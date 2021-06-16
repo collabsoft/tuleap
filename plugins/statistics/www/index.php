@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2008. All Rights Reserved.
- * Copyright (c) Enalean, 2016. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2008
  *
@@ -23,14 +23,14 @@
 
 use Tuleap\Admin\AdminPageRenderer;
 use Tuleap\Statistics\AdminHeaderPresenter;
+use Tuleap\Statistics\Frequencies\FrequenciesPresenter;
 use Tuleap\Statistics\SearchFieldsPresenterBuilder;
-use Tuleap\Statistics\FrequenciesPresenter;
 
-require 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 // First, check plugin availability
 $pluginManager = PluginManager::instance();
-$p = $pluginManager->getPluginByName('statistics');
+$p             = $pluginManager->getPluginByName('statistics');
 if (! $p || ! $pluginManager->isPluginAvailable($p)) {
     $GLOBALS['Response']->redirect('/');
 }
@@ -47,21 +47,22 @@ if (is_array($request->get('type_values'))) {
     }
 }
 
-$type_values = array();
+$type_values = [];
 if ($request->exist('type_values')) {
     $type_values = $request->get('type_values');
     if (! is_array($type_values)) {
         $type_values = explode(',', $type_values);
     }
 } else {
-    $type_values = array('session');
+    $type_values = ['session'];
 }
 
-if (isset($_REQUEST['start'])
+if (
+    isset($_REQUEST['start'])
     && isset($_REQUEST['end'])
     && strtotime($_REQUEST['start']) > strtotime($_REQUEST['end'])
 ) {
-    $date_error_message = $GLOBALS['Language']->getText('plugin_statistics', 'period_error');
+    $date_error_message = dgettext('tuleap-statistics', 'You made a mistake in selecting period. Please try again!');
     $GLOBALS['Response']->addFeedback('error', $date_error_message);
 }
 
@@ -91,7 +92,7 @@ if ($request->exist('filter')) {
     $filter = 'month';
 }
 
-$search_fields_builder = new SearchFieldsPresenterBuilder();
+$search_fields_builder   = new SearchFieldsPresenterBuilder();
 $search_fields_presenter = $search_fields_builder->buildSearchFieldsForFrequencies(
     $type_values,
     $filter,
@@ -99,7 +100,7 @@ $search_fields_presenter = $search_fields_builder->buildSearchFieldsForFrequenci
     $end_date
 );
 
-$title = $GLOBALS['Language']->getText('plugin_statistics', 'index_page_title');
+$title = dgettext('tuleap-statistics', 'Statistics');
 
 $header_presenter = new AdminHeaderPresenter(
     $title,

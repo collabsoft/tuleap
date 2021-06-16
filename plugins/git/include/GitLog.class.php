@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2012. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -44,23 +44,23 @@ class GitLog
      *
      * @return Void
      */
-    function logsDaily($params)
+    public function logsDaily($params)
     {
-        $params['logs'][] = array(
+        $params['logs'][] = [
             'sql'   => $this->getSqlStatementForLogsDaily(
                 $params['group_id'],
                 $params['logs_cond'],
                 $this->getGitReadLogFilter($params['group_id'], $params['who'], $params['span'])
             ),
-            'field' => $GLOBALS['Language']->getText('plugin_git', 'logsdaily_field'),
-            'title' => $GLOBALS['Language']->getText('plugin_git', 'logsdaily_title')
-        );
+            'field' => dgettext('tuleap-git', 'Repository'),
+            'title' => dgettext('tuleap-git', 'Git access')
+        ];
     }
 
     /**
      * Return the SQL Statement for logs daily pushs
      *
-     * @param Integer $project_id  Id of the project
+     * @param int $project_id Id of the project
      * @param String  $condition Condition
      *
      * @return String
@@ -98,9 +98,9 @@ class GitLog
      * @param $group_id
      * @return string
      */
-    private function getGitReadLogFilter($group_id, $who, $span)
+    private function getGitReadLogFilter($group_id, $who, int $span)
     {
-        $filters = array($this->getWhoFilter($group_id, $who), $this->getDateFilter($span));
+        $filters = [$this->getWhoFilter($group_id, $who), $this->getDateFilter($span)];
         return implode(' AND ', array_filter($filters));
     }
 
@@ -121,14 +121,11 @@ class GitLog
         return "user.user_id NOT IN ($users)";
     }
 
-    /**
-     * @return string
-     */
-    private function getDateFilter($span)
+    private function getDateFilter(int $span): string
     {
         $start_date = new DateTime();
-        $start_date->sub(new DateInterval('P'.$span.'D'));
+        $start_date->sub(new DateInterval('P' . $span . 'D'));
 
-        return 'log.day >= '.$this->data_access->quoteSmart($start_date->format('Ymd'));
+        return 'log.day >= ' . $this->data_access->quoteSmart($start_date->format('Ymd'));
     }
 }

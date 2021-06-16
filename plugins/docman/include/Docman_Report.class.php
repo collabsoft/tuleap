@@ -3,7 +3,7 @@
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2007
- * 
+ *
  * This file is a part of Codendi.
  *
  * Codendi is free software; you can redistribute it and/or modify
@@ -20,25 +20,25 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('Docman_FilterFactory.class.php');
+class Docman_Report
+{
+    public $id;
+    public $name;
+    public $title;
+    public $groupId;
+    public $userId;
+    public $itemId;
+    public $scope;
+    public $isDefault;
+    public $advancedSearch;
+    public $description;
+    public $image;
 
-class Docman_Report {
-    var $id;
-    var $name;
-    var $title;
-    var $groupId;
-    var $userId;
-    var $itemId;
-    var $scope;
-    var $isDefault;
-    var $advancedSearch;
-    var $description;
-    var $image;
+    public $filters;
+    public $columns;
 
-    var $filters;
-    var $columns;
-
-    function __construct() {
+    public function __construct()
+    {
         $this->id             = null;
         $this->name           = null;
         $this->title          = null;
@@ -51,130 +51,180 @@ class Docman_Report {
         $this->description    = null;
         $this->image          = null;
 
-        $this->filters = array();
-        $this->columns = array();
+        $this->filters = [];
+        $this->columns = [];
     }
 
-    function setId($i) {
+    public function setId($i)
+    {
         $this->id = $i;
     }
-    function getId() {
+    public function getId()
+    {
         return $this->id;
     }
 
-    function setName($v) {
+    public function setName($v)
+    {
         $this->name = $v;
     }
-    function getName() {
+    public function getName()
+    {
         return $this->name;
     }
 
-    function setTitle($v) {
+    public function setTitle($v)
+    {
         $this->title = $v;
     }
-    function getTitle() {
+    public function getTitle()
+    {
         return $this->title;
     }
 
-    function setGroupId($g) {
+    public function setGroupId($g)
+    {
         $this->groupId = $g;
     }
-    function getGroupId() {
+    public function getGroupId()
+    {
         return $this->groupId;
     }
 
-    function setUserId($v) {
+    public function setUserId($v)
+    {
         $this->userId = $v;
     }
-    function getUserId() {
+    public function getUserId()
+    {
         return $this->userId;
     }
 
-    function setItemId($v) {
+    public function setItemId($v)
+    {
         $this->itemId = $v;
     }
-    function getItemId() {
+    public function getItemId()
+    {
         return $this->itemId;
     }
 
-    function setScope($v) {
+    public function setScope($v)
+    {
         $this->scope = $v;
     }
-    function getScope() {
+    public function getScope()
+    {
         return $this->scope;
     }
 
-    function setIsDefault($v) {
+    public function setIsDefault($v)
+    {
         $this->isDefault = $v;
     }
-    function getIsDefault() {
+    public function getIsDefault()
+    {
         return $this->isDefault;
     }
 
-    function setAdvancedSearch($v) {
+    public function setAdvancedSearch($v)
+    {
         $this->advancedSearch = $v;
     }
-    function getAdvancedSearch() {
+    public function getAdvancedSearch()
+    {
         return $this->advancedSearch;
     }
 
-    function setDescription($v) {
+    public function setDescription($v)
+    {
         $this->description = $v;
     }
-    function getDescription() {
+    public function getDescription()
+    {
         return $this->description;
     }
 
-    function setImage($v) {
+    public function setImage($v)
+    {
         $this->image = $v;
     }
-    function getImage() {
+    public function getImage()
+    {
         return $this->image;
     }
 
-    function initFromRow($row) {
-        if(isset($row['report_id'])) $this->id = $row['report_id'];
-        if(isset($row['name'])) $this->name = $row['name'];
-        if(isset($row['title'])) $this->title = $row['title'];
-        if(isset($row['group_id'])) $this->groupId = $row['group_id'];
-        if(isset($row['user_id'])) $this->userId = $row['user_id'];
-        if(isset($row['item_id'])) $this->itemId = $row['item_id'];
-        if(isset($row['scope'])) $this->scope = $row['scope'];
-        if(isset($row['is_default'])) $this->isDefault = $row['is_default'];
-        if(isset($row['advanced_search'])) $this->advancedSearch = $row['advanced_search'];
-        if(isset($row['description'])) $this->description = $row['description'];
-        if(isset($row['image'])) $this->image = $row['image'];
+    public function initFromRow($row)
+    {
+        if (isset($row['report_id'])) {
+            $this->id = $row['report_id'];
+        }
+        if (isset($row['name'])) {
+            $this->name = $row['name'];
+        }
+        if (isset($row['title'])) {
+            $this->title = $row['title'];
+        }
+        if (isset($row['group_id'])) {
+            $this->groupId = $row['group_id'];
+        }
+        if (isset($row['user_id'])) {
+            $this->userId = $row['user_id'];
+        }
+        if (isset($row['item_id'])) {
+            $this->itemId = $row['item_id'];
+        }
+        if (isset($row['scope'])) {
+            $this->scope = $row['scope'];
+        }
+        if (isset($row['is_default'])) {
+            $this->isDefault = $row['is_default'];
+        }
+        if (isset($row['advanced_search'])) {
+            $this->advancedSearch = $row['advanced_search'];
+        }
+        if (isset($row['description'])) {
+            $this->description = $row['description'];
+        }
+        if (isset($row['image'])) {
+            $this->image = $row['image'];
+        }
     }
 
-    //
-
-    function addColumn(&$c) {
-        $this->columns[] =& $c;
+    public function addColumn(&$c)
+    {
+        $this->columns[] = $c;
     }
 
-    function &getColumnIterator() {
+    public function &getColumnIterator()
+    {
         $i = new ArrayIterator($this->columns);
         return $i;
     }
 
-    function getFiltersArray() {
+    public function getFiltersArray()
+    {
         return $this->filters;
     }
-    function setFiltersArray($a) {
+    public function setFiltersArray($a)
+    {
         $this->filters = $a;
     }
 
-    function addFilter(&$f) {
-        $this->filters[] =& $f;
+    public function addFilter(&$f)
+    {
+        $this->filters[] = $f;
     }
 
-    function &getFilterIterator() {
+    public function &getFilterIterator()
+    {
         $i = new ArrayIterator($this->filters);
         return $i;
     }
 
-    function getUrlParameters() {
-        $param = array();
+    public function getUrlParameters()
+    {
+        $param = [];
         // Report Id
         /*if($this->getId() !== null
            && $this->getId() > 0) {
@@ -182,22 +232,21 @@ class Docman_Report {
         }*/
 
         // Advanced search
-        if($this->advancedSearch) {
+        if ($this->advancedSearch) {
             $param['advsearch'] = 1;
         }
         return $param;
     }
-    
-    function getGlobalSearchMetadata() {
+
+    public function getGlobalSearchMetadata()
+    {
         $filterFactory = new Docman_FilterFactory($this->groupId);
         return $filterFactory->getGlobalSearchMetadata();
     }
-    
-    function getItemTypeSearchMetadata() {
+
+    public function getItemTypeSearchMetadata()
+    {
         $filterFactory = new Docman_FilterFactory($this->groupId);
         return $filterFactory->getItemTypeSearchMetadata();
     }
 }
-
-
-?>

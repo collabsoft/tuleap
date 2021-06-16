@@ -18,26 +18,24 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/dao/include/DataAccessObject.class.php';
+class ForumML_MessageDao extends DataAccessObject
+{
 
-class ForumML_MessageDao extends DataAccessObject {
-
-    function __construct($da) {
+    public function __construct($da)
+    {
         parent::__construct($da);
     }
-    
-    function searchHeaderValue($messageId, $headerId) {
-        $sql = 'SELECT mh.value'.
-            ' FROM plugin_forumml_message m'.
-            '  JOIN plugin_forumml_messageheader mh'.
-            '   ON (mh.id_message = m.id_message)'.
-            '  JOIN plugin_forumml_header h'.
-            '   ON (h.id_header = mh.id_header)'.
-            ' WHERE m.id_message = '.$this->da->quoteSmart($messageId).
-            '  AND h.id_header = '.$this->da->quoteSmart($headerId);
+
+    public function searchHeaderValue($messageId, $headerId)
+    {
+        $sql = 'SELECT mh.value' .
+            ' FROM plugin_forumml_message m' .
+            '  JOIN plugin_forumml_messageheader mh' .
+            '   ON (mh.id_message = m.id_message)' .
+            '  JOIN plugin_forumml_header h' .
+            '   ON (h.id_header = mh.id_header)' .
+            ' WHERE m.id_message = ' . $this->da->quoteSmart($messageId) .
+            '  AND h.id_header = ' . $this->da->quoteSmart($headerId);
         return $this->retrieve($sql);
     }
-
 }
-
-?>

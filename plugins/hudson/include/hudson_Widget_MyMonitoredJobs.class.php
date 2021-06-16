@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,22 +19,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 use Tuleap\Dashboard\User\UserDashboardController;
 use Tuleap\Hudson\HudsonJobBuilder;
-
-require_once('HudsonOverviewWidget.class.php');
-require_once('common/user/UserManager.class.php');
-require_once('common/include/HTTPRequest.class.php');
-require_once('PluginHudsonJobDao.class.php');
-require_once('HudsonJob.class.php');
 
 class hudson_Widget_MyMonitoredJobs extends HudsonOverviewWidget
 {
 
-    var $plugin;
+    public $plugin;
 
-    var $_not_monitored_jobs;
+    public $_not_monitored_jobs;
     /**
      * @var MinimalHudsonJobFactory
      */
@@ -52,7 +45,7 @@ class hudson_Widget_MyMonitoredJobs extends HudsonOverviewWidget
 
         $this->_not_monitored_jobs = user_get_preference('plugin_hudson_my_not_monitored_jobs');
         if ($this->_not_monitored_jobs === false) {
-            $this->_not_monitored_jobs = array();
+            $this->_not_monitored_jobs = [];
         } else {
             $this->_not_monitored_jobs = explode(",", $this->_not_monitored_jobs);
         }
@@ -62,26 +55,27 @@ class hudson_Widget_MyMonitoredJobs extends HudsonOverviewWidget
 
     public function getTitle()
     {
-        return $GLOBALS['Language']->getText('plugin_hudson', 'my_jobs');
+        return dgettext('tuleap-hudson', 'My Jenkins Jobs');
     }
 
     public function getDescription()
     {
-        return $GLOBALS['Language']->getText('plugin_hudson', 'widget_description_myjobs');
+        return dgettext('tuleap-hudson', 'Show an overview of all the jobs of all the projects you\'re member of. You can of course select the jobs you wish to display by selecting the preferences link of the widget.');
     }
 
-    function updatePreferences(&$request) {
+    public function updatePreferences(Codendi_Request $request)
+    {
         $request->valid(new Valid_String('cancel'));
-        if (!$request->exist('cancel')) {
+        if (! $request->exist('cancel')) {
             $monitored_jobs = $request->get('myhudsonjobs');
 
-            $user = UserManager::instance()->getCurrentUser();
-            $job_dao = new PluginHudsonJobDao(CodendiDataAccess::instance());
-            $dar = $job_dao->searchByUserID($user->getId());
-            $not_monitored_jobs = array();
+            $user               = UserManager::instance()->getCurrentUser();
+            $job_dao            = new PluginHudsonJobDao(CodendiDataAccess::instance());
+            $dar                = $job_dao->searchByUserID($user->getId());
+            $not_monitored_jobs = [];
             while ($dar->valid()) {
                 $row = $dar->current();
-                if ( ! in_array($row['job_id'], $monitored_jobs)) {
+                if (! in_array($row['job_id'], $monitored_jobs)) {
                     $not_monitored_jobs[] = $row['job_id'];
                 }
                 $dar->next();
@@ -108,7 +102,7 @@ class hudson_Widget_MyMonitoredJobs extends HudsonOverviewWidget
                 <tr>
                     <th></th>
                     <th style="width:100%">
-                        '. $purifier->purify($GLOBALS['Language']->getText('plugin_hudson', 'monitored_jobs')) .'
+                        ' . $purifier->purify(dgettext('tuleap-hudson', 'Monitored jobs')) . '
                     </th>
                 </tr>
             </thead>
@@ -120,8 +114,8 @@ class hudson_Widget_MyMonitoredJobs extends HudsonOverviewWidget
             $html .= '<tr><td>';
             $html .= '<input type="checkbox"
                              name="myhudsonjobs[]"
-                             value="'. $purifier->purify($row['job_id']) .'"
-                             '.(in_array($row['job_id'], $this->_not_monitored_jobs)?'':'checked="checked"').'>';
+                             value="' . $purifier->purify($row['job_id']) . '"
+                             ' . (in_array($row['job_id'], $this->_not_monitored_jobs) ? '' : 'checked="checked"') . '>';
             $html .= '</td><td>';
             $html .= $purifier->purify($row['name']);
             $html .= '</td></tr>';
@@ -141,11 +135,11 @@ class hudson_Widget_MyMonitoredJobs extends HudsonOverviewWidget
         $job_dao          = new PluginHudsonJobDao(CodendiDataAccess::instance());
         $dar              = $job_dao->searchByUserID($user->getId());
         $nb_jobs_in_error = 0;
-    	if ($dar->rowCount() > 0) {
-	        $monitored_jobs = $this->_getMonitoredJobsByUser();
-	        if (sizeof($monitored_jobs) > 0) {
-	            $html .= '<table style="width:100%">';
-	            $cpt = 1;
+        if ($dar->rowCount() > 0) {
+            $monitored_jobs = $this->_getMonitoredJobsByUser();
+            if (sizeof($monitored_jobs) > 0) {
+                $html .= '<table style="width:100%">';
+                $cpt   = 1;
 
                 $job_dao             = new PluginHudsonJobDao(CodendiDataAccess::instance());
                 $minimal_hudson_jobs = [];
@@ -154,9 +148,9 @@ class hudson_Widget_MyMonitoredJobs extends HudsonOverviewWidget
                 foreach ($monitored_jobs as $monitored_job_id) {
                     $dar = $job_dao->searchByJobID($monitored_job_id);
                     if ($dar !== false && $dar->valid()) {
-                        $row                          = $dar->current();
-                        $job_url                      = $row['job_url'];
-                        $job_id                       = $row['job_id'];
+                        $row     = $dar->current();
+                        $job_url = $row['job_url'];
+                        $job_id  = $row['job_id'];
                         try {
                             $minimal_hudson_jobs[$job_id] = $this->factory->getMinimalHudsonJob($job_url, '');
                             $group_id_by_job_id[$job_id]  = $row['group_id'];
@@ -186,15 +180,15 @@ class hudson_Widget_MyMonitoredJobs extends HudsonOverviewWidget
                         $nb_jobs_in_error++;
                     }
                 }
-	            $html .= '</table>';
-	        } else {
-	        	$html .= $GLOBALS['Language']->getText('plugin_hudson', 'widget_no_monitoredjob_my');
-	        }
+                $html .= '</table>';
+            } else {
+                $html .= dgettext('tuleap-hudson', 'You are not monitoring any job. Select preferences link to monitor a job.');
+            }
         } else {
-        	$html .= $GLOBALS['Language']->getText('plugin_hudson', 'widget_no_job_my');
+            $html .= dgettext('tuleap-hudson', 'No job found. Please add a job to any of your project before.');
         }
         if ($nb_jobs_in_error > 0) {
-            $html_error_string  = '<div class="tlp-alert-warning"><i class="fa fa-warning tlp-alert-icon"></i>';
+            $html_error_string  = '<div class="tlp-alert-warning">';
             $html_error_string .= dngettext(
                 'tuleap-hudson',
                 'An issue have been encountered while retrieving information, a job can not be displayed',
@@ -207,14 +201,15 @@ class hudson_Widget_MyMonitoredJobs extends HudsonOverviewWidget
         return $html;
     }
 
-    function _getMonitoredJobsByUser() {
-        $user = UserManager::instance()->getCurrentUser();
-        $job_dao = new PluginHudsonJobDao(CodendiDataAccess::instance());
-        $dar = $job_dao->searchByUserID($user->getId());
-        $monitored_jobs = array();
+    public function _getMonitoredJobsByUser()
+    {
+        $user           = UserManager::instance()->getCurrentUser();
+        $job_dao        = new PluginHudsonJobDao(CodendiDataAccess::instance());
+        $dar            = $job_dao->searchByUserID($user->getId());
+        $monitored_jobs = [];
         while ($dar->valid()) {
             $row = $dar->current();
-            if ( ! in_array($row['job_id'], $this->_not_monitored_jobs)) {
+            if (! in_array($row['job_id'], $this->_not_monitored_jobs)) {
                 $monitored_jobs[] = $row['job_id'];
             }
             $dar->next();

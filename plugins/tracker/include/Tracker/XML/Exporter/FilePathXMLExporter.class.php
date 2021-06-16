@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,10 +21,10 @@
 /**
  * I give a suitable file path for xml export
  */
-interface Tracker_XML_Exporter_FilePathXMLExporter {
+interface Tracker_XML_Exporter_FilePathXMLExporter
+{
 
     /**
-     * @param Tracker_FileInfo $file_info
      *
      * @return string
      */

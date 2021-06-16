@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,10 +20,12 @@
 
 namespace Tuleap\PullRequest\REST\v1;
 
+use Tuleap\Git\BinaryDetector;
+
 class MimeDetector
 {
 
-    static public $EXTENSION_TO_MIME_TYPES = array(
+    public static $EXTENSION_TO_MIME_TYPES = [
         'c'             => 'text/x-c',
         'cpp'           => 'text/x-c++src',
         'mm'            => 'text/x-c++src',
@@ -95,12 +97,12 @@ class MimeDetector
         'xml'           => 'application/xml',
         'yml'           => 'text/x-yaml',
         'yaml'          => 'text/x-yaml'
-    );
+    ];
 
-    public static function getMimeInfo($file_path, $dest_content, $src_content)
+    public static function getMimeInfo(string $file_path, string $dest_content, string $src_content): array
     {
-        $finfo = finfo_open(FILEINFO_MIME);
-        $file_content = $src_content === null ? $dest_content : $src_content;
+        $finfo        = finfo_open(FILEINFO_MIME);
+        $file_content = $src_content === "" ? $dest_content : $src_content;
         $finfo_buffer = finfo_buffer($finfo, $file_content);
         if ($finfo_buffer != false) {
             $tokens    = explode(';', $finfo_buffer);
@@ -117,11 +119,16 @@ class MimeDetector
         finfo_close($finfo);
 
         if (substr($mime_type, 0, 5) === 'text/') {
-            $file_ext = pathinfo($file_path, PATHINFO_EXTENSION);
+            $file_ext   = pathinfo($file_path, PATHINFO_EXTENSION);
             $mime_types = self::$EXTENSION_TO_MIME_TYPES;
-            $mime_type = isset($mime_types[$file_ext]) ? $mime_types[$file_ext] : $mime_type;
+            $mime_type  = isset($mime_types[$file_ext]) ? $mime_types[$file_ext] : $mime_type;
         }
 
-        return array($mime_type, str_replace(' charset=', '', $charset_info));
+        $charset = str_replace(' charset=', '', $charset_info);
+        if (BinaryDetector::isBinary($file_content)) {
+            $charset = 'binary';
+        }
+
+        return [$mime_type, $charset];
     }
 }

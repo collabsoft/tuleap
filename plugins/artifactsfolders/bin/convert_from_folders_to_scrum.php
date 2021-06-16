@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 use Tuleap\ArtifactsFolders\Converter\AncestorFolderChecker;
 use Tuleap\ArtifactsFolders\Converter\ArtifactsFoldersToScrumV2Converter;
@@ -27,14 +27,15 @@ use Tuleap\ArtifactsFolders\Converter\ConverterDao;
 use Tuleap\ArtifactsFolders\Folder\Dao;
 use Tuleap\ArtifactsFolders\Folder\HierarchyOfFolderBuilder;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureIsChildLinkRetriever;
+use Tuleap\Tracker\FormElement\Field\ArtifactLink\ArtifactLinkFieldValueDao;
 
-$usage_options  = '';
-$usage_options .= 'p:'; // give me a project
-$usage_options .= 'u:'; // give me a user
-$usage_options .= 'h';  // help message
-$usage_long_options = array(
+$usage_options      = '';
+$usage_options     .= 'p:'; // give me a project
+$usage_options     .= 'u:'; // give me a user
+$usage_options     .= 'h';  // help message
+$usage_long_options = [
     'help'
-);
+];
 
 function usage()
 {
@@ -92,18 +93,18 @@ try {
         throw new RuntimeException("The user $username is not member of project $project_id");
     }
 
-    $converter_dao    = new ConverterDao();
-    $artifact_factory = Tracker_ArtifactFactory::instance();
+    $converter_dao                  = new ConverterDao();
+    $artifact_factory               = Tracker_ArtifactFactory::instance();
     $nature_is_child_link_retriever = new NatureIsChildLinkRetriever(
         $artifact_factory,
-        new Tracker_FormElement_Field_Value_ArtifactLinkDao()
+        new ArtifactLinkFieldValueDao()
     );
-    $hierarchy_of_folder_builder = new HierarchyOfFolderBuilder(
+    $hierarchy_of_folder_builder    = new HierarchyOfFolderBuilder(
         new Dao(),
         $nature_is_child_link_retriever,
         $artifact_factory
     );
-    $ancestor_folder_checker = new AncestorFolderChecker(
+    $ancestor_folder_checker        = new AncestorFolderChecker(
         $nature_is_child_link_retriever,
         $hierarchy_of_folder_builder
     );

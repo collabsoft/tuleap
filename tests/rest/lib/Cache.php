@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,12 +25,14 @@ class Cache
 {
     private static $instance;
 
-    private $project_ids     = array();
-    private $tracker_ids     = array();
-    private $user_groups_ids = array();
-    private $tokens          = array();
+    private $project_ids     = [];
+    private $tracker_ids     = [];
+    private $user_groups_ids = [];
+    private $user_ids        = [];
+    private $tokens          = [];
 
-    private $artifacts = array();
+    private $trackers  = [];
+    private $artifacts = [];
 
     public static function instance()
     {
@@ -72,6 +74,16 @@ class Cache
         $this->tracker_ids = $tracker_ids;
     }
 
+    public function addTrackerRepresentations(array $tracker_representations)
+    {
+        $this->trackers = $this->trackers + $tracker_representations;
+    }
+
+    public function getTrackerRepresentations(): array
+    {
+        return $this->trackers;
+    }
+
     public function getTrackerIds()
     {
         return $this->tracker_ids;
@@ -111,5 +123,15 @@ class Cache
             return $this->tokens[$username];
         }
         return null;
+    }
+
+    public function setUserId($user)
+    {
+        $this->user_ids[$user["username"]] = $user["id"];
+    }
+
+    public function getUserIds()
+    {
+        return $this->user_ids;
     }
 }

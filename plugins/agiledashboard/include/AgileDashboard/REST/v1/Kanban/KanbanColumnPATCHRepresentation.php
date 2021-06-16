@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,13 @@
 
 namespace Tuleap\AgileDashboard\REST\v1\Kanban;
 
-class KanbanColumnPATCHRepresentation {
+/**
+ * @psalm-immutable
+ */
+class KanbanColumnPATCHRepresentation
+{
 
-    const ROUTE = "kanban_columns";
+    public const ROUTE = "kanban_columns";
 
     /**
      * @var string {@type string} {@required false} {@min 1}
@@ -31,5 +35,4 @@ class KanbanColumnPATCHRepresentation {
      * @var int {@type int} {@required false}
      */
     public $wip_limit;
-
 }

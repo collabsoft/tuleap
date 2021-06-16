@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -36,7 +36,7 @@ abstract class WebhookController extends SettingsController
         if (! $request->valid($valid_url)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_git', 'actions_params_error')
+                dgettext('tuleap-git', 'Empty required parameter(s)')
             );
             $GLOBALS['Response']->redirect($redirect_url);
         }
@@ -46,12 +46,12 @@ abstract class WebhookController extends SettingsController
 
     protected function getWebhookSettingsURL(GitRepository $repository)
     {
-        return GIT_BASE_URL .'/?'. http_build_query(array(
+        return GIT_BASE_URL . '/?' . http_build_query([
                 'action'   => 'repo_management',
                 'group_id' => $repository->getProjectId(),
                 'repo_id'  => $repository->getId(),
                 'pane'     => Pane\Hooks::ID
-            ));
+            ]);
     }
 
     protected function checkCSRF($redirect_url)

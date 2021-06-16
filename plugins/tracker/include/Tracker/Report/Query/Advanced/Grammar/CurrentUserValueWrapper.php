@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 namespace Tuleap\Tracker\Report\Query\Advanced\Grammar;
 
 use PFUser;
-use UserManager;
 
 class CurrentUserValueWrapper implements ValueWrapper
 {
@@ -29,15 +28,9 @@ class CurrentUserValueWrapper implements ValueWrapper
      */
     private $value;
 
-    /**
-     * @var UserManager
-     */
-    private $user_manager;
-
     public function __construct($user_manager)
     {
-        $this->user_manager = $user_manager;
-        $this->value        = null;
+        $this->value = null;
 
         $current_user = $user_manager->getCurrentUser();
         if ($current_user) {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,7 +27,6 @@ use HTTPRequest;
 use Tuleap\Admin\AdminPageRenderer;
 use Tuleap\Admin\ProjectCreationNavBarPresenter;
 use Tuleap\Layout\BaseLayout;
-use Tuleap\Layout\IncludeAssets;
 use Tuleap\Project\Admin\WebhookPresenter;
 use Tuleap\Project\Admin\WebhooksPresenter;
 use Tuleap\Project\Webhook\Log\StatusRetriever;
@@ -44,8 +43,6 @@ class WebhooksDisplayController implements DispatchableWithRequest
     /**
      * Is able to process a request routed by FrontRouter
      *
-     * @param HTTPRequest $request
-     * @param BaseLayout $layout
      * @param array $variables
      * @throws NotFoundException
      * @throws ForbiddenException
@@ -64,7 +61,7 @@ class WebhooksDisplayController implements DispatchableWithRequest
         $webhook_retriever        = new Retriever($webhook_dao);
         $webhooks                 = $webhook_retriever->getWebhooks();
         $webhook_status_retriever = new StatusRetriever(new WebhookLoggerDao());
-        $webhooks_presenter       = array();
+        $webhooks_presenter       = [];
 
         foreach ($webhooks as $webhook) {
             $webhooks_presenter[] = new WebhookPresenter(
@@ -73,7 +70,7 @@ class WebhooksDisplayController implements DispatchableWithRequest
             );
         }
 
-        $title = $GLOBALS['Language']->getText('admin_sidebar', 'projects_nav_configuration');
+        $title     = _('Project settings');
         $presenter = new WebhooksPresenter(
             new ProjectCreationNavBarPresenter('webhooks'),
             $title,
@@ -81,8 +78,7 @@ class WebhooksDisplayController implements DispatchableWithRequest
             $csrf_token
         );
 
-        $assets_path    = ForgeConfig::get('tuleap_dir') . '/src/www/assets';
-        $include_assets = new IncludeAssets($assets_path, '/assets');
+        $include_assets = new \Tuleap\Layout\IncludeCoreAssets();
 
         $GLOBALS['HTML']->includeFooterJavascriptFile(
             $include_assets->getFileURL('site-admin-project-configuration.js')
@@ -91,7 +87,7 @@ class WebhooksDisplayController implements DispatchableWithRequest
         $admin_page = new AdminPageRenderer();
         $admin_page->renderANoFramedPresenter(
             $title,
-            ForgeConfig::get('codendi_dir') .'/src/templates/admin/projects/',
+            ForgeConfig::get('codendi_dir') . '/src/templates/admin/projects/',
             'configuration',
             $presenter
         );

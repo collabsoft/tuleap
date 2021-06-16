@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,24 +19,27 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class MediawikiVersionManager {
+class MediawikiVersionManager
+{
 
-    const MEDIAWIKI_120_VERSION = "1.20";
-    const MEDIAWIKI_123_VERSION = "1.23";
+    public const MEDIAWIKI_120_VERSION = "1.20";
+    public const MEDIAWIKI_123_VERSION = "1.23";
 
-    public static $AVAILABLE_VERSIONS = array(
+    public static $AVAILABLE_VERSIONS = [
         self::MEDIAWIKI_120_VERSION,
         self::MEDIAWIKI_123_VERSION
-    );
+    ];
 
     /** @var MediawikiVersionDao */
     private $version_dao;
 
-    public function __construct(MediawikiVersionDao $version_dao) {
+    public function __construct(MediawikiVersionDao $version_dao)
+    {
         $this->version_dao = $version_dao;
     }
 
-    public function saveVersionForProject(Project $project, $version) {
+    public function saveVersionForProject(Project $project, $version)
+    {
         if (! in_array($version, self::$AVAILABLE_VERSIONS)) {
             throw new Mediawiki_UnsupportedVersionException();
         }
@@ -44,7 +47,8 @@ class MediawikiVersionManager {
         return $this->version_dao->saveMediawikiVersionForProject($project->getID(), $version);
     }
 
-    public function getVersionForProject(Project $project) {
+    public function getVersionForProject(Project $project)
+    {
         $row = $this->version_dao->getVersionForProject($project->getID());
 
         if (! $row) {
@@ -61,9 +65,9 @@ class MediawikiVersionManager {
 
     public function getAllProjectsToMigrateTo123()
     {
-        $project_ids = array();
-        $dar = $this->version_dao->getAllMediawikiToMigrate(self::MEDIAWIKI_120_VERSION);
-        foreach($dar as $row) {
+        $project_ids = [];
+        $dar         = $this->version_dao->getAllMediawikiToMigrate(self::MEDIAWIKI_120_VERSION);
+        foreach ($dar as $row) {
             $project_ids[] = $row['group_id'];
         }
         return $project_ids;

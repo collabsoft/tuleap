@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2016. All Rights Reserved.
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,7 +41,7 @@ class Tracker_EncryptionKeySettings_Presenter
 
     public function display_help()
     {
-        return $GLOBALS['Language']->getText('plugin_tracker_encryption', 'tracker_encryption_help');
+        return dgettext('tuleap-tracker_encryption', 'Please add a valid RSA public key.This key will be used to encrypt form elements of type "encrypted" that belongs to this tracker.');
     }
 
     public function submit_button()
@@ -51,21 +51,21 @@ class Tracker_EncryptionKeySettings_Presenter
 
     public function cancel_button()
     {
-        return $GLOBALS['Language']->getText('plugin_tracker_encryption', 'cancel');
+        return gettext('Cancel');
     }
 
     public function tracker_key_label()
     {
-        return $GLOBALS['Language']->getText('plugin_tracker_encryption', 'key');
+        return dgettext('tuleap-tracker_encryption', 'Tracker key');
     }
 
     public function update_key_warning()
     {
-        return $GLOBALS['Language']->getText('plugin_tracker_encryption', 'update_key_warning');
+        return dgettext('tuleap-tracker_encryption', 'You are about to update your key, You will lost all your encrypted fields values for this tracker if you do this.');
     }
 
     /**
-     * @return tracker key formatted in one line
+     * @return string tracker key formatted in one line
      */
     public function get_tracker_key()
     {

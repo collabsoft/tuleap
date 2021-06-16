@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
-require_once __DIR__.'/../include/autoload.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/proftpdPlugin.php';
 
 $plugin_manager = PluginManager::instance();
-$plugin = $plugin_manager->getPluginByName('proftpd');
+$plugin         = $plugin_manager->getPluginByName('proftpd');
 if ($plugin && $plugin_manager->isPluginAvailable($plugin)) {
-
     $file_importer = new Tuleap\ProFTPd\Xferlog\FileImporter(
         new Tuleap\ProFTPd\Xferlog\Dao(),
         new Tuleap\ProFTPd\Xferlog\Parser(),
@@ -36,17 +35,17 @@ if ($plugin && $plugin_manager->isPluginAvailable($plugin)) {
 
     $file_importer->import($argv[1]);
 
-    echo "{$file_importer->getNbImportedLines()} lines imported".PHP_EOL;
+    echo "{$file_importer->getNbImportedLines()} lines imported" . PHP_EOL;
     $errors    = $file_importer->getErrors();
     $nb_errors = count($errors);
     if ($nb_errors) {
-        $logger = new BackendLogger();
-        echo "$nb_errors errors".PHP_EOL;
+        $logger = BackendLogger::getDefaultLogger();
+        echo "$nb_errors errors" . PHP_EOL;
         foreach ($errors as $error) {
-            $logger->error('[Proftpd][xferlog parse] '.$error);
-            echo "*** ERROR: ".$error.PHP_EOL;
+            $logger->error('[Proftpd][xferlog parse] ' . $error);
+            echo "*** ERROR: " . $error . PHP_EOL;
         }
     }
 } else {
-    echo "*** ERROR: proftpd plugin not available".PHP_EOL;
+    echo "*** ERROR: proftpd plugin not available" . PHP_EOL;
 }

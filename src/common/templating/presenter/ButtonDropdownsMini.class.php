@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,9 +19,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class Templating_Presenter_ButtonDropdownsMini extends Templating_Presenter_ButtonDropdowns {
+class Templating_Presenter_ButtonDropdownsMini extends Templating_Presenter_ButtonDropdowns
+{
 
-    public function __construct($id, $label, array $options) {
+    public function __construct($id, $label, array $options)
+    {
         parent::__construct($id, $label, $options);
         $this->addClassName('btn-mini');
     }

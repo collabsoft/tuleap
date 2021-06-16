@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -49,7 +49,6 @@ class SearchableVisitorParameter implements VisitorParameters
         Tracker $tracker,
         MetadataComparisonFromWhereBuilder $metadata_comparison_from_where_builder
     ) {
-
         $this->comparison                             = $comparison;
         $this->tracker                                = $tracker;
         $this->field_comparison_visitor               = $field_comparison_visitor;

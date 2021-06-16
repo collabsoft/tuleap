@@ -1,6 +1,6 @@
 <?php
 /**
-* Copyright Enalean (c) 2015. All rights reserved.
+* Copyright Enalean (c) 2015 - Present. All rights reserved.
 *
 * Tuleap and Enalean names and logos are registrated trademarks owned by
 * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,26 +22,30 @@
 * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
 */
 
-class b201501061426_add_kanban_id extends ForgeUpgrade_Bucket {
+class b201501061426_add_kanban_id extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Add kanban id in plugin_agiledashboard_kanban.
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "ALTER TABLE plugin_agiledashboard_kanban_configuration
                 DROP primary key";
 
         $res = $this->db->dbh->exec($sql);
 
         if ($res === false) {
-            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while removing primary key in table plugin_agiledashboard_kanban_configuration: '.implode(', ', $this->db->dbh->errorInfo()));
+            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while removing primary key in table plugin_agiledashboard_kanban_configuration: ' . implode(', ', $this->db->dbh->errorInfo()));
         }
 
         $sql = "ALTER TABLE plugin_agiledashboard_kanban_configuration
@@ -49,7 +53,7 @@ EOT;
 
         $res = $this->db->dbh->exec($sql);
         if ($res === false) {
-            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while adding column id in table plugin_agiledashboard_kanban_configuration: '.implode(', ', $this->db->dbh->errorInfo()));
+            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while adding column id in table plugin_agiledashboard_kanban_configuration: ' . implode(', ', $this->db->dbh->errorInfo()));
         }
 
         $sql = "ALTER TABLE plugin_agiledashboard_kanban_configuration
@@ -57,7 +61,7 @@ EOT;
 
         $res = $this->db->dbh->exec($sql);
         if ($res === false) {
-            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while modifying tracker_id type in table plugin_agiledashboard_kanban_configuration: '.implode(', ', $this->db->dbh->errorInfo()));
+            throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('An error occured while modifying tracker_id type in table plugin_agiledashboard_kanban_configuration: ' . implode(', ', $this->db->dbh->errorInfo()));
         }
     }
 }

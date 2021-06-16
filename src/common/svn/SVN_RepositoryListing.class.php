@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@ require_once 'SVN_PermissionsManager.class.php';
 require_once 'SVN_Svnlook.class.php';
 require_once 'SVN_RevisionPathInfo.class.php';
 
-class SVN_RepositoryListing {
+class SVN_RepositoryListing
+{
     /**
      * @var SVN_PermissionsManager
      */
@@ -37,20 +38,21 @@ class SVN_RepositoryListing {
      */
     private $user_manager;
 
-    public function __construct(SVN_PermissionsManager $svn_permissions_manager, SVN_Svnlook $svnlook, UserManager $user_manager) {
+    public function __construct(SVN_PermissionsManager $svn_permissions_manager, SVN_Svnlook $svnlook, UserManager $user_manager)
+    {
         $this->svn_permissions_manager = $svn_permissions_manager;
         $this->svnlook                 = $svnlook;
         $this->user_manager            = $user_manager;
     }
 
-    public function getSvnPaths(PFUser $user, Project $project, $svn_path) {
-        $paths            = array();
-        $content          = $this->svnlook->getDirectoryListing($project, $svn_path);
+    public function getSvnPaths(PFUser $user, Project $project, $svn_path)
+    {
+        $paths   = [];
+        $content = $this->svnlook->getDirectoryListing($project, $svn_path);
 
         foreach ($content as $line) {
-
             if ($this->svn_permissions_manager->userCanRead($user, $project, $line)) {
-                $paths[]= $this->extractDirectoryContent($line, $svn_path);
+                $paths[] = $this->extractDirectoryContent($line, $svn_path);
             }
         }
         return array_filter($paths);
@@ -59,8 +61,6 @@ class SVN_RepositoryListing {
     /**
      * Returns array of svn paths with log details
      *
-     * @param PFUser  $user
-     * @param Project $project
      * @param string  $svn_path
      * @param String  $sort        The type of sort wanted: ASC or DESC
      *
@@ -68,20 +68,22 @@ class SVN_RepositoryListing {
      *
      * @return SVN_RevisionPathInfo[]
      */
-    public function getSvnPathsWithLogDetails(PFUser $user, Project $project, $svn_path, $sort) {
+    public function getSvnPathsWithLogDetails(PFUser $user, Project $project, $svn_path, $sort)
+    {
         $paths = $this->getSvnPaths($user, $project, $svn_path);
 
         if (empty($paths)) {
-            return array();
+            return [];
         }
 
         return $this->sortSvnPathByTimestamp($project, $svn_path, $sort, $paths);
     }
 
-    private function sortSvnPathByTimestamp(Project $project, $svn_path, $sort, array $paths) {
-        $date_based_path = array();
+    private function sortSvnPathByTimestamp(Project $project, $svn_path, $sort, array $paths)
+    {
+        $date_based_path = [];
         foreach ($paths as $path) {
-            $path_info = $this->getSvnSinglePathWithLogDetails($project, $svn_path.'/'.$path);
+            $path_info                                     = $this->getSvnSinglePathWithLogDetails($project, $svn_path . '/' . $path);
             $date_based_path[$path_info->getTimestamp()][] = $path_info;
         }
 
@@ -94,41 +96,44 @@ class SVN_RepositoryListing {
         return $this->flattenTimestampBasedArrayOfPathInfo($date_based_path);
     }
 
-    private function getSvnSinglePathWithLogDetails(Project $project, $svn_path) {
-        $history = $this->splitHistory($this->svnlook->getPathLastHistory($project, $svn_path));
+    private function getSvnSinglePathWithLogDetails(Project $project, $svn_path)
+    {
+        $history      = $this->splitHistory($this->svnlook->getPathLastHistory($project, $svn_path));
         $last_revison = $history[0];
 
         return $this->getRevisionInfo($last_revison, $project);
     }
 
-    private function splitHistory(array $output) {
-        $history = array();
+    private function splitHistory(array $output)
+    {
+        $history = [];
         for ($i = 2; $i < count($output); $i++) {
-            $matches = array();
+            $matches = [];
             if (preg_match('/\s*(\d+)\s*(.*)/', $output[$i], $matches)) {
-                $history[] = array(
+                $history[] = [
                     'revision' => $matches[1],
                     'path'     => $matches[2],
-                );
+                ];
             }
         }
         return $history;
     }
 
-    private function flattenTimestampBasedArrayOfPathInfo($date_based_path) {
-        $data = array();
+    private function flattenTimestampBasedArrayOfPathInfo($date_based_path)
+    {
+        $data = [];
         foreach ($date_based_path as $list_of_path) {
             $data = array_merge($data, $list_of_path);
         }
         return $data;
     }
 
-    private function getRevisionInfo($revision, Project $project) {
-        $info = $this->svnlook->getInfo($project, $revision['revision']);
+    private function getRevisionInfo($revision, Project $project)
+    {
+        $info       = $this->svnlook->getInfo($project, $revision['revision']);
         $date_parts = explode(' (', $info[1]);
 
         return new SVN_RevisionPathInfo(
-            $revision['revision'],
             $revision['path'],
             $this->getUserId($info[0]),
             strtotime($date_parts[0]),
@@ -136,7 +141,8 @@ class SVN_RepositoryListing {
         );
     }
 
-    private function extractDirectoryContent($line, $svn_path) {
+    private function extractDirectoryContent($line, $svn_path)
+    {
         $match_path_regex = (substr($svn_path, -1) == '/') ? '%^' . preg_quote($svn_path, '%') . '%' : '%^' . preg_quote($svn_path, '%') . '/%';
 
         if (preg_match($match_path_regex, $line)) {
@@ -145,7 +151,8 @@ class SVN_RepositoryListing {
         return '';
     }
 
-    private function getUserId($user_name) {
+    private function getUserId($user_name)
+    {
         $user = $this->user_manager->getUserByUserName($user_name);
         if (! $user) {
             return null;

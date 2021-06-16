@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,7 +37,6 @@ class GitCrumbBuilder
     private $plugin_path;
 
     /**
-     * @param GitPermissionsManager $permissions_manager
      * @param string                $plugin_path
      */
     public function __construct(GitPermissionsManager $permissions_manager, $plugin_path)
@@ -47,8 +46,6 @@ class GitCrumbBuilder
     }
 
     /**
-     * @param PFUser  $user
-     * @param Project $project
      *
      * @return BreadCrumb
      */
@@ -58,7 +55,7 @@ class GitCrumbBuilder
             new BreadCrumbLinkWithIcon(
                 dgettext('tuleap-git', 'Git repositories'),
                 $this->plugin_path . '/' . urlencode($project->getUnixNameLowerCase()) . '/',
-                'tuleap-services-plugin_git'
+                'fa fa-fw fa-tlp-versioning-git'
             )
         );
 
@@ -93,7 +90,7 @@ class GitCrumbBuilder
             new BreadCrumbLinkWithIcon(
                 $GLOBALS['Language']->getText('global', 'Administration'),
                 $admin_url,
-                'fa-cog icon-cog'
+                'fa-cog'
             )
         );
     }
@@ -110,7 +107,7 @@ class GitCrumbBuilder
             new BreadCrumbLinkWithIcon(
                 dgettext('tuleap-git', 'Fork repositories'),
                 $fork_repositories_url,
-                'fa-code-fork icon-code-fork'
+                'fa-code-fork'
             )
         );
     }

@@ -1,0 +1,43 @@
+{
+  "author": "Enalean Team",
+  "name": "@tuleap/plugin-tracker-rich-text-editor",
+  "homepage": "https://tuleap.org",
+  "license": "GPL-2.0-or-later",
+  "private": true,
+  "version": "0.0.0",
+  "module": "dist/plugin-tracker-rich-text-editor.es.js",
+  "main": "dist/plugin-tracker-rich-text-editor.umd.js",
+  "types": "types/index.d.ts",
+  "style": "dist/style.css",
+  "dependencies": {
+    "@tuleap/gettext": "file:../../../../../src/scripts/lib/gettext",
+    "@tuleap/tlp-fetch": "file:../../../../../src/scripts/lib/tlp-fetch",
+    "dompurify": "^2.2.7",
+    "lit-html": "^1.4.1",
+    "marked": "^2.0.3",
+    "turndown": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/bootstrap": "^3.4.0",
+    "@types/ckeditor": "^4.9.10",
+    "@types/dompurify": "^2.2.1",
+    "@types/marked": "^2.0.2",
+    "@types/turndown": "^5.0.0"
+  },
+  "peerDependencies": {
+    "jquery": ">=1.7.0 <4.0.0"
+  },
+  "config": {
+    "bin": "../../../../../node_modules/.bin"
+  },
+  "scripts": {
+    "build": "$npm_package_config_bin/run-p build:*",
+    "build:vite": "$npm_package_config_bin/vite build",
+    "build:types": "rm -rf types/ && $npm_package_config_bin/tsc",
+    "watch": "$npm_package_config_bin/run-p watch:*",
+    "watch:vite": "$npm_package_config_bin/vite build --watch --mode development --minify false",
+    "watch:types": "rm -rf types/ && $npm_package_config_bin/tsc -w --preserveWatchOutput",
+    "test": "$npm_package_config_bin/jest",
+    "postshrinkwrap": "php ../../../../../tools/utils/scripts/clean-lockfile-from-local-tuleap-dep.php \"$(pwd)\""
+  }
+}

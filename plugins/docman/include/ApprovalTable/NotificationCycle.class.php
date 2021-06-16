@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2007. All Rights Reserved.
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2007
  *
@@ -21,10 +21,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Docman_ApprovalTableNotificationCycle {
-    var $table;
-    var $owner;
-    var $item;
+class Docman_ApprovalTableNotificationCycle
+{
+    public $table;
+    public $owner;
+    public $item;
 
     /** @var MailNotificationBuilder */
     private $mail_notification_builder;
@@ -32,65 +33,65 @@ class Docman_ApprovalTableNotificationCycle {
     /** @var Docman_NotificationsManager|null */
     private $notificationManager = null;
 
-    public function __construct(MailNotificationBuilder $mail_builder) {
+    public function __construct(MailNotificationBuilder $mail_builder)
+    {
         $this->table                     = null;
         $this->owner                     = null;
         $this->item                      = null;
         $this->mail_notification_builder = $mail_builder;
     }
 
-    function reviewUpdated($review) {
+    public function reviewUpdated($review)
+    {
         // Parameters
         $withComments = false;
-        if(trim($review->getComment()) != "") {
+        if (trim($review->getComment()) != "") {
             $withComments = true;
         }
 
         $reviewer = $this->_getUserById($review->getId());
 
         // States
-        if($review->getState() == PLUGIN_DOCMAN_APPROVAL_STATE_REJECTED) {
+        if ($review->getState() == PLUGIN_DOCMAN_APPROVAL_STATE_REJECTED) {
             $this->reviewerReject($reviewer);
-        }
-        elseif($this->getTableState() == PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED) {
+        } elseif ($this->getTableState() == PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED) {
             $isLastReviewer = true;
             $this->reviewerApprove($reviewer, $isLastReviewer, $withComments);
-        }
-        else {
+        } else {
             $isLastReviewer = false;
-            switch($review->getState()) {
-            case PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED:
-                $this->reviewerApprove($reviewer, $isLastReviewer, $withComments);
+            switch ($review->getState()) {
+                case PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED:
+                    $this->reviewerApprove($reviewer, $isLastReviewer, $withComments);
 
-                break;
+                    break;
                 case PLUGIN_DOCMAN_APPROVAL_STATE_DECLINED:
-                $this->reviewerDecline($reviewer, $isLastReviewer);
+                    $this->reviewerDecline($reviewer, $isLastReviewer);
 
-                break;
-            case PLUGIN_DOCMAN_APPROVAL_STATE_COMMENTED:
-                $this->reviewerComment($reviewer);
-                break;
+                    break;
+                case PLUGIN_DOCMAN_APPROVAL_STATE_COMMENTED:
+                    $this->reviewerComment($reviewer);
+                    break;
             }
         }
     }
 
-    //
     // Actions
-    //
-
     /**
      * Action
      */
-    function reviewerApprove($reviewer, $isLastReviewer, $withComments) {
-        if($isLastReviewer) {
+    public function reviewerApprove($reviewer, $isLastReviewer, $withComments)
+    {
+        if ($isLastReviewer) {
             $this->sendNotifTableApproved($reviewer, $withComments);
             $this->changeItemStatus($reviewer, PLUGIN_DOCMAN_ITEM_STATUS_APPROVED);
         } else {
             $this->sendNotifReviewApproved($reviewer, $withComments);
         }
 
-        if(!$isLastReviewer &&
-           $this->table->getNotification() == PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL) {
+        if (
+            ! $isLastReviewer &&
+            $this->table->getNotification() == PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL
+        ) {
             $this->notifyNextReviewer();
         }
     }
@@ -98,7 +99,8 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Action
      */
-    function reviewerReject($reviewer) {
+    public function reviewerReject($reviewer)
+    {
         $this->sendNotifRejected($reviewer);
         $this->changeItemStatus($reviewer, PLUGIN_DOCMAN_ITEM_STATUS_REJECTED);
     }
@@ -106,10 +108,13 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Action
      */
-    function reviewerDecline($reviewer, $isLastReviewer) {
+    public function reviewerDecline($reviewer, $isLastReviewer)
+    {
         $this->sendNotifReviewDeclined($reviewer);
-        if(!$isLastReviewer &&
-           $this->table->getNotification() == PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL) {
+        if (
+            ! $isLastReviewer &&
+            $this->table->getNotification() == PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL
+        ) {
             $this->notifyNextReviewer();
         }
     }
@@ -117,7 +122,8 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Action
      */
-    function reviewerComment($reviewer) {
+    public function reviewerComment($reviewer)
+    {
         $this->sendNotifReviewCommented($reviewer);
         $this->changeItemStatus($reviewer, PLUGIN_DOCMAN_ITEM_STATUS_DRAFT);
     }
@@ -125,25 +131,26 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Notify everybody in the same time
      *
-     * @return boolean Will return false only if there is no table or no
-     * reviewers to notify. If one notification fail, I don't have the tools to
-     * report it to the user.
+     * @return bool Will return false only if there is no table or no
+ * reviewers to notify. If one notification fail, I don't have the tools to
+ * report it to the user.
      */
-    function notifyAllAtOnce() {
+    public function notifyAllAtOnce()
+    {
         $nbNotif = 0;
 
         $rIter = $this->table->getReviewerIterator();
-        if($rIter !== null) {
+        if ($rIter !== null) {
             $rIter->rewind();
-            while($rIter->valid()) {
+            while ($rIter->valid()) {
                 $reviewer = $rIter->current();
-                switch($reviewer->getState()) {
-                case PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET:
-                case PLUGIN_DOCMAN_APPROVAL_STATE_COMMENTED:
-                    $sent = $this->notifyIndividual($reviewer->getId());
-                    if($sent) {
-                        $nbNotif++;
-                    }
+                switch ($reviewer->getState()) {
+                    case PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET:
+                    case PLUGIN_DOCMAN_APPROVAL_STATE_COMMENTED:
+                        $sent = $this->notifyIndividual($reviewer->getId());
+                        if ($sent) {
+                            $nbNotif++;
+                        }
                 }
                 $rIter->next();
             }
@@ -151,7 +158,7 @@ class Docman_ApprovalTableNotificationCycle {
             return false;
         }
 
-        if($nbNotif > 0) {
+        if ($nbNotif > 0) {
             return true;
         } else {
             return false;
@@ -165,16 +172,17 @@ class Docman_ApprovalTableNotificationCycle {
      * (review = not yet). If someone reject the document, Codendi doesn't send
      * any emails.
      */
-    function notifyNextReviewer() {
+    public function notifyNextReviewer()
+    {
         $dao = $this->_getReviewerDao();
 
         $dar = $dao->getFirstReviewerByStatus($this->table->getId(), PLUGIN_DOCMAN_APPROVAL_STATE_REJECTED);
-        if($dar && !$dar->isError() && $dar->rowCount() > 0) {
+        if ($dar && ! $dar->isError() && $dar->rowCount() > 0) {
             return false;
         } else {
-            $dar = $dao->getFirstReviewerByStatus($this->table->getId(), array(PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET,
-                                                                              PLUGIN_DOCMAN_APPROVAL_STATE_COMMENTED));
-            if($dar && !$dar->isError() && $dar->rowCount() == 1) {
+            $dar = $dao->getFirstReviewerByStatus($this->table->getId(), [PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET,
+                                                                              PLUGIN_DOCMAN_APPROVAL_STATE_COMMENTED]);
+            if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
                 $row = $dar->current();
                 return $this->notifyIndividual($row['reviewer_id']);
             }
@@ -185,11 +193,12 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Action
      */
-    function notifyIndividual($reviewerId) {
+    public function notifyIndividual($reviewerId)
+    {
         // enable item monitoring
         $this->enableMonitorForReviewer($reviewerId);
 
-        $um = $this->_getUserManager();
+        $um       = $this->_getUserManager();
         $reviewer = $um->getUserById($reviewerId);
 
         return $this->sendNotifReviewer($reviewer);
@@ -198,33 +207,33 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Enable the monitoring of an item for a given reviewer
      */
-    private function enableMonitorForReviewer($reviewerId) {
-        if (($this->notificationManager !== null) && !$this->notificationManager->userExists($reviewerId, $this->item->getId())) {
+    private function enableMonitorForReviewer($reviewerId)
+    {
+        if (($this->notificationManager !== null) && ! $this->notificationManager->userExists($reviewerId, $this->item->getId())) {
             $this->notificationManager->add($reviewerId, $this->item->getId());
         }
     }
-
-    //
-    //
-    //
 
     /**
      * Update item status according to parameters.
      * Not in use today.
      */
-    function changeItemStatus($reviewer, $status) {
+    public function changeItemStatus($reviewer, $status)
+    {
        // TBD
     }
 
-    function getReviewUrl() {
-        $baseUrl = get_server_url().'/plugins/docman/?group_id='.$this->item->getGroupId();
-        $reviewUrl = $baseUrl .'&action=details&section=approval&id='.$this->item->getId();
+    public function getReviewUrl()
+    {
+        $baseUrl   = HTTPRequest::instance()->getServerUrl() . '/plugins/docman/?group_id=' . $this->item->getGroupId();
+        $reviewUrl = $baseUrl . '&action=details&section=approval&id=' . $this->item->getId();
         return $reviewUrl;
     }
 
-    function _getEmailToOwner() {
+    public function _getEmailToOwner()
+    {
         $mail = $this->_getMail();
-        $mail->setFrom($GLOBALS['sys_noreply']);
+        $mail->setFrom(ForgeConfig::get('sys_noreply'));
         $mail->setTo($this->owner->getEmail());
         return $mail;
     }
@@ -232,34 +241,24 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Notify table owner
      */
-    function sendNotifRejected($reviewer) {
+    public function sendNotifRejected($reviewer)
+    {
         $project_manager = ProjectManager::instance();
         $project         = $project_manager->getProject($this->item->getGroupId());
         $reviewUrl       = $this->getReviewUrl();
 
-        $subject = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_reject_mail_subject',
-            array(
-                $GLOBALS['sys_name'],
-                $this->item->getTitle()
-            )
-        );
+        $subject = sprintf(dgettext('tuleap-docman', '[%1$s] \'%2$s\' was rejected by a reviewer'), ForgeConfig::get('sys_name'), $this->item->getTitle());
 
-        $body = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_reject_mail_body',
-            array(
-                $this->item->getTitle(),
-                $reviewUrl,
-                $reviewer->getRealName(),
-                $reviewer->getEmail()
-            )
-        );
+        $body = sprintf(dgettext('tuleap-docman', 'Your document \'%1$s\' was  rejected by %3$s <%4$s>.
+Direct access to the approval table:
+<%2$s>
+
+--
+This is an automatic email sent by a robot. Please do not reply to this email.'), $this->item->getTitle(), $reviewUrl, $reviewer->getRealName(), $reviewer->getEmail());
 
         $this->mail_notification_builder->buildAndSendEmail(
             $project,
-            array($reviewer->getEmail()),
+            [$reviewer->getEmail()],
             $subject,
             '',
             $body,
@@ -272,39 +271,29 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Notify table owner
      */
-    function sendNotifReviewApproved($reviewer, $withComments) {
+    public function sendNotifReviewApproved($reviewer, $withComments)
+    {
         $project_manager = ProjectManager::instance();
         $project         = $project_manager->getProject($this->item->getGroupId());
 
         $reviewUrl = $this->getReviewUrl();
-        $body      = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_approve_user_mail_body',
-            array($this->item->getTitle(),
-                $reviewUrl,
-                $reviewer->getRealName(),
-                $reviewer->getEmail()
-            )
-        );
+        $body      = sprintf(dgettext('tuleap-docman', 'Your document \'%1$s\' was approved by %3$s <%4$s>.
+You can access to the table with the following link:
+<%2$s>
+
+--
+This is an automatic email sent by a robot. Please do not reply to this email.'), $this->item->getTitle(), $reviewUrl, $reviewer->getRealName(), $reviewer->getEmail());
 
         $comment = '';
-        if($withComments) {
-            $comment = $GLOBALS['Language']->getText('plugin_docman', 'approval_notif_approve_user_mail_com');
+        if ($withComments) {
+            $comment = dgettext('tuleap-docman', 'with comments');
         }
 
-        $subject = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_approve_user_mail_subject',
-            array(
-                $GLOBALS['sys_name'],
-                $this->item->getTitle(),
-                $comment
-            )
-        );
+        $subject = sprintf(dgettext('tuleap-docman', '[%1$s] \'%2$s\' was approved by a reviewer %3$s'), ForgeConfig::get('sys_name'), $this->item->getTitle(), $comment);
 
         $this->mail_notification_builder->buildAndSendEmail(
             $project,
-            array($this->owner->getEmail()),
+            [$this->owner->getEmail()],
             $subject,
             '',
             $body,
@@ -317,43 +306,35 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Notify table owner
      */
-    function sendNotifTableApproved($reviewer, $withComments) {
+    public function sendNotifTableApproved($reviewer, $withComments)
+    {
         $project_manager = ProjectManager::instance();
         $project         = $project_manager->getProject($this->item->getGroupId());
 
         $reviewUrl = $this->getReviewUrl();
-        $baseUrl   = get_server_url().'/plugins/docman/?group_id='.$this->item->getGroupId();
-        $propUrl   = $baseUrl .'&action=edit&id='.$this->item->getId();
-        $body      = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_approve_mail_body',
-            array(
-                $this->item->getTitle(),
-                $reviewUrl,
-                $reviewer->getRealName(),
-                $reviewer->getEmail(),
-                $propUrl
-            )
-        );
+        $baseUrl   = HTTPRequest::instance()->getServerUrl() . '/plugins/docman/?group_id=' . $this->item->getGroupId();
+        $propUrl   = $baseUrl . '&action=edit&id=' . $this->item->getId();
+        $body      = sprintf(dgettext('tuleap-docman', 'Your document \'%1$s\' was approved by last reviewer: %3$s <%4$s>.
+You can access to the table with the following link:
+<%2$s>
+
+Please note that the document status was not automaticaly changed. You can
+change the document properties:
+<%5$s>
+
+--
+This is an automatic email sent by a robot. Please do not reply to this email.'), $this->item->getTitle(), $reviewUrl, $reviewer->getRealName(), $reviewer->getEmail(), $propUrl);
 
         $comment = '';
-        if($withComments) {
-            $comment = $GLOBALS['Language']->getText('plugin_docman', 'approval_notif_approve_user_mail_com');
+        if ($withComments) {
+            $comment = dgettext('tuleap-docman', 'with comments');
         }
 
-        $subject = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_approve_mail_subject',
-            array(
-                $GLOBALS['sys_name'],
-                $this->item->getTitle(),
-                $comment
-            )
-        );
+        $subject = sprintf(dgettext('tuleap-docman', '[%1$s] \'%2$s\' was approved by last reviewer %3$s'), ForgeConfig::get('sys_name'), $this->item->getTitle(), $comment);
 
         return $this->mail_notification_builder->buildAndSendEmail(
             $project,
-            array($this->owner->getEmail()),
+            [$this->owner->getEmail()],
             $subject,
             '',
             $body,
@@ -366,34 +347,25 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Notify table owner
      */
-    function sendNotifReviewDeclined($reviewer) {
+    public function sendNotifReviewDeclined($reviewer)
+    {
         $project_manager = ProjectManager::instance();
         $project         = $project_manager->getProject($this->item->getGroupId());
         $reviewUrl       = $this->getReviewUrl();
 
-        $subject = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_declined_mail_subject',
-            array(
-                $GLOBALS['sys_name'],
-                $this->item->getTitle()
-            )
-        );
+        $subject = sprintf(dgettext('tuleap-docman', '[%1$s] a reviewer will not review \'%2$s\''), ForgeConfig::get('sys_name'), $this->item->getTitle());
 
-        $body = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_declined_mail_body',
-            array(
-                $this->item->getTitle(),
-                $reviewUrl,
-                $reviewer->getRealName(),
-                $reviewer->getEmail()
-            )
-        );
+        $body = sprintf(dgettext('tuleap-docman', 'Your document \'%1$s\' will not be reviewed by %3$s <%4$s>.
+
+You can access to the table with the following link:
+<%2$s>
+
+--
+This is an automatic email sent by a robot. Please do not reply to this email.'), $this->item->getTitle(), $reviewUrl, $reviewer->getRealName(), $reviewer->getEmail());
 
         $this->mail_notification_builder->buildAndSendEmail(
             $project,
-            array($this->owner->getEmail()),
+            [$this->owner->getEmail()],
             $subject,
             '',
             $body,
@@ -406,41 +378,32 @@ class Docman_ApprovalTableNotificationCycle {
     /**
      * Notify table owner
      */
-    function sendNotifReviewCommented($reviewer) {
+    public function sendNotifReviewCommented($reviewer)
+    {
         $project_manager = ProjectManager::instance();
         $project         = $project_manager->getProject($this->item->getGroupId());
         $reviewUrl       = $this->getReviewUrl();
 
         $commentSeq = '';
-        if($this->table->getNotification() == PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL) {
-            $commentSeq = $GLOBALS['Language']->getText('plugin_docman', 'approval_notif_comment_mail_seq', $reviewer->getRealName());
+        if ($this->table->getNotification() == PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL) {
+            $commentSeq  = sprintf(dgettext('tuleap-docman', 'Important note: this approval table is configured in \'Sequential\' mode.
+The notification sequence is on hold until %1$s approves or rejects the document.'), $reviewer->getRealName());
             $commentSeq .= "\n";
         }
 
-        $subject = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_comment_mail_subject',
-            array(
-                $GLOBALS['sys_name'],
-                $this->item->getTitle()
-            )
-        );
+        $subject = sprintf(dgettext('tuleap-docman', '[%1$s] a reviewer commented \'%2$s\''), ForgeConfig::get('sys_name'), $this->item->getTitle());
 
-        $body = $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_comment_mail_body',
-            array(
-                $this->item->getTitle(),
-                $reviewer->getRealName(),
-                $reviewer->getEmail(),
-                $reviewUrl,
-                $commentSeq
-            )
-        );
+        $body = sprintf(dgettext('tuleap-docman', 'Your document \'%1$s\' was commented (but neither approved nor rejected) by \'%2$s\' <%3$s>.
+%5$s
+You can access to the table with the following link:
+<%4$s>
+
+--
+This is an automatic email sent by a robot. Please do not reply to this email.'), $this->item->getTitle(), $reviewer->getRealName(), $reviewer->getEmail(), $reviewUrl, $commentSeq);
 
         $this->mail_notification_builder->buildAndSendEmail(
             $project,
-            array($reviewer->getEmail()),
+            [$reviewer->getEmail()],
             $subject,
             '',
             $body,
@@ -448,23 +411,23 @@ class Docman_ApprovalTableNotificationCycle {
             DocmanPlugin::TRUNCATED_SERVICE_NAME,
             new MailEnhancer()
         );
-
     }
 
-    function sendNotifReviewer($reviewer) {
+    public function sendNotifReviewer($reviewer)
+    {
         // Project
-        $pm = ProjectManager::instance();
+        $pm    = ProjectManager::instance();
         $group = $pm->getProject($this->item->getGroupId());
 
         // Url
-        $reviewUrl = $this->getReviewUrl().'&review=1';
+        $reviewUrl = $this->getReviewUrl() . '&review=1';
 
         $subject = $this->getNotificationSubject();
         $body    = $this->getNotificationBodyText();
 
         return $this->mail_notification_builder->buildAndSendEmail(
             $group,
-            array($reviewer->getEmail()),
+            [$reviewer->getEmail()],
             $subject,
             '',
             $body,
@@ -474,142 +437,153 @@ class Docman_ApprovalTableNotificationCycle {
         );
     }
 
-    //
-    //
-    //
-
     /**
      * Return current item approval table state
      */
-    function getTableState() {
-        $nbApproved = 0;
-        $nbDeclined = 0;
-        $rejected = false;
+    public function getTableState()
+    {
+        $nbApproved  = 0;
+        $nbDeclined  = 0;
+        $rejected    = false;
         $revIterator = $this->table->getReviewerIterator();
-        while(!$rejected && $revIterator->valid()) {
+        while (! $rejected && $revIterator->valid()) {
             $reviewer = $revIterator->current();
-            switch($reviewer->getState()) {
-            case PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED:
-                $nbApproved++;
-                break;
-            case PLUGIN_DOCMAN_APPROVAL_STATE_REJECTED:
-                $rejected = true;
-                break;
-            case PLUGIN_DOCMAN_APPROVAL_STATE_DECLINED:
-                $nbDeclined++;
-                break;
+            switch ($reviewer->getState()) {
+                case PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED:
+                    $nbApproved++;
+                    break;
+                case PLUGIN_DOCMAN_APPROVAL_STATE_REJECTED:
+                    $rejected = true;
+                    break;
+                case PLUGIN_DOCMAN_APPROVAL_STATE_DECLINED:
+                    $nbDeclined++;
+                    break;
             }
             $revIterator->next();
         }
-        if($rejected) {
+        if ($rejected) {
             return PLUGIN_DOCMAN_APPROVAL_STATE_REJECTED;
         }
-        if(($nbApproved + $nbDeclined) == $revIterator->count()) {
+        if (($nbApproved + $nbDeclined) == $revIterator->count()) {
             return PLUGIN_DOCMAN_APPROVAL_STATE_APPROVED;
         }
         return PLUGIN_DOCMAN_APPROVAL_STATE_NOTYET;
     }
 
-    //
     // Getters & setters
-    //
-
-    function setTable(&$table) {
+    public function setTable(&$table)
+    {
         $this->table = $table;
     }
 
-    function getTable() {
+    public function getTable()
+    {
         return $this->table;
     }
 
-    function setOwner(&$owner) {
+    public function setOwner(&$owner)
+    {
         $this->owner = $owner;
     }
 
-    function setItem($item){
+    public function setItem($item)
+    {
         $this->item = $item;
     }
 
-    //
     // Class accessor
-    //
-
-    function _getReviewerDao() {
+    public function _getReviewerDao()
+    {
         return new Docman_ApprovalTableReviewerDao(CodendiDataAccess::instance());
     }
 
-    function _getMail()
+    public function _getMail()
     {
         return new Codendi_Mail();
     }
 
-    function _getUserManager() {
+    public function _getUserManager()
+    {
         return UserManager::instance();
     }
 
-    function _getUserById($id) {
+    public function _getUserById($id)
+    {
         return UserManager::instance()->getUserById($id);
     }
 
-    function _getItemFactory() {
+    public function _getItemFactory()
+    {
         return new Docman_ItemFactory($this->item->getGroupId());
     }
 
-    function _getEventManager() {
+    public function _getEventManager()
+    {
         return EventManager::instance();
     }
 
-    function _getSettingsBo($groupId) {
+    public function _getSettingsBo($groupId)
+    {
         return Docman_SettingsBo::instance($groupId);
     }
 
-    function setNotificationManager($notificationManager) {
+    public function setNotificationManager($notificationManager)
+    {
         $this->notificationManager = $notificationManager;
     }
 
-    function getNotificationSubject() {
-        return $GLOBALS['Language']->getText('plugin_docman', 'approval_notif_mail_subject', array($GLOBALS['sys_name'], $this->item->getTitle()));
+    public function getNotificationSubject()
+    {
+        return sprintf(dgettext('tuleap-docman', '[%1$s] Please review \'%2$s\''), ForgeConfig::get('sys_name'), $this->item->getTitle());
     }
 
-    function getNotificationBodyText() {
+    public function getNotificationBodyText()
+    {
         $project_manager = ProjectManager::instance();
         $project         = $project_manager->getProject($this->item->getGroupId());
-        $baseUrl         = get_server_url().'/plugins/docman/?group_id='.$this->item->getGroupId();
-        $itemUrl         = $baseUrl .'&action=show&id='.$this->item->getId();
+        $baseUrl         = HTTPRequest::instance()->getServerUrl() . '/plugins/docman/?group_id=' . $this->item->getGroupId();
+        $itemUrl         = $baseUrl . '&action=show&id=' . $this->item->getId();
         $comment         = '';
         $userComment     = $this->table->getDescription();
 
-        if($userComment != '') {
-            $comment = $GLOBALS['Language']->getText('plugin_docman', 'approval_notif_mail_notif_owner_comment', array($userComment));
+        if ($userComment != '') {
+            $comment  = sprintf(dgettext('tuleap-docman', 'Message:
+------------
+%1$s
+------------'), $userComment);
             $comment .= "\n\n";
         }
 
-        $reviewUrl = $this->getReviewUrl().'&review=1';
+        $reviewUrl = $this->getReviewUrl() . '&review=1';
 
         // Notification style
         $notifStyle = '';
-        switch($this->table->getNotification()) {
+        switch ($this->table->getNotification()) {
             case PLUGIN_DOCMAN_APPROVAL_NOTIF_SEQUENTIAL:
-                $notifStyle = $GLOBALS['Language']->getText('plugin_docman', 'approval_notif_mail_notif_seq', array($GLOBALS['sys_name']));
+                $notifStyle = sprintf(dgettext('tuleap-docman', 'Sequence.
+%1$s notifies reviewers one after another.
+People *will not be notified* to review the document *until you approved it*.'), ForgeConfig::get('sys_name'));
                 break;
             case PLUGIN_DOCMAN_APPROVAL_NOTIF_ALLATONCE:
-                $notifStyle = $GLOBALS['Language']->getText('plugin_docman', 'approval_notif_mail_notif_all');
+                $notifStyle = dgettext('tuleap-docman', 'All at once');
                 break;
         }
 
-        return $GLOBALS['Language']->getText(
-            'plugin_docman',
-            'approval_notif_mail_body',
-            array(
-                $this->item->getTitle(),
-                $project->getPublicName(),
-                $this->owner->getRealName(),
-                $itemUrl,
-                $comment,
-                $notifStyle,
-                $reviewUrl,
-                $this->owner->getEmail()
-            )
-        );
+        return sprintf(dgettext('tuleap-docman', 'You are requested to review the following document:
+
+Project: %2$s
+Title: %1$s
+Document: <%4$s>
+
+Requester: %3$s <%8$s>
+Your review: <%7$s>
+
+%5$sNotification type: %6$s
+
+Click on the following link to approve or reject the document:
+<%7$s>
+
+--
+This is an automatic message. Please do not reply to this email.'), $this->item->getTitle(), $project->getPublicName(), $this->owner->getRealName(), $itemUrl, $comment, $notifStyle, $reviewUrl, $this->owner->getEmail());
     }
 }

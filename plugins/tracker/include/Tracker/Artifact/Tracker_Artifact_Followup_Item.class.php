@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2015. All rights reserved
+ * Copyright (c) Enalean SAS 2015 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,33 +16,45 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-abstract class Tracker_Artifact_Followup_Item {
+abstract class Tracker_Artifact_Followup_Item
+{
 
     abstract public function getId();
 
     abstract public function getFollowUpDate();
 
-    abstract public function getFollowUpClassnames($diff_to_previous);
+    abstract public function getFollowUpClassnames($diff_to_previous, PFUser $user);
 
-    abstract public function fetchFollowUp($diff_to_previous);
+    abstract public function fetchFollowUp($diff_to_previous, PFUser $current_user): string;
 
     abstract public function getHTMLAvatar();
 
     abstract public function getSubmitterUrl();
 
-    abstract public function getFollowupContent($diff_to_previous);
+    abstract public function getFollowupContent(string $diff_to_previous, \PFUser $current_user): string;
+
+    public function getFollowUpHTML(PFUser $user, Tracker_Artifact_Followup_Item $previous_item): ?string
+    {
+        $diff_to_previous = $this->diffToPreviousArtifactView($user, $previous_item);
+        $classnames       = 'tracker_artifact_followup ';
+        $classnames      .= $this->getFollowUpClassnames($diff_to_previous, $user);
+        $comment_html     = '<li id="followup_' . $this->getId() . '" class="' . $classnames . '" data-test="artifact-follow-up">';
+        $comment_html    .= $this->fetchFollowUp($diff_to_previous, $user);
+        $comment_html    .= '</li>';
+
+        return $comment_html;
+    }
 
     /**
      * Return diff between this followup and previous one (HTML code)
      *
      * @return string html
      */
-    public abstract function diffToPrevious(
+    abstract public function diffToPrevious(
         $format = 'html',
         $user = null,
         $ignore_perms = false,
-        $for_mail = false,
-        $for_modal = false
+        $for_mail = false
     );
 
     public function diffToPreviousArtifactView(PFUser $user, Tracker_Artifact_Followup_Item $previous_item)
@@ -54,28 +66,27 @@ abstract class Tracker_Artifact_Followup_Item {
 
     abstract public function canHoldValue();
 
-    public function getAvatarIfEnabled() {
-        if (ForgeConfig::get('sys_enable_avatars')) {
-            return '<div class="tracker_artifact_followup_avatar">' . $this->getHTMLAvatar() . '</div>';
-        }
-
-        return '';
+    public function getAvatar()
+    {
+        return '<div class="tracker_artifact_followup_avatar">' . $this->getHTMLAvatar() . '</div>';
     }
 
-    public function getPermalink() {
+    public function getPermalink()
+    {
         $html  = '<a class="tracker_artifact_followup_permalink" href="#followup_' . $this->getId() . '">';
-        $html .= '<i class="icon-link" title="Link to this followup - #' . $this->getId() . '"></i> ';
+        $html .= '<i class="fa fa-link" title="Link to this followup - #' . $this->getId() . '"></i> ';
         $html .= '</a>';
 
         return $html;
     }
 
-    public function getUserLink() {
-        return '<span class="tracker_artifact_followup_title_user">'. $this->getSubmitterUrl() .'</span>';
+    public function getUserLink()
+    {
+        return '<span class="tracker_artifact_followup_title_user">' . $this->getSubmitterUrl() . '</span>';
     }
 
-    public function getTimeAgo() {
-        return DateHelper::timeAgoInWords($this->getFollowUpDate(), false, true);
+    public function getTimeAgo(PFUser $current_user)
+    {
+        return DateHelper::relativeDateInlineContext($this->getFollowUpDate(), $current_user);
     }
-
 }

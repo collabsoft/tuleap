@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2008. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2008
@@ -26,54 +26,51 @@
  * Access to LDAP project settings
  *
  */
-class LDAP_ProjectDao
-extends DataAccessObject
+class LDAP_ProjectDao extends DataAccessObject
 {
     /**
      * Check if given project has its svn repository with LDAP authentication
      *
-     * @param Integer $groupId Project id
-     * 
-     * @return Boolean
+     * @param int $groupId Project id
+     *
+     * @return bool
      */
-    function hasLdapSvn($groupId) 
+    public function hasLdapSvn($groupId)
     {
-        $sql = 'SELECT NULL'.
-            ' FROM plugin_ldap_svn_repository'.
-            ' WHERE group_id = '.$this->da->escapeInt($groupId);
+        $sql = 'SELECT NULL' .
+            ' FROM plugin_ldap_svn_repository' .
+            ' WHERE group_id = ' . $this->da->escapeInt($groupId);
         $dar = $this->retrieve($sql);
-        if ($dar && !$dar->isError() && $dar->rowCount() == 1) {
+        if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
             return true;
         } else {
             return false;
         }
     }
-    
+
     /**
      * Enable LDAP based authentication for given project
      *
-     * @param Integer $groupId Project id
+     * @param int $groupId Project id
      */
-    function activateLdapAuthForProject($groupId)
+    public function activateLdapAuthForProject($groupId)
     {
-        $sql = 'INSERT INTO plugin_ldap_svn_repository(group_id, ldap_auth)'.
-            ' VALUES ('.$this->da->escapeInt($groupId).',1)';
+        $sql = 'INSERT INTO plugin_ldap_svn_repository(group_id, ldap_auth)' .
+            ' VALUES (' . $this->da->escapeInt($groupId) . ',1)';
         $this->update($sql);
     }
 
-    function hasLdapAuthByName($groupName) {
-        $sql = 'SELECT NULL'.
-            ' FROM plugin_ldap_svn_repository'.
-            ' JOIN groups USING (group_id)'.
-            ' WHERE unix_group_name='.$this->da->quoteSmart($groupName);
+    public function hasLdapAuthByName($groupName)
+    {
+        $sql = 'SELECT NULL' .
+            ' FROM plugin_ldap_svn_repository' .
+            ' JOIN groups USING (group_id)' .
+            ' WHERE unix_group_name=' . $this->da->quoteSmart($groupName);
         $dar = $this->retrieve($sql);
-        if($dar && !$dar->isError() && $dar->rowCount() == 1) {
+        if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
             return true;
         } else {
             return false;
         }
     }
-
 }
-
-?>

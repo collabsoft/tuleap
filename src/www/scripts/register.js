@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Enalean SAS - 2014-2018. All rights reserved
+ * Copyright (c) Enalean SAS - 2014 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,42 +15,43 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-var tuleap = tuleap || { };
+/* global jQuery:readonly */
+
+var tuleap = tuleap || {};
 
 (function ($) {
     tuleap.register = {
-        handleTooltip: function() {
-            $('input, textarea').each(function() {
-                var helper = $('#' + $(this).attr('id') + '-tooltip');
+        handleTooltip: function () {
+            $("input, textarea").each(function () {
+                var helper = $("#" + $(this).attr("id") + "-tooltip");
                 if (helper.length > 0) {
                     $(this).popover({
                         html: true,
-                        trigger: 'focus',
-                        container: '#register-background',
-                        content: helper.html()
+                        trigger: "focus",
+                        container: "#register-background",
+                        content: helper.html(),
                     });
 
-                    $(this).on('shown.bs.popover', function (e) {
-                        $(this).data('popover').$tip.find('.popover-content')
-                             .html(helper.html());
-                    }) ;
+                    $(this).on("shown.bs.popover", function () {
+                        $(this).data("popover").$tip.find(".popover-content").html(helper.html());
+                    });
                 }
             });
         },
 
-        handleDatepicker: function() {
-            $('.datetimepicker').datetimepicker({
-                pickTime: false
+        handleDatepicker: function () {
+            $(".datetimepicker").datetimepicker({
+                pickTime: false,
             });
         },
 
-        handleUsername: function() {
-            $('#form_loginname').keyup(function() {
+        handleUsername: function () {
+            $("#form_loginname").keyup(function () {
                 if ($(this).val() !== $(this).val().toLowerCase()) {
                     $(this).val($(this).val().toLowerCase());
                 }
             });
-        }
+        },
     };
 
     $(document).ready(function () {

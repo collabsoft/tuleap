@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,7 +37,7 @@ use Tuleap\Tracker\Report\Query\Advanced\InvalidMetadata\Comment\CommentToStatus
 
 class NotEqualComparisonChecker implements ICheckMetadataForAComparison, ValueWrapperVisitor
 {
-    const OPERATOR = '!=';
+    public const OPERATOR = '!=';
 
     public function checkMetaDataIsValid(Metadata $metadata, Comparison $comparison)
     {

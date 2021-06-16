@@ -20,15 +20,12 @@
 
 /**
  * Description of GitBackendException
- *
- * @author gstorchi
  */
-class GitBackendException extends Exception {    
+class GitBackendException extends Exception
+{
 
-    public function __construct($msg) {
-        parent::__construct(__CLASS__.' : '.$msg);
+    public function __construct($msg)
+    {
+        parent::__construct(self::class . ' : ' . $msg);
     }
-    
 }
-
-?>

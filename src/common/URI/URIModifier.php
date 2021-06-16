@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,6 +26,8 @@ class URIModifier
      * @see RFC3986 section 5.2.4 https://tools.ietf.org/html/rfc3986#section-5.2.4
      *
      * @return string
+     *
+     * @psalm-pure
      */
     public static function removeDotSegments($uri)
     {
@@ -46,8 +48,7 @@ class URIModifier
             }
 
             return $carry;
-        }, array());
-
+        }, []);
 
         $filtered_uri = implode(DIRECTORY_SEPARATOR, $filtered_buffer);
 
@@ -63,6 +64,8 @@ class URIModifier
      * @see RFC3986 section 6.2.2.2 https://tools.ietf.org/html/rfc3986#section-6.2.2.2
      *
      * @return string
+     *
+     * @psalm-pure
      */
     public static function normalizePercentEncoding($uri)
     {
@@ -77,9 +80,19 @@ class URIModifier
 
     /**
      * @return string
+     *
+     * @psalm-pure
      */
     public static function removeEmptySegments($uri)
     {
-        return preg_replace('/' . preg_quote(DIRECTORY_SEPARATOR, '/') . '+/', DIRECTORY_SEPARATOR, $uri);
+        $is_vfs_stream_path = strpos($uri, 'vfs://') === 0;
+
+        $new_uri = preg_replace('/' . preg_quote(DIRECTORY_SEPARATOR, '/') . '+/', DIRECTORY_SEPARATOR, $uri);
+
+        if ($is_vfs_stream_path) {
+            $new_uri = preg_replace('%^vfs:%', 'vfs:/', $new_uri);
+        }
+
+        return $new_uri;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,9 +22,10 @@ namespace Tuleap\OpenIDConnectClient\Administration;
 
 use Tuleap\OpenIDConnectClient\Provider\Provider;
 
-class ColorPresenterFactory {
+class ColorPresenterFactory
+{
 
-    private $available_colors = array(
+    private $available_colors = [
         'inca_silver',
         'chrome_silver',
         'fiesta_red',
@@ -41,22 +42,24 @@ class ColorPresenterFactory {
         'plum_crazy',
         'peggy_pink',
         'flamingo_pink'
-    );
+    ];
 
-    public function getColorsPresenters() {
-        $colors_presenters = array();
+    public function getColorsPresenters()
+    {
+        $colors_presenters = [];
 
-        foreach($this->available_colors as $color) {
+        foreach ($this->available_colors as $color) {
             $colors_presenters[] = new ColorPresenter($color, false);
         }
 
         return $colors_presenters;
     }
 
-    public function getColorsPresentersForProvider(Provider $provider) {
-        $colors_presenters = array();
+    public function getColorsPresentersForProvider(Provider $provider)
+    {
+        $colors_presenters = [];
 
-        foreach($this->available_colors as $color) {
+        foreach ($this->available_colors as $color) {
             $is_color_selected = false;
 
             if ($provider->getColor() === $color) {
@@ -68,5 +71,4 @@ class ColorPresenterFactory {
 
         return $colors_presenters;
     }
-
 }

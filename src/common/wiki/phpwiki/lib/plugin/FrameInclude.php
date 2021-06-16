@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: FrameInclude.php,v 1.10 2004/06/14 11:31:39 rurban Exp $');
 /*
  Copyright 2002 $ThePhpWikiProgrammingTeam
@@ -45,24 +46,30 @@ rcs_id('$Id: FrameInclude.php,v 1.10 2004/06/14 11:31:39 rurban Exp $');
  *  named "top") For the Sidebar theme (or derived from it) we provide
  *  a left frame also, otherwise only top, content and bottom.
  */
-class WikiPlugin_FrameInclude
-extends WikiPlugin
+class WikiPlugin_FrameInclude extends WikiPlugin
 {
-    function getName() {
+    public function getName()
+    {
         return _("FrameInclude");
     }
 
-    function getDescription() {
+    public function getDescription()
+    {
         return _("Displays a url in a seperate frame inside our body. Only one frame allowed.");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.10 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.10 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array( 'src'         => false,       // the src url to include
+    public function getDefaultArguments()
+    {
+        return [ 'src'         => false,       // the src url to include
                       'page'        => false,
                       'name'        => 'content',   // name of our frame
                       'title'       => false,
@@ -74,36 +81,46 @@ extends WikiPlugin
                       'marginheight' => false,
                       'noresize'    => false,
                       'scrolling'   => 'auto',  // '[ yes | no | auto ]'
-                    );
+                    ];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         global $WikiTheme;
 
         $args = ($this->getArgs($argstr, $request));
         extract($args);
 
-        if ($request->getArg('action') != 'browse')
+        if ($request->getArg('action') != 'browse') {
             return $this->disabled("(action != 'browse')");
-        if (! $request->isGetOrHead())
+        }
+        if (! $request->isGetOrHead()) {
             return $this->disabled("(method != 'GET')");
+        }
 
-        if (!$src and $page) {
+        if (! $src and $page) {
             if ($page == $request->get('pagename')) {
-                return $this->error(sprintf(_("recursive inclusion of page %s"),
-                                            $page));
+                return $this->error(sprintf(
+                    _("recursive inclusion of page %s"),
+                    $page
+                ));
             }
             $src = WikiURL($page);
         }
-        if (!$src) {
-            return $this->error(sprintf(_("%s or %s parameter missing"),
-                                        'src', 'page'));
+        if (! $src) {
+            return $this->error(sprintf(
+                _("%s or %s parameter missing"),
+                'src',
+                'page'
+            ));
         }
 
         // FIXME: How to normalize url's to compare against recursion?
-        if ($src == $request->getURLtoSelf() ) {
-            return $this->error(sprintf(_("recursive inclusion of url %s"),
-                                        $src));
+        if ($src == $request->getURLtoSelf()) {
+            return $this->error(sprintf(
+                _("recursive inclusion of url %s"),
+                $src
+            ));
         }
 
         if (($which = $request->getArg('frame'))) {
@@ -117,31 +134,33 @@ extends WikiPlugin
         $sanitized_src = $uri_sanitizer->sanitizeForHTMLAttribute($src);
 
         // Generate the outer frameset
-        $frame = HTML::frame(array('name' => $name,
+        $frame = HTML::frame(['name' => $name,
                                    'src' => $sanitized_src,
                                    'title' => $title,
-                                   'frameborder' => (int)$frameborder,
-                                   'scrolling' => (string)$scrolling,
-                                   'noresize' => (bool)$noresize,
-                                   ));
+                                   'frameborder' => (int) $frameborder,
+                                   'scrolling' => (string) $scrolling,
+                                   'noresize' => (bool) $noresize,
+                                   ]);
 
-        if ($marginwidth)
+        if ($marginwidth) {
             $frame->setArg('marginwidth', $marginwidth);
-        if ($marginheight)
+        }
+        if ($marginheight) {
             $frame->setArg('marginheight', $marginheight);
+        }
 
-        $tokens = array('CONTENT_FRAME' => $frame,
+        $tokens = ['CONTENT_FRAME' => $frame,
                         'ROWS' => $rows,
                         'COLS' => $cols,
                         'FRAMEARGS' => sprintf('frameborder="%d"', $frameborder),
-                        );
+                        ];
 
         // Produce the frameset.
         $request->discardOutput();
         displayPage($request, new Template('frameset', $request, $tokens));
         $request->finish(); //noreturn
     }
-};
+}
 
 // $Log: FrameInclude.php,v $
 // Revision 1.10  2004/06/14 11:31:39  rurban
@@ -174,8 +193,6 @@ extends WikiPlugin
 // Code cleanup:
 // Reformatting & tabs to spaces;
 // Added copyleft, getVersion, getDescription, rcs_id.
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -184,4 +201,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

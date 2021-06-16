@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,6 +20,7 @@
 
 namespace Tuleap\Glyph;
 
+use ForgeConfig;
 use Tuleap\URI\URIModifier;
 
 class GlyphFinder
@@ -40,7 +41,7 @@ class GlyphFinder
      */
     public function get($name)
     {
-        static $symbol_cache = array();
+        static $symbol_cache = [];
 
         if (isset($symbol_cache[$name])) {
             return $symbol_cache[$name];
@@ -69,8 +70,15 @@ class GlyphFinder
      */
     private function getCoreGlyph($name)
     {
-        $core_glyphs_location = new GlyphLocation(\ForgeConfig::get('tuleap_dir') . '/src/glyphs');
-        return $this->readGlyph($core_glyphs_location, $name);
+        $core_glyphs_location = new GlyphLocation(__DIR__ . '/../../glyphs');
+        $glyph                = $this->readGlyph($core_glyphs_location, $name);
+
+        if (! $glyph) {
+            $custom_glyphs_location = new GlyphLocation(ForgeConfig::get('sys_data_dir') . '/images/');
+            $glyph                  = $this->readGlyph($custom_glyphs_location, $name);
+        }
+
+        return $glyph;
     }
 
     /**

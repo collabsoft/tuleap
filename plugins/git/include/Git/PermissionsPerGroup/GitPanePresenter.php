@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -39,7 +39,7 @@ class GitPanePresenter
      */
     public $project_id;
     /**
-     * @var null|int
+     * @var string|int
      */
     public $ugroup_id;
     /**
@@ -50,18 +50,18 @@ class GitPanePresenter
     public function __construct(
         PermissionPerGroupPanePresenter $service_presenter,
         Project $project,
-        ProjectUGroup $ugroup = null
+        ?ProjectUGroup $ugroup = null
     ) {
         $this->service_presenter    = $service_presenter;
         $this->url                  = $this->getGlobalAdminLink($project);
         $this->project_id           = $project->getID();
-        $this->ugroup_id            = ($ugroup) ? $ugroup->getId(): "";
-        $this->selected_ugroup_name = ($ugroup) ? $ugroup->getTranslatedName(): "";
+        $this->ugroup_id            = ($ugroup) ? $ugroup->getId() : "";
+        $this->selected_ugroup_name = ($ugroup) ? $ugroup->getTranslatedName() : "";
     }
 
     private function getGlobalAdminLink(Project $project)
     {
-        return GIT_BASE_URL . "?" . http_build_query(
+        return GIT_BASE_URL . "/?" . http_build_query(
             [
                 "group_id" => $project->getID(),
                 "action"   => "admin-git-admins"

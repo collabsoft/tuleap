@@ -1,5 +1,5 @@
 <?php
-/* 
+/*
  * Copyright 2005, STMicroelectronics
  *
  * Originally written by Manuel Vacelet
@@ -25,42 +25,45 @@
  *
  * This is a part of lite Model/View/Controler design pattern.
  *
- * @package Codendi-mvc
- * @copyright STMicroelectronics, 2005
- * @author    Manuel Vacelet <manuel.vacelet-abecedaire@st.com>
- * @license   http://opensource.org/licenses/gpl-license.php GPL
  */
-class Views {
-  /* protected array */  var $html_params; 
-  /* protected string */ var $view; 
-  /* protected Controler */ var $_controler;
-  
-  function View(&$controler, $view = null, $params = array()) {
-      $this->_controler =& $controler;
-      $this->view=$view;
-  }
-  
-    function getControler() {
+class Views
+{
+  /* protected array */  public $html_params;
+  /* protected string */ public $view;
+  /* protected Controler */ public $_controler;
+
+    public function View(&$controler, $view = null, $params = [])
+    {
+        $this->_controler =& $controler;
+        $this->view       = $view;
+    }
+
+    public function getControler()
+    {
         return $this->_controler;
     }
-    
 
-  function header() {
-    site_project_header($this->html_params);
-  }
 
-  function footer() {
-    site_project_footer($this->html_params);
-  }
+    public function header()
+    {
+        site_project_header($this->html_params);
+    }
 
-  function main() {
-    
-  }  
+    public function footer()
+    {
+        site_project_footer($this->html_params);
+    }
 
-  function display($view='') {
-    $this->header();
-    if(!empty($view)) $this->$view();
-    $this->footer();
-  }
+    public function main()
+    {
+    }
+
+    public function display($view = '')
+    {
+        $this->header();
+        if (! empty($view)) {
+            $this->$view();
+        }
+        $this->footer();
+    }
 }
-?>

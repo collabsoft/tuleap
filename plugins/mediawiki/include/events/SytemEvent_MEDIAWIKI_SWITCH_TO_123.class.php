@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,10 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SystemEvent_MEDIAWIKI_SWITCH_TO_123 extends SystemEvent {
-    const NAME = 'MEDIAWIKI_SWITCH_TO_123';
+class SystemEvent_MEDIAWIKI_SWITCH_TO_123 extends SystemEvent
+{
+    public const NAME = 'MEDIAWIKI_SWITCH_TO_123';
 
-    const ALL = 'all';
+    public const ALL = 'all';
 
     /** @var Mediawiki_Migration_MediawikiMigrator **/
     private $mediawiki_migrator;
@@ -40,10 +41,10 @@ class SystemEvent_MEDIAWIKI_SWITCH_TO_123 extends SystemEvent {
 
     public function injectDependencies(
         Mediawiki_Migration_MediawikiMigrator $mediawiki_migrator,
-        ProjectManager                        $project_manager,
-        MediawikiVersionManager               $version_manager,
-        MediawikiMLEBExtensionManager         $mleb_manager,
-        MediawikiSiteAdminResourceRestrictor  $resource_restrictor
+        ProjectManager $project_manager,
+        MediawikiVersionManager $version_manager,
+        MediawikiMLEBExtensionManager $mleb_manager,
+        MediawikiSiteAdminResourceRestrictor $resource_restrictor
     ) {
         $this->project_manager     = $project_manager;
         $this->mediawiki_migrator  = $mediawiki_migrator;
@@ -52,13 +53,14 @@ class SystemEvent_MEDIAWIKI_SWITCH_TO_123 extends SystemEvent {
         $this->resource_restrictor = $resource_restrictor;
     }
 
-    public function process() {
+    public function process()
+    {
         try {
             $projects    = $this->getProjectsFromParameters();
             $nb_projects = count($projects);
             $count       = 0;
             foreach ($projects as $project) {
-                if (file_exists(ForgeConfig::get('codendi_cache_dir').'/STOP_SYSTEM_EVENT')) {
+                if (file_exists(ForgeConfig::get('codendi_cache_dir') . '/STOP_SYSTEM_EVENT')) {
                     break;
                 } else {
                     $this->migrateProject($project);
@@ -85,16 +87,17 @@ class SystemEvent_MEDIAWIKI_SWITCH_TO_123 extends SystemEvent {
         }
     }
 
-    private function getProjectsFromParameters() {
+    private function getProjectsFromParameters()
+    {
         if ($this->areAllProjectsMigrated()) {
-            $projects = array();
+            $projects = [];
             foreach ($this->version_manager->getAllProjectsToMigrateTo123() as $project_id) {
                 $projects[] = $this->project_manager->getProject($project_id);
             }
             return $projects;
         }
         $project_id = $this->getProjectIdFromParameters();
-        return array($this->project_manager->getProject($project_id));
+        return [$this->project_manager->getProject($project_id)];
     }
 
     private function areAllProjectsMigrated()
@@ -103,15 +106,17 @@ class SystemEvent_MEDIAWIKI_SWITCH_TO_123 extends SystemEvent {
         return isset($parameters[0]) && $parameters[0] === self::ALL;
     }
 
-    private function getProjectIdFromParameters() {
+    private function getProjectIdFromParameters()
+    {
         $parameters = $this->getParametersAsArray();
         return (int) $parameters[0];
     }
 
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         if ($this->areAllProjectsMigrated()) {
             return 'All projects';
         }
-        return 'Project: '. $this->getProjectIdFromParameters();
+        return 'Project: ' . $this->getProjectIdFromParameters();
     }
 }

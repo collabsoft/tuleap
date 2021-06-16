@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,9 +19,8 @@
  */
 
 
-require_once 'common/mvc2/PluginController.class.php';
-
-class Cardwall_CardController extends MVC2_PluginController {
+class Cardwall_CardController extends MVC2_PluginController
+{
 
     /** @var Cardwall_SingleCard */
     private $single_card;
@@ -34,23 +33,24 @@ class Cardwall_CardController extends MVC2_PluginController {
         $this->single_card = $single_card;
     }
 
-    public function getCard() {
+    public function getCard()
+    {
         $card_in_cell_presenter = $this->single_card->getCardInCellPresenter();
         $artifact_id            = $card_in_cell_presenter->getArtifact()->getId();
         $card_presenter         = $card_in_cell_presenter->getCardPresenter();
 
-        $json_format = array(
-            $artifact_id => array(
+        $json_format = [
+            $artifact_id => [
                 'title'        => $card_presenter->getTitle(),
                 'xref'         => $card_presenter->getXRef(),
                 'edit_url'     => $card_presenter->getEditUrl(),
                 'accent_color' => $card_presenter->getAccentColor(),
                 'column_id'    => $this->single_card->getColumnId(),
                 'drop_into'    => $card_in_cell_presenter->getDropIntoIds(),
-                'fields'       => array(),
-                'html_fields'  => array(),
-            ),
-        );
+                'fields'       => [],
+                'html_fields'  => [],
+            ],
+        ];
         foreach ($this->single_card->getFields() as $field) {
             $this->addJsonFieldValues($json_format[$artifact_id], $field);
             $this->addHTMLFieldValues($json_format[$artifact_id], $field);
@@ -59,13 +59,13 @@ class Cardwall_CardController extends MVC2_PluginController {
         $GLOBALS['Response']->sendJSON($json_format);
     }
 
-    private function addJsonFieldValues(&$json_format, $field) {
+    private function addJsonFieldValues(&$json_format, $field)
+    {
         $json_format['fields'][$field->getName()] = $this->single_card->getFieldJsonValue($this->request->getCurrentUser(), $field);
     }
 
-    private function addHTMLFieldValues(&$json_format, $field) {
+    private function addHTMLFieldValues(&$json_format, $field)
+    {
         $json_format['html_fields'][$field->getName()] = $this->single_card->getFieldHTMLValue($this->request->getCurrentUser(), $field);
     }
 }
-
-?>

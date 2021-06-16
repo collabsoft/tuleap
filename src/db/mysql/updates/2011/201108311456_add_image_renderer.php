@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,22 +19,23 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/**
- *
- */
-class b201108311456_add_image_renderer extends ForgeUpgrade_Bucket {
+class b201108311456_add_image_renderer extends ForgeUpgrade_Bucket
+{
 
-    public function description() {
+    public function description()
+    {
         return <<<EOT
 Add table to store image widget
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE IF NOT EXISTS widget_image (
                   id int(11) unsigned NOT NULL auto_increment PRIMARY KEY,
                   owner_id int(11) unsigned NOT NULL default '0',
@@ -46,11 +47,10 @@ EOT;
         $this->db->createTable('widget_image', $sql);
     }
 
-    public function postUp() {
-        if (!$this->db->tableNameExists('widget_image')) {
+    public function postUp()
+    {
+        if (! $this->db->tableNameExists('widget_image')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotCompleteException('widget_image table is missing');
         }
     }
-
 }
-?>

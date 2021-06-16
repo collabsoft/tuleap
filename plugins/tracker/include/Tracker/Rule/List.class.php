@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2012. All rights reserved
+  * Copyright (c) Enalean, 2012 - Present. All rights reserved
   *
   * This file is a part of Tuleap.
   *
@@ -25,28 +25,20 @@
 * then target field will propose a value.
 *
 */
-class Tracker_Rule_List extends Tracker_Rule {
+class Tracker_Rule_List extends Tracker_Rule
+{
 
-    var $target_value;
-    var $source_value;
+    public $target_value;
+    public $source_value;
 
-    public function __construct($id = null, $tracker_id = null, $source_field = null, $source_value = null, $target_field = null, $target_value = null) {
+    public function __construct($id = null, $tracker_id = null, $source_field = null, $source_value = null, $target_field = null, $target_value = null)
+    {
         $this->setId($id)
                 ->setTrackerId($tracker_id)
                 ->setSourceFieldId($source_field)
                 ->setTargetFieldId($target_field)
                 ->setSourceValue($source_value)
                 ->setTargetValue($target_value);
-    }
-
-    /** @return mixed */
-    public function exportToSOAP() {
-        return array(
-            'source_field_id' => $this->getSourceFieldId(),
-            'source_value_id' => $this->getSourceValue(),
-            'target_field_id' => $this->getTargetFieldId(),
-            'target_value_id' => $this->getTargetValue(),
-        );
     }
 
     /**
@@ -57,15 +49,17 @@ class Tracker_Rule_List extends Tracker_Rule {
     * Else if params are same target value then returns true,
     * Else returns false.
     *
-    * @return boolean
+    * @return bool
     */
-    public function applyTo($tracker_id, $source_field, $source_value, $target_field, $target_value) {
+    public function applyTo($tracker_id, $source_field, $source_value, $target_field, $target_value)
+    {
         $can_apply_to = $this->canApplyTo($tracker_id, $source_field, $source_value, $target_field, $target_value);
-        $pass = $can_apply_to && $target_value == $this->target_value;
+        $pass         = $can_apply_to && $target_value == $this->target_value;
         return $pass;
     }
 
-    public function canApplyTo($tracker_id, $source_field, $source_value, $target_field, $target_value) {
+    public function canApplyTo($tracker_id, $source_field, $source_value, $target_field, $target_value)
+    {
         $match = $tracker_id == $this->tracker_id &&
             $source_field == $this->source_field &&
             $source_value == $this->source_value &&
@@ -77,7 +71,8 @@ class Tracker_Rule_List extends Tracker_Rule {
      *
      * @return string
      */
-    public function getSourceValue() {
+    public function getSourceValue()
+    {
         return $this->source_value;
     }
 
@@ -86,7 +81,8 @@ class Tracker_Rule_List extends Tracker_Rule {
      * @param string $value
      * @return \Tracker_Rule_Date
      */
-    public function setSourceValue($value) {
+    public function setSourceValue($value)
+    {
         $this->source_value = $value;
         return $this;
     }
@@ -95,7 +91,8 @@ class Tracker_Rule_List extends Tracker_Rule {
      *
      * @return string
      */
-    public function getTargetValue() {
+    public function getTargetValue()
+    {
         return $this->target_value;
     }
 
@@ -104,10 +101,9 @@ class Tracker_Rule_List extends Tracker_Rule {
      * @param string $value
      * @return \Tracker_Rule_Date
      */
-    public function setTargetValue($value) {
+    public function setTargetValue($value)
+    {
         $this->target_value = $value;
         return $this;
     }
-
 }
-?>

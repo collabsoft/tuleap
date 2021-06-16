@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,31 +18,40 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
-require_once 'common/mail/Codendi_Mail.class.php';
-require_once 'common/mail/MassmailSender.class.php';
+use Tuleap\Widget\MyProjects;
+
+require_once __DIR__ . '/../include/pre.php';
+
+if ((bool) ForgeConfig::get(MyProjects::CONFIG_DISABLE_CONTACT) === true) {
+    $GLOBALS['Response']->addFeedback(
+        Feedback::ERROR,
+        _('Massmail to project members is disabled.')
+    );
+    $GLOBALS['Response']->redirect("/my");
+    exit();
+}
 
 $csrf = new CSRFSynchronizerToken('massmail_to_project_members.php');
 $csrf->check('/my/');
 
-$request        = HTTPRequest::instance();
-$pm             = ProjectManager::instance();
+$request = HTTPRequest::instance();
+$pm      = ProjectManager::instance();
 
-$user           = $request->getCurrentUser();
-$group_id       = $request->get('group_id');
-$subject        = $request->get('subject');
-$body           = $request->get('body');
+$user     = $request->getCurrentUser();
+$group_id = $request->get('group_id');
+$subject  = $request->get('subject');
+$body     = $request->get('body');
 
-$project        = $pm->getProject($group_id);
-$members        = $project->getMembers();
-$project_name   = $project->getPublicName();
+$project      = $pm->getProject($group_id);
+$members      = $project->getMembers();
+$project_name = $project->getPublicName();
 
 $massmail_sender = new MassmailSender();
-$is_sent = $massmail_sender->sendMassmail($project, $user, $subject, $body, $members);
+$is_sent         = $massmail_sender->sendMassmail($project, $user, $subject, $body, $members);
 if ($is_sent) {
-    $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('my_index','mail_sent', array($project_name)));
+    $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('my_index', 'mail_sent', [$project_name]));
 } else {
-    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('my_index','mail_not_sent', array($project_name)));
+    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('my_index', 'mail_not_sent', [$project_name]));
 }
 
 $GLOBALS['Response']->redirect("/my");

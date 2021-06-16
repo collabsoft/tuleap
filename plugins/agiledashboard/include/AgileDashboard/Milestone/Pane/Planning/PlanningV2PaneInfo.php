@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,18 +26,14 @@ use Tuleap\AgileDashboard\Milestone\Pane\PaneInfo;
 
 class PlanningV2PaneInfo extends PaneInfo
 {
-    const IDENTIFIER = 'planning-v2';
+    public const IDENTIFIER = 'planning-v2';
 
     /** @var Tracker */
     private $submilestone_tracker;
 
-    /** @var string */
-    private $theme_path;
-
-    public function __construct(Planning_Milestone $milestone, $theme_path, Tracker $submilestone_tracker)
+    public function __construct(Planning_Milestone $milestone, Tracker $submilestone_tracker)
     {
         parent::__construct($milestone);
-        $this->theme_path           = $theme_path;
         $this->submilestone_tracker = $submilestone_tracker;
     }
 
@@ -48,15 +44,11 @@ class PlanningV2PaneInfo extends PaneInfo
 
     public function getTitle()
     {
-        return $GLOBALS['Language']->getText(
-            'plugin_agiledashboard',
-            'milestone_planning_pane_title',
-            $this->submilestone_tracker->getName()
-        );
+        return sprintf(dgettext('tuleap-agiledashboard', '%1$s Planning'), $this->submilestone_tracker->getName());
     }
 
     public function getIconName()
     {
-        return 'fa-sign-in icon-signin';
+        return 'fa-sign-in';
     }
 }

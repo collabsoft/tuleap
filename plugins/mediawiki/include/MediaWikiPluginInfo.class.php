@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS, 2013 - 2017. All rights reserved
+ * Copyright (c) Enalean SAS, 2013 - Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Codendi.
@@ -20,17 +20,18 @@
  *
  * Portions Copyright 2010 (c) Mélanie Le Bail
  */
-require_once 'common/plugin/PluginFileInfo.class.php';
+class MediaWikiPluginInfo extends PluginFileInfo
+{
 
-class MediaWikiPluginInfo extends PluginFileInfo {
-
-    function __construct(&$plugin) {
+    public function __construct(&$plugin)
+    {
         parent::__construct($plugin, 'mediawiki');
         $this->setPluginDescriptor(new MediaWikiPluginDescriptor());
     }
 
     /** @see PluginFileInfo::getDefaultConfPath() */
-    protected function getDefaultConfPath(Plugin $plugin, $incname) {
-        return $plugin->getFilesystemPath() .'/etc/'. $incname .'.inc.dist';
+    protected function getDefaultConfPath(Plugin $plugin, $incname)
+    {
+        return $plugin->getFilesystemPath() . '/etc/' . $incname . '.inc.dist';
     }
 }

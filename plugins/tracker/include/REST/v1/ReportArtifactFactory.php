@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -33,8 +33,6 @@ class ReportArtifactFactory
     }
 
     /**
-     * @param Tracker_Report $report
-     * @param IProvideFromAndWhereSQLFragments $additional_from_where
      * @param int $limit
      * @param int $offset
      * @return ArtifactMatchingReportCollection
@@ -51,7 +49,6 @@ class ReportArtifactFactory
     }
 
     /**
-     * @param Tracker_Report $report
      * @param int $limit
      * @param int $offset
      * @return ArtifactMatchingReportCollection
@@ -68,9 +65,9 @@ class ReportArtifactFactory
 
     private function getPaginatedArtifactCollection($limit, $offset, $matching_ids)
     {
-        if (! $matching_ids['id']) {
+        if (! isset($matching_ids['id']) || ! $matching_ids['id']) {
             return new ArtifactMatchingReportCollection(
-                array(),
+                [],
                 0
             );
         }

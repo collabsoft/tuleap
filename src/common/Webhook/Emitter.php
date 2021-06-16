@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,11 +21,21 @@
 namespace Tuleap\Webhook;
 
 use Http\Client\HttpAsyncClient;
-use Http\Message\RequestFactory;
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamFactoryInterface;
 
 class Emitter
 {
+    /**
+     * @var RequestFactoryInterface
+     */
+    private $http_request_factory;
+    /**
+     * @var StreamFactoryInterface
+     */
+    private $stream_factory;
     /**
      * @var HttpAsyncClient
      */
@@ -34,17 +44,15 @@ class Emitter
      * @var StatusLogger
      */
     private $logger;
-    /**
-     * @var RequestFactory
-     */
-    private $http_request_factory;
 
     public function __construct(
-        RequestFactory $http_request_factory,
+        RequestFactoryInterface $http_request_factory,
+        StreamFactoryInterface $stream_factory,
         HttpAsyncClient $http_client,
         StatusLogger $status_logger
     ) {
         $this->http_request_factory = $http_request_factory;
+        $this->stream_factory       = $stream_factory;
         $this->http_client          = $http_client;
         $this->logger               = $status_logger;
     }
@@ -61,7 +69,7 @@ class Emitter
                 $this->logger->log($webhook, $response->getStatusCode() . ' ' . $response->getReasonPhrase());
 
                 return $response;
-            }, function (\Http\Client\Exception $http_client_exception) use ($webhook) {
+            }, function (\Psr\Http\Client\RequestExceptionInterface $http_client_exception) use ($webhook) {
                 $error_message = $http_client_exception->getMessage();
                 if ($http_client_exception->getCode() !== 0) {
                     $error_message = $http_client_exception->getCode() . ' ' . $error_message;
@@ -79,16 +87,14 @@ class Emitter
         }
     }
 
-    /**
-     * @return \Psr\Http\Message\RequestInterface
-     */
-    private function buildFormURLEncodedRequest(Webhook $webhook, Payload $payload)
+    private function buildFormURLEncodedRequest(Webhook $webhook, Payload $payload): RequestInterface
     {
-        return $this->http_request_factory->createRequest(
-            'POST',
-            $webhook->getUrl(),
-            ['Content-Type' => 'application/x-www-form-urlencoded'],
-            http_build_query(['payload' => json_encode($payload->getPayload())])
-        );
+        return $this->http_request_factory->createRequest('POST', $webhook->getUrl())
+            ->withHeader('Content-Type', 'application/x-www-form-urlencoded')
+            ->withBody(
+                $this->stream_factory->createStream(
+                    http_build_query(['payload' => json_encode($payload->getPayload())])
+                )
+            );
     }
 }

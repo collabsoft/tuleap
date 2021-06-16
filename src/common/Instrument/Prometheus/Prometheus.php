@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,17 +19,39 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\Instrument\Prometheus;
 
+use Enalean\Prometheus\Registry\CollectorRegistry;
+use Enalean\Prometheus\Renderer\RenderTextFormat;
+use Enalean\Prometheus\Storage\InMemoryStore;
+use Enalean\Prometheus\Storage\NullStore;
+use Enalean\Prometheus\Storage\RedisStore;
+use Enalean\Prometheus\Value\HistogramLabelNames;
+use Enalean\Prometheus\Value\MetricLabelNames;
+use Enalean\Prometheus\Value\MetricName;
 use ForgeConfig;
-use Prometheus\CollectorRegistry;
-use Prometheus\RenderTextFormat;
+use Tuleap\Redis\ClientFactory;
 
 class Prometheus
 {
-    const CONFIG_PROMETHEUS_PLATFORM      = 'prometheus_platform';
-    const CONFIG_PROMETHEUS_NODE_EXPORTER = 'prometheus_node_exporter';
+    /**
+     * Platform name to be reported to Prometheus
+     *
+     * @tlp-config-key
+     */
+    public const CONFIG_PROMETHEUS_PLATFORM = 'prometheus_platform';
+    /**
+     * URL of `node_exporter` Prometheus exporter to be scrapped and included in Tuleap metrics
+     *
+     * @tlp-config-key
+     */
+    public const CONFIG_PROMETHEUS_NODE_EXPORTER = 'prometheus_node_exporter';
 
+    /**
+     * @var CollectorRegistry
+     */
     private $registry;
 
     /**
@@ -42,7 +64,7 @@ class Prometheus
         $this->registry = $registry;
     }
 
-    public static function instance()
+    public static function instance(): self
     {
         if (self::$instance === null) {
             self::$instance = new self(self::getCollectorRegistry());
@@ -51,35 +73,85 @@ class Prometheus
     }
 
     /**
-     * @param string $name
-     * @param string $help
-     * @param array $labels
+     * @param string[] $labels
      */
-    public function increment($name, $help, array $labels = [])
+    public function increment(string $name, string $help, array $labels = []): void
     {
-        list($label_names, $label_values) = $this->getLabelsNamesAndValues($labels);
-        $this->registry->getOrRegisterCounter('tuleap', $name, $help, $label_names)->inc($label_values);
+        $this->incrementBy($name, $help, 1, $labels);
     }
 
     /**
-     * @param string $name
-     * @param string $help
-     * @param float $value
      * @param array $labels
      */
-    public function gaugeSet($name, $help, $value, array $labels = [])
+    public function incrementBy(string $name, string $help, float $count, array $labels = []): void
     {
-        list($label_names, $label_values) = $this->getLabelsNamesAndValues($labels);
-        $this->registry->getOrRegisterGauge('tuleap', $name, $help, $label_names)->set($value, $label_values);
+        [$label_names, $label_values] = $this->getLabelsNamesAndValues($labels);
+        $this->registry->getOrRegisterCounter(
+            MetricName::fromNamespacedName('tuleap', $name),
+            $help,
+            MetricLabelNames::fromNames(...$label_names)
+        )->incBy($count, ...$label_values);
     }
 
-    private function getLabelsNamesAndValues(array $labels)
+    /**
+     * @param array $labels
+     */
+    public function gaugeSet(string $name, string $help, float $value, array $labels = []): void
+    {
+        [$label_names, $label_values] = $this->getLabelsNamesAndValues($labels);
+        $this->registry->getOrRegisterGauge(
+            MetricName::fromNamespacedName('tuleap', $name),
+            $help,
+            MetricLabelNames::fromNames(...$label_names)
+        )->set($value, ...$label_values);
+    }
+
+    /**
+     * Histograms allow to instrument things that are distributed across a set of known values like duration or size
+     *
+     * Given an histogram set with the following buckets (correspond to microseconds of request duration)
+     * - 0.05
+     * - 0.5
+     * - 1
+     *
+     * I have then 3 requests
+     * - 250ms
+     * - 750ms
+     * - 3s
+     *
+     * I will get the following results in Prometheus
+     * - 0.05: 0  => no requests took less than 50ms
+     * - 0.5: 1   => 1 request took less than 500ms
+     * - 1: 2     => 2 requests took less than 1s
+     * - +Inf: 3  => All requests took less than +Inf
+     * - count: 3 => There were 3 requests
+     * - sum: 4   => The total of all requests took 4s
+     *
+     * +Inf, count and sum are automatically generated.
+     *
+     * Example inspired by @see https://povilasv.me/prometheus-tracking-request-duration/
+     *
+     * @param array $labels
+     * @param float[] $buckets
+     */
+    public function histogram(string $name, string $help, float $time, array $labels = [], array $buckets = []): void
+    {
+        [$label_names, $label_values] = $this->getLabelsNamesAndValues($labels);
+        $this->registry->getOrRegisterHistogram(
+            MetricName::fromNamespacedName('tuleap', $name),
+            $help,
+            HistogramLabelNames::fromNames(...$label_names),
+            $buckets
+        )->observe($time, ...$label_values);
+    }
+
+    private function getLabelsNamesAndValues(array $labels): array
     {
         $label_names  = [];
         $label_values = [];
-        if (\ForgeConfig::exists('prometheus_platform')) {
+        if (ForgeConfig::exists('prometheus_platform')) {
             $label_names  = ['platform'];
-            $label_values = [\ForgeConfig::get('prometheus_platform')];
+            $label_values = [ForgeConfig::get('prometheus_platform')];
         }
         foreach ($labels as $label_name => $label_value) {
             $label_names[]  = $label_name;
@@ -89,39 +161,30 @@ class Prometheus
         return [$label_names, $label_values];
     }
 
-    public function renderText()
+    public function renderText(): string
     {
         $renderer = new RenderTextFormat();
         return $renderer->render($this->registry->getMetricFamilySamples());
     }
 
-    private static function getCollectorRegistry()
+    private static function getCollectorRegistry(): CollectorRegistry
     {
-        if (class_exists('Redis') &&
-            ForgeConfig::exists('redis_server') &&
-            ForgeConfig::exists(self::CONFIG_PROMETHEUS_PLATFORM)) {
-            \Prometheus\Storage\Redis::setDefaultOptions(
-                [
-                    'host'     => ForgeConfig::get('redis_server'),
-                    'port'     => ForgeConfig::get('redis_port'),
-                    'password' => ForgeConfig::get('redis_password'),
-                ]
-            );
-            $adapter = new \Prometheus\Storage\Redis();
+        if (
+            ClientFactory::canClientBeBuiltFromForgeConfig() &&
+            ForgeConfig::exists(self::CONFIG_PROMETHEUS_PLATFORM)
+        ) {
+            $store = new RedisStore(ClientFactory::fromForgeConfig());
         } else {
-            $adapter = new \Prometheus\Storage\InMemory();
+            $store = new NullStore();
         }
-        return new CollectorRegistry($adapter);
+        return new CollectorRegistry($store);
     }
 
-    /**
-     * @return Prometheus
-     */
-    public static function getInMemory()
+    public static function getInMemory(): self
     {
         return new self(
             new CollectorRegistry(
-                new \Prometheus\Storage\InMemory()
+                new InMemoryStore()
             )
         );
     }

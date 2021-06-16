@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,11 +19,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('pre.php');
+require_once __DIR__ . '/../include/pre.php';
 
-$HTML->header(array(
-    'title'=>$Language->getText('include_layout', 'Help'),
-    'main_classes' => array('tlp-framed')
-));
+$HTML->header([
+    'title' => $Language->getText('include_layout', 'Help'),
+    'main_classes' => ['tlp-framed']
+]);
 $HTML->displayHelpPage();
-$HTML->footer(array());
+$HTML->footer([]);

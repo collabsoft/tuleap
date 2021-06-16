@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2011, 2012, 2013. All rights reserved.
+ * Copyright Enalean (c) 2011, 2012, 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,15 +22,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class SystemEvent_SVN_UPDATE_HOOKS extends SystemEvent {
+class SystemEvent_SVN_UPDATE_HOOKS extends SystemEvent
+{
     /** @var BackendSVN */
     private $backend_svn;
 
-    public function injectDependencies(BackendSVN $backend_svn) {
+    public function injectDependencies(BackendSVN $backend_svn)
+    {
         $this->backend_svn = $backend_svn;
     }
 
-    public function process() {
+    public function process()
+    {
         $group_id = $this->getIdFromParam();
         $project  = $this->getProject($group_id);
         if ($project) {
@@ -42,7 +45,8 @@ class SystemEvent_SVN_UPDATE_HOOKS extends SystemEvent {
                     ForgeConfig::get('codendi_bin_prefix'),
                     'commit-email.pl',
                     "",
-                    "codendi_svn_pre_commit.php");
+                    "codendi_svn_pre_commit.php"
+                );
                 $this->done();
             } catch (BackendSVNFileForSimlinkAlreadyExistsException $exception) {
                 $this->warning($exception->getMessage());
@@ -61,10 +65,9 @@ class SystemEvent_SVN_UPDATE_HOOKS extends SystemEvent {
      *
      * @return string
      */
-    public function verbalizeParameters($with_link) {
+    public function verbalizeParameters($with_link)
+    {
         $group_id = $this->getIdFromParam();
-        return 'project: '. $this->verbalizeProjectId($group_id, $with_link);
+        return 'project: ' . $this->verbalizeProjectId($group_id, $with_link);
     }
 }
-
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2015. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class Git_Mirror_ManifestFileGenerator {
+class Git_Mirror_ManifestFileGenerator
+{
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
     /** @var string */
@@ -29,28 +30,31 @@ class Git_Mirror_ManifestFileGenerator {
     /** @var string */
     private $gladm_path = '/gitolite-admin.git';
 
-    const FILE_PREFIX = 'manifest_mirror_';
+    public const FILE_PREFIX = 'manifest_mirror_';
 
-    public function __construct(Logger $logger, $manifest_directory) {
+    public function __construct(\Psr\Log\LoggerInterface $logger, $manifest_directory)
+    {
         $this->manifest_directory = $manifest_directory;
         $this->logger             = $logger;
     }
 
-    public function getManifestDirectory() {
+    public function getManifestDirectory()
+    {
         return $this->manifest_directory;
     }
 
-    public function updateCurrentTimeOfRepository(Git_Mirror_Mirror $mirror, GitRepository $repository) {
+    public function updateCurrentTimeOfRepository(Git_Mirror_Mirror $mirror, GitRepository $repository)
+    {
         $filename = $this->getManifestFilenameForMirror($mirror);
 
         $list_of_repositories = $this->getListOfRepositoriesFromManifest($filename);
         $this->setCurrentTimeForRepository($mirror, $list_of_repositories, $repository);
 
         $this->writeManifest($filename, $list_of_repositories);
-
     }
 
-    public function addRepositoryToManifestFile(Git_Mirror_Mirror $mirror, GitRepository $repository) {
+    public function addRepositoryToManifestFile(Git_Mirror_Mirror $mirror, GitRepository $repository)
+    {
         $filename = $this->getManifestFilenameForMirror($mirror);
 
         $list_of_repositories = $this->getListOfRepositoriesFromManifest($filename);
@@ -60,11 +64,12 @@ class Git_Mirror_ManifestFileGenerator {
         $this->writeManifest($filename, $list_of_repositories);
     }
 
-    public function removeRepositoryFromManifestFile(Git_Mirror_Mirror $mirror, $repository_path) {
+    public function removeRepositoryFromManifestFile(Git_Mirror_Mirror $mirror, $repository_path)
+    {
         $filename = $this->getManifestFilenameForMirror($mirror);
 
         $list_of_repositories = $this->getListOfRepositoriesFromManifest($filename);
-        $key = $this->getRepositoryKeyFromPathName($repository_path);
+        $key                  = $this->getRepositoryKeyFromPathName($repository_path);
         if (isset($list_of_repositories[$key])) {
             $this->removeRepository($mirror, $list_of_repositories, $key);
             $this->setCurrentTimeForGitoliteAdminRepository($mirror, $list_of_repositories);
@@ -87,7 +92,7 @@ class Git_Mirror_ManifestFileGenerator {
             }
         }
 
-        $expected_keys = array_flip(array_map(array($this, 'getRepositoryKey'), $expected_repositories));
+        $expected_keys = array_flip(array_map([$this, 'getRepositoryKey'], $expected_repositories));
         foreach ($list_of_repositories as $key => $nop) {
             if (! isset($expected_keys[$key])) {
                 $this->removeRepository($mirror, $list_of_repositories, $key);
@@ -97,7 +102,8 @@ class Git_Mirror_ManifestFileGenerator {
         $this->writeManifest($filename, $list_of_repositories);
     }
 
-    private function getManifestFilenameForMirror(Git_Mirror_Mirror $mirror) {
+    private function getManifestFilenameForMirror(Git_Mirror_Mirror $mirror)
+    {
         return $this->manifest_directory
             . DIRECTORY_SEPARATOR
             . self::FILE_PREFIX . $mirror->id . '.js.gz';
@@ -146,51 +152,57 @@ class Git_Mirror_ManifestFileGenerator {
         unset($list_of_repositories[$repository_key]);
     }
 
-    private function makeSureThatGitoliteAdminRepositoryIsInTheManifest(array &$list_of_repositories) {
+    private function makeSureThatGitoliteAdminRepositoryIsInTheManifest(array &$list_of_repositories)
+    {
         if (isset($list_of_repositories[$this->gladm_path])) {
             return;
         }
 
-        $list_of_repositories[$this->gladm_path] = array(
+        $list_of_repositories[$this->gladm_path] = [
             "owner"       => null,
             "description" => '',
             "reference"   => null,
             'modified'    => $_SERVER['REQUEST_TIME']
-        );
+        ];
     }
 
-    private function getRepositoryInformation(GitRepository $repository) {
-        return array(
+    private function getRepositoryInformation(GitRepository $repository)
+    {
+        return [
             "owner"       => null,
             "description" => $repository->getDescription(),
             "reference"   => null,
             'modified'    => $_SERVER['REQUEST_TIME']
-        );
+        ];
     }
 
-    private function getRepositoryKey(GitRepository $repository) {
-        return '/'. $repository->getPath();
+    private function getRepositoryKey(GitRepository $repository)
+    {
+        return '/' . $repository->getPath();
     }
 
-    private function getRepositoryKeyFromPathName($path_name) {
-        return '/'. $path_name;
+    private function getRepositoryKeyFromPathName($path_name)
+    {
+        return '/' . $path_name;
     }
 
-    private function getListOfRepositoriesFromManifest($filename) {
+    private function getListOfRepositoriesFromManifest($filename)
+    {
         if (! is_file($filename)) {
-            return array();
+            return [];
         }
 
-        $content = file_get_contents("compress.zlib://$filename");
+        $content              = file_get_contents("compress.zlib://$filename");
         $list_of_repositories = json_decode($content, true);
         if (! $list_of_repositories) {
-            return array();
+            return [];
         }
 
         return $list_of_repositories;
     }
 
-    private function writeManifest($filename, $list_of_repositories) {
+    private function writeManifest($filename, $list_of_repositories)
+    {
         file_put_contents(
             "compress.zlib://$filename",
             json_encode($list_of_repositories)

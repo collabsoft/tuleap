@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,7 @@
  *
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../www/include/pre.php';
 
-$updater = new Tuleap\Svn\SvnrootUpdater(new Log_ConsoleLogger());
+$updater = new Tuleap\Svn\SvnrootUpdater(new Log_ConsoleLogger(), \Tuleap\DB\DBFactory::getMainTuleapDBConnection());
 $updater->push();

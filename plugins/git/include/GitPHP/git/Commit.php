@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
  *
  * This file is a part of Tuleap.
@@ -24,11 +24,10 @@ namespace Tuleap\Git\GitPHP;
 /**
  * Commit class
  *
- * @package GitPHP
- * @subpackage Git
  */
 class Commit extends GitObject
 {
+    public const HEADER_PGP = 'gpgsig';
 
     /**
      * dataRead
@@ -46,7 +45,7 @@ class Commit extends GitObject
      *
      * @access protected
      */
-    protected $parents = array();
+    protected $parents = [];
 
     /**
      * tree
@@ -127,7 +126,12 @@ class Commit extends GitObject
      *
      * @access protected
      */
-    protected $comment = array();
+    protected $comment = [];
+
+    /**
+     * @var null|string
+     */
+    private $pgp_signature;
 
     /**
      * readTree
@@ -145,7 +149,7 @@ class Commit extends GitObject
      *
      * @access protected
      */
-    protected $blobPaths = array();
+    protected $blobPaths = [];
 
     /**
      * treePaths
@@ -154,7 +158,9 @@ class Commit extends GitObject
      *
      * @access protected
      */
-    protected $treePaths = array();
+    protected $treePaths = [];
+
+    private $commit_paths = [];
 
     /**
      * hashPathsRead
@@ -227,7 +233,7 @@ class Commit extends GitObject
      */
     public function GetParent() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -251,7 +257,7 @@ class Commit extends GitObject
      */
     public function GetParents() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -272,7 +278,7 @@ class Commit extends GitObject
      */
     public function GetTree() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -293,7 +299,7 @@ class Commit extends GitObject
      */
     public function GetAuthor() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -310,11 +316,21 @@ class Commit extends GitObject
      */
     public function GetAuthorName() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
         return preg_replace('/ <.*/', '', $this->author);
+    }
+
+    /**
+     * @return string
+     */
+    public function getAuthorEmail()
+    {
+        preg_match('/<(.*)>/', $this->GetAuthor(), $matches);
+
+        return isset($matches[1]) ? $matches[1] : '';
     }
 
     /**
@@ -327,7 +343,7 @@ class Commit extends GitObject
      */
     public function GetAuthorEpoch() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -345,9 +361,9 @@ class Commit extends GitObject
     public function GetAuthorLocalEpoch() // @codingStandardsIgnoreLine
     {
         $epoch = $this->GetAuthorEpoch();
-        $tz = $this->GetAuthorTimezone();
+        $tz    = $this->GetAuthorTimezone();
         if (preg_match('/^([+\-][0-9][0-9])([0-9][0-9])$/', $tz, $regs)) {
-            $local = $epoch + ((((int)$regs[1]) + ($regs[2]/60)) * 3600);
+            $local = $epoch + ((((int) $regs[1]) + ($regs[2] / 60)) * 3600);
             return $local;
         }
         return $epoch;
@@ -363,7 +379,7 @@ class Commit extends GitObject
      */
     public function GetAuthorTimezone() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -380,11 +396,21 @@ class Commit extends GitObject
      */
     public function GetCommitter() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
         return $this->committer;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCommitterEmail()
+    {
+        preg_match('/<(.*)>/', $this->GetCommitter(), $matches);
+
+        return isset($matches[1]) ? $matches[1] : '';
     }
 
     /**
@@ -397,7 +423,7 @@ class Commit extends GitObject
      */
     public function GetCommitterName() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -414,7 +440,7 @@ class Commit extends GitObject
      */
     public function GetCommitterEpoch() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -432,9 +458,9 @@ class Commit extends GitObject
     public function GetCommitterLocalEpoch() // @codingStandardsIgnoreLine
     {
         $epoch = $this->GetCommitterEpoch();
-        $tz = $this->GetCommitterTimezone();
+        $tz    = $this->GetCommitterTimezone();
         if (preg_match('/^([+\-][0-9][0-9])([0-9][0-9])$/', $tz, $regs)) {
-            $local = $epoch + ((((int)$regs[1]) + ($regs[2]/60)) * 3600);
+            $local = $epoch + ((((int) $regs[1]) + ($regs[2] / 60)) * 3600);
             return $local;
         }
         return $epoch;
@@ -450,7 +476,7 @@ class Commit extends GitObject
      */
     public function GetCommitterTimezone() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -463,17 +489,17 @@ class Commit extends GitObject
      * Gets the commit title
      *
      * @access public
-     * @param integer $trim length to trim to (0 for no trim)
-     * @return string title
+     * @param int $trim length to trim to (0 for no trim)
+     * @return string | null
      */
     public function GetTitle($trim = 0) // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
-        if (($trim > 0) && (strlen($this->title) > $trim)) {
-            return substr($this->title, 0, $trim) . '…';
+        if (($trim > 0) && (mb_strlen($this->title) > $trim)) {
+            return mb_substr($this->title, 0, $trim) . '…';
         }
 
         return $this->title;
@@ -489,11 +515,22 @@ class Commit extends GitObject
      */
     public function GetComment() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
         return $this->comment;
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getPGPSignature()
+    {
+        if (! $this->dataRead) {
+            $this->ReadData();
+        }
+        return $this->pgp_signature;
     }
 
     /**
@@ -511,11 +548,43 @@ class Commit extends GitObject
             return $this->GetComment();
         }
 
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
-        return preg_grep('/' . $pattern . '/i', $this->comment);
+        return preg_grep('/' . preg_quote($pattern, '/') . '/i', $this->comment);
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getDescriptionAsArray()
+    {
+        $comment = $this->GetComment();
+        array_shift($comment);
+
+        return $comment;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDescription()
+    {
+        return trim(implode("\n", $this->getDescriptionAsArray()));
+    }
+
+    /**
+     * @param string $pattern
+     * @return string[]
+     */
+    public function searchDescription($pattern)
+    {
+        if (empty($pattern)) {
+            return [];
+        }
+
+        return preg_grep('/' . preg_quote($pattern, '/') . '/i', $this->getDescriptionAsArray());
     }
 
     /**
@@ -528,11 +597,11 @@ class Commit extends GitObject
      */
     public function GetAge() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
-        if (!empty($this->committerEpoch)) {
+        if (! empty($this->committerEpoch)) {
             return time() - $this->committerEpoch;
         }
 
@@ -545,11 +614,11 @@ class Commit extends GitObject
      * Returns whether this is a merge commit
      *
      * @access pubilc
-     * @return boolean true if merge commit
+     * @return bool true if merge commit
      */
     public function IsMergeCommit() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -575,9 +644,18 @@ class Commit extends GitObject
 
         $lines = explode("\n", $data);
 
-        $header = true;
+        $header                   = true;
+        $is_parsing_pgp_signature = false;
 
         foreach ($lines as $i => $line) {
+            if ($is_parsing_pgp_signature) {
+                if (strlen($line) > 0 && $line[0] === ' ') {
+                    $this->pgp_signature .= ltrim($line, ' ') . "\n";
+                    continue;
+                }
+                $this->pgp_signature      = rtrim($this->pgp_signature);
+                $is_parsing_pgp_signature = false;
+            }
             if ($header && preg_match('/^tree ([0-9a-fA-F]{40})$/', $line, $regs)) {
                 /* Tree */
                 try {
@@ -596,24 +674,27 @@ class Commit extends GitObject
                 }
             } elseif ($header && preg_match('/^author (.*) ([0-9]+) (.*)$/', $line, $regs)) {
                 /* author data */
-                $this->author = $regs[1];
-                $this->authorEpoch = $regs[2];
+                $this->author         = $regs[1];
+                $this->authorEpoch    = $regs[2];
                 $this->authorTimezone = $regs[3];
             } elseif ($header && preg_match('/^committer (.*) ([0-9]+) (.*)$/', $line, $regs)) {
                 /* committer data */
-                $this->committer = $regs[1];
-                $this->committerEpoch = $regs[2];
+                $this->committer         = $regs[1];
+                $this->committerEpoch    = $regs[2];
                 $this->committerTimezone = $regs[3];
+            } elseif ($header && strpos($line, self::HEADER_PGP . ' ') === 0) {
+                $this->pgp_signature      = substr($line, strlen(self::HEADER_PGP . ' ')) . "\n";
+                $is_parsing_pgp_signature = true;
             } else {
                 /* commit comment */
-                $header = false;
+                $header  = false;
                 $trimmed = trim($line);
                 if (empty($this->title) && (strlen($trimmed) > 0)) {
                     $this->title = $trimmed;
                 }
-                if (!empty($this->title)) {
-                    if ((strlen($trimmed) > 0) || ($i < (count($lines)-1))) {
-                        $this->comment[] = $trimmed;
+                if (! empty($this->title)) {
+                    if ((strlen($line) > 0) || ($i < (count($lines) - 1))) {
+                        $this->comment[] = $line;
                     }
                 }
             }
@@ -630,7 +711,7 @@ class Commit extends GitObject
      */
     public function GetHeads() // @codingStandardsIgnoreLine
     {
-        $heads = array();
+        $heads = [];
 
         $projectRefs = $this->GetProject()->GetRefs('heads');
 
@@ -653,7 +734,7 @@ class Commit extends GitObject
      */
     public function GetTags() // @codingStandardsIgnoreLine
     {
-        $tags = array();
+        $tags = [];
 
         $projectRefs = $this->GetProject()->GetRefs('tags');
 
@@ -674,11 +755,11 @@ class Commit extends GitObject
      * Gets the tag that contains the changes in this commit
      *
      * @access public
-     * @return tag object
+     * @return Tag object
      */
     public function GetContainingTag() // @codingStandardsIgnoreLine
     {
-        if (!$this->containingTagRead) {
+        if (! $this->containingTagRead) {
             $this->ReadContainingTag();
         }
 
@@ -696,8 +777,8 @@ class Commit extends GitObject
     {
         $this->containingTagRead = true;
 
-        $exe = new GitExe($this->GetProject());
-        $args = array();
+        $exe    = new GitExe($this->GetProject());
+        $args   = [];
         $args[] = '--tags';
         $args[] = escapeshellarg($this->hash);
         $revs   = explode("\n", $exe->Execute(GitExe::NAME_REV, $args));
@@ -740,7 +821,7 @@ class Commit extends GitObject
             return '';
         }
 
-        if (!$this->hashPathsRead) {
+        if (! $this->hashPathsRead) {
             $this->ReadHashPaths();
         }
 
@@ -750,6 +831,10 @@ class Commit extends GitObject
 
         if (isset($this->treePaths[$path])) {
             return $this->treePaths[$path];
+        }
+
+        if (isset($this->commit_paths[$path])) {
+            return $this->commit_paths[$path];
         }
 
         return '';
@@ -777,7 +862,7 @@ class Commit extends GitObject
      */
     private function ReadHashPathsRaw($tree) // @codingStandardsIgnoreLine
     {
-        if (!$tree) {
+        if (! $tree) {
             return;
         }
 
@@ -785,14 +870,18 @@ class Commit extends GitObject
 
         foreach ($contents as $obj) {
             if ($obj instanceof Blob) {
-                $hash = $obj->GetHash();
-                $path = $obj->GetPath();
+                $hash                         = $obj->GetHash();
+                $path                         = $obj->GetPath();
                 $this->blobPaths[trim($path)] = $hash;
             } elseif ($obj instanceof Tree) {
-                $hash = $obj->GetHash();
-                $path = $obj->GetPath();
+                $hash                         = $obj->GetHash();
+                $path                         = $obj->GetPath();
                 $this->treePaths[trim($path)] = $hash;
                 $this->ReadHashPathsRaw($obj);
+            } elseif ($obj instanceof Submodule) {
+                $hash                            = $obj->GetHash();
+                $path                            = $obj->getPath();
+                $this->commit_paths[trim($path)] = $hash;
             }
         }
     }
@@ -812,11 +901,11 @@ class Commit extends GitObject
             return;
         }
 
-        if (!$this->hashPathsRead) {
+        if (! $this->hashPathsRead) {
             $this->ReadHashPaths();
         }
 
-        $results = array();
+        $results = [];
 
         foreach ($this->treePaths as $path => $hash) {
             if (preg_match('/' . $pattern . '/i', $path)) {
@@ -856,7 +945,7 @@ class Commit extends GitObject
 
         $exe = new GitExe($this->GetProject());
 
-        $args = array();
+        $args   = [];
         $args[] = '-I';
         $args[] = '--full-name';
         $args[] = '--ignore-case';
@@ -867,19 +956,19 @@ class Commit extends GitObject
 
         $lines = explode("\n", $exe->Execute(GitExe::GREP, $args));
 
-        $results = array();
+        $results = [];
 
         foreach ($lines as $line) {
             if (preg_match('/^[^:]+:([^:]+):([0-9]+):(.+)$/', $line, $regs)) {
-                if (!isset($results[$regs[1]]['object'])) {
+                if (! isset($results[$regs[1]]['object'])) {
                     $hash = $this->PathToHash($regs[1]);
-                    if (!empty($hash)) {
+                    if (! empty($hash)) {
                         $obj = $this->GetProject()->GetBlob($hash);
                         $obj->SetCommit($this);
                         $results[$regs[1]]['object'] = $obj;
                     }
                 }
-                $results[$regs[1]]['lines'][(int)($regs[2])] = $regs[3];
+                $results[$regs[1]]['lines'][(int) ($regs[2])] = $regs[3];
             }
         }
 
@@ -893,8 +982,8 @@ class Commit extends GitObject
      *
      * @access public
      * @param string $pattern pattern to search
-     * @param integer $count number of results to get
-     * @param integer $skip number of results to skip
+     * @param int $count number of results to get
+     * @param int $skip number of results to skip
      * @return array array of results
      */
     public function SearchFiles($pattern, $count = 100, $skip = 0) // @codingStandardsIgnoreLine
@@ -909,7 +998,7 @@ class Commit extends GitObject
 
         /* Merge the results together */
         foreach ($nameresults as $path => $obj) {
-            if (!isset($grepresults[$path]['object'])) {
+            if (! isset($grepresults[$path]['object'])) {
                 $grepresults[$path]['object'] = $obj;
             }
         }
@@ -932,7 +1021,7 @@ class Commit extends GitObject
             return;
         }
 
-        if ((!isset($this->parents)) || (count($this->parents) < 1)) {
+        if ((! isset($this->parents)) || (count($this->parents) < 1)) {
             return;
         }
 
@@ -952,11 +1041,11 @@ class Commit extends GitObject
      */
     private function DereferenceParents() // @codingStandardsIgnoreLine
     {
-        if (!$this->parentsReferenced) {
+        if (! $this->parentsReferenced) {
             return;
         }
 
-        if ((!$this->parents) || (count($this->parents) < 1)) {
+        if ((! $this->parents) || (count($this->parents) < 1)) {
             return;
         }
 
@@ -980,7 +1069,7 @@ class Commit extends GitObject
             return;
         }
 
-        if (!$this->tree) {
+        if (! $this->tree) {
             return;
         }
 
@@ -998,7 +1087,7 @@ class Commit extends GitObject
      */
     private function DereferenceTree() // @codingStandardsIgnoreLine
     {
-        if (!$this->treeReferenced) {
+        if (! $this->treeReferenced) {
             return;
         }
 
@@ -1024,7 +1113,7 @@ class Commit extends GitObject
      * @static
      * @param mixed $a first commit
      * @param mixed $b second commit
-     * @return integer comparison result
+     * @return int comparison result
      */
     public static function CompareAge($a, $b) // @codingStandardsIgnoreLine
     {

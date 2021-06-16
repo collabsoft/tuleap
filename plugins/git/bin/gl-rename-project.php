@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,30 +21,41 @@
  * Rename project in gitolite configuration
  */
 
-require_once 'pre.php';
-require_once dirname(__FILE__).'/../include/Git_GitoliteDriver.class.php';
-require_once dirname(__FILE__).'/../include/GitRepositoryUrlManager.class.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/Git_GitoliteDriver.class.php';
+require_once __DIR__ . '/../include/GitRepositoryUrlManager.class.php';
 
 if ($argc !== 3) {
-    echo "Usage: ".$argv[0]." oldname newname".PHP_EOL;
+    echo "Usage: " . $argv[0] . " oldname newname" . PHP_EOL;
     exit(1);
 }
 
-/* @var $git_plugin GitPlugin */
-$git_plugin  = PluginManager::instance()->getPluginByName('git');
-$url_manager = new Git_GitRepositoryUrlManager($git_plugin);
+$git_plugin = PluginManager::instance()->getPluginByName('git');
+\assert($git_plugin instanceof GitPlugin);
+$url_manager = new Git_GitRepositoryUrlManager($git_plugin, new \Tuleap\InstanceBaseURLBuilder());
 $driver      = new Git_GitoliteDriver(
     $git_plugin->getLogger(),
     $git_plugin->getGitSystemEventManager(),
     $url_manager,
     new GitDao(),
     new Git_Mirror_MirrorDao(),
-    PluginManager::instance()->getPluginByName('git')
+    PluginManager::instance()->getPluginByName('git'),
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    new \Tuleap\Git\BigObjectAuthorization\BigObjectAuthorizationManager(
+        new \Tuleap\Git\BigObjectAuthorization\BigObjectAuthorizationDao(),
+        ProjectManager::instance()
+    ),
+    new \Tuleap\Git\Gitolite\VersionDetector()
 );
 if ($driver->renameProject($argv[1], $argv[2])) {
     echo "Rename done!\n";
     exit(0);
 } else {
-    echo "*** ERROR: Fail to rename project ".$argv[1]." into ".$argv[2]." gitolite repositories".PHP_EOL;
+    echo "*** ERROR: Fail to rename project " . $argv[1] . " into " . $argv[2] . " gitolite repositories" . PHP_EOL;
     exit(1);
 }

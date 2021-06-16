@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013 - 2018. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -74,7 +74,7 @@ class DetailsPresenter
 
     private function getTrackerNames($trackers)
     {
-        $tracker_names = array();
+        $tracker_names = [];
 
         foreach ($trackers as $tracker) {
             $tracker_names[] = $tracker->getName();
@@ -90,7 +90,7 @@ class DetailsPresenter
 
     public function solve_inconsistencies_button()
     {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard_detailspane', 'solve_inconsistencies');
+        return dgettext('tuleap-agiledashboard', 'Import them in the backlog');
     }
 
     public function solve_inconsistencies_url()
@@ -110,7 +110,7 @@ class DetailsPresenter
 
     public function inconsistent_items_intro()
     {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard_detailspane', 'inconsistent_items_intro');
+        return dgettext('tuleap-agiledashboard', 'Some items are not linked to this milestone.');
     }
 
     public function has_something_inconsistent()

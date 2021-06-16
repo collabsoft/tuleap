@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,23 +19,26 @@
  */
 namespace Tuleap\Cardwall\REST\v1;
 
-use \Luracast\Restler\RestException;
-use \Tracker_Artifact;
-use \Cardwall_SingleCard;
-use \PFUser;
+use Cardwall_SingleCard;
+use Luracast\Restler\RestException;
+use PFUser;
+use Tuleap\Tracker\Artifact\Artifact;
 
-class CardUpdater {
+class CardUpdater
+{
 
-    public function updateCard(PFUser $user, Cardwall_SingleCard $card, $label, array $values, $column_id = null) {
-        $artifact     = $card->getArtifact();
+    public function updateCard(PFUser $user, Cardwall_SingleCard $card, $label, array $values, $column_id = null)
+    {
+        $artifact = $card->getArtifact();
 
         $this->checkArtifact($user, $artifact);
         $cards_resource_validator = new CardValidator();
-        $fields_data = $cards_resource_validator->getFieldsDataFromREST($user, $card, $label, $values, $column_id);
+        $fields_data              = $cards_resource_validator->getFieldsDataFromREST($user, $card, $label, $values, $column_id);
         $artifact->createNewChangeset($fields_data, '', $user);
     }
 
-    private function checkArtifact(PFUser $user, Tracker_Artifact $artifact) {
+    private function checkArtifact(PFUser $user, Artifact $artifact)
+    {
         if (! $artifact) {
             throw new RestException(404, 'Artifact not found');
         }

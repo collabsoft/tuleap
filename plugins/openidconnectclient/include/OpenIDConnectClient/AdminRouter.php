@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,14 +20,17 @@
 
 namespace Tuleap\OpenIDConnectClient;
 
-
 use CSRFSynchronizerToken;
 use Feedback;
 use HTTPRequest;
 use PFUser;
+use Tuleap\Layout\BaseLayout;
 use Tuleap\OpenIDConnectClient\Administration\Controller;
+use Tuleap\Request\DispatchableWithBurningParrot;
+use Tuleap\Request\DispatchableWithRequest;
 
-class AdminRouter {
+class AdminRouter implements DispatchableWithRequest, DispatchableWithBurningParrot
+{
     /**
      * @var Controller
      */
@@ -37,22 +40,30 @@ class AdminRouter {
      */
     private $csrf_token;
 
-    public function __construct(Controller $controller, CSRFSynchronizerToken $csrf_token) {
+    public function __construct(Controller $controller, CSRFSynchronizerToken $csrf_token)
+    {
         $this->controller = $controller;
         $this->csrf_token = $csrf_token;
     }
 
-    public function route(HTTPRequest $request) {
+    public function process(HTTPRequest $request, BaseLayout $layout, array $variables)
+    {
         $current_user = $request->getCurrentUser();
-        $this->checkUserIsSiteAdmin($current_user);
+        $this->checkUserIsSiteAdmin($current_user, $layout);
 
         $action = $request->get('action');
         switch ($action) {
-            case 'create-provider':
-                $this->controller->createProvider($this->csrf_token, $request);
+            case 'create-generic-provider':
+                $this->controller->createGenericProvider($this->csrf_token, $request);
                 break;
-            case 'update-provider':
-                $this->controller->updateProvider($this->csrf_token, $request);
+            case 'create-azure-provider':
+                $this->controller->createAzureADProvider($this->csrf_token, $request);
+                break;
+            case 'update-generic-provider':
+                $this->controller->updateGenericProvider($this->csrf_token, $request);
+                break;
+            case 'update-azure-provider':
+                $this->controller->updateAzureProvider($this->csrf_token, $request);
                 break;
             case 'delete-provider':
                 $this->controller->removeProvider($this->csrf_token, $request->get('provider_id'), $current_user);
@@ -62,13 +73,14 @@ class AdminRouter {
         }
     }
 
-    private function checkUserIsSiteAdmin(PFUser $user) {
-        if(! $user->isSuperUser()) {
-            $GLOBALS['Response']->addFeedback(
+    private function checkUserIsSiteAdmin(PFUser $user, BaseLayout $layout)
+    {
+        if (! $user->isSuperUser()) {
+            $layout->addFeedback(
                 Feedback::ERROR,
                 $GLOBALS['Language']->getText('global', 'perm_denied')
             );
-            $GLOBALS['Response']->redirect('/');
+            $layout->redirect('/');
         }
     }
 }

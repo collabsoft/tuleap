@@ -1,23 +1,16 @@
 <?php
-
-
-namespace Tuleap\Git\GitPHP;
-
 /**
  * GitPHP ControllerBase
  *
  * Base class that all controllers extend
  *
- * @author Christopher Han <xiphux@gmail.com
- * @copyright Copyright (c) 2010 Christopher Han
- * @package GitPHP
- * @subpackage Controller
  */
+
+namespace Tuleap\Git\GitPHP;
+
 /**
  * ControllerBase class
  *
- * @package GitPHP
- * @subpackage Controller
  * @abstract
  */
 abstract class ControllerBase
@@ -38,8 +31,14 @@ abstract class ControllerBase
      * Current project
      *
      * @access protected
+     * @var Project
      */
     protected $project;
+
+    /**
+     * @var \GitRepository
+     */
+    private $tuleap_git_repository;
 
     /**
      * params
@@ -48,7 +47,7 @@ abstract class ControllerBase
      *
      * @access protected
      */
-    protected $params = array();
+    protected $params = [];
 
     /**
      * headers
@@ -57,7 +56,7 @@ abstract class ControllerBase
      *
      * @access protected
      */
-    protected $headers = array();
+    protected $headers = [];
 
     /**
      * __construct
@@ -66,35 +65,37 @@ abstract class ControllerBase
      *
      * @access public
      * @return mixed controller object
-     * @throws Exception on invalid project
+     * @throws \Exception on invalid project
      */
     public function __construct()
     {
-        $this->tpl = new \Smarty;
+        $this->tpl                = new \Smarty();
         $this->tpl->plugins_dir[] = __DIR__ . '/../smartyplugins';
+        $this->tpl->plugins_dir[] = __DIR__ . '/../../../vendor/smarty-gettext/smarty-gettext';
         $this->tpl->template_dir  = __DIR__ . '/../../../templates/gitphp/';
 
         // Use a dedicated directory for smarty temporary files if needed.
         if (Config::GetInstance()->HasKey('smarty_tmp')) {
             $smarty_tmp = Config::GetInstance()->GetValue('smarty_tmp');
-            if (!is_dir($smarty_tmp)) {
+            if (! is_dir($smarty_tmp)) {
                 mkdir($smarty_tmp, 0755, true);
             }
 
-            $templates_c = $smarty_tmp.'/templates_c';
-            if (!is_dir($templates_c)) {
+            $templates_c = $smarty_tmp . '/templates_c';
+            if (! is_dir($templates_c)) {
                 mkdir($templates_c, 0755, true);
             }
             $this->tpl->compile_dir = $templates_c;
 
-            $cache = $smarty_tmp.'/cache';
-            if (!is_dir($cache)) {
+            $cache = $smarty_tmp . '/cache';
+            if (! is_dir($cache)) {
                 mkdir($cache, 0755, true);
             }
             $this->tpl->cache_dir = $cache;
         }
 
-        $this->project = ProjectList::GetInstance()->GetProject();
+        $this->project               = ProjectList::GetInstance()->GetProject();
+        $this->tuleap_git_repository = ProjectList::GetInstance()->getRepository();
 
         if (isset($_GET['s'])) {
             $this->params['search'] = $_GET['s'];
@@ -124,7 +125,7 @@ abstract class ControllerBase
      *
      * @abstract
      * @access public
-     * @param boolean $local true if caller wants the localized action name
+     * @param bool $local true if caller wants the localized action name
      * @return string action name
      */
     abstract public function GetName($local = false); // @codingStandardsIgnoreLine
@@ -241,5 +242,13 @@ abstract class ControllerBase
         $this->LoadData();
 
         $this->tpl->display($this->GetTemplate());
+    }
+
+    /**
+     * @return \GitRepository
+     */
+    protected function getTuleapGitRepository()
+    {
+        return $this->tuleap_git_repository;
     }
 }

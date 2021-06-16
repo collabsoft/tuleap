@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -34,10 +34,10 @@ class CommentCriterionValueRetriever
         $this->dao = $dao;
     }
 
-    public function getValueForReport(Tracker_Report $report)
+    public function getValueForReport(Tracker_Report $report): ?string
     {
         $row = $this->dao->searchByReportId($report->getId());
 
-        return $row['comment'];
+        return $row['comment'] ?? null;
     }
 }

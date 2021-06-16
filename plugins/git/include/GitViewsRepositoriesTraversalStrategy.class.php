@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,11 +21,13 @@
 /**
  * Base class to traverse a list of repositories
  */
-abstract class GitViewsRepositoriesTraversalStrategy {
-    
-    public function __construct() {
+abstract class GitViewsRepositoriesTraversalStrategy
+{
+
+    public function __construct()
+    {
     }
-    
+
     /**
      * Display the list of repositories
      *
@@ -34,31 +36,33 @@ abstract class GitViewsRepositoriesTraversalStrategy {
      *
      * @return string
      */
-    public function fetch(array $repositories, PFUser $user) {
+    public function fetch(array $repositories, PFUser $user)
+    {
         if (empty($repositories)) {
             return '';
         }
         return $this->getMainWrapper($this->_makeRepositoryList($repositories, $user));
     }
-    
+
     /**
      * @return string
      */
-    protected function _makeRepositoryList(array $repositories, PFUser $user) {
+    protected function _makeRepositoryList(array $repositories, PFUser $user)
+    {
         $html = '';
-        foreach ( $repositories as $repository ) {
+        foreach ($repositories as $repository) {
             $repoName = $repository[GitDao::REPOSITORY_NAME];
             $delDate  = $repository[GitDao::REPOSITORY_DELETION_DATE];
-            $r = $this->getRepository($repository);
+            $r        = $this->getRepository($repository);
 
-            if (!$r->userCanRead($user)) {
+            if (! $r->userCanRead($user)) {
                 continue;
             }
             //we do not want to display deleted repository
-            if ( $delDate != '0000-00-00 00:00:00' ) {
+            if ($delDate != '0000-00-00 00:00:00') {
                 continue;
             }
-            
+
             $html .= $this->getItemWrapper($r, $repoName);
         }
         return $html;
@@ -71,13 +75,14 @@ abstract class GitViewsRepositoriesTraversalStrategy {
      *
      * @return GitRepository
      */
-    protected function getRepository($row) {
+    protected function getRepository($row)
+    {
         $r = new GitRepository();
         $r->setId($row[GitDao::REPOSITORY_ID]);
         $r->load();
         return $r;
     }
-    
+
     /**
      * Get the main wrapper of the whole representation
      *
@@ -85,8 +90,8 @@ abstract class GitViewsRepositoriesTraversalStrategy {
      *
      * @return string the $inner encapsuled in the wrapper
      */
-    protected abstract function getMainWrapper($inner);
-    
+    abstract protected function getMainWrapper($inner);
+
     /**
      * Get Item wrapper
      *
@@ -95,7 +100,5 @@ abstract class GitViewsRepositoriesTraversalStrategy {
      *
      * @return string the $inner encapsulated in its own wrapper
      */
-    protected abstract function getItemWrapper(GitRepository $repo, $inner);
-    
+    abstract protected function getItemWrapper(GitRepository $repo, $inner);
 }
-?>

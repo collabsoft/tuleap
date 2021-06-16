@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  * Copyright 1999-2000 (c) The SourceForge Crew
  *
  * This file is a part of Tuleap.
@@ -20,20 +20,22 @@
  */
 
 use Tuleap\Project\Admin\DescriptionFields\ProjectDescriptionFieldBuilder;
+use Tuleap\Project\DeletedProjectStatusChangeException;
 use Tuleap\User\Admin\PendingProjectBuilder;
 use Tuleap\Admin\AdminPageRenderer;
 use Tuleap\Admin\ProjectPendingPresenter;
 use Tuleap\Project\DescriptionFieldsDao;
 use Tuleap\Project\DescriptionFieldsFactory;
 
-require_once('pre.php');
+require_once __DIR__ . '/../include/pre.php';
 
 $user                             = UserManager::instance()->getCurrentUser();
 $forge_ugroup_permissions_manager = new User_ForgeUserGroupPermissionsManager(
     new User_ForgeUserGroupPermissionsDao()
 );
 $special_access                   = $forge_ugroup_permissions_manager->doesUserHavePermission(
-    $user, new User_ForgeUserGroupPermission_ProjectApproval()
+    $user,
+    new User_ForgeUserGroupPermission_ProjectApproval()
 );
 
 $request = HTTPRequest::instance();
@@ -50,7 +52,7 @@ $csrf_token      = new CSRFSynchronizerToken('/admin/approve-pending.php');
 // group public choice
 if ($action == 'activate') {
     $csrf_token->check();
-    $groups = array();
+    $groups = [];
     if ($request->exist('list_of_groups')) {
         $groups = array_filter(array_map('intval', explode(",", $request->get('list_of_groups'))));
     }
@@ -59,15 +61,19 @@ if ($action == 'activate') {
         $project_manager->activate($project);
     }
     $GLOBALS['Response']->redirect('/admin/approve-pending.php');
-
-} else if ($action == 'delete') {
+} elseif ($action == 'delete') {
     $csrf_token->check();
     $group_id = $request->get('group_id');
     $project  = $project_manager->getProject($group_id);
-    group_add_history('deleted', 'x', $project->getID());
-    $project_manager->updateStatus($project, Project::STATUS_DELETED);
+    (new ProjectHistoryDao())->groupAddHistory('deleted', 'x', $project->getID());
 
-    $event_manager->processEvent('project_is_deleted', array('group_id' => $group_id));
+    try {
+        $project_manager->updateStatus($project, Project::STATUS_DELETED);
+    } catch (DeletedProjectStatusChangeException $exception) {
+        // Do nothing
+    }
+
+    $event_manager->processEvent('project_is_deleted', ['group_id' => $group_id]);
     $GLOBALS['Response']->redirect('/admin/approve-pending.php');
 }
 
@@ -80,7 +86,7 @@ $siteadmin = new AdminPageRenderer();
 $presenter = new ProjectPendingPresenter($project_list, $csrf_token);
 
 $siteadmin->renderAPresenter(
-    $GLOBALS['Language']->getText('admin_approve_pending','title'),
+    $GLOBALS['Language']->getText('admin_approve_pending', 'title'),
     ForgeConfig::get('codendi_dir') . '/src/templates/admin/projects/',
     'project-pending',
     $presenter

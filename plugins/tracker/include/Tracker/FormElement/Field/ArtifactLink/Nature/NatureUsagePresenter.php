@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,12 +29,12 @@ class NatureUsagePresenter
     public $nature;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $is_or_has_been_used;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $can_be_deleted;
 

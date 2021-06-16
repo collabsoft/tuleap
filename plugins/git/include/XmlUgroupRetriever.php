@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,17 +21,15 @@
 namespace Tuleap\Git;
 
 use GitXmlImporter;
-use GitXmlImporterUGroupNotFoundException;
-use Tuleap\Project\UgroupDuplicator;
 use UGroupManager;
-use Logger;
+use Psr\Log\LoggerInterface;
 use SimpleXMLElement;
 use Project;
 
 class XmlUgroupRetriever
 {
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
     /**
@@ -40,7 +38,7 @@ class XmlUgroupRetriever
     private $ugroup_manager;
 
     public function __construct(
-        Logger $logger,
+        LoggerInterface $logger,
         UGroupManager $ugroup_manager
     ) {
         $this->logger         = $logger;
@@ -49,12 +47,10 @@ class XmlUgroupRetriever
 
     /**
      * @return array
-     *
-     * @throws GitXmlImporterUGroupNotFoundException
      */
     public function getUgroupIdsForPermissionNode(Project $project, SimpleXMLElement $permission_xmlnode)
     {
-        $ugroup_ids = array();
+        $ugroup_ids = [];
 
         foreach ($permission_xmlnode->children() as $ugroup_xml) {
             if ($ugroup_xml->getName() === GitXmlImporter::UGROUP_TAG) {
@@ -77,12 +73,10 @@ class XmlUgroupRetriever
 
     /**
      * @return array
-     *
-     * @throws GitXmlImporterUGroupNotFoundException
      */
     public function getUgroupsForPermissionNode(Project $project, SimpleXMLElement $permission_xmlnode)
     {
-        $ugroups = array();
+        $ugroups = [];
 
         foreach ($permission_xmlnode->children() as $ugroup_xml) {
             if ($ugroup_xml->getName() === GitXmlImporter::UGROUP_TAG) {
@@ -106,7 +100,7 @@ class XmlUgroupRetriever
         $ugroup      = $this->ugroup_manager->getUGroupByName($project, $ugroup_name);
 
         if ($ugroup === null) {
-            $this->logger->warn("Could not find any ugroup named $ugroup_name, skipping.");
+            $this->logger->warning("Could not find any ugroup named $ugroup_name, skipping.");
         }
 
         return $ugroup;

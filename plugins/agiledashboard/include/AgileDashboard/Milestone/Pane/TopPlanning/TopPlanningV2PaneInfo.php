@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,8 +24,8 @@ use Tuleap\AgileDashboard\Milestone\Pane\Planning\PlanningV2PaneInfo;
 
 class TopPlanningV2PaneInfo extends PlanningV2PaneInfo
 {
-    const ACTION = 'show-top';
-    const IDENTIFIER = 'topplanning-v2';
+    public const ACTION     = 'show-top';
+    public const IDENTIFIER = 'topplanning-v2';
 
     public function getIdentifier()
     {

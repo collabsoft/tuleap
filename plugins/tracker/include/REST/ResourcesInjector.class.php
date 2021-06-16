@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,27 +18,43 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Tracker\REST\TrackerRepresentation;
+use Tuleap\Project\REST\ProjectRepresentation;
 use Tuleap\Project\REST\ProjectResourceReference;
+use Tuleap\Tracker\REST\CompleteTrackerRepresentation;
 use Tuleap\Tracker\REST\ReportRepresentation;
+use Tuleap\Tracker\REST\Artifact\UsersArtifactsResource;
+use Tuleap\Tracker\REST\v1\ArtifactFilesResource;
+use Tuleap\Tracker\REST\v1\ArtifactsResource;
+use Tuleap\Tracker\REST\v1\ArtifactTemporaryFilesResource;
+use Tuleap\Tracker\REST\v1\ProjectTrackersResource;
+use Tuleap\Tracker\REST\v1\ReportsResource;
+use Tuleap\Tracker\REST\v1\TrackerFieldsResource;
+use Tuleap\Tracker\REST\v1\TrackersResource;
+use Tuleap\Tracker\REST\v1\Workflow\TransitionsResource;
+use Tuleap\User\REST\UserRepresentation;
 
 /**
-  * Inject resource into restler
-  */
-class Tracker_REST_ResourcesInjector {
-
-    public function populate(Luracast\Restler\Restler $restler) {
-        $restler->addAPIClass('\\Tuleap\\Tracker\\REST\\v1\\TrackersResource', 'trackers');
-        $restler->addAPIClass('\\Tuleap\\Tracker\\REST\\v1\\ArtifactsResource', 'artifacts');
-        $restler->addAPIClass('\\Tuleap\\Tracker\\REST\\v1\\ArtifactFilesResource', 'artifact_files');
-        $restler->addAPIClass('\\Tuleap\\Tracker\\REST\\v1\\ArtifactTemporaryFilesResource', 'artifact_temporary_files');
-        $restler->addAPIClass('\\Tuleap\\Tracker\\REST\\v1\\ReportsResource', ReportRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\Tracker\\REST\\v1\\TrackerFieldsResource', "tracker_fields");
+ * Inject resource into restler
+ */
+class Tracker_REST_ResourcesInjector
+{
+    public function populate(Luracast\Restler\Restler $restler)
+    {
+        $restler->addAPIClass(ProjectTrackersResource::class, ProjectRepresentation::ROUTE);
+        $restler->addAPIClass(TrackersResource::class, 'trackers');
+        $restler->addAPIClass(ArtifactsResource::class, 'artifacts');
+        $restler->addAPIClass(ArtifactFilesResource::class, 'artifact_files');
+        $restler->addAPIClass(ArtifactTemporaryFilesResource::class, 'artifact_temporary_files');
+        $restler->addAPIClass(ReportsResource::class, ReportRepresentation::ROUTE);
+        $restler->addAPIClass(TrackerFieldsResource::class, TrackerFieldsResource::ROUTE);
+        $restler->addAPIClass(TransitionsResource::class, 'tracker_workflow_transitions');
+        $restler->addAPIClass(UsersArtifactsResource::class, UserRepresentation::ROUTE);
     }
 
-    public function declareProjectPlanningResource(array &$resources, Project $project) {
+    public function declareProjectPlanningResource(array &$resources, Project $project)
+    {
         $resource_reference = new ProjectResourceReference();
-        $resource_reference->build($project, TrackerRepresentation::ROUTE);
+        $resource_reference->build($project, CompleteTrackerRepresentation::ROUTE);
 
         $resources[] = $resource_reference;
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,6 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
+
+use Tuleap\Tracker\Artifact\Artifact;
 
 class Tracker_XML_Exporter_ChangesetValue_ChangesetValueArtifactLinkXMLExporter extends Tracker_XML_Exporter_ChangesetValue_ChangesetValueXMLExporter
 {
@@ -47,7 +49,7 @@ class Tracker_XML_Exporter_ChangesetValue_ChangesetValueArtifactLinkXMLExporter 
     public function export(
         SimpleXMLElement $artifact_xml,
         SimpleXMLElement $changeset_xml,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Tracker_Artifact_ChangesetValue $changeset_value
     ) {
         $field_xml = $this->createFieldChangeNodeInChangesetNode(
@@ -56,16 +58,18 @@ class Tracker_XML_Exporter_ChangesetValue_ChangesetValueArtifactLinkXMLExporter 
         );
 
         $children_trackers = $changeset_value->getField()->getTracker()->getChildren();
-        $values = $changeset_value->getValue();
+        $values            = $changeset_value->getValue();
         if ($values) {
             array_walk(
                 $values,
-                array($this, 'appendValueToFieldChangeNode'),
-                array(
+                function (Tracker_ArtifactLinkInfo $artifact_link_info, $index, $userdata) {
+                    $this->appendValueToFieldChangeNode($artifact_link_info, $index, $userdata);
+                },
+                [
                     'field_xml'         => $field_xml,
                     'children_trackers' => $children_trackers,
                     'artifact'          => $artifact
-                )
+                ]
             );
         }
     }
@@ -75,13 +79,17 @@ class Tracker_XML_Exporter_ChangesetValue_ChangesetValueArtifactLinkXMLExporter 
         $index,
         $userdata
     ) {
-        $field_xml         = $userdata['field_xml'];
-        $artifact          = $userdata['artifact'];
-        $children_trackers = $userdata['children_trackers'];
+        $field_xml = $userdata['field_xml'];
+        $artifact  = $userdata['artifact'];
 
         if ($this->canExportLinkedArtifact($artifact_link_info)) {
-            $value_xml = $field_xml->addChild('value', $artifact_link_info->getArtifactId());
-            $value_xml->addAttribute('nature', $artifact_link_info->getNature());
+            $cdata_factory = new XML_SimpleXMLCDATAFactory();
+            $cdata_factory->insertWithAttributes(
+                $field_xml,
+                'value',
+                (string) $artifact_link_info->getArtifactId(),
+                ['nature' => (string) $artifact_link_info->getNature()]
+            );
             $this->children_collector->addChild($artifact_link_info->getArtifactId(), $artifact->getId());
         }
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 – 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 – Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,23 +18,26 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\AgileDashboard\Milestone\Criterion\ISearchOnStatus;
+use Tuleap\AgileDashboard\Milestone\Criterion\Status\ISearchOnStatus;
+use Tuleap\AgileDashboard\Milestone\Request\TopMilestoneRequest;
+use Tuleap\AgileDashboard\Milestone\Request\SiblingMilestoneRequest;
+use Tuleap\AgileDashboard\Milestone\Request\SubMilestoneRequest;
 
-class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
-
+// phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace, Squiz.Classes.ValidClassName.NotCamelCaps
+class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject
+{
     public function searchPaginatedSubMilestones(
-        $milestone_artifact_id,
-        Tuleap\AgileDashboard\Milestone\Criterion\ISearchOnStatus $criterion,
-        $limit,
-        $offset,
-        $order
+        int $milestone_artifact_id,
+        SubMilestoneRequest $request
     ) {
+        $limit                 = $request->getLimit();
+        $order                 = $request->getOrder();
         $milestone_artifact_id = $this->da->escapeInt($milestone_artifact_id);
 
         $limit_statement = '';
         if ($limit > 0) {
             $limit  = $this->da->escapeInt($limit);
-            $offset = $this->da->escapeInt($offset);
+            $offset = $this->da->escapeInt($request->getOffset());
 
             $limit_statement = "LIMIT $offset, $limit";
         }
@@ -43,7 +46,10 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
             $order = 'desc';
         }
 
-        list($from_status_statement, $where_status_statement) = $this->getStatusStatements($criterion, 'submilestones');
+        [$from_status_statement, $where_status_statement] = $this->getStatusStatements(
+            $request->getStatusQuery(),
+            'submilestones'
+        );
 
         $nature = $this->da->quoteSmart(Tracker_FormElement_Field_ArtifactLink::NATURE_IS_CHILD);
 
@@ -65,12 +71,15 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
                     INNER JOIN tracker_artifact AS submilestones ON (
                         submilestones.id = cva.artifact_id
                     )
+                    INNER JOIN tracker AS submilestones_tracker ON (
+                        submilestones_tracker.id = submilestones.tracker_id
+                    )
                     INNER JOIN plugin_agiledashboard_planning AS planning ON (
                         planning.planning_tracker_id = submilestones.tracker_id
                     )
                     $from_status_statement
 
-                WHERE 1
+                WHERE submilestones_tracker.deletion_date IS NULL
                   AND $where_status_statement
 
                 ORDER BY submilestones.id $order
@@ -79,14 +88,14 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function searchPaginatedSiblingTopMilestones($milestone_id, $tracker_id, $criterion, $limit, $offset)
+    public function searchPaginatedSiblingTopMilestones(int $milestone_id, int $tracker_id, SiblingMilestoneRequest $request)
     {
         $artifact_id = $this->da->escapeInt($milestone_id);
         $tracker_id  = $this->da->escapeInt($tracker_id);
-        $limit       = $this->da->escapeInt($limit);
-        $offset      = $this->da->escapeInt($offset);
+        $limit       = $this->da->escapeInt($request->getLimit());
+        $offset      = $this->da->escapeInt($request->getOffset());
 
-        list($from_status_statement, $where_status_statement) = $this->getStatusStatements($criterion, 'art_sibling');
+        [$from_status_statement, $where_status_statement] = $this->getStatusStatements($request->getStatusQuery(), 'art_sibling');
 
         $sql = "SELECT SQL_CALC_FOUND_ROWS art_sibling.*
                 FROM tracker_artifact AS art_sibling
@@ -104,13 +113,13 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function searchPaginatedSiblingMilestones($milestone_id, $criterion, $limit, $offset)
+    public function searchPaginatedSiblingMilestones(int $milestone_id, SiblingMilestoneRequest $request)
     {
         $artifact_id = $this->da->escapeInt($milestone_id);
-        $limit       = $this->da->escapeInt($limit);
-        $offset      = $this->da->escapeInt($offset);
+        $limit       = $this->da->escapeInt($request->getLimit());
+        $offset      = $this->da->escapeInt($request->getOffset());
 
-        list($from_status_statement, $where_status_statement) = $this->getStatusStatements($criterion, 'art_sibling');
+        [$from_status_statement, $where_status_statement] = $this->getStatusStatements($request->getStatusQuery(), 'art_sibling');
 
         $sql = "SELECT SQL_CALC_FOUND_ROWS art_sibling.*
                 FROM tracker_artifact parent_art
@@ -142,12 +151,15 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    private function getPaginationAndStatusStatements(
-        Tuleap\AgileDashboard\Milestone\Criterion\ISearchOnStatus $criterion,
-        $limit,
-        $offset,
-        $order
-    ) {
+    /**
+     * @psalm-return array{"from_statement":string, "where_status_statement":string, "order":string, "limit_statement": string}
+     */
+    private function getPaginationAndStatusStatements(TopMilestoneRequest $request): array
+    {
+        $limit           = $request->getLimit();
+        $offset          = $request->getOffset();
+        $order           = $request->getOrder();
+        $criterion       = $request->getStatusFilter();
         $limit_statement = '';
         if ($limit > 0) {
             $limit  = $this->da->escapeInt($limit);
@@ -160,25 +172,19 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
             $order = 'desc';
         }
 
-        list($from_status_statement, $where_status_statement) = $this->getStatusStatements($criterion, 'submilestones');
+        [$from_status_statement, $where_status_statement] = $this->getStatusStatements($criterion, 'submilestones');
 
-
-        return array(
+        return [
             'from_statement'         => $from_status_statement,
             'where_status_statement' => $where_status_statement,
             'order'                  => $order,
             'limit_statement'        => $limit_statement
-        );
+        ];
     }
 
-    public function searchPaginatedTopMilestones(
-        $milestone_tracker_id,
-        Tuleap\AgileDashboard\Milestone\Criterion\ISearchOnStatus $criterion,
-        $limit,
-        $offset,
-        $order
-    ) {
-        $built_sql            = $this->getPaginationAndStatusStatements($criterion, $limit, $offset, $order);
+    public function searchPaginatedTopMilestones($milestone_tracker_id, TopMilestoneRequest $request)
+    {
+        $built_sql            = $this->getPaginationAndStatusStatements($request);
         $milestone_tracker_id = $this->da->escapeInt($milestone_tracker_id);
 
         $sql = "SELECT SQL_CALC_FOUND_ROWS submilestones.*
@@ -195,13 +201,10 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
     }
 
     public function searchPaginatedTopMilestonesForMonoMilestoneConfiguration(
-        $milestone_tracker_id,
-        Tuleap\AgileDashboard\Milestone\Criterion\ISearchOnStatus $criterion,
-        $limit,
-        $offset,
-        $order
+        int $milestone_tracker_id,
+        TopMilestoneRequest $request
     ) {
-        $built_sql            = $this->getPaginationAndStatusStatements($criterion, $limit, $offset, $order);
+        $built_sql            = $this->getPaginationAndStatusStatements($request);
         $milestone_tracker_id = $this->da->escapeInt($milestone_tracker_id);
         $nature               = $this->da->quoteSmart(Tracker_FormElement_Field_ArtifactLink::NATURE_IS_CHILD);
 
@@ -212,18 +215,24 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
                     INNER JOIN tracker_changeset_value              cv         ON (cv.changeset_id = parent_art.last_changeset_id AND cv.field_id = f.id)
                     INNER JOIN tracker_changeset_value_artifactlink artlink    ON (artlink.changeset_value_id = cv.id)
                     INNER JOIN tracker_artifact                     child_art  ON (child_art.id = artlink.artifact_id)
+                    INNER JOIN tracker                              child_tracker ON (child_art.tracker_id = child_tracker.id)
                 ) ON (submilestones.id = child_art.id AND artlink.nature = $nature)
                 " . $built_sql['from_statement'] . "
                 WHERE submilestones.tracker_id = $milestone_tracker_id
                     AND " . $built_sql['where_status_statement'] . "
                     AND child_art.id IS NULL
+                    AND child_tracker.deletion_date IS NULL
                 ORDER BY submilestone_id " . $built_sql['order'] . "
                 " . $built_sql['limit_statement'];
 
         return $this->retrieve($sql);
     }
 
-    private function getStatusStatements(ISearchOnStatus $criterion, $alias_name) {
+    /**
+     * @psalm-return array{0:string, 1:string}
+     */
+    private function getStatusStatements(ISearchOnStatus $criterion, string $alias_name): array
+    {
         $from_status_statement  = "";
         $where_status_statement = "1";
         if ($criterion->shouldRetrieveOpenMilestones() && $criterion->shouldRetrieveClosedMilestones()) {
@@ -231,7 +240,7 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
             // no need to filter
         } else {
             if ($criterion->shouldRetrieveOpenMilestones()) {
-                $from_status_statement = "
+                $from_status_statement  = "
                     INNER JOIN tracker_changeset AS C ON ($alias_name.last_changeset_id = C.id)
                     LEFT JOIN (
                         tracker_semantic_status as SS
@@ -245,7 +254,7 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
                      )";
             }
             if ($criterion->shouldRetrieveClosedMilestones()) {
-                $from_status_statement = "
+                $from_status_statement  = "
                     INNER JOIN tracker_changeset_value AS cvs ON(
                         $alias_name.last_changeset_id = cvs.changeset_id
                     )
@@ -266,19 +275,46 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
             }
         }
 
-        return array($from_status_statement, $where_status_statement);
+        return [$from_status_statement, $where_status_statement];
     }
 
-    public function searchSubMilestones($milestone_artifact_id) {
-        $limit     = null;
-        $offset    = null;
-        $order     = 'asc';
-        $criterion = new Tuleap\AgileDashboard\Milestone\Criterion\StatusAll();
+    public function searchSubMilestones(int $milestone_artifact_id)
+    {
+        $milestone_artifact_id = $this->da->escapeInt($milestone_artifact_id);
+        $nature                = $this->da->quoteSmart(Tracker_FormElement_Field_ArtifactLink::NATURE_IS_CHILD);
 
-        return $this->searchPaginatedSubMilestones($milestone_artifact_id, $criterion, $limit, $offset, $order);
+        $sql = "SELECT SQL_CALC_FOUND_ROWS submilestones.*
+                FROM tracker_artifact AS parent
+                    INNER JOIN tracker_field AS f ON (
+                        parent.tracker_id = f.tracker_id
+                        AND parent.id = $milestone_artifact_id
+                        AND f.formElement_type = 'art_link'
+                    )
+                    INNER JOIN tracker_changeset_value AS cv ON (
+                        cv.field_id = f.id
+                        AND cv.changeset_id = parent.last_changeset_id
+                    )
+                    INNER JOIN tracker_changeset_value_artifactlink AS cva ON (
+                        cva.changeset_value_id = cv.id
+                        AND cva.nature = $nature
+                    )
+                    INNER JOIN tracker_artifact AS submilestones ON (
+                        submilestones.id = cva.artifact_id
+                    )
+                    INNER JOIN tracker AS submilestones_tracker ON (
+                        submilestones_tracker.id = submilestones.tracker_id
+                    )
+                    INNER JOIN plugin_agiledashboard_planning AS planning ON (
+                        planning.planning_tracker_id = submilestones.tracker_id
+                    )
+                WHERE submilestones_tracker.deletion_date IS NULL
+                ORDER BY submilestones.id ASC";
+
+        return $this->retrieve($sql);
     }
 
-    public function getAllMilestoneByTrackers(array $list_of_trackers_ids) {
+    public function getAllMilestoneByTrackers(array $list_of_trackers_ids)
+    {
         $select_fragments = $this->getSelectFragments($list_of_trackers_ids);
         $from_fragments   = $this->getFromFragments($list_of_trackers_ids);
         $order_fragments  = $this->getOrderFragments($list_of_trackers_ids);
@@ -290,20 +326,32 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    private function getOrderFragments(array $list_of_trackers_ids) {
-        return 'm'. implode('.id, m', $list_of_trackers_ids) .'.id';
+    private function getOrderFragments(array $list_of_trackers_ids)
+    {
+        return 'm' . implode('.id, m', $list_of_trackers_ids) . '.id';
     }
 
-    private function getSelectFragments(array $list_of_trackers_ids) {
-        return implode(', ', array_map(array($this, 'extractSelectFragments'), $list_of_trackers_ids));
+    private function getSelectFragments(array $list_of_trackers_ids)
+    {
+        return implode(
+            ', ',
+            array_map(
+                function ($tracker_id) {
+                    return $this->extractSelectFragments($tracker_id);
+                },
+                $list_of_trackers_ids
+            )
+        );
     }
 
-    private function extractSelectFragments($tracker_id) {
+    private function extractSelectFragments($tracker_id)
+    {
         return "m{$tracker_id}.id as m{$tracker_id}_id, m{$tracker_id}_CVT.value AS m{$tracker_id}_title";
     }
 
-    private function getFromFragments(array $list_of_trackers_ids) {
-        $trackers_ids = $list_of_trackers_ids;
+    private function getFromFragments(array $list_of_trackers_ids)
+    {
+        $trackers_ids     = $list_of_trackers_ids;
         $first_tracker_id = array_shift($trackers_ids);
         return "tracker_artifact AS m{$first_tracker_id}
                 {$this->getTrackerFromFragment($first_tracker_id)}
@@ -311,7 +359,8 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
                 {$this->joinRecursively($first_tracker_id, $trackers_ids)}";
     }
 
-    private function joinRecursively($parent_tracker_id, array $trackers_ids) {
+    private function joinRecursively($parent_tracker_id, array $trackers_ids)
+    {
         $child_tracker_id = array_shift($trackers_ids);
         if (! $child_tracker_id) {
             return '';
@@ -327,7 +376,8 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
         ) ON (m{$parent_tracker_id}.last_changeset_id = m{$parent_tracker_id}_CV2.changeset_id)";
     }
 
-    private function getTitleFromFragment($tracker_id) {
+    private function getTitleFromFragment($tracker_id)
+    {
         return "LEFT JOIN (
             tracker_changeset_value AS m{$tracker_id}_CV
             INNER JOIN tracker_semantic_title AS m{$tracker_id}_ST ON ( m{$tracker_id}_CV.field_id = m{$tracker_id}_ST.field_id )
@@ -335,7 +385,43 @@ class AgileDashboard_Milestone_MilestoneDao extends DataAccessObject {
         ) ON (m{$tracker_id}.last_changeset_id = m{$tracker_id}_CV.changeset_id)";
     }
 
-    private function getTrackerFromFragment($tracker_id) {
+    private function getTrackerFromFragment($tracker_id)
+    {
         return "INNER JOIN tracker AS mt{$tracker_id} ON (mt{$tracker_id}.id = m{$tracker_id}.tracker_id AND m{$tracker_id}.tracker_id = {$tracker_id})";
+    }
+
+    public function countMilestones()
+    {
+        $sql = 'SELECT count(*) AS nb
+                FROM plugin_agiledashboard_planning AS planning
+                INNER JOIN tracker_hierarchy AS hierarchy
+                    ON planning.planning_tracker_id = hierarchy.parent_id
+                INNER JOIN tracker_artifact AS artifact
+                    ON hierarchy.parent_id = artifact.tracker_id
+                INNER JOIN tracker
+                    ON artifact.tracker_id = tracker.id
+                WHERE tracker.deletion_date IS NULL';
+
+        $res = $this->retrieveFirstRow($sql);
+
+        return (! $res) ? 0 : (int) $res['nb'];
+    }
+
+    public function countMilestonesAfter(int $timestamp)
+    {
+        $sql = 'SELECT count(*) AS nb
+                FROM plugin_agiledashboard_planning AS planning
+                INNER JOIN tracker_hierarchy AS hierarchy
+                    ON planning.planning_tracker_id = hierarchy.parent_id
+                INNER JOIN tracker_artifact AS artifact
+                    ON hierarchy.parent_id = artifact.tracker_id
+                    AND artifact.submitted_on > ' . $this->da->escapeInt($timestamp) . '
+                INNER JOIN tracker
+                    ON artifact.tracker_id = tracker.id
+                WHERE tracker.deletion_date IS NULL';
+
+        $res = $this->retrieveFirstRow($sql);
+
+        return (! $res) ? 0 : (int) $res['nb'];
     }
 }

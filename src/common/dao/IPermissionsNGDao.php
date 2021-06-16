@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,7 +23,8 @@
  * This interface describe all the methods needed by PermissionsManager to properly
  * save and read permissions from the database for usage by PermissionsManagerNG
  */
-interface IPermissionsNGDao {
+interface IPermissionsNGDao
+{
     public function searchDefaults($permission_type, $with_name = true);
     public function searchUgroupByObjectIdAndPermissionType($object_id, $permission_type, $with_name = true);
     public function clearPermission($permission_type, $object_id);

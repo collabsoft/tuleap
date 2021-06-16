@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 /**
  * This interface defines compatiblity layer between FusionForge and Tuleap
  */
-interface PFO_User {
+interface PFO_User
+{
 
     /**
      * User login on underlying unix system
@@ -37,5 +38,3 @@ interface PFO_User {
      */
     public function getGroups();
 }
-
-?>

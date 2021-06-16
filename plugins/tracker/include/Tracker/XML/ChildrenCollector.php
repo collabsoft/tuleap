@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,24 +18,26 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_ChildrenCollector {
+class Tracker_XML_ChildrenCollector
+{
     /*
      * This value has been set on the basis of
      * tests which shown that creating 30 children
      * took about 1 minute.
      */
-    const MAX = 30;
+    public const MAX = 30;
 
     /** @var int[] */
-    private $children_stack = array();
+    private $children_stack = [];
 
     /** @var int */
     private $index = 0;
 
      /** @var array */
-    private $parents = array();
+    private $parents = [];
 
-    public function addChild($artifact_id, $parent_id) {
+    public function addChild($artifact_id, $parent_id)
+    {
         if (count($this->children_stack) >= self::MAX) {
             throw new Tracker_XML_Exporter_TooManyChildrenException();
         }
@@ -44,9 +46,10 @@ class Tracker_XML_ChildrenCollector {
         $this->stackParent($artifact_id, $parent_id);
     }
 
-    private function stackParent($artifact_id, $parent_id) {
+    private function stackParent($artifact_id, $parent_id)
+    {
         if (! isset($this->parents[$parent_id])) {
-            $this->parents[$parent_id] = array();
+            $this->parents[$parent_id] = [];
         }
 
         if (! in_array($artifact_id, $this->parents[$parent_id])) {
@@ -54,7 +57,8 @@ class Tracker_XML_ChildrenCollector {
         }
     }
 
-    private function stackChild($artifact_id) {
+    private function stackChild($artifact_id)
+    {
         if (! in_array($artifact_id, $this->children_stack)) {
             $this->children_stack[] = $artifact_id;
         }
@@ -63,14 +67,16 @@ class Tracker_XML_ChildrenCollector {
     /**
      * @return int[]
      */
-    public function getAllChildrenIds() {
+    public function getAllChildrenIds()
+    {
         return $this->children_stack;
     }
 
     /**
      * @return int || null
      */
-    public function pop() {
+    public function pop()
+    {
         if ($this->index >= count($this->children_stack)) {
             return;
         }
@@ -81,13 +87,15 @@ class Tracker_XML_ChildrenCollector {
         return $child;
     }
 
-    public function getAllParents() {
+    public function getAllParents()
+    {
         return array_keys($this->parents);
     }
 
-    public function getChildrenForParent($parent_id) {
+    public function getChildrenForParent($parent_id)
+    {
         if (! isset($this->parents[$parent_id])) {
-            return array();
+            return [];
         }
 
         return $this->parents[$parent_id];

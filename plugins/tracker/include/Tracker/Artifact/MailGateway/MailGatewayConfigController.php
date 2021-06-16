@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 — 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,12 +26,12 @@ use EventManager;
 use CSRFSynchronizerToken;
 use Response;
 use Codendi_Request;
-use TemplateRendererFactory;
 use Feedback;
 use Event;
 use Tuleap\Admin\AdminPageRenderer;
 
-class MailGatewayConfigController {
+class MailGatewayConfigController
+{
 
     private static $TEMPLATE = 'siteadmin-config/emailgateway';
 
@@ -59,8 +59,9 @@ class MailGatewayConfigController {
         $this->admin_page_rendered = $admin_page_rendered;
     }
 
-    public function index(CSRFSynchronizerToken $csrf, Response $response) {
-        $title = $GLOBALS['Language']->getText('plugin_tracker_config', 'title');
+    public function index(CSRFSynchronizerToken $csrf, Response $response)
+    {
+        $title = dgettext('tuleap-tracker', 'Trackers');
 
         $this->admin_page_rendered->renderANoFramedPresenter(
             $title,
@@ -75,16 +76,18 @@ class MailGatewayConfigController {
         );
     }
 
-    public function update(Codendi_Request $request, Response $response) {
+    public function update(Codendi_Request $request, Response $response)
+    {
         $this->updateEmailGatewayMode($request, $response);
 
         $response->redirect($_SERVER['REQUEST_URI']);
     }
 
-    private function updateEmailGatewayMode(Codendi_Request $request, Response $response) {
+    private function updateEmailGatewayMode(Codendi_Request $request, Response $response)
+    {
         $emailgateway_mode = $request->get('emailgateway_mode');
         if ($emailgateway_mode && $this->config->setEmailgatewayMode($emailgateway_mode)) {
-            $response->addFeedback(Feedback::INFO, $GLOBALS['Language']->getText('plugin_tracker_config', 'successfully_updated'));
+            $response->addFeedback(Feedback::INFO, dgettext('tuleap-tracker', 'Successfully updated, the modification will be active in a few minutes.'));
         }
         $this->event_manager->processEvent(Event::UPDATE_ALIASES, null);
     }

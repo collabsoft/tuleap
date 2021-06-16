@@ -1,7 +1,7 @@
 <?php
 /**
+  * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
   * Copyright 1999-2000 (c) The SourceForge Crew
-  * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
   *
   * This file is a part of Tuleap.
   *
@@ -19,16 +19,16 @@
   * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 
-use Tuleap\Admin\Homepage\NbUsersByStatusBuilder;
-use Tuleap\Admin\Homepage\UserCounterDao;
-use Tuleap\Dashboard\JavascriptFilesIncluder;
-use Tuleap\Dashboard\User\UserDashboardDeletor;
-use Tuleap\Dashboard\User\UserDashboardRouter;
+use Tuleap\Dashboard\AssetsIncluder;
+use Tuleap\Dashboard\Project\DisabledProjectWidgetsChecker;
+use Tuleap\Dashboard\Project\DisabledProjectWidgetsDao;
 use Tuleap\Dashboard\User\UserDashboardController;
-use Tuleap\Dashboard\User\UserDashboardRetriever;
-use Tuleap\Dashboard\User\UserDashboardUpdator;
 use Tuleap\Dashboard\User\UserDashboardDao;
+use Tuleap\Dashboard\User\UserDashboardDeletor;
+use Tuleap\Dashboard\User\UserDashboardRetriever;
+use Tuleap\Dashboard\User\UserDashboardRouter;
 use Tuleap\Dashboard\User\UserDashboardSaver;
+use Tuleap\Dashboard\User\UserDashboardUpdator;
 use Tuleap\Dashboard\User\WidgetDeletor;
 use Tuleap\Dashboard\User\WidgetMinimizor;
 use Tuleap\Dashboard\Widget\DashboardWidgetChecker;
@@ -41,13 +41,12 @@ use Tuleap\Dashboard\Widget\DashboardWidgetReorder;
 use Tuleap\Dashboard\Widget\DashboardWidgetRetriever;
 use Tuleap\Dashboard\Widget\WidgetCreator;
 use Tuleap\Dashboard\Widget\WidgetDashboardController;
-use Tuleap\Layout\IncludeAssets;
+use Tuleap\Layout\CssAssetCollection;
 use Tuleap\Widget\WidgetFactory;
 
-require_once('pre.php');
-require_once('my_utils.php');
-require_once('common/event/EventManager.class.php');
-require_once('../admin/admin_utils.php');
+require_once __DIR__ . '/../include/pre.php';
+require_once __DIR__ . '/my_utils.php';
+require_once __DIR__ . '/../admin/admin_utils.php';
 
 $request = HTTPRequest::instance();
 
@@ -61,6 +60,7 @@ $csrf_token                 = new CSRFSynchronizerToken('/my/');
 $dashboard_widget_dao       = new DashboardWidgetDao($widget_factory);
 $user_dashboard_dao         = new UserDashboardDao($dashboard_widget_dao);
 $dashboard_widget_retriever = new DashboardWidgetRetriever($dashboard_widget_dao);
+$core_assets                = new \Tuleap\Layout\IncludeCoreAssets();
 $router                     = new UserDashboardRouter(
     new UserDashboardController(
         $csrf_token,
@@ -69,11 +69,16 @@ $router                     = new UserDashboardRouter(
         new UserDashboardDeletor($user_dashboard_dao),
         new UserDashboardUpdator($user_dashboard_dao),
         $dashboard_widget_retriever,
-        new DashboardWidgetPresenterBuilder($widget_factory),
+        new DashboardWidgetPresenterBuilder(
+            $widget_factory,
+            new DisabledProjectWidgetsChecker(new DisabledProjectWidgetsDao())
+        ),
         new WidgetDeletor($dashboard_widget_dao),
         new WidgetMinimizor($dashboard_widget_dao),
-        new JavascriptFilesIncluder(
-            new IncludeAssets(ForgeConfig::get('tuleap_dir').'/src/www/assets', '/assets')
+        new AssetsIncluder(
+            $GLOBALS['Response'],
+            $core_assets,
+            new CssAssetCollection([new \Tuleap\Layout\CssAssetWithoutVariantDeclinaisons($core_assets, 'dashboards-style')])
         )
     ),
     new WidgetDashboardController(
@@ -84,7 +89,6 @@ $router                     = new UserDashboardRouter(
         $dashboard_widget_retriever,
         new DashboardWidgetReorder(
             $dashboard_widget_dao,
-            $dashboard_widget_retriever,
             new DashboardWidgetRemoverInList()
         ),
         new DashboardWidgetChecker($dashboard_widget_dao),

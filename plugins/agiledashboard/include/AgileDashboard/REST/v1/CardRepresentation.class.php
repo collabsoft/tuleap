@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,13 +18,19 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use \Tuleap\REST\JsonCast;
+use Tuleap\Project\REST\ProjectReference;
+use Tuleap\REST\JsonCast;
+use Tuleap\Tracker\REST\Artifact\ArtifactReference;
 
-class AgileDashboard_CardRepresentation {
+/**
+ * @psalm-immutable
+ */
+class AgileDashboard_CardRepresentation
+{
 
-    const ROUTE = 'cards';
+    public const ROUTE = 'cards';
 
-    /** @var int */
+    /** @var string */
     public $id;
 
     /** @var String */
@@ -46,10 +51,10 @@ class AgileDashboard_CardRepresentation {
     /** @var String */
     public $status;
 
-    /** @var String */
+    /** @var String | null */
     public $accent_color;
 
-    /** @var int */
+    /** @var int | null */
     public $column_id;
 
     /** @var int[] */
@@ -58,43 +63,73 @@ class AgileDashboard_CardRepresentation {
      /**
      * @var array Field values
      */
-    public $values = array();
+    public $values = [];
 
-    public function build(Cardwall_CardInCellPresenter $card, $column_id, $planning_id, PFUser $user) {
-        $this->id           = $planning_id . '_' . $card->getId();
-        $this->label        = $card->getArtifact()->getTitle();
-        $this->uri          = self::ROUTE . '/' . $this->id;
-        $artifact           = $card->getArtifact();
-        $this->project      = $this->getProjectReference($artifact->getTracker()->getProject());
-        $this->artifact     = $this->getArtifactReference($artifact);
+    private function __construct(
+        string $id,
+        string $label,
+        ProjectReference $project,
+        ArtifactReference $artifact,
+        int $planning_id,
+        string $status,
+        ?string $accent_color,
+        ?int $column_id,
+        array $allowed_column_ids,
+        array $values
+    ) {
+        $this->id                 = $id;
+        $this->label              = $label;
+        $this->project            = $project;
+        $this->artifact           = $artifact;
+        $this->planning_id        = $planning_id;
+        $this->status             = $status;
+        $this->accent_color       = $accent_color;
+        $this->column_id          = $column_id;
+        $this->allowed_column_ids = $allowed_column_ids;
+        $this->values             = $values;
+        $this->uri                = self::ROUTE . '/' . $this->id;
+    }
 
-        $this->planning_id  = JsonCast::toInt($planning_id);
-        $this->status       = $this->getCardStatus($card);
+    public static function build(Cardwall_CardInCellPresenter $card, $column_id, $planning_id, PFUser $user): self
+    {
+        $artifact = $card->getArtifact();
+
+        $accent_color = null;
         if ($card->getCardPresenter()->getAccentColor()) {
-            $this->accent_color = ColorHelper::CssRGBToHexa($card->getCardPresenter()->getAccentColor());
-        }
-        $this->column_id    = JsonCast::toInt($column_id);
-        if($this->column_id) {
-            $this->allowed_column_ids = array_map(function ($value) { return JsonCast::toInt($value); }, $card->getDropIntoIds());
-        } else {
-            $this->allowed_column_ids = array();
+            $accent_color = ColorHelper::CssRGBToHexa($card->getCardPresenter()->getAccentColor());
         }
 
-        $this->values = $this->mapAndFilter($card->getCardPresenter()->getFields(), $this->getFieldsValuesFilter($user, $artifact->getLastChangeset()));
-    }
+        $column_id          = JsonCast::toInt($column_id);
+        $allowed_column_ids = [];
+        if ($column_id) {
+            $allowed_column_ids = array_filter(
+                array_map(
+                    static function ($value) {
+                        return JsonCast::toInt($value);
+                    },
+                    $card->getDropIntoIds()
+                )
+            );
+        }
 
-    private function getProjectReference(Project $project) {
-        $project_reference = new Tuleap\Project\REST\ProjectReference();
-        $project_reference->build($project);
+        $last_changeset = $artifact->getLastChangeset();
+        $values         = [];
+        if ($last_changeset !== null) {
+            $values = self::mapAndFilter($card->getCardPresenter()->getFields(), self::getFieldsValuesFilter($user, $last_changeset));
+        }
 
-        return $project_reference;
-    }
-
-    private function getArtifactReference(Tracker_Artifact $artifact) {
-        $artifact_reference = new \Tuleap\Tracker\REST\Artifact\ArtifactReference();
-        $artifact_reference->build($artifact);
-
-        return $artifact_reference;
+        return new self(
+            $planning_id . '_' . $card->getId(),
+            $artifact->getTitle(),
+            new Tuleap\Project\REST\ProjectReference($artifact->getTracker()->getProject()),
+            \Tuleap\Tracker\REST\Artifact\ArtifactReference::build($artifact),
+            JsonCast::toInt($planning_id),
+            self::getCardStatus($card),
+            $accent_color,
+            $column_id,
+            $allowed_column_ids,
+            $values,
+        );
     }
 
       /**
@@ -102,10 +137,10 @@ class AgileDashboard_CardRepresentation {
      * empty results and normalize the array
      *
      * @param array $collection
-     * @param Closure $function
      * @return array
      */
-    private function mapAndFilter(array $collection, Closure $function) {
+    private static function mapAndFilter(array $collection, Closure $function)
+    {
         return array_values(
             array_filter(
                 array_map(
@@ -116,7 +151,8 @@ class AgileDashboard_CardRepresentation {
         );
     }
 
-    private function getFieldsValuesFilter(PFUser $user, Tracker_Artifact_Changeset $changeset) {
+    private static function getFieldsValuesFilter(PFUser $user, Tracker_Artifact_Changeset $changeset)
+    {
         return function (Cardwall_CardFieldPresenter $field_presenter) use ($user, $changeset) {
             if ($field_presenter->getTrackerField()->userCanRead($user)) {
                 return $field_presenter->getTrackerField()->getRESTValue($user, $changeset);
@@ -125,10 +161,10 @@ class AgileDashboard_CardRepresentation {
         };
     }
 
-    private function getCardStatus(Cardwall_CardInCellPresenter $card) {
+    private static function getCardStatus(Cardwall_CardInCellPresenter $card)
+    {
         $semantic = Tracker_Semantic_Status::load($card->getArtifact()->getTracker());
 
         return $semantic->getNormalizedStatusLabel($card->getArtifact());
     }
-
 }

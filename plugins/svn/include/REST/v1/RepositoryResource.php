@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -32,43 +32,44 @@ use Tuleap\Project\REST\UserGroupRetriever;
 use Tuleap\REST\AuthenticatedResource;
 use Tuleap\REST\Header;
 use Tuleap\REST\ProjectAuthorization;
-use Tuleap\Svn\AccessControl\AccessFileHistoryCreator;
-use Tuleap\Svn\AccessControl\AccessFileHistoryDao;
-use Tuleap\Svn\AccessControl\AccessFileHistoryFactory;
-use Tuleap\Svn\AccessControl\CannotCreateAccessFileHistoryException;
-use Tuleap\Svn\Admin\CannotCreateMailHeaderException;
-use Tuleap\Svn\Admin\Destructor;
-use Tuleap\Svn\Admin\ImmutableTagCreator;
-use Tuleap\Svn\Admin\ImmutableTagDao;
-use Tuleap\Svn\Admin\ImmutableTagFactory;
-use Tuleap\Svn\Admin\MailNotification;
-use Tuleap\Svn\Admin\MailNotificationDao;
-use Tuleap\Svn\Admin\MailNotificationManager;
-use Tuleap\Svn\Dao;
-use Tuleap\Svn\EventRepository\SystemEvent_SVN_DELETE_REPOSITORY;
-use Tuleap\Svn\Notifications\EmailsToBeNotifiedRetriever;
-use Tuleap\Svn\Notifications\NotificationsEmailsBuilder;
-use Tuleap\Svn\Notifications\UgroupsToNotifyDao;
-use Tuleap\Svn\Notifications\UsersToNotifyDao;
-use Tuleap\Svn\Repository\Exception\CannotCreateRepositoryException;
-use Tuleap\Svn\Repository\Exception\CannotFindRepositoryException;
-use Tuleap\Svn\Repository\Exception\RepositoryNameIsInvalidException;
-use Tuleap\Svn\Repository\Exception\UserIsNotSVNAdministratorException;
-use Tuleap\Svn\Repository\HookConfigChecker;
-use Tuleap\Svn\Repository\HookConfigRetriever;
-use Tuleap\Svn\Repository\HookConfigSanitizer;
-use Tuleap\Svn\Repository\HookConfigUpdator;
-use Tuleap\Svn\Repository\HookDao;
-use Tuleap\Svn\Repository\ProjectHistoryFormatter;
-use Tuleap\Svn\Repository\Repository;
-use Tuleap\Svn\Repository\RepositoryCreator;
-use Tuleap\Svn\Repository\RepositoryDeleter;
-use Tuleap\Svn\Repository\RepositoryManager;
-use Tuleap\Svn\Repository\RepositoryRegexpBuilder;
-use Tuleap\Svn\Repository\Settings;
-use Tuleap\Svn\SvnAdmin;
-use Tuleap\Svn\SvnLogger;
-use Tuleap\Svn\SvnPermissionManager;
+use Tuleap\REST\ProjectStatusVerificator;
+use Tuleap\SVN\AccessControl\AccessFileHistoryCreator;
+use Tuleap\SVN\AccessControl\AccessFileHistoryDao;
+use Tuleap\SVN\AccessControl\AccessFileHistoryFactory;
+use Tuleap\SVN\AccessControl\CannotCreateAccessFileHistoryException;
+use Tuleap\SVN\Admin\CannotCreateMailHeaderException;
+use Tuleap\SVN\Repository\Destructor;
+use Tuleap\SVN\Admin\ImmutableTagCreator;
+use Tuleap\SVN\Admin\ImmutableTagDao;
+use Tuleap\SVN\Admin\ImmutableTagFactory;
+use Tuleap\SVN\Admin\MailNotification;
+use Tuleap\SVN\Admin\MailNotificationDao;
+use Tuleap\SVN\Admin\MailNotificationManager;
+use Tuleap\SVN\Dao;
+use Tuleap\SVN\Events\SystemEvent_SVN_DELETE_REPOSITORY;
+use Tuleap\SVN\Notifications\EmailsToBeNotifiedRetriever;
+use Tuleap\SVN\Notifications\NotificationsEmailsBuilder;
+use Tuleap\SVN\Notifications\UgroupsToNotifyDao;
+use Tuleap\SVN\Notifications\UsersToNotifyDao;
+use Tuleap\SVN\Repository\Exception\CannotCreateRepositoryException;
+use Tuleap\SVN\Repository\Exception\CannotFindRepositoryException;
+use Tuleap\SVN\Repository\Exception\RepositoryNameIsInvalidException;
+use Tuleap\SVN\Repository\Exception\UserIsNotSVNAdministratorException;
+use Tuleap\SVN\Repository\HookConfigChecker;
+use Tuleap\SVN\Repository\HookConfigRetriever;
+use Tuleap\SVN\Repository\HookConfigSanitizer;
+use Tuleap\SVN\Repository\HookConfigUpdator;
+use Tuleap\SVN\Repository\HookDao;
+use Tuleap\SVN\Repository\SvnRepository;
+use Tuleap\SVN\Repository\ProjectHistoryFormatter;
+use Tuleap\SVN\Repository\Repository;
+use Tuleap\SVN\Repository\RepositoryCreator;
+use Tuleap\SVN\Repository\RepositoryDeleter;
+use Tuleap\SVN\Repository\RepositoryManager;
+use Tuleap\SVN\Repository\RepositoryRegexpBuilder;
+use Tuleap\SVN\Repository\Settings;
+use Tuleap\SVN\SvnAdmin;
+use Tuleap\SVN\SvnPermissionManager;
 use UGroupManager;
 
 class RepositoryResource extends AuthenticatedResource
@@ -145,9 +146,9 @@ class RepositoryResource extends AuthenticatedResource
     public function __construct()
     {
         $dao                        = new Dao();
-        $logger                     = new SvnLogger();
+        $logger                     = \SvnPlugin::getLogger();
         $system_command             = new \System_Command();
-        $backend_svn                = \Backend::instance(\Backend::SVN);
+        $backend_svn                = \Backend::instanceSVN();
         $project_history_dao        = new ProjectHistoryDao();
         $this->system_event_manager = \SystemEventManager::instance();
         $this->project_manager      = \ProjectManager::instance();
@@ -166,7 +167,6 @@ class RepositoryResource extends AuthenticatedResource
 
         $this->user_manager       = \UserManager::instance();
         $this->permission_manager = new SvnPermissionManager(
-            new \User_ForgeUserGroupFactory(new \UserGroupDao()),
             \PermissionsManager::instance()
         );
 
@@ -193,7 +193,8 @@ class RepositoryResource extends AuthenticatedResource
             new AccessFileHistoryDao(),
             $access_file_history_factory,
             $project_history_dao,
-            $project_history_formatter
+            $project_history_formatter,
+            $backend_svn
         );
 
         $this->ugroup_manager = new UGroupManager();
@@ -221,7 +222,6 @@ class RepositoryResource extends AuthenticatedResource
             $mail_notification_manager
         );
 
-
         $user_to_notify_dao           = new UsersToNotifyDao();
         $ugroup_to_notify_dao         = new UgroupsToNotifyDao();
         $this->representation_builder = new RepositoryRepresentationBuilder(
@@ -231,7 +231,6 @@ class RepositoryResource extends AuthenticatedResource
             $access_file_history_factory,
             $mail_notification_manager,
             new NotificationsBuilder(
-                $this->emails_builder,
                 $user_to_notify_dao,
                 $this->user_manager,
                 $ugroup_to_notify_dao,
@@ -257,11 +256,7 @@ class RepositoryResource extends AuthenticatedResource
             new NotificationUpdateChecker(
                 $mail_notification_manager,
                 new EmailsToBeNotifiedRetriever(
-                    $mail_notification_manager,
-                    $user_to_notify_dao,
-                    $ugroup_to_notify_dao,
-                    $this->ugroup_manager,
-                    $this->user_manager
+                    $mail_notification_manager
                 )
             )
         );
@@ -340,8 +335,8 @@ class RepositoryResource extends AuthenticatedResource
      *
      * @return FullRepositoryRepresentation
      *
-     * @throws 404
-     * @throws 403
+     * @throws RestException 404
+     * @throws RestException 403
      */
     public function get($id)
     {
@@ -349,6 +344,11 @@ class RepositoryResource extends AuthenticatedResource
 
         $user       = $this->user_manager->getCurrentUser();
         $repository = $this->getRepository($id);
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsOnlySiteAdminToAccessIt(
+            $user,
+            $repository->getProject()
+        );
 
         ProjectAuthorization::userCanAccessProject(
             $user,
@@ -422,8 +422,8 @@ class RepositoryResource extends AuthenticatedResource
      *
      * @return FullRepositoryRepresentation
      *
-     * @throws 404
-     * @throws 403
+     * @throws RestException 404
+     * @throws RestException 403
      */
     protected function put($id, SettingsPUTRepresentation $settings)
     {
@@ -432,6 +432,10 @@ class RepositoryResource extends AuthenticatedResource
 
         $user       = $this->user_manager->getCurrentUser();
         $repository = $this->getRepository($id);
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+            $repository->getProject()
+        );
 
         ProjectAuthorization::userCanAccessProject(
             $user,
@@ -452,7 +456,7 @@ class RepositoryResource extends AuthenticatedResource
         try {
             $this->repository_updater->update($repository, $repository_settings);
         } catch (CannotCreateMailHeaderException $exception) {
-            throw new RestException('500', 'An error occured while saving the notifications.');
+            throw new RestException(500, 'An error occurred while saving the notifications.');
         }
 
         return $this->representation_builder->build($repository, $user);
@@ -467,12 +471,12 @@ class RepositoryResource extends AuthenticatedResource
             $repository = $this->repository_manager->getRepositoryById($id);
 
             if ($repository->isDeleted()) {
-                throw new RestException('404', 'Repository not found');
+                throw new RestException(404, 'Repository not found');
             }
 
             return $repository;
         } catch (CannotFindRepositoryException $e) {
-            throw new RestException('404', 'Repository not found');
+            throw new RestException(404, 'Repository not found');
         }
     }
 
@@ -492,11 +496,11 @@ class RepositoryResource extends AuthenticatedResource
      * @status 202
      * @access protected
      *
-     * @param int $repository_id Id of the repository
+     * @param int $id Id of the repository
      *
-     * @throws 400
-     * @throws 403
-     * @throws 404
+     * @throws RestException 400
+     * @throws RestException 403
+     * @throws RestException 404
      */
     protected function delete($id)
     {
@@ -506,6 +510,11 @@ class RepositoryResource extends AuthenticatedResource
         try {
             $current_user = $this->user_manager->getCurrentUser();
             $repository   = $this->getRepository($id);
+
+            ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+                $repository->getProject()
+            );
+
             ProjectAuthorization::userCanAccessProject(
                 $this->user_manager->getCurrentUser(),
                 $repository->getProject(),
@@ -515,28 +524,24 @@ class RepositoryResource extends AuthenticatedResource
             $this->checkUserIsAdmin($repository->getProject(), $current_user);
 
             if ($this->isDeletionAlreadyQueued($repository)) {
-                throw new RestException('400', 'Repository already in queue for deletion');
-
-                return;
+                throw new RestException(400, 'Repository already in queue for deletion');
             }
 
             $this->repository_deleter->queueRepositoryDeletion($repository);
         } catch (CannotFindRepositoryException $e) {
-            throw new RestException('404', 'Repository not found');
+            throw new RestException(404, 'Repository not found');
         }
     }
 
     private function isDeletionAlreadyQueued(Repository $repository)
     {
         return SystemEventManager::instance()->areThereMultipleEventsQueuedMatchingFirstParameter(
-            'Tuleap\\Svn\\EventRepository\\' . SystemEvent_SVN_DELETE_REPOSITORY::NAME,
+            'Tuleap\\SVN\\Events\\' . SystemEvent_SVN_DELETE_REPOSITORY::NAME,
             $repository->getProject()->getID() . SystemEvent::PARAMETER_SEPARATOR . $repository->getId()
         );
     }
 
     /**
-     * @param Repository $repository
-     * @param \PFUser    $user
      *
      * @return \Tuleap\SVN\REST\v1\RepositoryRepresentation
      */
@@ -591,7 +596,7 @@ class RepositoryResource extends AuthenticatedResource
      *   &nbsp;&nbsp;&nbsp;&nbsp;"email_notifications": [<br>
      *   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br>
      *   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"path": "/trunk",<br>
-     *   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp"emails": [<br>
+     *   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"emails": [<br>
      *   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"foo@example.com",<br>
      *   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"bar@example.com"<br>
      *   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;],<br>
@@ -626,18 +631,23 @@ class RepositoryResource extends AuthenticatedResource
      * @param SettingsPOSTRepresentation $settings Repository settings {@type \Tuleap\SVN\REST\v1\SettingsPOSTRepresentation} {@required false}
      *
      * @return \Tuleap\SVN\REST\v1\RepositoryRepresentation
-     * @throws 400 BadRequest Given project does not exist or project does not use SVN service
-     * @throws 403 Forbidden User doesn't have permission to create a repository
-     * @throws 500 Error Unable to create the repository
-     * @throws 409 Repository name is invalid
+     * @throws RestException 400 BadRequest Given project does not exist or project does not use SVN service
+     * @throws RestException 403 Forbidden User doesn't have permission to create a repository
+     * @throws RestException 500 Error Unable to create the repository
+     * @throws RestException 409 Repository name is invalid
      */
-    protected function post($project_id, $name, SettingsPOSTRepresentation $settings = null)
+    protected function post($project_id, $name, ?SettingsPOSTRepresentation $settings = null)
     {
         $this->checkAccess();
         $this->options();
 
         $user    = $this->user_manager->getCurrentUser();
         $project = $this->project_manager->getProject($project_id);
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsAllUsersToAccessIt(
+            $project
+        );
+
         if ($project->isError()) {
             throw new RestException(400, "Given project does not exist");
         }
@@ -658,11 +668,11 @@ class RepositoryResource extends AuthenticatedResource
             new \URLVerification()
         );
 
-        $repository_to_create = new Repository("", $name, "", "", $project);
+        $repository_to_create = SvnRepository::buildToBeCreatedRepository($name, $project);
         try {
             $repository_settings       = $this->getPOSTSettings($repository_to_create, $settings);
             $has_initial_layout        = $settings !== null && $settings->layout !== null;
-            $initial_repository_layout = $has_initial_layout ? $settings->layout : array();
+            $initial_repository_layout = $has_initial_layout ? $settings->layout : [];
 
             $copy_from_core = false;
             $this->repository_creator->createWithSettings(
@@ -704,7 +714,7 @@ class RepositoryResource extends AuthenticatedResource
     /**
      * @return Settings
      */
-    private function getSettings(Repository $repository, SettingsRepresentation $settings = null)
+    private function getSettings(Repository $repository, ?SettingsRepresentation $settings = null)
     {
         return $this->extractSettingsFromRepresentation($repository, $settings);
     }
@@ -712,7 +722,7 @@ class RepositoryResource extends AuthenticatedResource
     /**
      * @return Settings
      */
-    private function getPOSTSettings(Repository $repository, SettingsPOSTRepresentation $settings = null)
+    private function getPOSTSettings(Repository $repository, ?SettingsPOSTRepresentation $settings = null)
     {
         return $this->extractSettingsFromRepresentation($repository, $settings);
     }
@@ -721,9 +731,9 @@ class RepositoryResource extends AuthenticatedResource
      * @throws RestException
      * @return Settings
      */
-    private function extractSettingsFromRepresentation(Repository $repository, SettingsRepresentationInterface $settings = null)
+    private function extractSettingsFromRepresentation(Repository $repository, ?SettingsRepresentationInterface $settings = null)
     {
-        $commit_rules = array();
+        $commit_rules = [];
         if ($settings && $settings->commit_rules) {
             $commit_rules = $settings->commit_rules->toArray();
         }
@@ -741,10 +751,10 @@ class RepositoryResource extends AuthenticatedResource
             $access_file = $settings->access_file;
         }
 
-        $mail_notification = array();
+        $mail_notification = [];
         if ($settings && $settings->email_notifications) {
             foreach ($settings->email_notifications as $notification) {
-                $users_notification = array();
+                $users_notification = [];
                 if ($notification->users) {
                     foreach ($notification->users as $user_id) {
                         $user = $this->user_manager->getUserById($user_id);
@@ -755,7 +765,7 @@ class RepositoryResource extends AuthenticatedResource
                     }
                 }
 
-                $user_groups_notification = array();
+                $user_groups_notification = [];
                 if ($notification->user_groups) {
                     foreach ($notification->user_groups as $group_id) {
                         $group = $this->user_group_id_retriever->getExistingUserGroup($group_id);
@@ -789,7 +799,7 @@ class RepositoryResource extends AuthenticatedResource
             }
         }
 
-        return new Settings($commit_rules, $immutable_tag, $access_file, $mail_notification, array(), 1, false);
+        return new Settings($commit_rules, $immutable_tag, $access_file, $mail_notification, [], 1, false);
     }
 
     private function isAnAuthorizedDynamicUgroup(ProjectUGroup $group)

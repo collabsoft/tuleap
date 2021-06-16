@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS, 2018. All Rights Reserved.
+ * Copyright (c) Enalean SAS, 2018 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2010. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -22,7 +22,8 @@
 /**
  * Manage the use of URLVerification
  */
-class URLVerificationFactory {
+class URLVerificationFactory
+{
 
     /**
      * @var EventManager
@@ -46,11 +47,13 @@ class URLVerificationFactory {
      *
      * @return URLVerification
      */
-    public function getURLVerification($server) {
-        $this->event_manager->processEvent('url_verification_instance', array('server_param' => $server,
-                                                    'url_verification' =>&$urlVerification));
-        if (isset($urlVerification)) {
-            return ($urlVerification);
+    public function getURLVerification($server)
+    {
+        $urlVerification = null;
+        $this->event_manager->processEvent('url_verification_instance', ['server_param' => $server,
+                                                    'url_verification' => &$urlVerification]);
+        if ($urlVerification !== null) {
+            return $urlVerification;
         } else {
             return (new URLVerification());
         }

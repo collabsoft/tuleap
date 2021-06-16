@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -32,18 +32,12 @@ class DashboardWidgetDeletor
         $this->dao = $dao;
     }
 
-    /**
-     * @param DashboardWidgetColumn $column
-     */
     public function deleteLineByColumn(DashboardWidgetColumn $column)
     {
         $this->dao->removeLine($column->getLineId());
         $this->dao->reorderLines($column->getLineId());
     }
 
-    /**
-     * @param DashboardWidgetColumn $column
-     */
     public function deleteColumn(DashboardWidgetColumn $column)
     {
         $this->dao->removeColumn($column->getId());

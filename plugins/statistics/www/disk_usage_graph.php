@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2009. All Rights Reserved.
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * Originally written by Manuel VACELET, 2009
  *
@@ -22,18 +22,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require 'pre.php';
-require_once dirname(__FILE__).'/../include/Statistics_DiskUsageGraph.class.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/Statistics_DiskUsageGraph.class.php';
 
-use Tuleap\SVN\DiskUsage\Collector as SVNCollector;
-use Tuleap\SVN\DiskUsage\Retriever as SVNRetriever;
-use Tuleap\CVS\DiskUsage\Retriever as CVSRetriever;
-use Tuleap\CVS\DiskUsage\Collector as CVSCollector;
-use Tuleap\CVS\DiskUsage\FullHistoryDao;
+use Tuleap\Statistics\DiskUsage\Subversion\Collector as SVNCollector;
+use Tuleap\Statistics\DiskUsage\Subversion\Retriever as SVNRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Retriever as CVSRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Collector as CVSCollector;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\FullHistoryDao;
 
 // First, check plugin availability
 $pluginManager = PluginManager::instance();
-$p = $pluginManager->getPluginByName('statistics');
+$p             = $pluginManager->getPluginByName('statistics');
 if (! $p || ! $pluginManager->isPluginAvailable($p)) {
     $GLOBALS['Response']->redirect('/');
 }
@@ -43,8 +43,8 @@ if (! UserManager::instance()->getCurrentUser()->isSuperUser()) {
     $GLOBALS['Response']->redirect('/');
 }
 
-$error = false;
-$feedback = array();
+$error    = false;
+$feedback = [];
 
 $disk_usage_dao  = new Statistics_DiskUsageDao();
 $svn_log_dao     = new SVN_LogDao();
@@ -62,31 +62,29 @@ $duMgr           = new Statistics_DiskUsageManager(
 
 $graphType = $request->get('graph_type');
 
-switch($graphType){
-
+switch ($graphType) {
     case 'graph_service':
-
         $vServices = new Valid_WhiteList('services', array_keys($duMgr->getProjectServices()));
         $vServices->required();
         if ($request->validArray($vServices)) {
             $services = $request->get('services');
         } else {
-            $services = array();
+            $services = [];
         }
-    break;
-     
+        break;
+
     case 'graph_user':
         $vUserId = new Valid_UInt('user_id');
         $vUserId->required();
         if ($request->valid($vUserId)) {
             $userId = $request->get('user_id');
-        } 
-    break;
-        
+        }
+        break;
+
     case 'graph_project':
         $vGroupId = new Valid_GroupId();
         $vGroupId->required();
-        if($request->valid($vGroupId)) {
+        if ($request->valid($vGroupId)) {
             $groupId = $request->get('group_id');
         }
 
@@ -95,16 +93,16 @@ switch($graphType){
         if ($request->validArray($vServices)) {
             $services = $request->get('services');
         } else {
-            $services = array();
+            $services = [];
         }
-    break;
-    
+        break;
+
     default:
 }
 
 
-$groupByDate = array('day', 'deek', 'month', 'year');
-$vGroupBy = new Valid_WhiteList('group_by', $groupByDate);
+$groupByDate = ['day', 'week', 'month', 'year'];
+$vGroupBy    = new Valid_WhiteList('group_by', $groupByDate);
 $vGroupBy->required();
 if ($request->valid($vGroupBy)) {
     $selectedGroupByDate = $request->get('group_by');
@@ -131,7 +129,7 @@ if ($request->valid($vStartDate)) {
     $endDate = date('Y-m-d');
 }
 
-$vRelative = new Valid_WhiteList('relative', array('true'));
+$vRelative = new Valid_WhiteList('relative', ['true']);
 $vRelative->required();
 if ($request->valid($vRelative)) {
     $relative = true;
@@ -143,30 +141,24 @@ if (strtotime($startDate) > strtotime($endDate)) {
     $error = true;
 }
 
-//
 // Display graph
-//
-
 $graph = new Statistics_DiskUsageGraph($duMgr);
-if (!$error) {
-
-    switch($graphType){
-
+if (! $error) {
+    switch ($graphType) {
         case 'graph_service':
-            $graph->displayServiceGraph($services, $selectedGroupByDate, $startDate, $endDate, !$relative);
-        break;
+            $graph->displayServiceGraph($services, $selectedGroupByDate, $startDate, $endDate, ! $relative);
+            break;
 
         case 'graph_user':
-            $graph->displayUserGraph($userId, $selectedGroupByDate, $startDate, $endDate, !$relative) ;
-        break;
+            $graph->displayUserGraph($userId, $selectedGroupByDate, $startDate, $endDate, ! $relative);
+            break;
 
         case 'graph_project':
-            $graph->displayProjectGraph($groupId, $services, $selectedGroupByDate, $startDate, $endDate, !$relative) ;
-        break;
+            $graph->displayProjectGraph($groupId, $services, $selectedGroupByDate, $startDate, $endDate, ! $relative);
+            break;
 
         default:
     }
-
 } else {
     $msg = '';
     foreach ($feedback as $m) {
@@ -174,5 +166,3 @@ if (!$error) {
     }
     $graph->displayError($msg);
 }
-
-?>

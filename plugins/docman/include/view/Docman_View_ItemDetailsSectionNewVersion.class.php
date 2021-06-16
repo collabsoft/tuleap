@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2006. All Rights Reserved.
- * Copyright (c) Enalean, 2018. All Rights Reserved.
  *
  * Originally written by Nicolas Terray, 2006
  *
@@ -20,32 +20,34 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * 
  */
-require_once('Docman_View_ItemDetailsSectionActions.class.php');
-require_once('Docman_View_ItemDetailsSectionApprovalCreate.class.php');
-require_once('Docman_View_GetSpecificFieldsVisitor.class.php');
 
-class Docman_View_ItemDetailsSectionNewVersion extends Docman_View_ItemDetailsSectionActions {
-    
-    var $force;
-    var $token;
-    function __construct(&$item, $url, &$controller, $force, $token) {
+use Tuleap\Docman\Upload\Version\DocumentOnGoingVersionToUploadDAO;
+use Tuleap\Docman\Upload\Version\VersionOngoingUploadRetriever;
+
+class Docman_View_ItemDetailsSectionNewVersion extends Docman_View_ItemDetailsSectionActions
+{
+
+    public $force;
+    public $token;
+    public function __construct($item, $url, $controller, $force, $token)
+    {
         parent::__construct($item, $url, false, true, $controller);
-        $this->force    = $force;
+        $this->force = $force;
         $this->token = $token;
     }
-    function getContent() {
+    public function getContent($params = [])
+    {
         return $this->item->accept($this);
     }
 
-    function _getApprovalTable() {
+    public function _getApprovalTable()
+    {
         $html = '';
 
-        $atf =& Docman_ApprovalTableFactoriesFactory::getFromItem($this->item);
-        if($atf->tableExistsForItem()) {
-            $html .= '<dt>'. $GLOBALS['Language']->getText('plugin_docman', 'details_actions_update_apptable') .'</dt><dd>';
+        $atf = Docman_ApprovalTableFactoriesFactory::getFromItem($this->item);
+        if ($atf->tableExistsForItem()) {
+            $html .= '<dt>' . dgettext('tuleap-docman', 'Approval table') . '</dt><dd>';
             $html .= '<dd>';
             $html .= Docman_View_ItemDetailsSectionApprovalCreate::displayImportLastTable(false);
             $html .= '</dd>';
@@ -54,37 +56,44 @@ class Docman_View_ItemDetailsSectionNewVersion extends Docman_View_ItemDetailsSe
         return $html;
     }
 
-    function _getReleaseLock() {
+    public function _getReleaseLock()
+    {
         $content = '';
-        $dPm = Docman_PermissionsManager::instance($this->item->getGroupId());
-        if($dPm->getLockFactory()->itemIsLocked($this->item)) {
+        $dPm     = Docman_PermissionsManager::instance($this->item->getGroupId());
+        if ($dPm->getLockFactory()->itemIsLocked($this->item)) {
             $content .= '<tr style="vertical-align:top;">';
-            $content .= '<td><label>'.$GLOBALS['Language']->getText('plugin_docman', 'details_actions_update_lock').'</label></td>';
+            $content .= '<td><label>' . dgettext('tuleap-docman', 'Keep the lock:') . '</label></td>';
             $content .= '<td><input type="checkbox" name="lock_document" value="lock" /></td>';
             $content .= '</tr>';
         }
         return $content;
     }
 
-    function visitFolder(&$item, $params = array()) {
+    public function visitFolder($item, $params = [])
+    {
         return "";
     }
-    function visitDocument(&$item, $params = array()) {
+    public function visitDocument($item, $params = [])
+    {
         return "";
     }
-    function visitWiki(&$item, $params = array()) {
+    public function visitWiki($item, $params = [])
+    {
         return $this->visitDocument($item, $params);
     }
 
-    function visitLink(&$item, $params = array()) {
+    public function visitLink($item, $params = [])
+    {
         return $this->visitVersionnedItem($item, $params);
     }
 
-    function visitFile(&$item, $params = array()) {
+    public function visitFile($item, $params = [])
+    {
         return $this->visitVersionnedItem($item, $params);
     }
 
-    private function visitVersionnedItem($item, $params = array()) {
+    private function visitVersionnedItem($item, $params = [])
+    {
         $label = '';
         if (isset($this->_controller->_viewParams['label'])) {
             $label = $this->_controller->_viewParams['label'];
@@ -94,19 +103,30 @@ class Docman_View_ItemDetailsSectionNewVersion extends Docman_View_ItemDetailsSe
             $changelog = $this->_controller->_viewParams['changelog'];
         }
 
-        $content = '';
-        $content .= '<form action="'. $this->url .'&amp;id='. $this->item->getId() .'" method="post" enctype="multipart/form-data" id="plugin_docman_new_version_form" data-test="plugin_docman_new_version_form">';
+        $retriever = new VersionOngoingUploadRetriever(new DocumentOnGoingVersionToUploadDAO());
+
+        if ($retriever->isThereAlreadyAnUploadOngoing($item, new DateTimeImmutable())) {
+            $renderer = TemplateRendererFactory::build()->getRenderer(__DIR__ . "/../../templates");
+            return $renderer->renderToString(
+                'document_file_upload_on_going_error',
+                []
+            );
+        }
+        $content  = '';
+        $content .= '<form action="' . $this->url . '&amp;id=' . $this->item->getId() . '" method="post" enctype="multipart/form-data" id="plugin_docman_new_version_form" data-test="plugin_docman_new_version_form">';
 
         $content .= '<dl>';
-        $content .= '<dt>'. $GLOBALS['Language']->getText('plugin_docman', 'details_actions_update') .'</dt><dd>';
+        $content .= '<dt>' . dgettext('tuleap-docman', 'Update') . '</dt><dd>';
         $content .= '<table>';
-        $content .= '<tr style="vertical-align:top"><td>'. $GLOBALS['Language']->getText('plugin_docman', 'details_actions_newversion_label') .'</td><td><input type="text" name="version[label]" value="'.$label.'" /></td></tr>';
-        $content .= '<tr style="vertical-align:top"><td>'. $GLOBALS['Language']->getText('plugin_docman', 'details_actions_newversion_changelog') .'</td><td><textarea name="version[changelog]" rows="7" cols="80" data-test="docman_changelog">'.$changelog.'</textarea></td></tr>';
-        $fields = $item->accept(new Docman_View_GetSpecificFieldsVisitor(), array('force_item' => $this->force, 'request' => &$this->controller->request));
-        foreach($fields as $field) {
-            $content .= '<tr style="vertical-align:top;">';
-            $content .= '<td><label>'. $field->getLabel().'</label></td>';
-            $content .= '<td>'. $field->getField() .'</td></tr>';
+        $content .= '<tr style="vertical-align:top"><td>' . dgettext('tuleap-docman', 'Version Label:') . '</td><td><input type="text" name="version[label]" value="' . $label . '" /></td></tr>';
+        $content .= '<tr style="vertical-align:top"><td>' . dgettext('tuleap-docman', 'Change Log:') . '</td><td><textarea name="version[changelog]" rows="7" cols="80" data-test="docman_changelog">' . $changelog . '</textarea></td></tr>';
+        $fields   = $item->accept(new Docman_View_GetSpecificFieldsVisitor(), ['force_item' => $this->force, 'request' => $this->_controller->request]);
+        if ($fields !== null) {
+            foreach ($fields as $field) {
+                $content .= '<tr style="vertical-align:top;">';
+                $content .= '<td><label>' . $field->getLabel() . '</label></td>';
+                $content .= '<td>' . $field->getField() . '</td></tr>';
+            }
         }
         // Release lock
         $content .= $this->_getReleaseLock();
@@ -118,16 +138,16 @@ class Docman_View_ItemDetailsSectionNewVersion extends Docman_View_ItemDetailsSe
 
         $content .= '<p>';
         if ($this->token) {
-            $content .= '<input type="hidden" name="token" value="'. $this->token .'" />';
+            $content .= '<input type="hidden" name="token" value="' . $this->token . '" />';
         }
         $content .= '<input type="hidden" name="action" value="new_version" />';
-        $content .= '<input type="submit" name="confirm" data-test="docman_create_new_version" value="'. $GLOBALS['Language']->getText('plugin_docman', 'details_actions_newversion_button').'" />';
-        $content .= '<input type="submit" name="cancel"  value="'. $GLOBALS['Language']->getText('global', 'btn_cancel').'" />';
+        $content .= '<input type="submit" name="confirm" data-test="docman_create_new_version" value="' . dgettext('tuleap-docman', 'Create new version') . '" />';
+        $content .= '<input type="submit" name="cancel"  value="' . $GLOBALS['Language']->getText('global', 'btn_cancel') . '" />';
         $content .= '</p>';
 
         $content .= '</dl>';
         $content .= '</form>';
-        $snippet = '
+        $snippet  = '
         document.observe("dom:loaded", function () {
             $("plugin_docman_new_version_form").observe("submit", function (e) {
                 if (!docman.approvalTableCheck($("plugin_docman_new_version_form"))) {
@@ -140,12 +160,13 @@ class Docman_View_ItemDetailsSectionNewVersion extends Docman_View_ItemDetailsSe
         return $content;
     }
 
-    function visitEmbeddedFile(&$item, $params = array()) {
+    public function visitEmbeddedFile($item, $params = [])
+    {
         return $this->visitFile($item, $params);
     }
 
-    function visitEmpty(&$item, $params = array()) {
+    public function visitEmpty($item, $params = [])
+    {
         return $this->visitDocument($item, $params);
     }
 }
-?>

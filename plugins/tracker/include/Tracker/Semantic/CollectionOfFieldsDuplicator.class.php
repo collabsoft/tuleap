@@ -1,6 +1,6 @@
 <?php
 /**
-* Copyright Enalean (c) 2013. All rights reserved.
+* Copyright Enalean (c) 2013 - Present. All rights reserved.
 * Tuleap and Enalean names and logos are registrated trademarks owned by
 * Enalean SAS. All other trademarks or names are properties of their respective
 * owners.
@@ -24,25 +24,21 @@
 /**
  * I am responsible of duplicating the various fields that compose a semantic for a new one
  */
-class Tracker_Semantic_CollectionOfFieldsDuplicator {
-
+class Tracker_Semantic_CollectionOfFieldsDuplicator implements \Tuleap\Tracker\Semantic\IDuplicateSemantic
+{
     /** @var Tracker_Semantic_IRetrieveSemanticDARByTracker */
     private $dao;
 
-    public function __construct(Tracker_Semantic_IRetrieveSemanticDARByTracker $dao) {
+    public function __construct(Tracker_Semantic_IRetrieveSemanticDARByTracker $dao)
+    {
         $this->dao = $dao;
     }
 
     /**
      * Duplicate the semantic from tracker source to tracker target
-     *
-     * @param int   $from_tracker_id The Id of the tracker source
-     * @param int   $to_tracker_id   The Id of the tracker target
-     * @param array $field_mapping   The mapping of the fields of the tracker
-     *
-     * @return void
      */
-    public function duplicate($from_tracker_id, $to_tracker_id, array $field_mapping) {
+    public function duplicate(int $from_tracker_id, int $to_tracker_id, array $field_mapping): void
+    {
         $rank = 1;
         foreach ($this->dao->searchByTrackerId($from_tracker_id) as $row) {
             $from_field_id = $row['field_id'];

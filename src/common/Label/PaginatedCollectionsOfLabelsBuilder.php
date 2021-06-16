@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -26,7 +26,7 @@ class PaginatedCollectionsOfLabelsBuilder
 {
     public function build(LegacyDataAccessResultInterface $result, $total_size)
     {
-        $labels = array();
+        $labels = [];
         foreach ($result as $row) {
             $labels[] = new Label($row['id'], $row['name'], $row['is_outline'], $row['color']);
         }

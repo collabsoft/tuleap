@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -21,24 +21,26 @@
 
 /**
  * PasswordRegexpValidator
- * 
+ *
  * Validate a password with a regexp
- * 
+ *
  */
-/* abstract */ class PasswordRegexpValidator extends PasswordValidator {
-    
-    var $regexp;
-    
+/* abstract */ class PasswordRegexpValidator extends PasswordValidator
+{
+
+    public $regexp;
+
     /**
     * Constructor
     */
-    function __construct($regexp, $description) {
+    public function __construct($regexp, $description)
+    {
         parent::__construct($description);
         $this->regexp = $regexp;
     }
-    
-    function validate($password) {
-        return preg_match($this->regexp, $password);
+
+    public function validate($password)
+    {
+        return preg_match($this->regexp, $password) === 1;
     }
 }
-?>

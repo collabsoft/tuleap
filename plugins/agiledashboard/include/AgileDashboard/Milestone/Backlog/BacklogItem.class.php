@@ -1,8 +1,8 @@
 <?php
 /**
- * Copyright Enalean (c) 2013 - 2018. All rights reserved.
+ * Copyright Enalean (c) 2013-Present. All rights reserved.
  *
- * Tuleap and Enalean names and logos are registrated trademarks owned by
+ * Tuleap and Enalean names and logos are registered trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
  * owners.
  *
@@ -22,6 +22,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
+
 class AgileDashboard_Milestone_Backlog_BacklogItem implements AgileDashboard_Milestone_Backlog_IBacklogItem
 {
     /** @var Int */
@@ -35,9 +37,6 @@ class AgileDashboard_Milestone_Backlog_BacklogItem implements AgileDashboard_Mil
 
     /** @var String */
     private $short_type;
-
-    /** @var String */
-    private $url;
 
     /** @var Int */
     private $initial_effort;
@@ -56,47 +55,50 @@ class AgileDashboard_Milestone_Backlog_BacklogItem implements AgileDashboard_Mil
     /** @var String */
     private $color;
 
-    /** @var Tracker_Artifact */
+    /** @var Artifact */
     private $artifact;
 
-    /** @var Tracker_Artifact */
+    /** @var Artifact */
     private $parent;
 
-    /** @var boolean */
+    /** @var bool */
     private $has_children = null;
     /**
-     * @var
+     * @var bool
      */
     private $is_inconsistent;
 
-    public function __construct(Tracker_Artifact $artifact, $is_inconsistent)
+    public function __construct(Artifact $artifact, bool $is_inconsistent)
     {
         $this->id              = $artifact->getId();
-        $this->title           = $artifact->getTitle();
-        $this->url             = $artifact->getUri();
+        $this->title           = $artifact->getTitle() ?? '';
         $this->artifact        = $artifact;
-        $this->color           = $this->artifact->getTracker()->getNormalizedColor();
+        $this->color           = $this->artifact->getTracker()->getColor()->getName();
         $this->type            = $this->artifact->getTracker()->getName();
         $this->short_type      = $this->artifact->getTracker()->getItemName();
         $this->is_inconsistent = $is_inconsistent;
     }
 
-    public function setParent(Tracker_Artifact $parent) {
+    public function setParent(Artifact $parent)
+    {
         $this->parent = $parent;
     }
 
     /**
-     * @return Tracker_Artifact
+     * @return Artifact
      */
-    public function getParent() {
+    public function getParent()
+    {
         return $this->parent;
     }
 
-    public function setInitialEffort($value) {
+    public function setInitialEffort($value)
+    {
         $this->initial_effort = $value;
     }
 
-    public function getInitialEffort() {
+    public function getInitialEffort()
+    {
         return $this->initial_effort;
     }
 
@@ -106,27 +108,33 @@ class AgileDashboard_Milestone_Backlog_BacklogItem implements AgileDashboard_Mil
         $this->normalized_status_label = $status_semantic;
     }
 
-    public function id() {
+    public function id()
+    {
         return $this->id;
     }
 
-    public function title() {
+    public function title(): string
+    {
         return $this->title;
     }
 
-    public function type() {
+    public function type()
+    {
         return $this->type;
     }
 
-    public function short_type() {
+    public function getShortType(): string
+    {
         return $this->short_type;
     }
 
-    public function points() {
+    public function points()
+    {
         return $this->initial_effort;
     }
 
-    public function parent_title() {
+    public function parent_title()
+    {
         if ($this->parent) {
             return $this->parent->getTitle();
         }
@@ -137,24 +145,28 @@ class AgileDashboard_Milestone_Backlog_BacklogItem implements AgileDashboard_Mil
         return $this->status;
     }
 
-    public function color() {
+    public function color(): string
+    {
         return $this->color;
     }
 
-    public function setHasChildren($has_children) {
+    public function setHasChildren($has_children)
+    {
         $this->has_children = $has_children;
     }
 
-    public function hasChildren() {
+    public function hasChildren()
+    {
         if ($this->has_children === null) {
             return $this->artifact->hasChildren();
         }
         return $this->has_children;
     }
     /**
-     * @return Tracker_Artifact
+     * @return Artifact
      */
-    public function getArtifact() {
+    public function getArtifact()
+    {
         return $this->artifact;
     }
 

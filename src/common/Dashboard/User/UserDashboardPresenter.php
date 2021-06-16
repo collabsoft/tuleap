@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -31,19 +31,19 @@ class UserDashboardPresenter extends DashboardPresenter
         parent::__construct($dashboard, $is_active, $widgets);
 
         $this->user_id                = $dashboard->getUserId();
-        $this->url_add_widget_content = '/widgets/?'. http_build_query(
-            array(
+        $this->url_add_widget_content = '/widgets/?' . http_build_query(
+            [
                 'action'         => 'get-add-modal-content',
                 'dashboard-id'   => $this->id,
                 'dashboard-type' => UserDashboardController::DASHBOARD_TYPE
-            )
+            ]
         );
-        $this->url_add_widget = '/widgets/?'. http_build_query(
-            array(
+        $this->url_add_widget         = '/widgets/?' . http_build_query(
+            [
                 'action'         => 'add-widget',
                 'dashboard-id'   => $this->id,
                 'dashboard-type' => UserDashboardController::DASHBOARD_TYPE
-            )
+            ]
         );
     }
 }

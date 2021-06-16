@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,17 +25,11 @@ use Tuleap\AgileDashboard\Milestone\Pane\PaneInfo;
 
 class CardwallPaneInfo extends PaneInfo
 {
-    const IDENTIFIER = 'cardwall';
+    public const IDENTIFIER = 'cardwall';
 
-    /**
-     * @var string
-     */
-    private $plugin_theme_path;
-
-    public function __construct(Planning_Milestone $milestone, $plugin_theme_path)
+    public function __construct(Planning_Milestone $milestone)
     {
         parent::__construct($milestone);
-        $this->plugin_theme_path = $plugin_theme_path;
     }
 
     /**
@@ -56,6 +50,6 @@ class CardwallPaneInfo extends PaneInfo
 
     public function getIconName()
     {
-        return 'fa-table icon-table';
+        return 'fa-table';
     }
 }

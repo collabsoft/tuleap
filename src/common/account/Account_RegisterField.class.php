@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,16 +17,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class Account_RegisterField {
+class Account_RegisterField
+{
 
     public $value;
     public $has_error;
     public $error;
 
-    public function __construct($value, $error) {
-        $this->has_error  = $error != null;
-        $this->value      = $value;
-        $this->error      = $error;
+    public function __construct($value, $error)
+    {
+        $this->has_error = $error != null;
+        $this->value     = $value;
+        $this->error     = $error;
     }
-
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,12 +22,13 @@ namespace Tuleap\PullRequest\DefaultSettings;
 
 use Project;
 use TemplateRendererFactory;
+use Tuleap\CSRFSynchronizerTokenPresenter;
 use Tuleap\Git\DefaultSettings\Pane\Pane;
 use Tuleap\PullRequest\MergeSetting\MergeSettingRetriever;
 
 final class PullRequestPane extends Pane
 {
-    const NAME = 'pullrequest';
+    public const NAME = 'pullrequest';
 
     /**
      * @var MergeSettingRetriever
@@ -45,7 +46,7 @@ final class PullRequestPane extends Pane
     ) {
         parent::__construct(
             dgettext('tuleap-pullrequest', 'Pull requests'),
-            "?" . http_build_query(
+            GIT_BASE_URL . "/?" . http_build_query(
                 [
                     'action'   => 'admin-default-settings',
                     'group_id' => $project->getID(),
@@ -70,7 +71,11 @@ final class PullRequestPane extends Pane
 
         return $renderer->renderToString(
             'default-settings',
-            new PullRequestPanePresenter($this->project, $merge_setting)
+            new PullRequestPanePresenter(
+                CSRFSynchronizerTokenPresenter::fromToken(new \CSRFSynchronizerToken($this->href)),
+                $this->project,
+                $merge_setting
+            )
         );
     }
 }

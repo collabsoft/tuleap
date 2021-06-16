@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ class IntegerFieldChecker implements InvalidFieldChecker
         CollectionOfAlphaNumericValuesExtractor $values_extractor
     ) {
         $this->empty_string_checker = $empty_string_checker;
-        $this->values_extractor = $values_extractor;
+        $this->values_extractor     = $values_extractor;
     }
 
     public function checkFieldIsValidForComparison(Comparison $comparison, Tracker_FormElement_Field $field)

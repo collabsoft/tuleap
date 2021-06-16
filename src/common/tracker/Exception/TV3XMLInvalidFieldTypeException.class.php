@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Exception_TV3XMLInvalidFieldTypeException extends Exception_TV3XMLException {
-    public function __construct($user_id) {
-        parent::__construct('A user id was expected as per field type but called with "'.$user_id.'". This might happen when field type changed over the time (eg. was text field and is now a select box with user).');
+class Exception_TV3XMLInvalidFieldTypeException extends Exception_TV3XMLException
+{
+    public function __construct($user_id)
+    {
+        parent::__construct('A user id was expected as per field type but called with "' . $user_id . '". This might happen when field type changed over the time (eg. was text field and is now a select box with user).');
     }
 }

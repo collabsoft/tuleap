@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ use Tuleap\Tracker\Report\Renderer\Table\GetExportOptionsMenuItemsEvent;
 
 class ExportOptionsMenuItemsAppender
 {
-    const EXPORT_SINGLE_PAGE = 'export_single_page';
+    public const EXPORT_SINGLE_PAGE = 'export_single_page';
     /**
      * @var TemplateRenderer
      */

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,6 @@
 namespace Tuleap\Timetracking\Exceptions;
 
 use Exception;
-use Throwable;
 
 class TimeTrackingBadTimeFormatException extends Exception
 {

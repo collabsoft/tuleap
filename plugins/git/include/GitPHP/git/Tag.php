@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
  *
  * This file is a part of Tuleap.
@@ -24,8 +24,6 @@ namespace Tuleap\Git\GitPHP;
 /**
  * Tag class
  *
- * @package GitPHP
- * @subpackage Git
  */
 class Tag extends Ref
 {
@@ -100,7 +98,7 @@ class Tag extends Ref
      *
      * @access protected
      */
-    protected $comment = array();
+    protected $comment = [];
 
     /**
      * objectReferenced
@@ -130,7 +128,7 @@ class Tag extends Ref
      * @param string $tag tag name
      * @param string $tagHash tag hash
      * @return mixed tag object
-     * @throws Exception exception on invalid tag or hash
+     * @throws \Exception exception on invalid tag or hash
      */
     public function __construct($project, $tag, $tagHash = '')
     {
@@ -147,7 +145,7 @@ class Tag extends Ref
      */
     public function GetObject() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -176,14 +174,14 @@ class Tag extends Ref
             return $this->commit;
         }
 
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
             if ($this->commitReferenced) {
                 $this->DereferenceCommit();
             }
         }
 
-        if (!$this->commit) {
+        if (! $this->commit) {
             if ($this->object instanceof Commit) {
                 $this->commit = $this->object;
             } elseif ($this->object instanceof Tag) {
@@ -208,7 +206,7 @@ class Tag extends Ref
             $this->DereferenceCommit();
         }
 
-        if (!$this->commit) {
+        if (! $this->commit) {
             $this->commit = $commit;
         }
     }
@@ -223,7 +221,7 @@ class Tag extends Ref
      */
     public function GetType() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -240,7 +238,7 @@ class Tag extends Ref
      */
     public function GetTagger() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -257,7 +255,7 @@ class Tag extends Ref
      */
     public function GetTaggerEpoch() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -275,9 +273,9 @@ class Tag extends Ref
     public function GetTaggerLocalEpoch() // @codingStandardsIgnoreLine
     {
         $epoch = $this->GetTaggerEpoch();
-        $tz = $this->GetTaggerTimezone();
+        $tz    = $this->GetTaggerTimezone();
         if (preg_match('/^([+\-][0-9][0-9])([0-9][0-9])$/', $tz, $regs)) {
-            $local = $epoch + ((((int)$regs[1]) + ($regs[2]/60)) * 3600);
+            $local = $epoch + ((((int) $regs[1]) + ($regs[2] / 60)) * 3600);
             return $local;
         }
         return $epoch;
@@ -293,7 +291,7 @@ class Tag extends Ref
      */
     public function GetTaggerTimezone() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -310,7 +308,7 @@ class Tag extends Ref
      */
     public function GetAge() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -327,7 +325,7 @@ class Tag extends Ref
      */
     public function GetComment() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -340,11 +338,11 @@ class Tag extends Ref
      * Tests if this is a light tag (tag without tag object)
      *
      * @access public
-     * @return boolean true if tag is light (has no object)
+     * @return bool true if tag is light (has no object)
      */
     public function LightTag() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -352,7 +350,7 @@ class Tag extends Ref
             $this->DereferenceObject();
         }
 
-        if (!$this->object) {
+        if (! $this->object) {
             return true;
         }
 
@@ -387,13 +385,13 @@ class Tag extends Ref
             /* light tag */
             $this->object = $this->GetProject()->GetCommit($this->GetHash());
             $this->commit = $this->object;
-            $this->type = 'commit';
+            $this->type   = 'commit';
             return;
         }
 
         $lines = explode("\n", $data);
 
-        if (!isset($lines[0])) {
+        if (! isset($lines[0])) {
             return;
         }
 
@@ -401,7 +399,7 @@ class Tag extends Ref
 
         $readInitialData = false;
         foreach ($lines as $i => $line) {
-            if (!$readInitialData) {
+            if (! $readInitialData) {
                 if (preg_match('/^object ([0-9a-fA-F]{40})$/', $line, $regs)) {
                     $objectHash = $regs[1];
                     continue;
@@ -411,8 +409,8 @@ class Tag extends Ref
                 } elseif (preg_match('/^tag (.+)$/', $line, $regs)) {
                     continue;
                 } elseif (preg_match('/^tagger (.*) ([0-9]+) (.*)$/', $line, $regs)) {
-                    $this->tagger = $regs[1];
-                    $this->taggerEpoch = $regs[2];
+                    $this->tagger         = $regs[1];
+                    $this->taggerEpoch    = $regs[2];
                     $this->taggerTimezone = $regs[3];
                     continue;
                 }
@@ -429,17 +427,17 @@ class Tag extends Ref
         switch ($this->type) {
             case 'commit':
                 try {
-                    $this->object = $this->GetProject()->GetCommit($objectHash);
+                    $this->object = $this->GetProject()->GetCommit($objectHash ?? '');
                     $this->commit = $this->object;
                 } catch (\Exception $e) {
                 }
                 break;
             case 'tag':
-                $objectData = $this->GetProject()->GetObject($objectHash);
-                $lines = explode("\n", $objectData);
+                $objectData = $this->GetProject()->GetObject($objectHash ?? '');
+                $lines      = explode("\n", $objectData);
                 foreach ($lines as $i => $line) {
                     if (preg_match('/^tag (.+)$/', $line, $regs)) {
-                        $name = trim($regs[1]);
+                        $name         = trim($regs[1]);
                         $this->object = $this->GetProject()->GetTag($name);
                         if ($this->object) {
                             $this->object->SetHash($objectHash);
@@ -448,7 +446,7 @@ class Tag extends Ref
                 }
                 break;
             case 'blob':
-                $this->object = $this->GetProject()->GetBlob($objectHash);
+                $this->object = $this->GetProject()->GetBlob($objectHash ?? '');
                 break;
         }
     }
@@ -466,7 +464,7 @@ class Tag extends Ref
             return;
         }
 
-        if (!$this->object) {
+        if (! $this->object) {
             return;
         }
 
@@ -490,7 +488,7 @@ class Tag extends Ref
      */
     private function DereferenceObject() // @codingStandardsIgnoreLine
     {
-        if (!$this->objectReferenced) {
+        if (! $this->objectReferenced) {
             return;
         }
 
@@ -522,7 +520,7 @@ class Tag extends Ref
             return;
         }
 
-        if (!$this->commit) {
+        if (! $this->commit) {
             return;
         }
 
@@ -540,7 +538,7 @@ class Tag extends Ref
      */
     private function DereferenceCommit() // @codingStandardsIgnoreLine
     {
-        if (!$this->commitReferenced) {
+        if (! $this->commitReferenced) {
             return;
         }
 
@@ -556,7 +554,7 @@ class Tag extends Ref
                  * and object are the same, in which case
                  * no need to fetch the object again
                  */
-                $this->commit = $obj;
+                $this->commit           = $obj;
                 $this->commitReferenced = false;
                 return;
             }
@@ -578,7 +576,7 @@ class Tag extends Ref
      */
     public function GetCreationEpoch() // @codingStandardsIgnoreLine
     {
-        if (!$this->dataRead) {
+        if (! $this->dataRead) {
             $this->ReadData();
         }
 
@@ -603,7 +601,7 @@ class Tag extends Ref
      * @static
      * @param mixed $a first tag
      * @param mixed $b second tag
-     * @return integer comparison result
+     * @return int comparison result
      */
     public static function CompareAge($a, $b) // @codingStandardsIgnoreLine
     {
@@ -633,7 +631,7 @@ class Tag extends Ref
      * @static
      * @param mixed $a first tag
      * @param mixed $b second tag
-     * @return integer comparison result
+     * @return int comparison result
      */
     public static function CompareCreationEpoch($a, $b) // @codingStandardsIgnoreLine
     {

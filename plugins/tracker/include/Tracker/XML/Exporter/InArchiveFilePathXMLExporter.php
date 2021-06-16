@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_XML_Exporter_InArchiveFilePathXMLExporter implements Tracker_XML_Exporter_FilePathXMLExporter {
+class Tracker_XML_Exporter_InArchiveFilePathXMLExporter implements Tracker_XML_Exporter_FilePathXMLExporter
+{
 
     /**
-     * @param Tracker_FileInfo $file_info
      *
      * @return string
      */
-    public function getPath(Tracker_FileInfo $file_info) {
+    public function getPath(Tracker_FileInfo $file_info)
+    {
         return Tuleap\Project\XML\ArchiveInterface::DATA_DIR .
                DIRECTORY_SEPARATOR .
                Tracker_XML_Exporter_ArtifactAttachmentExporter::FILE_PREFIX .

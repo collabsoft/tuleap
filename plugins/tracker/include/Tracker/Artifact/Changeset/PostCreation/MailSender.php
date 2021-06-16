@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,17 +22,20 @@
 namespace Tuleap\Tracker\Artifact\Changeset\PostCreation;
 
 use Codendi_HTMLPurifier;
-use Tracker_Artifact_Changeset;
-use trackerPlugin;
+use EventManager;
+use HTTPRequest;
+use MailBuilder;
 use MailEnhancer;
 use MailNotificationBuilder;
-use MailBuilder;
 use TemplateRendererFactory;
-use URLVerification;
-use Tracker_Artifact;
-use UserManager;
+use Tracker_Artifact_Changeset;
+use trackerPlugin;
 use Tuleap\Mail\MailFilter;
 use Tuleap\Mail\MailLogger;
+use Tuleap\Project\ProjectAccessChecker;
+use Tuleap\Project\RestrictedUserCanAccessProjectVerifier;
+use Tuleap\Tracker\Artifact\Artifact;
+use UserManager;
 
 class MailSender
 {
@@ -53,7 +56,7 @@ class MailSender
     public function send(Tracker_Artifact_Changeset $changeset, $recipients, $headers, $from, $subject, $htmlBody, $txtBody, $message_id)
     {
         $hp                = Codendi_HTMLPurifier::instance();
-        $breadcrumbs       = array();
+        $breadcrumbs       = [];
         $tracker           = $changeset->getTracker();
         $project           = $tracker->getProject();
         $artifactId        = $changeset->getArtifact()->getId();
@@ -65,9 +68,11 @@ class MailSender
             $mail_enhancer->setMessageId($message_id);
         }
 
-        $breadcrumbs[] = '<a href="'. get_server_url() .'/projects/'. $project_unix_name .'" />'. $project->getPublicName() .'</a>';
-        $breadcrumbs[] = '<a href="'. get_server_url() .'/plugins/tracker/?tracker='. (int)$tracker->getId() .'" />'. $hp->purify($changeset->getTracker()->getName()) .'</a>';
-        $breadcrumbs[] = '<a href="'. get_server_url().'/plugins/tracker/?aid='.(int)$artifactId.'" />'. $hp->purify($changeset->getTracker()->getName().' #'.$artifactId) .'</a>';
+        $server_url = HTTPRequest::instance()->getServerUrl();
+
+        $breadcrumbs[] = '<a href="' . $server_url . '/projects/' . $project_unix_name . '" />' . $hp->purify($project->getPublicName()) . '</a>';
+        $breadcrumbs[] = '<a href="' . $server_url . '/plugins/tracker/?tracker=' . (int) $tracker->getId() . '" />' . $hp->purify($changeset->getTracker()->getName()) . '</a>';
+        $breadcrumbs[] = '<a href="' . $server_url . '/plugins/tracker/?aid=' . (int) $artifactId . '" />' . $hp->purify($changeset->getTracker()->getName() . ' #' . $artifactId) . '</a>';
 
         $mail_enhancer->addPropertiesToLookAndFeel('breadcrumbs', $breadcrumbs);
         $mail_enhancer->addPropertiesToLookAndFeel('unsubscribe_link', $this->getUnsubscribeLink($changeset->getArtifact()));
@@ -90,7 +95,14 @@ class MailSender
         $mail_notification_builder = new MailNotificationBuilder(
             new MailBuilder(
                 TemplateRendererFactory::build(),
-                new MailFilter(UserManager::instance(), new URLVerification(), new MailLogger())
+                new MailFilter(
+                    UserManager::instance(),
+                    new ProjectAccessChecker(
+                        new RestrictedUserCanAccessProjectVerifier(),
+                        EventManager::instance()
+                    ),
+                    new MailLogger()
+                )
             )
         );
         $mail_notification_builder->buildAndSendEmail(
@@ -99,7 +111,7 @@ class MailSender
             $subject,
             $htmlBody,
             $txtBody,
-            get_server_url().$changeset->getUri(),
+            $server_url . $changeset->getUri(),
             trackerPlugin::TRUNCATED_SERVICE_NAME,
             $mail_enhancer
         );
@@ -107,8 +119,8 @@ class MailSender
 
     private function getTextBodyFilter($project_name, $tracker_name)
     {
-        $project_filter = '=PROJECT='.$project_name;
-        $tracker_filter = '=TRACKER='.$tracker_name;
+        $project_filter = '=PROJECT=' . $project_name;
+        $tracker_filter = '=TRACKER=' . $tracker_name;
 
         return PHP_EOL . $project_filter . PHP_EOL . $tracker_filter . PHP_EOL;
     }
@@ -126,12 +138,12 @@ class MailSender
     /**
      * @return string html call to action button to include in an html mail
      */
-    private function getUnsubscribeLink(Tracker_Artifact $artifact)
+    private function getUnsubscribeLink(Artifact $artifact)
     {
-        $link = get_server_url().'/plugins/tracker/?aid='.(int)$artifact->getId().'&func=manage-subscription';
+        $link = HTTPRequest::instance()->getServerUrl() . '/plugins/tracker/?aid=' . (int) $artifact->getId() . '&func=manage-subscription';
 
-        return '<a href="'. $link .'" target="_blank" rel="noreferrer">' .
-            $GLOBALS['Language']->getText('plugin_tracker_artifact', 'mail_unsubscribe') .
+        return '<a href="' . $link . '" target="_blank" rel="noreferrer">' .
+            dgettext('tuleap-tracker', 'Unsubscribe') .
             '</a>';
     }
 }

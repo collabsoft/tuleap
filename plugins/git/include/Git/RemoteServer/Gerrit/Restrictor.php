@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -50,8 +50,8 @@ class Restrictor
 
     public function __construct(
         Git_RemoteServer_GerritServerFactory $gerrit_server_factory,
-        GerritServerResourceRestrictor       $gerrit_ressource_restrictor,
-        ProjectManager                       $project_manager
+        GerritServerResourceRestrictor $gerrit_ressource_restrictor,
+        ProjectManager $project_manager
     ) {
         $this->gerrit_server_factory       = $gerrit_server_factory;
         $this->gerrit_ressource_restrictor = $gerrit_ressource_restrictor;
@@ -91,7 +91,7 @@ class Restrictor
         if ($this->gerrit_ressource_restrictor->setRestricted($gerrit_server)) {
             $GLOBALS['Response']->addFeedback(
                 'info',
-                $GLOBALS['Language']->getText('plugin_git', 'gerrit_servers_allowed_project_set_restricted')
+                dgettext('tuleap-git', 'Now, only the allowed projects are able to use this Gerrit server. Projects with at least one repository using this Gerrit server have been automatically added to the list of allowed projects. This restriction is not yet taken into account.')
             );
         }
     }
@@ -101,19 +101,23 @@ class Restrictor
         if ($this->gerrit_ressource_restrictor->unsetRestriction($gerrit_server)) {
             $GLOBALS['Response']->addFeedback(
                 'info',
-                $GLOBALS['Language']->getText('plugin_git', 'gerrit_servers_allowed_project_unset_restricted')
+                dgettext('tuleap-git', 'All projects can now use this Gerrit server.')
             );
         }
     }
 
-    private function redirectToGerritServerList()
+    /**
+     * @psalm-return never-return
+     */
+    private function redirectToGerritServerList(): void
     {
         $GLOBALS['Response']->addFeedback(
             Feedback::ERROR,
-            $GLOBALS['Language']->getText('plugin_git', 'gerrit_servers_id_does_not_exist')
+            dgettext('tuleap-git', 'The requested Gerrit server does not exist.')
         );
 
         $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?pane=gerrit_servers_admin');
+        exit();
     }
 
     private function checkSynchronizerToken($url)
@@ -163,19 +167,19 @@ class Restrictor
         if ($project && $this->gerrit_ressource_restrictor->allowProject($gerrit_server, $project)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText('plugin_git', 'gerrit_servers_allowed_project_allow_project')
+                dgettext('tuleap-git', 'Submitted project can now use this Gerrit server.')
             );
         } else {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_git', 'gerrit_servers_allowed_project_update_project_list_error')
+                dgettext('tuleap-git', 'Something went wrong during the update of the allowed project list.')
             );
         }
     }
 
     private function revokeProjectsForGerritServer(Git_RemoteServer_GerritServer $gerrit_server, $project_ids)
     {
-        $unset_project_ids = array();
+        $unset_project_ids = [];
         foreach ($project_ids as $key => $project_id) {
             if ($this->gerrit_server_factory->isServerUsedInProject($gerrit_server, $project_id)) {
                 $unset_project_ids[] = $project_id;
@@ -186,11 +190,7 @@ class Restrictor
         if (count($unset_project_ids) > 0) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::WARN,
-                $GLOBALS['Language']->getText(
-                    'plugin_git',
-                    'gerrit_servers_allowed_project_revoke_projects_not_revoked',
-                    implode(',', $unset_project_ids)
-                )
+                sprintf(dgettext('tuleap-git', 'The following projects were not revoked because these projects use this Gerrit server: %1$s'), implode(',', $unset_project_ids))
             );
         }
 
@@ -198,12 +198,12 @@ class Restrictor
             if ($this->gerrit_ressource_restrictor->revokeProject($gerrit_server, $project_ids)) {
                 $GLOBALS['Response']->addFeedback(
                     Feedback::INFO,
-                    $GLOBALS['Language']->getText('plugin_git', 'gerrit_servers_allowed_project_revoke_projects')
+                    dgettext('tuleap-git', 'Submitted projects will not be able to use this Gerrit server.')
                 );
             } else {
                 $GLOBALS['Response']->addFeedback(
                     Feedback::ERROR,
-                    $GLOBALS['Language']->getText('plugin_git', 'gerrit_servers_allowed_project_update_project_list_error')
+                    dgettext('tuleap-git', 'Something went wrong during the update of the allowed project list.')
                 );
             }
         }

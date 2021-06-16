@@ -1,7 +1,8 @@
 {
+  "name": "tuleap/plugin-tuleap-synchro",
   "autoload": {
     "psr-4": {
-      "Tuleap\\TuleapSynchro\\": "include/"
+      "Tuleap\\TuleapSynchro\\": "include/Tuleap_Synchro"
     }
   }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015-2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,4 +20,4 @@
 
  define('SVN_BASE_URL', '/plugins/svn');
  define('SVN_BASE_DIR', dirname(__FILE__));
- define('SVN_TEMPLATE_DIR', dirname(__FILE__).'/../templates/admin');
+ define('SVN_TEMPLATE_DIR', dirname(__FILE__) . '/../templates/admin');

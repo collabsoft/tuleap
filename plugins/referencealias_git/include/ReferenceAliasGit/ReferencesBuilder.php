@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS, 2016. All Rights Reserved.
+ * Copyright (c) Enalean SAS, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,9 +21,7 @@
 namespace Tuleap\ReferenceAliasGit;
 
 use GitRepositoryFactory;
-use Tuleap\ReferenceAliasGit\ReferencesImporter;
 use ReferenceInstance;
-use ProjectManager;
 
 class ReferencesBuilder
 {
@@ -38,29 +36,20 @@ class ReferencesBuilder
      */
     private $dao;
 
-    /**
-     * @var ProjectManager
-     */
-    private $project_manager;
-
     public function __construct(
         Dao $dao,
-        ProjectManager $project_manager,
         GitRepositoryFactory $repository_factory
     ) {
         $this->dao                = $dao;
-        $this->project_manager    = $project_manager;
         $this->repository_factory = $repository_factory;
     }
 
     /**
      * Get a reference given a project, keyword and value (number after '#')
-     *
-     * @return Reference or null
      */
-    public function getReference($keyword, $value)
+    public function getReference($keyword, $value): ?\Reference
     {
-        return $this->findReference($keyword, $keyword.$value);
+        return $this->findReference($keyword, $keyword . $value);
     }
 
     /**
@@ -70,19 +59,19 @@ class ReferencesBuilder
      */
     public function getExtraReferenceSpecs()
     {
-        return array(
-            array(
-                'cb'     => array($this, 'referenceFromMatch'),
+        return [
+            [
+                'cb'     => [$this, 'referenceFromMatch'],
                 'regexp' => '/
                     (?<![_a-zA-Z0-9])  # ensure the pattern is not following digits or letters
                     (?P<ref>
-                        (?P<key>'. ReferencesImporter::XREF_CMMT .')
+                        (?P<key>' . ReferencesImporter::XREF_CMMT . ')
                         (?P<val>[0-9]+)
                     )
                     (?![_A-Za-z0-9])   # ensure the pattern is not folloed by digits or letters
                 /x'
-            )
-        );
+            ]
+        ];
     }
 
     /**
@@ -91,9 +80,9 @@ class ReferencesBuilder
      */
     public function referenceFromMatch($match, $project_id)
     {
-        $ref             = $match['ref'];
-        $keyword         = $match['key'];
-        $value           = $match['val'];
+        $ref     = $match['ref'];
+        $keyword = $match['key'];
+        $value   = $match['val'];
 
         $reference = $this->findReference($keyword, $ref);
 
@@ -109,15 +98,14 @@ class ReferencesBuilder
 
     /**
      * Find a reference given a keyword and the original complete reference
-     * @return Reference or null
      */
-    private function findReference($keyword, $reference)
+    private function findReference($keyword, $reference): ?\Reference
     {
         if ($keyword !== ReferencesImporter::XREF_CMMT) {
             return null;
         }
 
-        $row = $this->dao->getRef($reference)->getRow();
+        $row = $this->dao->getRef($reference);
         if (empty($row)) {
             return null;
         }

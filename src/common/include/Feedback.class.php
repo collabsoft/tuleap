@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Feedback {
+class Feedback
+{
 
     /**
      * @var array
@@ -31,26 +32,29 @@ class Feedback {
      */
     private $formatter;
 
-    const INFO =  'info';
-    const WARN  = 'warning';
-    const ERROR = 'error';
-    const DEBUG = 'debug';
+    public const INFO  =  'info';
+    public const WARN  = 'warning';
+    public const ERROR = 'error';
+    public const DEBUG = 'debug';
 
-    function __construct() {
-        $this->logs = array();
+    public function __construct()
+    {
+        $this->logs = [];
         $this->setFormatter(new FeedbackFormatter());
     }
 
-    function setFormatter(FeedbackFormatter $formatter) {
+    public function setFormatter(FeedbackFormatter $formatter)
+    {
         $this->formatter = $formatter;
     }
 
-    function log($level, $msg, $purify=CODENDI_PURIFIER_CONVERT_HTML) {
-        if(!is_array($msg)) {
-            $msg = array($msg);
+    public function log($level, $msg, $purify = CODENDI_PURIFIER_CONVERT_HTML)
+    {
+        if (! is_array($msg)) {
+            $msg = [$msg];
         }
-        foreach($msg as $m) {
-            $this->logs[] = array('level' => $level, 'msg' => $m, 'purify' => $purify);
+        foreach ($msg as $m) {
+            $this->logs[] = ['level' => $level, 'msg' => $m, 'purify' => $purify];
         }
     }
 
@@ -62,23 +66,26 @@ class Feedback {
         return $this->logs;
     }
 
-    function fetch() {
+    public function fetch()
+    {
         return $this->formatter->format($this->logs);
     }
 
-    function fetchAsPlainText() {
-    	   $txt = '';
-       foreach($this->logs as $log) {
-       	   $txt .= $log['level'] .': '. $log['msg'] ."\n"; 
-       }
-       return $txt;
+    public function fetchAsPlainText()
+    {
+           $txt = '';
+        foreach ($this->logs as $log) {
+            $txt .= $log['level'] . ': ' . $log['msg'] . "\n";
+        }
+        return $txt;
     }
 
     /**
      * @return array of error messages
      */
-    function fetchErrors() {
-        $errors = array();
+    public function fetchErrors()
+    {
+        $errors = [];
         foreach ($this->logs as $log) {
             if ($log['level'] == self::ERROR) {
                 $errors[] = $log['msg'];
@@ -87,31 +94,35 @@ class Feedback {
 
         return $errors;
     }
-    
-    function display() {
+
+    public function display()
+    {
         echo $this->htmlContent();
     }
 
-    public function htmlContent() {
-        return '<div id="feedback" data-test="feedback">'.$this->fetch().'</div>';
+    public function htmlContent()
+    {
+        return '<div id="feedback" data-test="feedback">' . $this->fetch() . '</div>';
     }
 
-    function hasWarningsOrErrors() {
-    	   $found = false;
-       reset($this->logs);
-       while(!$found && list(,$log) = each($this->logs)) {
-            $found = ($log['level'] == self::WARN || $log['level'] == self::ERROR);
-       }
-       return $found;
+    public function hasWarningsOrErrors()
+    {
+        foreach ($this->logs as $log) {
+            if ($log['level'] === self::WARN || $log['level'] === self::ERROR) {
+                return true;
+            }
+        }
+        return false;
     }
-    
-    function hasErrors() {
-       $found = false;
-       reset($this->logs);
-       while(!$found && list(,$log) = each($this->logs)) {
-            $found = ($log['level'] == self::ERROR);
-       }
-       return $found;
+
+    public function hasErrors()
+    {
+        foreach ($this->logs as $log) {
+            if ($log['level'] === self::ERROR) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public function clearErrors()

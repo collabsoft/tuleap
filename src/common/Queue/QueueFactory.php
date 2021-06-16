@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,27 +21,43 @@
 
 namespace Tuleap\Queue;
 
-use Logger;
-use ForgeConfig;
+use Psr\Log\LoggerInterface;
+use Tuleap\Queue\Redis\BackOffDelayFailedMessage;
+use Tuleap\Redis\ClientFactory as RedisClientFactory;
 
 class QueueFactory
 {
-    const REDIS = 'redis';
+    public const REDIS = 'redis';
 
     /**
-     * @return PersistentQueue
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    public function __construct(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
+
+    /**
      * @throws NoQueueSystemAvailableException
      */
-    public static function getPersistentQueue(Logger $logger, $queue_name, $favor = '')
+    public function getPersistentQueue(string $queue_name, string $favor = ''): PersistentQueue
     {
-        if ($favor === self::REDIS) {
-            if (ForgeConfig::get('redis_server') !== false) {
-                return new Redis\RedisPersistentQueue($logger, $queue_name);
-            }
-            throw new NoQueueSystemAvailableException();
+        if (RedisClientFactory::canClientBeBuiltFromForgeConfig()) {
+            return new Redis\RedisPersistentQueue(
+                $this->logger,
+                new BackOffDelayFailedMessage(
+                    $this->logger,
+                    static function (int $time_to_sleep): void {
+                        sleep($time_to_sleep);
+                    }
+                ),
+                $queue_name
+            );
         }
-        if (ForgeConfig::get('rabbitmq_server') !== false) {
-            return new RabbitMQ\PersistentQueue(new RabbitMQ\RabbitMQManager($logger), $queue_name);
+        if ($favor === self::REDIS) {
+            throw new NoQueueSystemAvailableException();
         }
         return new Noop\PersistentQueue();
     }

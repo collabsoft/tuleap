@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) STMicroelectronics, 2011. All Rights Reserved.
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,19 +19,19 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require 'pre.php';
-require_once dirname(__FILE__).'/../include/Statistics_DiskUsageGraph.class.php';
-require_once dirname(__FILE__).'/../include/ProjectQuotaManager.class.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/Statistics_DiskUsageGraph.class.php';
+require_once __DIR__ . '/../include/ProjectQuotaManager.class.php';
 
-use Tuleap\SVN\DiskUsage\Collector as SVNCollector;
-use Tuleap\SVN\DiskUsage\Retriever as SVNRetriever;
-use Tuleap\CVS\DiskUsage\Retriever as CVSRetriever;
-use Tuleap\CVS\DiskUsage\Collector as CVSCollector;
-use Tuleap\CVS\DiskUsage\FullHistoryDao;
+use Tuleap\Statistics\DiskUsage\Subversion\Collector as SVNCollector;
+use Tuleap\Statistics\DiskUsage\Subversion\Retriever as SVNRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Retriever as CVSRetriever;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\Collector as CVSCollector;
+use Tuleap\Statistics\DiskUsage\ConcurrentVersionsSystem\FullHistoryDao;
 
 // First, check plugin availability
 $pluginManager = PluginManager::instance();
-$p = $pluginManager->getPluginByName('statistics');
+$p             = $pluginManager->getPluginByName('statistics');
 if (! $p || ! $pluginManager->isPluginAvailable($p)) {
     $GLOBALS['Response']->redirect('/');
 }
@@ -63,11 +63,11 @@ $duMgr           = new Statistics_DiskUsageManager(
 );
 
 $statPeriod = $duMgr->getProperty('statistics_period');
-if (!$statPeriod) {
+if (! $statPeriod) {
     $statPeriod = 3;
 }
-$endDate = date('Y-m-d');
-$startDate = date('Y-m-d', mktime(0, 0, 0, date('m')-$statPeriod, date('d'), date('y')));
+$endDate   = date('Y-m-d');
+$startDate = date('Y-m-d', mktime(0, 0, 0, date('m') - $statPeriod, date('d'), date('y')));
 
 
 $services = $duMgr->getProjectServices();
@@ -75,25 +75,4 @@ $services = $duMgr->getProjectServices();
 // Display graph
 $graph = new Statistics_DiskUsageGraph($duMgr);
 
-if ($func == 'usage') {
-    //Retreive the config param & convert it to bytes
-    $quota       = $duMgr->getProperty('allowed_quota');
-    $pqm         = new ProjectQuotaManager();
-    $customQuota = $pqm->getProjectCustomQuota($groupId);
-    if ($customQuota) {
-        $quota = $customQuota;
-    }
-    $allowed = $quota * (1024*1024*1024);
-    $used    = $request->get('size');
-
-    //In case of over usage
-    if ($used > $allowed) {
-        $used = $allowed;
-        //May be should display warning
-    }
-    $graph->displayProjectProportionUsage($used, $allowed);
-} else {
-    $graph->displayProjectTotalSizeGraph($groupId, 'Week', $startDate, $endDate);
-}
-
-?>
+$graph->displayProjectTotalSizeGraph($groupId, 'Week', $startDate, $endDate);

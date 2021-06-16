@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,18 +22,13 @@ namespace Tuleap\Velocity\Semantic;
 
 use SimpleXMLElement;
 use Tracker;
-use Tuleap\AgileDashboard\Semantic\SemanticDone;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDone;
 
 class SemanticVelocityFactory
 {
-    /**
-     * @var BacklogRequiredTrackerCollectionFormatter
-     */
-    private $semantic_formatter;
-
-    public function __construct(BacklogRequiredTrackerCollectionFormatter $semantic_formatter)
+    public function getInstanceByTracker(Tracker $tracker): SemanticVelocity
     {
-        $this->semantic_formatter = $semantic_formatter;
+        return SemanticVelocity::load($tracker);
     }
 
     public function getInstanceFromXML(
@@ -46,7 +41,7 @@ class SemanticVelocityFactory
         $ref   = (string) $xml->field['REF'];
         $field = $mapping[$ref];
 
-        return new SemanticVelocity($tracker, $semantic_done, $this->semantic_formatter, $field);
+        return new SemanticVelocity($tracker, $semantic_done, $field);
     }
 
     public function extractAndFormatMisconfiguredVelocity(array $trackers)

@@ -31,7 +31,7 @@ use Cocur\Slugify\Slugify;
  * */
 class ConfigNotificationEmailCustomSenderFormatter
 {
-    const SLUGIFY_ARGS = [
+    public const SLUGIFY_ARGS = [
         'separator' => ' ',
         'lowercase' => false
     ];
@@ -56,7 +56,7 @@ class ConfigNotificationEmailCustomSenderFormatter
      * */
     public function formatString($str)
     {
-        $result = $str;
+        $result  = $str;
         $slugify = new Slugify(self::SLUGIFY_ARGS);
         foreach ($this->kvargs as $k => $v) {
             $result = str_replace("%$k", $slugify->slugify($v), $result);

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class AgileDashboard_KanbanColumnFactory {
+class AgileDashboard_KanbanColumnFactory
+{
 
     /**
      * @var AgileDashboard_KanbanUserPreferences
@@ -40,12 +41,12 @@ class AgileDashboard_KanbanColumnFactory {
     }
 
     /**
-     * @param AgileDashboard_Kanban $kanban
      *
      * @return AgileDashboard_KanbanColumn[]
      */
-    public function getAllKanbanColumnsForAKanban(AgileDashboard_Kanban $kanban, PFUser $user) {
-        $columns  = array();
+    public function getAllKanbanColumnsForAKanban(AgileDashboard_Kanban $kanban, PFUser $user)
+    {
+        $columns  = [];
         $semantic = $this->getSemanticStatus($kanban);
         if (! $semantic) {
             return $columns;
@@ -65,12 +66,12 @@ class AgileDashboard_KanbanColumnFactory {
     }
 
     /**
-     * @param AgileDashboard_Kanban $kanban
      * @param int                   $column_id
      *
      * @return AgileDashboard_KanbanColumn
      */
-    public function getColumnForAKanban(AgileDashboard_Kanban $kanban, $column_id, PFUser $user) {
+    public function getColumnForAKanban(AgileDashboard_Kanban $kanban, $column_id, PFUser $user)
+    {
         $semantic = $this->getSemanticStatus($kanban);
         if (! $semantic) {
             throw new AgileDashboard_SemanticStatusNotFoundException();
@@ -89,7 +90,8 @@ class AgileDashboard_KanbanColumnFactory {
         throw new AgileDashboard_KanbanColumnNotFoundException($kanban, $column_id);
     }
 
-    private function instantiate(AgileDashboard_Kanban $kanban, $id, PFUser $user, $field_values) {
+    private function instantiate(AgileDashboard_Kanban $kanban, $id, PFUser $user, $field_values)
+    {
         return new AgileDashboard_KanbanColumn(
             $id,
             $kanban->getId(),
@@ -101,11 +103,13 @@ class AgileDashboard_KanbanColumnFactory {
         );
     }
 
-    private function getColorForColumn($column_id) {
+    private function getColorForColumn($column_id)
+    {
         return null;
     }
 
-    private function getWIPLimitForColumn(AgileDashboard_Kanban $kanban, $column_id) {
+    private function getWIPLimitForColumn(AgileDashboard_Kanban $kanban, $column_id)
+    {
         $row = $this->column_dao->getColumnWipLimit($kanban->getId(), $column_id)->getRow();
 
         if (! $row) {
@@ -115,7 +119,8 @@ class AgileDashboard_KanbanColumnFactory {
         return $row['wip_limit'];
     }
 
-    private function isColumnRemovable(AgileDashboard_Kanban $kanban, Tracker_FormElement_Field_List_Bind_StaticValue $value) {
+    private function isColumnRemovable(AgileDashboard_Kanban $kanban, Tracker_FormElement_Field_List_Bind_StaticValue $value)
+    {
         $semantic = $this->getSemanticStatus($kanban);
 
         if (! $semantic) {
@@ -125,15 +130,18 @@ class AgileDashboard_KanbanColumnFactory {
         return $semantic->getField()->getBind()->canValueBeHiddenWithoutCheckingSemanticStatus($value) && ! $semantic->isBasedOnASharedField();
     }
 
-    private function getOpenValues(Tracker_Semantic_Status $semantic) {
+    private function getOpenValues(Tracker_Semantic_Status $semantic)
+    {
         return $semantic->getOpenValues();
     }
 
-    private function getFieldValues(Tracker_Semantic_Status $semantic) {
+    private function getFieldValues(Tracker_Semantic_Status $semantic)
+    {
         return $semantic->getField()->getAllValues();
     }
 
-    private function getSemanticStatus(AgileDashboard_Kanban $kanban) {
+    private function getSemanticStatus(AgileDashboard_Kanban $kanban)
+    {
         $tracker = TrackerFactory::instance()->getTrackerById($kanban->getTrackerId());
         if (! $tracker) {
             return;

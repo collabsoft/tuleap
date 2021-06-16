@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2010. All Rights Reserved.
  *
  * This file is a part of Tuleap.
@@ -19,14 +19,30 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\BrowserDetection\DetectedBrowser;
+use Tuleap\BurningParrotCompatiblePageDetector;
+use Tuleap\Error\ErrorDependenciesInjector;
+use Tuleap\Error\PermissionDeniedPrivateProjectController;
+use Tuleap\Error\PermissionDeniedRestrictedAccountController;
+use Tuleap\Error\PermissionDeniedRestrictedAccountProjectController;
+use Tuleap\Error\PlaceHolderBuilder;
+use Tuleap\Error\ProjectAccessSuspendedController;
+use Tuleap\Instrument\Prometheus\Prometheus;
+use Tuleap\Layout\ErrorRendering;
 use Tuleap\Project\Admin\MembershipDelegationDao;
-use Tuleap\Request\RestrictedUsersAreHandledByPluginEvent;
+use Tuleap\Project\ProjectAccessChecker;
+use Tuleap\Project\ProjectAccessSuspendedException;
+use Tuleap\Project\RestrictedUserCanAccessUrlOrProjectVerifier;
+use Tuleap\Request\RequestInstrumentation;
+use Tuleap\User\Account\DisplaySecurityController;
+use Tuleap\User\Account\UpdatePasswordController;
 
 /**
  * Check the URL validity (protocol, host name, query) regarding server constraints
- * (anonymous, user status, project privacy, ...) and manage redirection when needed  
+ * (anonymous, user status, project privacy, ...) and manage redirection when needed
  */
-class URLVerification {
+class URLVerification // phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace
+{
 
     protected $urlChunks = null;
 
@@ -35,7 +51,8 @@ class URLVerification {
      *
      * @return Array
      */
-    function getUrlChunks() {
+    public function getUrlChunks()
+    {
         return $this->urlChunks;
     }
 
@@ -44,7 +61,8 @@ class URLVerification {
      *
      * @return PFUser
      */
-    function getCurrentUser() {
+    public function getCurrentUser()
+    {
         return UserManager::instance()->getCurrentUser();
     }
 
@@ -53,24 +71,24 @@ class URLVerification {
      *
      * @return EventManager
      */
-    public function getEventManager() {
+    public function getEventManager()
+    {
         return EventManager::instance();
     }
 
     /**
      * Returns a instance of Url
      *
-     * @return Url
+     * @return URL
      */
-    function getUrl() {
-        return new Url();
+    protected function getUrl()
+    {
+        return new URL();
     }
 
-    /**
-     * @return PermissionsOverrider_PermissionsOverriderManager
-     */
-    protected function getPermissionsOverriderManager() {
-        return PermissionsOverrider_PermissionsOverriderManager::instance();
+    private function getForgeAccess(): ForgeAccess
+    {
+        return new ForgeAccess();
     }
 
     /**
@@ -78,14 +96,13 @@ class URLVerification {
      *
      * @param Array $server
      *
-     * @return Boolean
+     * @return bool
      */
-    function isScriptAllowedForAnonymous($server) {
+    public function isScriptAllowedForAnonymous($server)
+    {
         // Defaults
-        $allowedAnonymous['/current_css.php']            = true;
         $allowedAnonymous['/account/login.php']          = true;
         $allowedAnonymous['/account/register.php']       = true;
-        $allowedAnonymous['/account/change_pw.php']      = true;
         $allowedAnonymous['/include/check_pw.php']       = true;
         $allowedAnonymous['/account/lostpw.php']         = true;
         $allowedAnonymous['/account/lostlogin.php']      = true;
@@ -104,7 +121,7 @@ class URLVerification {
 
         // Plugins
         $anonymousAllowed = false;
-        $params = array('script_name' => $server['SCRIPT_NAME'], 'anonymous_allowed' => &$anonymousAllowed);
+        $params           = ['script_name' => $server['SCRIPT_NAME'], 'anonymous_allowed' => &$anonymousAllowed];
         $this->getEventManager()->processEvent('anonymous_access_to_script_allowed', $params);
 
         return $anonymousAllowed;
@@ -115,9 +132,10 @@ class URLVerification {
      *
      * @param array $server
      *
-     * @return Boolean
+     * @return bool
      */
-    function isException($server) {
+    public function isException($server)
+    {
         return preg_match('`^(?:/plugins/[^/]+)?/(?:soap|api)/`', $server['SCRIPT_NAME']);
     }
 
@@ -127,23 +145,21 @@ class URLVerification {
      * @param Array $server
      * @param String $host
      *
-     * @return Boolean
+     * @return bool
      */
-    function isValidServerName($server, $host) {
-
+    public function isValidServerName($server, $host)
+    {
         return ($server['HTTP_HOST'] == $host);
     }
 
     /**
      * Check if an URI is internal to the application or not. We reject all URLs
      * except /path/to/feature
-     *
-     * @return boolean
      */
-    public function isInternal($uri)
+    public function isInternal(string $uri): bool
     {
         $url_decoded = urldecode($uri);
-        return preg_match('/^\/[[:alnum:]]+/', $url_decoded) === 1;
+        return preg_match('/(?:^[\/?][[:alnum:]]+)|(?:^' . preg_quote('https://' . ForgeConfig::get('sys_https_host') . '/', '/') . ')/', $url_decoded) === 1;
     }
 
     /**
@@ -151,15 +167,16 @@ class URLVerification {
      *
      * This method returns the ideal URL to use to access a ressource. It doesn't
      * check if the URL is valid or not.
-     * It conserves the same entree for protocol (i.e host or  request)  when it not has 
+     * It conserves the same entree for protocol (i.e host or  request)  when it not has
      * been modified by one of the methods dedicated to verify its validity.
      *
      * @param Array $server
      *
      * @return String
      */
-    function getRedirectionURL(HTTPRequest $request, $server) {
-        $chunks   = $this->getUrlChunks($server);
+    public function getRedirectionURL(HTTPRequest $request, $server)
+    {
+        $chunks = $this->getUrlChunks($server);
 
         $location = $this->getRedirectLocation($request, $server, $chunks);
 
@@ -171,16 +188,18 @@ class URLVerification {
         return $location;
     }
 
-    private function getRedirectLocation(HTTPRequest $request, array $server, array $chunks) {
+    private function getRedirectLocation(HTTPRequest $request, array $server, array $chunks)
+    {
         if (isset($chunks['protocol']) || isset($chunks['host'])) {
             return $this->rewriteProtocol($request, $server, $chunks);
         }
         return '';
     }
 
-    private function rewriteProtocol(HTTPRequest $request, array $server, array $chunks) {
+    private function rewriteProtocol(HTTPRequest $request, array $server, array $chunks)
+    {
         if (isset($chunks['protocol'])) {
-            $location = $chunks['protocol']."://";
+            $location = $chunks['protocol'] . "://";
         } else {
             if ($request->isSecure()) {
                 $location = "https://";
@@ -205,7 +224,8 @@ class URLVerification {
      *
      * @return void
      */
-    public function verifyProtocol(HTTPRequest $request) {
+    public function verifyProtocol(HTTPRequest $request)
+    {
         if (! $request->isSecure() && ForgeConfig::get('sys_https_host')) {
             $this->urlChunks['protocol'] = 'https';
             $this->urlChunks['host']     = ForgeConfig::get('sys_https_host');
@@ -219,27 +239,18 @@ class URLVerification {
      *
      * @return void
      */
-    public function verifyRequest($server) {
+    public function verifyRequest($server)
+    {
         $user = $this->getCurrentUser();
 
         if (
-            $this->doesPlatformRequireLogin() &&
+            $this->getForgeAccess()->doesPlatformRequireLogin() &&
             $user->isAnonymous() &&
             ! $this->isScriptAllowedForAnonymous($server)
         ) {
-            $redirect = new URLRedirect($this->getEventManager());
-            $this->urlChunks['script']   = $redirect->buildReturnToLogin($server);
+            $redirect                  = new URLRedirect($this->getEventManager());
+            $this->urlChunks['script'] = $redirect->buildReturnToLogin($server);
         }
-    }
-
-    public function doesPlatformRequireLogin() {
-        $anonymous_user = new PFUser(array('user_id' => 0));
-        if (ForgeConfig::areAnonymousAllowed() && ! $this->getPermissionsOverriderManager()->doesOverriderForceUsageOfAnonymous()) {
-            return false;
-        } elseif ($this->getPermissionsOverriderManager()->doesOverriderAllowUserToAccessPlatform($anonymous_user)) {
-            return false;
-        }
-        return true;
     }
 
     /**
@@ -249,12 +260,13 @@ class URLVerification {
      *
      * @return void
      */
-    function checkRestrictedAccess($server) {
+    public function checkRestrictedAccess($server)
+    {
         $user = $this->getCurrentUser();
         if ($user->isRestricted()) {
             $url = $this->getUrl();
-            if (!$this->restrictedUserCanAccessUrl($user, $url, $server['REQUEST_URI'], null)) {
-                $this->displayRestrictedUserError($url, $user);
+            if (! $this->restrictedUserCanAccessUrl($user, $url, $server['REQUEST_URI'], null)) {
+                $this->displayRestrictedUserError($user);
             }
         }
     }
@@ -262,197 +274,85 @@ class URLVerification {
     /**
      * Test if given url is restricted for user
      *
-     * @param PFUser $user
      * @param Url $url
      * @param String $request_uri
-     * @return Boolean False if user not allowed to see the content
+     * @return bool False if user not allowed to see the content
      */
-    protected function restrictedUserCanAccessUrl($user, $url, $request_uri, Project $project = null) {
-        // This assume that we already checked that project is accessible to restricted prior to function call.
-        // Hence, summary page is ALWAYS accessible
-        if (strpos($request_uri, '/projects/') !== false) {
-            return true;
-        }
+    protected function restrictedUserCanAccessUrl(PFUser $user, URL $url, string $request_uri, ?Project $project = null)
+    {
+        $verifier = new RestrictedUserCanAccessUrlOrProjectVerifier($this->getEventManager(), $url, $request_uri);
 
-        if ($project !== null) {
-            $group_id = $project->getID();
-        } else {
-            $group_id =  (isset($GLOBALS['group_id'])) ? $GLOBALS['group_id'] : $url->getGroupIdFromUrl($request_uri);
-        }
+        return $verifier->isRestrictedUserAllowedToAccess($user, $project);
+    }
 
-        // Make sure the URI starts with a single slash
-        $req_uri='/'.trim($request_uri, "/");
-        $user_is_allowed=false;
-        /* Examples of input params:
-         Script: /projects, Uri=/projects/ljproj/
-         Script: /project/admin/index.php, Uri=/project/admin/?group_id=101
-         Script: /tracker/index.php, Uri=/tracker/index.php?group_id=101
-         Script: /tracker/index.php, Uri=/tracker/?func=detail&aid=14&atid=101&group_id=101
-        */
-
-        // Restricted users cannot access any page belonging to a project they are not a member of.
-        // In addition, the following URLs are forbidden (value overriden in site-content file)
-        $forbidden_url = array( 
-          '/new/',        // list of the newest releases made on the Codendi site ('/news' must be allowed...)
-          '/project/register.php',    // Register a new project
-          '/export',      // Codendi XML feeds
-          '/info.php'     // PHP info
-          );
-        // Default values are very restrictive, but they can be overriden in the site-content file
-        // Default support project is project 1.
-        $allow_welcome_page=false;       // Allow access to welcome page 
-        $allow_news_browsing=false;      // Allow restricted users to read/comment news, including for their project
-        $allow_user_browsing=false;      // Allow restricted users to access other user's page (Developer Profile)
-        $allow_access_to_project_forums      = array(1); // Support project help forums are accessible through the 'Discussion Forums' link
-        $allow_access_to_project_trackers    = array(1); // Support project trackers are used for support requests
-        $allow_access_to_project_docs        = array(1); // Support project documents and wiki (Note that the User Guide is always accessible)
-        $allow_access_to_project_mail        = array(1); // Support project mailing lists (Developers Channels)
-        $allow_access_to_project_frs         = array(1); // Support project file releases
-        $allow_access_to_project_refs        = array(1); // Support project references
-        $allow_access_to_project_news        = array(1); // Support project news
-        $allow_access_to_project_trackers_v5 = array(1); //Support project trackers v5 are used for support requests
-        // List of fully public projects (same access for restricted and unrestricted users)
-
-        // Customizable security settings for restricted users:
-        include($GLOBALS['Language']->getContent('include/restricted_user_permissions','en_US'));
-        // End of customization
-        
-        // For convenient reasons, admin can customize those variables as arrays
-        // but for performances reasons we prefer to use hashes (avoid in_array)
-        // so we transform array(101) => array(101=>0)
-        $allow_access_to_project_forums      = array_flip($allow_access_to_project_forums);
-        $allow_access_to_project_trackers    = array_flip($allow_access_to_project_trackers);
-        $allow_access_to_project_docs        = array_flip($allow_access_to_project_docs);
-        $allow_access_to_project_mail        = array_flip($allow_access_to_project_mail);
-        $allow_access_to_project_frs         = array_flip($allow_access_to_project_frs);
-        $allow_access_to_project_refs        = array_flip($allow_access_to_project_refs);
-        $allow_access_to_project_news        = array_flip($allow_access_to_project_news);
-        $allow_access_to_project_trackers_v5 = array_flip($allow_access_to_project_trackers_v5);
-
-        foreach ($forbidden_url as $str) {
-            $pos = strpos($req_uri, $str);
-            if ($pos === false) {
-                // Not found
-            } else {
-                if ($pos == 0) {
-                    // beginning of string
-                    return false;
-                }
-            }
-        }
-
-        // Welcome page
-        if (! $allow_welcome_page && $request_uri === '/') {
-            return false;
-        }
-
-        //Forbid search unless it's on a tracker
-        if (strpos($req_uri,'/search') === 0 && isset($_REQUEST['type_of_search']) && $_REQUEST['type_of_search'] == 'tracker') {
-            return true;
-        } elseif( strpos($req_uri,'/search') === 0 ) {
-            return false;
-        }
-
-        // Forbid access to other user's page (Developer Profile)
-        if ((strpos($req_uri,'/users/') === 0)&&(!$allow_user_browsing)) {
-            if ($req_uri != '/users/'.$user->getName() && $req_uri != '/users/'.$user->getName().'/avatar.png') {
-                return false;
-            }
-        }
-
-        // Forum and news. Each published news is a special forum of project 'news'
-        if (strpos($req_uri,'/news/') === 0 &&
-            isset($allow_access_to_project_news[$group_id])) {
-            $user_is_allowed=true;
-        }
-        
-        if (strpos($req_uri,'/news/') === 0 && 
-            $allow_news_browsing) {
-            $user_is_allowed=true;
-         }
-        
-        if (strpos($req_uri,'/forum/') === 0 &&
-            isset($allow_access_to_project_forums[$group_id])) {
-              $user_is_allowed=true;
-         }
-
-        // Codendi trackers
-        if (strpos($req_uri,'/tracker/') === 0 && 
-            isset($allow_access_to_project_trackers[$group_id])) {
-            $user_is_allowed=true;
-        }
-
-        // Trackers v5
-        if (strpos($req_uri,'/plugins/tracker/') === 0 &&
-            isset($allow_access_to_project_trackers_v5[$group_id])) {
-            $user_is_allowed=true;
-        }
-
-        // Codendi documents and wiki
-        if (((strpos($req_uri,'/docman/') === 0) || 
-            (strpos($req_uri,'/plugins/docman/') === 0) ||
-            (strpos($req_uri,'/wiki/') === 0)) &&
-            isset($allow_access_to_project_docs[$group_id])) {
-            $user_is_allowed=true;
-        }
-
-        // Codendi mailing lists page
-        if (strpos($req_uri,'/mail/') === 0 &&
-            isset($allow_access_to_project_mail[$group_id])) {
-            $user_is_allowed=true;
-        }
-        
-        // Codendi file releases
-        if (strpos($req_uri,'/file/') === 0 &&
-            isset($allow_access_to_project_frs[$group_id])) {
-            $user_is_allowed=true;
-        }
-        
-        // References
-        if (strpos($req_uri,'/goto') === 0 &&
-            isset($allow_access_to_project_refs[$group_id])) {
-            $user_is_allowed=true;
-        }
-
-        if (! $user_is_allowed) {
-            $event = new RestrictedUsersAreHandledByPluginEvent($request_uri);
-            $this->getEventManager()->processEvent($event);
-            $user_is_allowed = $event->getPluginHandleRestricted();
-        }
-
-        if ($group_id && ! $user_is_allowed) {
-            if (in_array($group_id, ForgeConfig::getSuperPublicProjectsFromRestrictedFile())) {
-                return true;
-            }
-            return false;
-        }
-        return true;
+    /**
+     * Display error message for restricted user in a project
+     *
+     * @protected for test purpose
+     *
+     * @param URL $url Accessed url
+     *
+     * @return void
+     */
+    protected function displayRestrictedUserProjectError(PFUser $user, Project $project)
+    {
+        $GLOBALS['Response']->send401UnauthorizedHeader();
+        $controller = new PermissionDeniedRestrictedAccountProjectController(
+            $this->getThemeManager(),
+            new ErrorDependenciesInjector(),
+            new PlaceHolderBuilder(ProjectManager::instance())
+        );
+        $controller->displayError($user, $project);
+        exit;
     }
 
     /**
      * Display error message for restricted user.
      *
-     * @param URL $url Accessed url
-     * 
-     * @return void
-     */
-    function displayRestrictedUserError(URL $url, PFUser $user, Project $project = null) {
-        $error = new Error_PermissionDenied_RestrictedUser($url);
-        $error->buildInterface($user, $project);
-        exit;
-    }
-    
-    /**
-     * Display error message for restricted project
+     * @protected for test purpose
      *
      * @param URL $url Accessed url
-     * 
+     *
      * @return void
      */
-    function displayPrivateProjectError(URL $url, PFUser $user, Project $project = null) {
+    protected function displayRestrictedUserError(PFUser $user)
+    {
         $GLOBALS['Response']->send401UnauthorizedHeader();
-        $sendMail = new Error_PermissionDenied_PrivateProject($url);
-        $sendMail->buildInterface($user, $project);
+        $controller = new PermissionDeniedRestrictedAccountController(
+            $this->getThemeManager(),
+            new ErrorDependenciesInjector(),
+            new PlaceHolderBuilder(ProjectManager::instance())
+        );
+        $controller->displayError($user);
+        exit;
+    }
+
+    public function displayPrivateProjectError(PFUser $user, ?Project $project = null)
+    {
+        $GLOBALS['Response']->send401UnauthorizedHeader();
+
+        $this->checkUserIsLoggedIn($user);
+
+        $sendMail = new PermissionDeniedPrivateProjectController(
+            $this->getThemeManager(),
+            new PlaceHolderBuilder(ProjectManager::instance()),
+            new ErrorDependenciesInjector()
+        );
+        $sendMail->displayError($user, $project);
+        exit;
+    }
+
+    public function displaySuspendedProjectError(PFUser $user, Project $project)
+    {
+        $GLOBALS['Response']->send401UnauthorizedHeader();
+
+        $this->checkUserIsLoggedIn($user);
+
+        $suspended_project_controller = new ProjectAccessSuspendedController(
+            $this->getThemeManager()
+        );
+
+        $suspended_project_controller->displayError($user);
         exit;
     }
 
@@ -464,13 +364,14 @@ class URLVerification {
      * Limit responsability of each method for sake of simplicity. For instance:
      * getRedirectionURL will not check all the server name or script name details
      * (localhost, api, etc). It only cares about generating the right URL.
-     * 
+     *
      * @param Array $server
      *
      * @return void
      */
-    public function assertValidUrl($server, HTTPRequest $request, Project $project = null) {
-        if (!$this->isException($server)) {
+    public function assertValidUrl($server, HTTPRequest $request, ?Project $project = null)
+    {
+        if (! $this->isException($server)) {
             $this->verifyProtocol($request);
             $this->verifyRequest($server);
             $chunks = $this->getUrlChunks();
@@ -500,136 +401,109 @@ class URLVerification {
                 }
 
                 return true;
-
             } catch (Project_AccessRestrictedException $exception) {
                 if (! isset($project)) {
                     $project = null;
                 }
-                $this->displayRestrictedUserError($url, $user, $project);
+                $this->displayRestrictedUserProjectError($user, $project);
             } catch (Project_AccessPrivateException $exception) {
                 if (! isset($project)) {
                     $project = null;
                 }
-                $this->displayPrivateProjectError($url, $user, $project);
+                $this->displayPrivateProjectError($user, $project);
             } catch (Project_AccessProjectNotFoundException $exception) {
-                $this->exitError(
-                    $GLOBALS['Language']->getText('include_html','g_not_exist'),
+                $layout = $this->getThemeManager()->getBurningParrot($request->getCurrentUser());
+                if ($layout === null) {
+                    throw new \Exception("Could not load BurningParrot theme");
+                }
+                (new RequestInstrumentation(Prometheus::instance()))->increment(404, DetectedBrowser::detectFromTuleapHTTPRequest($request));
+                (new ErrorRendering())->rendersError(
+                    $layout,
+                    $request,
+                    404,
+                    _('Not found'),
                     $exception->getMessage()
                 );
+                exit;
             } catch (Project_AccessDeletedException $exception) {
                 $this->exitError(
-                    $GLOBALS['Language']->getText('include_session','insufficient_g_access'),
+                    $GLOBALS['Language']->getText('include_session', 'insufficient_g_access'),
                     $exception->getMessage()
                 );
+            } catch (ProjectAccessSuspendedException $exception) {
+                $this->displaySuspendedProjectError($user, $project);
             } catch (User_PasswordExpiredException $exception) {
-                if (! $this->isPageAllowedWhenPasswordExpired($server)) {
-                    $GLOBALS['Response']->addFeedback(Feedback::ERROR, $GLOBALS['Language']->getText('include_account', 'change_pwd_err'));
-                    $GLOBALS['Response']->redirect('/account/change_pw.php?user_id'.$user->getId());
+                if ($server['REQUEST_URI'] === DisplaySecurityController::URL || $server['REQUEST_URI'] === UpdatePasswordController::URL) {
+                    return;
                 }
+                $GLOBALS['Response']->addFeedback(Feedback::ERROR, _('Please update your password first'));
+                $GLOBALS['Response']->redirect(DisplaySecurityController::URL);
             }
         }
-    }
-
-    private function isPageAllowedWhenPasswordExpired($server) {
-        return $this->isLogoutPage($server) || $this->isScriptAllowedForAnonymous($server);
-    }
-
-    private function isLogoutPage($server) {
-        return isset($server['SCRIPT_NAME']) && $server['SCRIPT_NAME'] == '/account/logout.php';
     }
 
     /**
      * Ensure given user can access given project
      *
-     * @param PFUser  $user
-     * @param Project $project
-     * @return boolean
+     * @return bool
      * @throws Project_AccessProjectNotFoundException
      * @throws Project_AccessDeletedException
      * @throws Project_AccessRestrictedException
      * @throws Project_AccessPrivateException
+     * @throws ProjectAccessSuspendedException
      */
-    public function userCanAccessProject(PFUser $user, Project $project) {
-        if ($project->isError()) {
-            throw new Project_AccessProjectNotFoundException();
-        } elseif ($user->isSuperUser()) {
-            return true;
-        } elseif (! $project->isActive()) {
-            throw new Project_AccessDeletedException($project);
-        } elseif ($user->isMember($project->getID())) {
-            return true;
-        } elseif ($this->getPermissionsOverriderManager()->doesOverriderAllowUserToAccessProject($user, $project)) {
-            return true;
-        } elseif ($user->isRestricted()) {
-            if ( ! $project->allowsRestricted() ||
-                ! $this->restrictedUserCanAccessUrl($user, $this->getUrl(), $_SERVER['REQUEST_URI'], $project)) {
-                throw new Project_AccessRestrictedException();
-            }
-            return true;
-        } elseif ($project->isPublic()) {
-            return true;
-        } elseif ($this->userHasBeenDelegatedAccess($user)) {
-            return true;
-        }
-        throw new Project_AccessPrivateException();
-    }
-
-    private function userHasBeenDelegatedAccess(PFUser $user) {
-        $can_access    = false;
-        $event_manager = EventManager::instance();
-
-        $event_manager->processEvent(
-            Event::HAS_USER_BEEN_DELEGATED_ACCESS,
-            array(
-                'can_access' => &$can_access,
-                'user'       => $user,
-            )
+    public function userCanAccessProject(PFUser $user, Project $project)
+    {
+        $checker = new ProjectAccessChecker(
+            new RestrictedUserCanAccessUrlOrProjectVerifier(
+                $this->getEventManager(),
+                $this->getUrl(),
+                $_SERVER['REQUEST_URI']
+            ),
+            EventManager::instance()
         );
 
-        return $can_access;
+        $checker->checkUserCanAccessProject($user, $project);
+
+        return true;
     }
 
     /**
      * Ensure given user can access given project and user is admin of the project
      *
-     * @param PFUser  $user
-     * @param Project $project
-     * @return boolean
-     *
      * @throws Project_AccessProjectNotFoundException
      * @throws Project_AccessDeletedException
      * @throws Project_AccessRestrictedException
      * @throws Project_AccessPrivateException
      * @throws Project_AccessNotAdminException
+     * @throws ProjectAccessSuspendedException
      */
-    public function userCanAccessProjectAndIsProjectAdmin(PFUser $user, Project $project) {
+    public function userCanAccessProjectAndIsProjectAdmin(PFUser $user, Project $project): void
+    {
         if ($this->userCanAccessProject($user, $project)) {
             if (! $user->isAdmin($project->getId())) {
                 throw new Project_AccessNotAdminException();
             }
-            return true;
+            return;
         }
     }
 
     /**
-     * @param PFUser  $user
-     * @param Project $project
-     * @return boolean
-     *
      * @throws Project_AccessProjectNotFoundException
      * @throws Project_AccessDeletedException
      * @throws Project_AccessRestrictedException
      * @throws Project_AccessPrivateException
      * @throws Project_AccessNotAdminException
+     * @throws ProjectAccessSuspendedException
      */
-    public function userCanManageProjectMembership(PFUser $user, Project $project)
+    public function userCanManageProjectMembership(PFUser $user, Project $project): void
     {
         if ($this->userCanAccessProject($user, $project)) {
             $dao = new MembershipDelegationDao();
             if (! $user->isAdmin($project->getId()) && ! $dao->doesUserHasMembershipDelegation($user->getId(), $project->getID())) {
                 throw new Project_AccessNotAdminException();
             }
-            return true;
+            return;
         }
     }
 
@@ -642,7 +516,8 @@ class URLVerification {
      *
      * @return Void
      */
-    function exitError($title, $text) {
+    public function exitError($title, $text)
+    {
         exit_error($title, $text);
     }
 
@@ -651,7 +526,8 @@ class URLVerification {
      *
      * @return ProjectManager
      */
-    function getProjectManager() {
+    public function getProjectManager()
+    {
         return ProjectManager::instance();
     }
 
@@ -662,9 +538,33 @@ class URLVerification {
      *
      * @return void
      */
-    function header($location) {
-        header('Location: '.$location);
+    public function header($location)
+    {
+        header('Location: ' . $location);
         exit;
     }
 
+    private function checkUserIsLoggedIn(PFUser $user)
+    {
+        if ($user->isAnonymous()) {
+            $event_manager = EventManager::instance();
+            $redirect      = new URLRedirect($event_manager);
+            $redirect->redirectToLogin();
+        }
+    }
+
+    /**
+     * @return ThemeManager
+     */
+    private function getThemeManager()
+    {
+        return new ThemeManager(
+            new BurningParrotCompatiblePageDetector(
+                new Tuleap\Request\CurrentPage(),
+                new \User_ForgeUserGroupPermissionsManager(
+                    new \User_ForgeUserGroupPermissionsDao()
+                )
+            )
+        );
+    }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -28,11 +28,14 @@
  *
  * This class follow the Null Object Pattern
  */
-class Tracker_Artifact_Changeset_Null extends Tracker_Artifact_Changeset {
+class Tracker_Artifact_Changeset_Null extends Tracker_Artifact_Changeset
+{
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct()
+    {
+        /** @psalm-suppress NullArgument */
         parent::__construct(null, null, null, null, null);
     }
 
@@ -42,9 +45,10 @@ class Tracker_Artifact_Changeset_Null extends Tracker_Artifact_Changeset {
      *
      * @param Tracker_FormElement_Field $field The field
      *
-     * @return Tracker_Artifact_ChangesetValue, or null if not found
+     * @return null|Tracker_Artifact_ChangesetValue or null if not found
      */
-    public function getValue(Tracker_FormElement_Field $field) {
+    public function getValue(Tracker_FormElement_Field $field)
+    {
         return null;
     }
 
@@ -53,16 +57,16 @@ class Tracker_Artifact_Changeset_Null extends Tracker_Artifact_Changeset {
      *
      * @return array of Tracker_Artifact_ChangesetValue, or empty array if not found
      */
-    public function getValues() {
+    public function getValues()
+    {
         return null;
     }
 
     /**
      * fetch followup
-     *
-     * @return string
      */
-    public function fetchFollowUp($diff_to_previous) {
+    public function fetchFollowUp($diff_to_previous, PFUser $current_user): string
+    {
         return '';
     }
 
@@ -71,9 +75,10 @@ class Tracker_Artifact_Changeset_Null extends Tracker_Artifact_Changeset {
      *
      * @param PFUser $user The user. If null, the current logged in user will be used.
      *
-     * @return boolean true if the user can edit
+     * @return bool true if the user can edit
      */
-    public function userCanEdit(PFUser $user = null) {
+    public function userCanEdit(?PFUser $user = null)
+    {
         return false;
     }
 
@@ -96,15 +101,17 @@ class Tracker_Artifact_Changeset_Null extends Tracker_Artifact_Changeset {
      *
      * @return void
      */
-    public function delete(PFUser $user) {
+    public function delete(PFUser $user)
+    {
     }
 
     /**
      * Get the comment (latest version)
      *
-     * @return Tracker_Artifact_Changeset_Comment The comment of this changeset, or null if no comments
+     * @return Tracker_Artifact_Changeset_Comment|null The comment of this changeset, or null if no comments
      */
-    public function getComment() {
+    public function getComment(): ?Tracker_Artifact_Changeset_Comment
+    {
         return null;
     }
 
@@ -113,9 +120,10 @@ class Tracker_Artifact_Changeset_Null extends Tracker_Artifact_Changeset {
      *
      * @param array $fields_data The data submitted (array of 'field_id' => 'value')
      *
-     * @return boolean true if there are changes in fields_data regarding this changeset, false if nothing has changed
+     * @return bool true if there are changes in fields_data regarding this changeset, false if nothing has changed
      */
-    public function hasChanges($fields_data) {
+    public function hasChanges($fields_data)
+    {
         return true;
     }
 
@@ -128,8 +136,7 @@ class Tracker_Artifact_Changeset_Null extends Tracker_Artifact_Changeset {
         $format = 'html',
         $user = null,
         $ignore_perms = false,
-        $for_mail = false,
-        $for_modal = false
+        $for_mail = false
     ) {
         return false;
     }
@@ -140,11 +147,13 @@ class Tracker_Artifact_Changeset_Null extends Tracker_Artifact_Changeset {
     * @param String $diff
     *
     */
-    public function displayDiff($diff, $format, $field) {
+    public function displayDiff($diff, $format, $field)
+    {
         return false;
     }
 
-    public function getTracker() {
+    public function getTracker()
+    {
         return null;
     }
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,49 +18,39 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class WrapperLogger implements Logger {
+class WrapperLogger extends \Psr\Log\AbstractLogger implements \Psr\Log\LoggerInterface
+{
 
     /**
-     * @var Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
 
-    private $prefix = array();
+    private $prefix = [];
 
-    public function __construct(Logger $logger, $prefix) {
+    public function __construct(\Psr\Log\LoggerInterface $logger, $prefix)
+    {
         $this->logger   = $logger;
         $this->prefix[] = $prefix;
     }
 
-    public function debug($message) {
-        $this->logger->debug($this->formatMessage($message));
+    public function log($level, $message, array $context = [])
+    {
+        $this->logger->log($level, $this->formatMessage($message), $context);
     }
 
-    public function error($message, Exception $exception = null) {
-        $this->logger->error($this->formatMessage($message), $exception);
+    private function formatMessage($message)
+    {
+        return '[' . implode('][', $this->prefix) . '] ' . $message;
     }
 
-    public function info($message) {
-        $this->logger->info($this->formatMessage($message));
-    }
-
-    public function log($message, $level = null) {
-        $this->logger->log($this->formatMessage($message), $level);
-    }
-
-    public function warn($message, Exception $exception = null) {
-        $this->logger->warn($this->formatMessage($message), $exception);
-    }
-
-    private function formatMessage($message) {
-        return '['.implode($this->prefix, '][').'] '.$message;
-    }
-
-    public function push($prefix) {
+    public function push($prefix)
+    {
         $this->prefix[] = $prefix;
     }
 
-    public function pop() {
+    public function pop()
+    {
         array_pop($this->prefix);
     }
 }

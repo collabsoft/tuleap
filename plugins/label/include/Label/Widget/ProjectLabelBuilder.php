@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,7 +25,7 @@ class ProjectLabelBuilder
 
     public function build(array $project_labels, array $config_label)
     {
-        $labels = array();
+        $labels = [];
 
         foreach ($project_labels as $key => $project_label) {
             $labels[$key]             = $project_label;
@@ -37,7 +37,7 @@ class ProjectLabelBuilder
 
     public function buildSelectedLabels(array $project_labels, array $config_labels)
     {
-        $selected_labels = array();
+        $selected_labels = [];
 
         $formatter     = new ProjectLabelConfigurationLabelsFormatter();
         $config_labels = $formatter->getLabelsIds($config_labels);

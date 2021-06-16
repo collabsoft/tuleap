@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -54,7 +54,7 @@ class ArtifactDeletionLimitRetriever
 
         $nb_artifacts_deleted = $this->user_deletion_retriever->getNumberOfArtifactsDeletionsForUserInTimePeriod($user);
 
-        if ($nb_artifacts_deleted >= (int)$limit) {
+        if ($nb_artifacts_deleted >= (int) $limit) {
             throw new ArtifactsDeletionLimitReachedException();
         }
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,36 +21,57 @@
 /**
  * User-editable parameters of the planning.
  */
-class PlanningParameters {
+class PlanningParameters
+{
 
-    const NAME                = 'name';
-    const BACKLOG_TITLE       = 'backlog_title';
-    const PLANNING_TITLE      = 'plan_title';
-    const BACKLOG_TRACKER_IDS = 'backlog_tracker_ids';
-    const PLANNING_TRACKER_ID = 'planning_tracker_id';
+    public const NAME                = 'name';
+    public const BACKLOG_TITLE       = 'backlog_title';
+    public const PLANNING_TITLE      = 'plan_title';
+    public const BACKLOG_TRACKER_IDS = 'backlog_tracker_ids';
+    public const PLANNING_TRACKER_ID = 'planning_tracker_id';
 
+    /**
+     * @var string
+     */
     public $name;
+    /**
+     * @var string
+     */
     public $backlog_title;
+    /**
+     * @var string
+     */
     public $plan_title;
-    public $backlog_tracker_ids = array();
+    /**
+     * @psalm-var list<int>
+     */
+    public $backlog_tracker_ids = [];
+    /**
+     * @var string|null
+     */
     public $planning_tracker_id;
+    /**
+     * @var string[]
+     */
     public $priority_change_permission;
 
-    public static function fromArray(array $array) {
+    public static function fromArray(array $array)
+    {
         $parameters  = new PlanningParameters();
-        $backlog_ids = PlanningParameters::get($array, self::BACKLOG_TRACKER_IDS);
+        $backlog_ids = self::get($array, self::BACKLOG_TRACKER_IDS);
 
-        $parameters->name                       = PlanningParameters::get($array, self::NAME);
-        $parameters->backlog_title              = PlanningParameters::get($array, self::BACKLOG_TITLE);
-        $parameters->plan_title                 = PlanningParameters::get($array, self::PLANNING_TITLE);
-        $parameters->backlog_tracker_ids        = ($backlog_ids) ? $backlog_ids : array();
-        $parameters->planning_tracker_id        = PlanningParameters::get($array, self::PLANNING_TRACKER_ID);
-        $parameters->priority_change_permission = PlanningParameters::get($array, PlanningPermissionsManager::PERM_PRIORITY_CHANGE);
+        $parameters->name                       = self::get($array, self::NAME);
+        $parameters->backlog_title              = self::get($array, self::BACKLOG_TITLE);
+        $parameters->plan_title                 = self::get($array, self::PLANNING_TITLE);
+        $parameters->backlog_tracker_ids        = ($backlog_ids) ? $backlog_ids : [];
+        $parameters->planning_tracker_id        = self::get($array, self::PLANNING_TRACKER_ID);
+        $parameters->priority_change_permission = self::get($array, PlanningPermissionsManager::PERM_PRIORITY_CHANGE);
 
         return $parameters;
     }
 
-    private static function get($array, $key) {
+    private static function get($array, $key)
+    {
         return array_key_exists($key, $array) ? $array[$key] : '';
     }
 }

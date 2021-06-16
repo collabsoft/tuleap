@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,14 +18,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once dirname(__FILE__).'/../../lib/autoload.php';
-
 /**
  * @group Regressions
  */
-class ArtifactsCreationWithWrongWorkflowTest extends RestBase {
+class ArtifactsCreationWithWrongWorkflowTest extends RestBase
+{
 
-    public function setUp() {
+    public function setUp(): void
+    {
         parent::setUp();
 
         $this->tracker_test_helper = new Test\Rest\Tracker\TrackerFactory(
@@ -36,28 +36,27 @@ class ArtifactsCreationWithWrongWorkflowTest extends RestBase {
         );
     }
 
-    /**
-     * @expectedException Guzzle\Http\Exception\ClientErrorResponseException
-     */
-    public function testPostArtifactFailsIfValueInSelectBoxIsNotValidRegardingWorkflow() {
+    public function testPostArtifactFailsIfValueInSelectBoxIsNotValidRegardingWorkflow()
+    {
         $tracker  = $this->tracker_test_helper->getTrackerRest('releases');
         $response = $tracker->createArtifact(
-            array(
+            [
                $tracker->getSubmitTextValue('Version Number', '0.1'),
                $tracker->getSubmitListValue('Progress', 'Delivered to customer')
-            )
+            ]
         );
 
-        $this->assertEquals($response->getStatusCode(), 400);
+        $this->assertEquals($response['error']['code'], 400);
     }
 
-    public function testPostArtifactSuccededIfValueInSelectBoxIsValidRegardingWorkflow() {
+    public function testPostArtifactSuccededIfValueInSelectBoxIsValidRegardingWorkflow()
+    {
         $tracker       = $this->tracker_test_helper->getTrackerRest('releases');
         $artifact_json = $tracker->createArtifact(
-            array(
+            [
                $tracker->getSubmitTextValue('Version Number', '0.1'),
                $tracker->getSubmitListValue('Progress', 'To be defined')
-            )
+            ]
         );
 
         $this->assertTrue(isset($artifact_json['id']));

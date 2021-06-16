@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,19 +20,25 @@
 
 namespace Tuleap\Velocity;
 
-use Tracker_Artifact;
+use Tracker;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class VelocityCollection
 {
-    const NB_MAX_VELOCITIES = 7;
+    public const NB_MAX_VELOCITIES = 7;
     /**
-     * @var Tracker_Artifact[]
+     * @var Artifact[]
      */
     private $invalid_artifacts = [];
     /**
      * @var VelocityRepresentation[]
      */
     private $velocity_representations = [];
+
+    /**
+     * @var Tracker[]
+     */
+    private $invalid_trackers = [];
 
     /**
      * @return VelocityRepresentation[]
@@ -56,12 +62,12 @@ class VelocityCollection
 
     public function addVelocityRepresentation(VelocityRepresentation $velocity_representation)
     {
-        $ordering_key =  $velocity_representation->start_date . $velocity_representation->id ;
-        $this->velocity_representations[ $ordering_key ] = $velocity_representation;
+        $ordering_key                                  =  $velocity_representation->start_date . $velocity_representation->id;
+        $this->velocity_representations[$ordering_key] = $velocity_representation;
     }
 
     /**
-     * @return Tracker_Artifact[]
+     * @return Artifact[]
      */
     public function getInvalidArtifacts()
     {
@@ -71,5 +77,23 @@ class VelocityCollection
     public function addInvalidArtifact(InvalidArtifactRepresentation $invalid_artifact)
     {
         $this->invalid_artifacts[] = $invalid_artifact;
+    }
+
+    public function addInvalidTracker(Tracker $tracker)
+    {
+        if (! in_array($tracker, $this->invalid_trackers)) {
+            $this->invalid_trackers[] = $tracker;
+        }
+    }
+
+    public function getInvalidTrackersNames(): array
+    {
+        $tracker_names = [];
+
+        foreach ($this->invalid_trackers as $invalid_tracker) {
+            $tracker_names[] = $invalid_tracker->getName();
+        }
+
+        return $tracker_names;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -25,79 +25,90 @@ use FRSRelease;
 use PFUser;
 use Tracker_ArtifactFactory;
 use Tracker_FormElementFactory;
-use Tracker_REST_Artifact_ArtifactRepresentationBuilder;
 use Tuleap\FRS\Link\Retriever;
 use Tuleap\FRS\UploadedLinksRetriever;
+use Tuleap\Markdown\CommonMarkInterpreter;
 use Tuleap\Project\REST\ProjectReference;
 use Tuleap\REST\JsonCast;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\CachingTrackerPrivateCommentInformationRetriever;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\PermissionChecker;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentInformationRetriever;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentUGroupEnabledDao;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
+use Tuleap\Tracker\REST\Artifact\ArtifactRepresentation;
+use Tuleap\Tracker\REST\Artifact\ArtifactRepresentationBuilder;
+use Tuleap\Tracker\REST\Artifact\Changeset\ChangesetRepresentationBuilder;
+use Tuleap\Tracker\REST\Artifact\Changeset\Comment\CommentRepresentationBuilder;
 
-class ReleaseRepresentation
+/**
+ * @psalm-immutable
+ */
+final class ReleaseRepresentation
 {
-    const ROUTE = 'frs_release';
+    public const ROUTE = 'frs_release';
 
-    const STATUS_ACTIVE  = 'active';
-    const STATUS_DELETED = 'deleted';
-    const STATUS_HIDDEN  = 'hidden';
+    public const STATUS_ACTIVE  = 'active';
+    public const STATUS_DELETED = 'deleted';
+    public const STATUS_HIDDEN  = 'hidden';
 
-    public static $STATUS = array(
+    public static $STATUS = [
         FRSRelease::STATUS_ACTIVE  => self::STATUS_ACTIVE,
         FRSRelease::STATUS_DELETED => self::STATUS_DELETED,
         FRSRelease::STATUS_HIDDEN  => self::STATUS_HIDDEN
-    );
+    ];
 
     /**
-     * @var id {@type int}
+     * @var int id {@type int}
      */
     public $id;
 
     /**
-     * @var $uri {@type string}
+     * @var string $uri {@type string}
      */
     public $uri;
 
     /**
-     * @var $name {@type string}
+     * @var string $name {@type string}
      */
     public $name;
 
     /**
-     * @var $files {@type array}
+     * @var array $files {@type array}
      */
-    public $files = array();
+    public $files = [];
 
     /**
-     * @var $links {@type array}
+     * @var array $links {@type array}
      */
-    public $links = array();
+    public $links = [];
 
     /**
-     * @var $changelog {@type string}
+     * @var string $changelog {@type string}
      */
     public $changelog;
 
     /**
-     * @var $release_note {@type string}
+     * @var string $release_note {@type string}
      */
     public $release_note;
 
     /**
-     * @var $resources {@type array}
+     * @var array $resources {@type array}
      */
     public $resources;
 
     /**
-     * @var Tuleap\REST\ResourceReference
+     * @var ProjectReference
      */
     public $project;
 
     /**
-     * @var Tuleap\Tracker\REST\Artifact\ArtifactRepresentation
+     * @var ArtifactRepresentation | null
      */
     public $artifact;
 
     /**
-     * @var boolean
+     * @var bool
      */
     public $license_approval;
 
@@ -107,46 +118,43 @@ class ReleaseRepresentation
     public $package;
 
     /**
-     * @var $status {@type string}
+     * @var string $status {@type string}
      */
     public $status;
 
-    public function build(FRSRelease $release, Retriever $link_retriever, PFUser $user, UploadedLinksRetriever $uploaded_links_retriever)
+    /**
+     * @var ReleasePermissionsForGroupsRepresentation | null
+     */
+    public $permissions_for_groups;
+
+    public function __construct(FRSRelease $release, Retriever $link_retriever, PFUser $user, UploadedLinksRetriever $uploaded_links_retriever, ReleasePermissionsForGroupsBuilder $permissions_for_groups_builder)
     {
         $this->id           = JsonCast::toInt($release->getReleaseID());
-        $this->uri          = self::ROUTE ."/". urlencode($release->getReleaseID());
+        $this->uri          = self::ROUTE . "/" . urlencode((string) $release->getReleaseID());
         $this->changelog    = $release->getChanges();
         $this->release_note = $release->getNotes();
         $this->name         = $release->getName();
         $this->status       = self::$STATUS[$release->getStatusID()];
-        $this->package      = new PackageMinimalRepresentation();
-        $this->package->build($release->getPackage());
+        $this->package      = self::getPackageRepresentation($release);
 
-        $this->artifact  = $this->getArtifactRepresentation($release, $link_retriever, $user);
-        $this->resources = array(
-            "artifacts" => array(
-                "uri" => $this->uri ."/artifacts"
-            )
-        );
-        $this->project = new ProjectReference();
-        $this->project->build($release->getProject());
+        $this->artifact  = self::getArtifactRepresentation($release, $link_retriever, $user);
+        $this->resources = [
+            "artifacts" => [
+                "uri" => $this->uri . "/artifacts"
+            ]
+        ];
+        $this->project   = self::getProjectReference($release);
 
-        foreach ($release->getFiles() as $file) {
-            $file_representation = new FileRepresentation();
-            $file_representation->build($file);
-            $this->files[] = $file_representation;
-        }
+        $this->files = self::getFiles($release);
 
-        foreach ($uploaded_links_retriever->getLinksForRelease($release) as $link) {
-            $link_representation = new UploadedLinkRepresentation();
-            $link_representation->build($link);
-            $this->links[] = $link_representation;
-        }
+        $this->links = self::getLinks($uploaded_links_retriever, $release);
 
-        $this->license_approval = $this->getLicenseApprovalState($release);
+        $this->license_approval = self::getLicenseApprovalState($release);
+
+        $this->permissions_for_groups = self::getPermissionsForGroups($permissions_for_groups_builder, $user, $release);
     }
 
-    private function getLicenseApprovalState(FRSRelease $release)
+    private static function getLicenseApprovalState(FRSRelease $release): bool
     {
         if (ForgeConfig::get('sys_frs_license_mandatory')) {
             return JsonCast::toBoolean(true);
@@ -157,7 +165,7 @@ class ReleaseRepresentation
         return JsonCast::toBoolean($package->getApproveLicense());
     }
 
-    private function getArtifactRepresentation(FRSRelease $release, Retriever $link_retriever, PFUser $user)
+    private static function getArtifactRepresentation(FRSRelease $release, Retriever $link_retriever, PFUser $user): ?ArtifactRepresentation
     {
         $artifact_id = $link_retriever->getLinkedArtifactId($release->getReleaseID());
 
@@ -165,10 +173,19 @@ class ReleaseRepresentation
             return null;
         }
 
-        $tracker_artifact_builder = new Tracker_REST_Artifact_ArtifactRepresentationBuilder(
-            Tracker_FormElementFactory::instance(),
+        $form_element_factory     = Tracker_FormElementFactory::instance();
+        $tracker_artifact_builder = new ArtifactRepresentationBuilder(
+            $form_element_factory,
             Tracker_ArtifactFactory::instance(),
-            new NatureDao()
+            new NatureDao(),
+            new ChangesetRepresentationBuilder(
+                \UserManager::instance(),
+                $form_element_factory,
+                new CommentRepresentationBuilder(
+                    CommonMarkInterpreter::build(\Codendi_HTMLPurifier::instance())
+                ),
+                new PermissionChecker(new CachingTrackerPrivateCommentInformationRetriever(new TrackerPrivateCommentInformationRetriever(new TrackerPrivateCommentUGroupEnabledDao())))
+            )
         );
 
         $tracker_factory = Tracker_ArtifactFactory::instance();
@@ -179,5 +196,51 @@ class ReleaseRepresentation
         }
 
         return $tracker_artifact_builder->getArtifactRepresentation($user, $artifact);
+    }
+
+    private static function getPackageRepresentation(FRSRelease $release): PackageMinimalRepresentation
+    {
+        return new PackageMinimalRepresentation($release->getPackage());
+    }
+
+    private static function getProjectReference(FRSRelease $release): ProjectReference
+    {
+        return new ProjectReference($release->getProject());
+    }
+
+    /**
+     * @return FileRepresentation[]
+     */
+    private static function getFiles(FRSRelease $release): array
+    {
+        $files = [];
+        foreach ($release->getFiles() as $file) {
+            $file_representation = new FileRepresentation($file);
+            $files[]             = $file_representation;
+        }
+
+        return $files;
+    }
+
+    /**
+     * @return UploadedLinkRepresentation[]
+     */
+    private static function getLinks(UploadedLinksRetriever $uploaded_links_retriever, FRSRelease $release): array
+    {
+        $links = [];
+        foreach ($uploaded_links_retriever->getLinksForRelease($release) as $link) {
+            $link_representation = new UploadedLinkRepresentation($link);
+            $links[]             = $link_representation;
+        }
+
+        return $links;
+    }
+
+    private static function getPermissionsForGroups(
+        ReleasePermissionsForGroupsBuilder $permissions_for_groups_builder,
+        PFUser $user,
+        FRSRelease $release
+    ): ?ReleasePermissionsForGroupsRepresentation {
+        return $permissions_for_groups_builder->getRepresentation($user, $release);
     }
 }

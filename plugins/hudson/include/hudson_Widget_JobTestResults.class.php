@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All rights reserved
+ * Copyright (c) Enalean, 2016-Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -20,15 +20,25 @@
  */
 
 use Tuleap\Dashboard\User\UserDashboardController;
+use Tuleap\Http\HttpClientFactory;
+use Tuleap\Http\HTTPFactoryBuilder;
 use Tuleap\Hudson\HudsonJobBuilder;
+use Tuleap\Hudson\TestResultPieChart\TestResultsPieChartDisplayer;
+use Tuleap\Layout\CssAssetCollection;
+use Tuleap\Layout\IncludeAssets;
 
+//phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace, Squiz.Classes.ValidClassName.NotCamelCaps
 class hudson_Widget_JobTestResults extends HudsonJobWidget
 {
     /**
      * @var HudsonJob
      */
     private $job;
-    var $test_result;
+
+    /**
+     * @var HudsonTestResult
+     */
+    private $test_result;
     /**
      * @var HudsonJobBuilder
      */
@@ -61,18 +71,18 @@ class hudson_Widget_JobTestResults extends HudsonJobWidget
     {
         $title = '';
         if ($this->job && $this->test_result) {
-            $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_testresults_widget_title', array($this->job->getName(), $this->test_result->getPassCount(), $this->test_result->getTotalCount()));
+            $title .= sprintf(dgettext('tuleap-hudson', '%1$s Test Results (%2$s / %3$s)'), $this->job->getName(), $this->test_result->getPassCount(), $this->test_result->getTotalCount());
         } elseif ($this->job && ! $this->test_result) {
-            $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_testresults_projectname', array($this->job->getName()));
+            $title .= sprintf(dgettext('tuleap-hudson', '%1$s Test Results'), $this->job->getName());
         } else {
-            $title .= $GLOBALS['Language']->getText('plugin_hudson', 'project_job_testresults');
+            $title .= dgettext('tuleap-hudson', 'Test Results');
         }
         return $title;
     }
 
     public function getDescription()
     {
-        return $GLOBALS['Language']->getText('plugin_hudson', 'widget_description_testresults');
+        return dgettext('tuleap-hudson', 'Show the test results of the latest build for the selected job.To display something, your job needs to execute tests and publish them. The result is shown on a pie chart.');
     }
 
     public function loadContent($id)
@@ -92,17 +102,18 @@ class hudson_Widget_JobTestResults extends HudsonJobWidget
                 try {
                     $used_job          = $jobs[$this->job_id];
                     $this->job         = $this->hudson_job_builder->getHudsonJob($used_job);
-                    $http_client       = new Http_Client();
-                    $this->test_result = new HudsonTestResult($this->job->getUrl(), $http_client);
+                    $this->test_result = new HudsonTestResult(
+                        $this->job->getUrl(),
+                        HttpClientFactory::createClient(),
+                        HTTPFactoryBuilder::requestFactory()
+                    );
                 } catch (Exception $e) {
                     $this->test_result = null;
                 }
-
             } else {
-                $this->job = null;
+                $this->job         = null;
                 $this->test_result = null;
             }
-
         }
     }
 
@@ -111,23 +122,43 @@ class hudson_Widget_JobTestResults extends HudsonJobWidget
         $this->initContent();
 
         $html = '';
-        if ($this->job != null && $this->test_result != null) {
+        if ($this->job !== null && $this->test_result !== null) {
+            $pie_displayer = new TestResultsPieChartDisplayer();
 
-            $job = $this->job;
-            $test_result = $this->test_result;
-
-            $html .= '<div style="padding: 20px;">';
-            $html .= ' <a href="/plugins/hudson/?action=view_last_test_result&group_id='.$this->group_id.'&job_id='.$this->job_id.'">'.$test_result->getTestResultPieChart().'</a>';
-            $html .= '</div>';
-
+            $pie_displayer->displayTestResultsPieChart(
+                $this->getInstanceId(),
+                $this->job_id,
+                $this->group_id,
+                $this->test_result
+            );
         } else {
             if ($this->job != null) {
-                $html .= $GLOBALS['Language']->getText('plugin_hudson', 'widget_tests_not_found');
+                $html .= dgettext('tuleap-hudson', 'No test found for this job.');
             } else {
-                $html .= $GLOBALS['Language']->getText('plugin_hudson', 'widget_job_not_found');
+                $html .= dgettext('tuleap-hudson', 'Job not found.');
             }
         }
 
         return $html;
+    }
+
+    public function getJavascriptDependencies(): array
+    {
+        return [
+            ['file' => $this->getAssets()->getFileURL('test-results-pie.js')]
+        ];
+    }
+
+    public function getStylesheetDependencies(): CssAssetCollection
+    {
+        return new CssAssetCollection([new \Tuleap\Layout\CssAssetWithoutVariantDeclinaisons($this->getAssets(), 'hudson-style')]);
+    }
+
+    private function getAssets(): IncludeAssets
+    {
+        return new IncludeAssets(
+            __DIR__ . '/../../../src/www/assets/hudson',
+            '/assets/hudson'
+        );
     }
 }

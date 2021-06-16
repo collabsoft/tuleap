@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -52,9 +52,8 @@ class GitRepositoryReference extends \Tuleap\Git\REST\v1\GitRepositoryReference
     public function build(GitRepository $repository)
     {
         parent::build($repository);
-        $this->name = $repository->getFullName();
-        $this->project = new ProjectReference();
-        $this->project->build($repository->getProject());
+        $this->name    = $repository->getFullName();
+        $this->project = new ProjectReference($repository->getProject());
 
         $this->clone_http_url = $this->gitolite_access_URL_generator->getHTTPURL($repository) ?: null;
         $this->clone_ssh_url  = $this->gitolite_access_URL_generator->getSSHURL($repository) ?: null;

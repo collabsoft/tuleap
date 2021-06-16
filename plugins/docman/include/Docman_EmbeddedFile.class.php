@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,33 +19,32 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('Docman_File.class.php');
-
 /**
  * URL is a transport object (aka container) used to share data between
  * Model/Controler and View layer of the application
  */
-class Docman_EmbeddedFile extends Docman_File {
-    
-    function __construct($data = null) {
+class Docman_EmbeddedFile extends Docman_File
+{
+
+    public function __construct($data = null)
+    {
         parent::__construct($data);
     }
-    
-    public function accept($visitor, $params = array())
+
+    public function accept($visitor, $params = [])
     {
         return $visitor->visitEmbeddedFile($this, $params);
     }
-    
-    function toRow() {
-        $row = parent::toRow();
+
+    public function toRow()
+    {
+        $row              = parent::toRow();
         $row['item_type'] = PLUGIN_DOCMAN_ITEM_TYPE_EMBEDDEDFILE;
         return $row;
     }
 
     public function getType()
     {
-        return $GLOBALS['Language']->getText('plugin_docman', 'doc_type_embedded');
+        return dgettext('tuleap-docman', 'Embedded File');
     }
 }
-
-?>

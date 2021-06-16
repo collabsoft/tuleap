@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -29,7 +29,7 @@ use Tuleap\Request\ForbiddenException;
 
 class DefaultSettingsController implements DispatchableWithRequest
 {
-    const HISTORY_FIELD_NAME = 'pullrequest-default-settings';
+    public const HISTORY_FIELD_NAME = 'pullrequest-default-settings';
     /**
      * @var MergeSettingDAO
      */
@@ -58,6 +58,10 @@ class DefaultSettingsController implements DispatchableWithRequest
             throw new ForbiddenException();
         }
 
+        $pane_url = $this->getPaneURL($project);
+        (new \CSRFSynchronizerToken($pane_url))->check();
+
+
         $is_merge_commit_allowed = (int) $request->get('is_merge_commit_allowed');
 
         $this->merge_setting_dao->saveDefaultSettings($project->getId(), $is_merge_commit_allowed);
@@ -69,14 +73,17 @@ class DefaultSettingsController implements DispatchableWithRequest
             $project->getID()
         );
 
-        $layout->redirect(
-            GIT_BASE_URL . '/?' . http_build_query(
-                [
-                    'action'   => 'admin-default-settings',
-                    'group_id' => $project->getID(),
-                    'pane'     => PullRequestPane::NAME
-                ]
-            )
+        $layout->redirect($pane_url);
+    }
+
+    private function getPaneURL(\Project $project): string
+    {
+        return GIT_BASE_URL . '/?' . http_build_query(
+            [
+                'action'   => 'admin-default-settings',
+                'group_id' => $project->getID(),
+                'pane'     => PullRequestPane::NAME
+            ]
         );
     }
 }

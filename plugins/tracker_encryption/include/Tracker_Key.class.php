@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  * Copyright (c) STMicroelectronics, 2016. All Rights Reserved.
- * Copyright (c) Enalean, 2017. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-use Tuleap\TrackerEncryption\Dao\ValueDao;
 
-require_once '/usr/share/pear/Crypt/RSA.php';
+use phpseclib3\Exception\NoKeyLoadedException;
+use Tuleap\TrackerEncryption\Dao\ValueDao;
 
 class Tracker_Key
 {
@@ -48,8 +48,8 @@ class Tracker_Key
     public function getKey()
     {
         $result = '';
-        $array = ($this->dao_pub_key->retrieveKey($this->id_tracker));
-        foreach($array as $key=>$value){
+        $array  = ($this->dao_pub_key->retrieveKey($this->id_tracker));
+        foreach ($array as $key => $value) {
             $result = $value['key_content'];
         }
         return $result;
@@ -68,25 +68,29 @@ class Tracker_Key
     public function historizeKey($group_id)
     {
         $dao = new ProjectHistoryDao();
-        $dao->groupAddHistory($GLOBALS['Language']->getText('project_admin_utils', 'Tracker_key'),$this->getKey() ,$group_id, false);
+        $dao->groupAddHistory($GLOBALS['Language']->getText('project_admin_utils', 'Tracker_key'), $this->getKey(), $group_id, false);
     }
 
     /**
      * Verify the validity of a given RSA public key
      * @param $key
      *
-     * @return boolean
+     * @return bool
      */
     public function isValidPublicKey($key)
     {
         preg_match('/-----BEGIN PUBLIC KEY-----(.*)-----END PUBLIC KEY-----$/s', $key, $match);
-        if (!empty($match)) {
-            $rsa = new \Crypt_RSA();
-            $rsa->loadKey($key);
-            if ($rsa->getSize() < 2048 || $rsa->getSize() > 8192) {
+        if (! empty($match)) {
+            try {
+                $rsa = \phpseclib3\Crypt\RSA\PublicKey::load($key);
+                assert($rsa instanceof \phpseclib3\Crypt\RSA\PublicKey);
+            } catch (NoKeyLoadedException $exception) {
                 return false;
             }
-        return true;
+            if ($rsa->getLength() < 2048 || $rsa->getLength() > 8192) {
+                return false;
+            }
+            return true;
         } else {
             return false;
         }
@@ -105,9 +109,15 @@ class Tracker_Key
      */
     public function getFieldSize($key)
     {
-        $rsa = new \Crypt_RSA();
-        $rsa->loadKey($key);
-        return (($rsa->getSize()/8) - (2 * Encryption_Manager::HLEN) - 2);
+        if ($key === '') {
+            return 0;
+        }
+        try {
+            $rsa = \phpseclib3\Crypt\RSA\PublicKey::load($key);
+            assert($rsa instanceof \phpseclib3\Crypt\RSA\PublicKey);
+        } catch (NoKeyLoadedException $exception) {
+            return 0;
+        }
+        return ($rsa->getLength() - 2 * $rsa->getHash()->getLength() - 16) >> 3;
     }
-
 }

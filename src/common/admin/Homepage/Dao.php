@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2015. All Rights Reserved.
+  * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
   *
   * This file is a part of Tuleap.
   *
@@ -18,60 +18,44 @@
   * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 
-class Admin_Homepage_Dao extends DataAccessObject {
+class Admin_Homepage_Dao extends DataAccessObject
+{
 
     /** @return DataAccessResult */
-    public function searchHeadlines() {
+    public function searchHeadlines()
+    {
         $sql = "SELECT * FROM homepage_headline";
 
         return $this->retrieve($sql);
     }
 
-    /** @return string */
-    public function getHeadlineByLanguage($language_id) {
+    /** @return string|null */
+    public function getHeadlineByLanguage($language_id)
+    {
         $language_id = $this->da->quoteSmart($language_id);
 
         $sql = "SELECT * FROM homepage_headline WHERE language_id = $language_id";
 
-        $row = $this->retrieve($sql)->getRow();
+        $dar = $this->retrieve($sql);
+        if (! $dar || count($dar) !== 1) {
+            return null;
+        }
 
-        return $row['headline'];
+        return $dar->getRow()['headline'];
     }
 
-    /** @return boolean */
-    public function save(array $headlines) {
-        $values = array();
+    /** @return bool */
+    public function save(array $headlines)
+    {
+        $values = [];
 
         foreach ($headlines as $language_id => $headline) {
             $language_id = $this->da->quoteSmart($language_id);
             $headline    = $this->da->quoteSmart($headline);
-            $values[] = "($language_id, $headline)";
+            $values[]    = "($language_id, $headline)";
         }
 
-        $sql = "REPLACE INTO homepage_headline(language_id, headline) VALUES ". implode(', ', $values);
-
-        return $this->update($sql);
-    }
-
-    /** @return bool */
-    public function isStandardHomepageUsed() {
-        $sql = "SELECT * FROM homepage";
-
-        $row = $this->retrieve($sql)->getRow();
-
-        return (bool)$row['use_standard_homepage'];
-    }
-
-    public function useStandardHomepage() {
-        $this->resetUsageOfStandardHomepage();
-
-        $sql = "REPLACE INTO homepage (use_standard_homepage) VALUES (1)";
-
-        return $this->update($sql);
-    }
-
-    private function resetUsageOfStandardHomepage() {
-        $sql = "TRUNCATE TABLE homepage";
+        $sql = "REPLACE INTO homepage_headline(language_id, headline) VALUES " . implode(', ', $values);
 
         return $this->update($sql);
     }

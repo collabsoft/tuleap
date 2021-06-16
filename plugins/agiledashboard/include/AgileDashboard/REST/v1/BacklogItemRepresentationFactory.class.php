@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,9 @@ use AgileDashboard_Milestone_Backlog_IBacklogItem;
 use Cardwall_Semantic_CardFields;
 use EventManager;
 use PFUser;
-use Tracker_Artifact;
 use Tuleap\Cardwall\BackgroundColor\BackgroundColorBuilder;
+use Tuleap\Project\ProjectBackground\ProjectBackgroundConfiguration;
+use Tuleap\Tracker\Artifact\Artifact;
 use UserManager;
 
 class BacklogItemRepresentationFactory
@@ -37,15 +38,21 @@ class BacklogItemRepresentationFactory
 
     /** @var EventManager */
     private $event_manager;
+    /**
+     * @var ProjectBackgroundConfiguration
+     */
+    private $project_background_configuration;
 
     public function __construct(
         BackgroundColorBuilder $background_color_builder,
         UserManager $user_manager,
-        EventManager $event_manager
+        EventManager $event_manager,
+        ProjectBackgroundConfiguration $project_background_configuration
     ) {
-        $this->background_color_builder = $background_color_builder;
-        $this->user_manager             = $user_manager;
-        $this->event_manager            = $event_manager;
+        $this->background_color_builder         = $background_color_builder;
+        $this->user_manager                     = $user_manager;
+        $this->event_manager                    = $event_manager;
+        $this->project_background_configuration = $project_background_configuration;
     }
 
     public function createBacklogItemRepresentation(AgileDashboard_Milestone_Backlog_IBacklogItem $backlog_item)
@@ -64,21 +71,19 @@ class BacklogItemRepresentationFactory
         $backlog_item_representation->build(
             $backlog_item,
             $card_fields,
-            $background_color
+            $background_color,
+            $this->project_background_configuration
         );
 
         return $backlog_item_representation;
     }
 
     /**
-     * @param Cardwall_Semantic_CardFields $card_fields_semantic
-     * @param Tracker_Artifact $artifact
-     * @param PFUser $current_user
      * @return array
      */
     private function getCardFields(
         Cardwall_Semantic_CardFields $card_fields_semantic,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         PFUser $current_user
     ) {
         $card_fields = [];
@@ -97,19 +102,18 @@ class BacklogItemRepresentationFactory
     }
 
     /**
-     * @param Tracker_Artifact $artifact
      * @return Cardwall_Semantic_CardFields
      */
-    private function getCardFieldsSemantic(Tracker_Artifact $artifact)
+    private function getCardFieldsSemantic(Artifact $artifact)
     {
         $card_fields_semantic = null;
 
         $this->event_manager->processEvent(
             AGILEDASHBOARD_EVENT_GET_CARD_FIELDS,
-            array(
+            [
                 'tracker'              => $artifact->getTracker(),
                 'card_fields_semantic' => &$card_fields_semantic
-            )
+            ]
         );
 
         return $card_fields_semantic;

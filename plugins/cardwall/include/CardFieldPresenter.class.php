@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,31 +18,35 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Cardwall_CardFieldPresenter {
-    
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Cardwall_CardFieldPresenter
+{
+
     /**
      * @var Tracker_FormElement_Field
      */
     private $field;
-    
+
     /**
-     * @var Tracker_Artifact
+     * @var Artifact
      */
     private $artifact;
-    
-    public function __construct(Tracker_FormElement_Field $field, Tracker_Artifact $artifact, Cardwall_UserPreferences_UserPreferencesDisplayUser $display_preferences) {
+
+    public function __construct(Tracker_FormElement_Field $field, Artifact $artifact, Cardwall_UserPreferences_UserPreferencesDisplayUser $display_preferences)
+    {
         $this->field               = $field;
         $this->artifact            = $artifact;
         $this->display_preferences = $display_preferences;
     }
-    
-    public function getField() {
+
+    public function getField()
+    {
         return $this->field->fetchCard($this->artifact, $this->display_preferences);
     }
 
-    public function getTrackerField() {
+    public function getTrackerField()
+    {
         return $this->field;
     }
 }
-
-?>

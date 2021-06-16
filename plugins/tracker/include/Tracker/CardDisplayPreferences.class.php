@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,12 +22,12 @@
  * This interface is responsible for the display preferences
  * of cards.
  */
-interface Tracker_CardDisplayPreferences {
+interface Tracker_CardDisplayPreferences
+{
 
     /**
-     * @return Boolean True if users' avatars should be
-     * displayed instead of usernames.
+     * @return bool True if users' avatars should be
+ * displayed instead of usernames.
      */
     public function shouldDisplayAvatars();
 }
-?>

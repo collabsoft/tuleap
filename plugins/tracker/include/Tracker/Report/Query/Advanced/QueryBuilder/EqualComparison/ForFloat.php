@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ class ForFloat implements FieldFromWhereBuilder
         if ($value === '') {
             $condition = "$changeset_value_float_alias.value IS NULL";
         } else {
-            $condition = "$changeset_value_float_alias.value = ".$this->escapeFloat($value);
+            $condition = "$changeset_value_float_alias.value = " . $this->escapeFloat($value);
         }
 
         return $this->from_where_builder->getFromWhere(

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014-2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -36,10 +36,11 @@
  *   they cannot login.
  * - Deleted users are removed from LDAP (but they can be re-activated later)
  */
-class LDAP_UserWrite {
+class LDAP_UserWrite
+{
 
     /**
-     * @var Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
 
@@ -62,7 +63,8 @@ class LDAP_UserWrite {
      */
     private $ldap_user_dao;
 
-    public function __construct(LDAP $ldap, UserManager $user_manager, UserDao $dao, LDAP_UserDao $ldap_user_dao, Logger $logger) {
+    public function __construct(LDAP $ldap, UserManager $user_manager, UserDao $dao, LDAP_UserDao $ldap_user_dao, \Psr\Log\LoggerInterface $logger)
+    {
         $this->ldap          = $ldap;
         $this->user_manager  = $user_manager;
         $this->user_dao      = $dao;
@@ -70,7 +72,8 @@ class LDAP_UserWrite {
         $this->logger        = new WrapperLogger($logger, 'UserWrite');
     }
 
-    public function updateWithPreviousUser(PFUser $old_user, PFUser $new_user) {
+    public function updateWithPreviousUser(PFUser $old_user, PFUser $new_user)
+    {
         try {
             if ($this->userIsFirstAdmin($new_user)) {
                 return;
@@ -82,16 +85,18 @@ class LDAP_UserWrite {
         }
     }
 
-    public function updateWithUserId($user_id) {
+    public function updateWithUserId($user_id)
+    {
         $user = $this->user_manager->getUserById($user_id);
         if ($user && $user->isAlive()) {
             $this->updateWithUser($user);
         } else {
-            $this->logger->warn('Do not write LDAP info about non existant or suspended users '.$user_id);
+            $this->logger->warning('Do not write LDAP info about non existant or suspended users ' . $user_id);
         }
     }
 
-    public function updateWithUser(PFUser $user) {
+    public function updateWithUser(PFUser $user)
+    {
         try {
             $this->update($user);
         } catch (Exception $exception) {
@@ -99,7 +104,8 @@ class LDAP_UserWrite {
         }
     }
 
-    private function update(PFUser $user) {
+    private function update(PFUser $user)
+    {
         if ($this->userIsFirstAdmin($user)) {
             return;
         }
@@ -107,9 +113,9 @@ class LDAP_UserWrite {
         if ($this->entryExists($user)) {
             if ($user->isAlive()) {
                 $this->ldap->update($dn, $this->getLDAPInfo($user));
-            } elseif($user->isSuspended()) {
-                $info = $this->getLDAPInfo($user);
-                $info['userPassword'] = '!'.$this->getLDAPPassword($user);
+            } elseif ($user->isSuspended()) {
+                $info                 = $this->getLDAPInfo($user);
+                $info['userPassword'] = '!' . $this->getLDAPPassword($user);
                 $this->ldap->update($dn, $info);
             } else {
                 $this->ldap->delete($dn);
@@ -119,23 +125,26 @@ class LDAP_UserWrite {
         }
     }
 
-    private function userIsFirstAdmin(PFUser $user) {
+    private function userIsFirstAdmin(PFUser $user)
+    {
         return $user->getId() == 101;
     }
 
-    private function create(PFUser $user) {
+    private function create(PFUser $user)
+    {
         if ($user->getPassword() != '') {
             $this->ldap->add($this->getUserDN($user), $this->getLDAPInfo($user));
             $this->updateUserLdapId($user);
             $this->ldap_user_dao->createLdapUser($user->getId(), $_SERVER['REQUEST_TIME'], $this->getUserLdapId($user));
         } else {
-            $this->logger->debug('No password for user '.$user->getUnixName().' '.$user->getId().' skip LDAP account creation');
+            $this->logger->debug('No password for user ' . $user->getUnixName() . ' ' . $user->getId() . ' skip LDAP account creation');
         }
     }
 
-    private function getLDAPPassword(PFUser $user) {
-        $ldap_result_iterator = $this->ldap->searchDn($this->getUserDN($user), array('userPassword'));
-        if (count($ldap_result_iterator) == 1) {
+    private function getLDAPPassword(PFUser $user)
+    {
+        $ldap_result_iterator = $this->ldap->searchDn($this->getUserDN($user), ['userPassword']);
+        if ($ldap_result_iterator !== false && count($ldap_result_iterator) === 1) {
             $ldap_result = $ldap_result_iterator->current();
             if (count($ldap_result)) {
                 return base64_decode($ldap_result->get('userPassword'));
@@ -144,30 +153,34 @@ class LDAP_UserWrite {
         return '';
     }
 
-    private function entryExists(PFUser $user) {
-        $ldap_result_iterator = $this->ldap->searchDn($this->getUserDN($user), array('dn'));
+    private function entryExists(PFUser $user)
+    {
+        $ldap_result_iterator = $this->ldap->searchDn($this->getUserDN($user), ['dn']);
         if ($ldap_result_iterator !== false && count($ldap_result_iterator) == 1) {
             return true;
         }
         return false;
     }
 
-    private function getUserDN(PFUser $user) {
-        return $this->getUserRDN($user).','.$this->ldap->getLDAPParam('write_people_dn');
+    private function getUserDN(PFUser $user)
+    {
+        return $this->getUserRDN($user) . ',' . $this->ldap->getLDAPParam('write_people_dn');
     }
 
-    private function getUserRDN(PFUser $user) {
-        return 'uid='.$this->getUserLdapId($user);
+    private function getUserRDN(PFUser $user)
+    {
+        return 'uid=' . ldap_escape($this->getUserLdapId($user));
     }
 
     private function updateUserLdapId(PFUser $user)
     {
         $user->setLdapId($user->getUserName());
-        $this->user_dao->updateByRow(array('user_id' => $user->getId(), 'ldap_id' => $this->getEdUid($user)));
+        $this->user_dao->updateByRow(['user_id' => $user->getId(), 'ldap_id' => $this->getEdUid($user)]);
     }
 
-    private function getLDAPInfo(PFUser $user) {
-        $info = array(
+    private function getLDAPInfo(PFUser $user)
+    {
+        $info = [
             "employeeNumber" => $this->getEdUid($user),
             "cn"             => $user->getRealName(),
             "sn"             => $user->getRealName(),
@@ -177,30 +190,34 @@ class LDAP_UserWrite {
             'gidNumber'      => $user->getSystemUnixGid(),
             'uidNumber'      => $user->getSystemUnixUid(),
             'homeDirectory'  => $user->getUnixHomeDir(),
-            "objectclass"    => array(
+            "objectclass"    => [
                 "posixAccount",
                 "inetOrgPerson",
-            )
-        );
+            ]
+        ];
         if ($user->getPassword() != '') {
             $info['userPassword'] = $this->getEncryptedPassword($user->getPassword());
         }
         return $info;
     }
 
-    private function getUserLdapId(PFUser $user) {
+    private function getUserLdapId(PFUser $user)
+    {
         return strtolower($user->getUserName());
     }
 
-    private function getEdUid(PFUser $user) {
+    private function getEdUid(PFUser $user)
+    {
         return $user->getId();
     }
 
-    private function getEncryptedPassword($password) {
-        return '{CRYPT}'.crypt($password, '$6$rounds=50000$' . bin2hex(openssl_random_pseudo_bytes(25) . '$'));
+    private function getEncryptedPassword($password)
+    {
+        return '{CRYPT}' . crypt($password, '$6$rounds=50000$' . bin2hex(random_bytes(25) . '$'));
     }
 
-    private function rename(PFUser $old_user, PFUser $new_user) {
+    private function rename(PFUser $old_user, PFUser $new_user)
+    {
         $new_dn = $this->getUserDN($new_user);
         $old_dn = $this->getUserDN($old_user);
         if ($new_dn != $old_dn) {

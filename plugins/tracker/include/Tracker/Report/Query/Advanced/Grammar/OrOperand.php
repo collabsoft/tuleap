@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ class OrOperand implements Visitable
      */
     private $tail;
 
-    public function __construct(AndExpression $operand, OrOperand $tail = null)
+    public function __construct(AndExpression $operand, ?OrOperand $tail = null)
     {
         $this->operand = $operand;
         $this->tail    = $tail;

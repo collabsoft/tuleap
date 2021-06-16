@@ -1,17 +1,20 @@
-<?php //-*-php-*-
+<?php
+//-*-php-*-
 rcs_id('$Id: BogoLogin.php,v 1.6 2005/08/06 13:21:37 rurban Exp $');
 /* Copyright (C) 2004 ReiniUrban
  * This file is part of PhpWiki. Terms and Conditions see LICENSE. (GPL2)
  */
 
-/** Without stored password. A _BogoLoginPassUser with password 
+/** Without stored password. A _BogoLoginPassUser with password
  *  is automatically upgraded to a PersonalPagePassUser.
  */
-class _BogoLoginPassUser extends _PassUser {
+class _BogoLoginPassUser extends _PassUser
+{
 
-    var $_authmethod = 'BogoLogin';
-    
-    function userExists() {
+    public $_authmethod = 'BogoLogin';
+
+    public function userExists()
+    {
         if (isWikiWord($this->_userid)) {
             $this->_level = WIKIAUTH_BOGO;
             return true;
@@ -24,15 +27,13 @@ class _BogoLoginPassUser extends _PassUser {
     /** A BogoLoginUser requires no password at all
      *  But if there's one stored, we override it with the PersonalPagePassUser instead
      */
-    function checkPass($submitted_password) {
+    public function checkPass($submitted_password)
+    {
         if ($this->_prefs->get('passwd')) {
             if (isset($this->_prefs->_method) and $this->_prefs->_method == 'HomePage') {
                 $user = new _PersonalPagePassUser($this->_userid, $this->_prefs);
                 if ($user->checkPass($submitted_password)) {
-                    if (!check_php_version(5))
-                        eval("\$this = \$user;");
-                    // /*PHP5 patch*/$this = $user;
-                    $user = UpgradeUser($this, $user);
+                    $user         = UpgradeUser($this, $user);
                     $this->_level = WIKIAUTH_USER;
                     return $this->_level;
                 } else {
@@ -86,8 +87,6 @@ class _BogoLoginPassUser extends _PassUser {
 // fix WikiUser (old) overlarge data session
 // remove wikidb arg from various page class methods, use global ->_dbi instead
 // ...
-//
-
 // Local Variables:
 // mode: php
 // tab-width: 8
@@ -95,4 +94,3 @@ class _BogoLoginPassUser extends _PassUser {
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

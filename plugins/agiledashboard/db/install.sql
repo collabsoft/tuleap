@@ -86,15 +86,6 @@ CREATE TABLE plugin_agiledashboard_kanban_widget_config(
     PRIMARY KEY (widget_id)
 ) ENGINE=InnoDB;
 
-
-DROP TABLE IF EXISTS plugin_agiledashboard_semantic_done;
-CREATE TABLE plugin_agiledashboard_semantic_done (
-  tracker_id INT(11) NOT NULL,
-  value_id INT(11) NOT NULL,
-  PRIMARY KEY(tracker_id, value_id),
-  INDEX semantic_done_tracker_idx(tracker_id)
-) ENGINE=InnoDB;
-
 DROP TABLE IF EXISTS plugin_agiledashboard_kanban_tracker_reports;
 CREATE TABLE plugin_agiledashboard_kanban_tracker_reports (
   kanban_id INT(11) NOT NULL,
@@ -109,6 +100,47 @@ CREATE TABLE plugin_agiledashboard_tracker_field_burnup_cache (
   total_effort FLOAT(10,4) NULL,
   team_effort  FLOAT(10,4) NULL,
   UNIQUE KEY time_at_field (artifact_id, timestamp)
+) ENGINE=InnoDB;
+
+CREATE TABLE plugin_agiledashboard_tracker_field_burnup_cache_subelements (
+  artifact_id  INT(11) NOT NULL,
+  timestamp    INT(11) NOT NULL,
+  total_subelements INT(11) NULL,
+  closed_subelements  INT(11) NULL,
+  UNIQUE KEY time_at_field (artifact_id, timestamp)
+) ENGINE=InnoDB;
+
+CREATE TABLE plugin_agiledashboard_burnup_projects_count_mode (
+  project_id  INT(11) NOT NULL PRIMARY KEY
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_agiledashboard_kanban_recently_visited;
+CREATE TABLE plugin_agiledashboard_kanban_recently_visited (
+    user_id INT(11) NOT NULL,
+    kanban_id INT(11) NOT NULL,
+    created_on INT(11) UNSIGNED NOT NULL,
+    PRIMARY KEY(user_id, kanban_id),
+    INDEX idx_user_visit_time(user_id, created_on)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_agiledashboard_planning_explicit_backlog_usage;
+CREATE TABLE plugin_agiledashboard_planning_explicit_backlog_usage (
+   project_id INT(11) NOT NULL PRIMARY KEY
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_agiledashboard_planning_artifacts_explicit_backlog;
+CREATE TABLE plugin_agiledashboard_planning_artifacts_explicit_backlog (
+   project_id INT(11) NOT NULL,
+   artifact_id INT(11) NOT NULL,
+   PRIMARY KEY(project_id, artifact_id),
+   INDEX idx_project_id(project_id)
+) ENGINE=InnoDB;
+
+DROP TABLE IF EXISTS plugin_agiledashboard_tracker_workflow_action_add_top_backlog;
+CREATE TABLE plugin_agiledashboard_tracker_workflow_action_add_top_backlog (
+    id INT(11) PRIMARY KEY AUTO_INCREMENT,
+    transition_id INT(11) NOT NULL,
+    INDEX idx_wf_transition_id(transition_id)
 ) ENGINE=InnoDB;
 
 -- Enable service for project 100

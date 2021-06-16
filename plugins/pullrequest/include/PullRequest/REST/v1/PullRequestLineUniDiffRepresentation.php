@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,8 +20,11 @@
 
 namespace Tuleap\PullRequest\REST\v1;
 
-use \Tuleap\PullRequest\UniDiffLine;
+use Tuleap\PullRequest\UniDiffLine;
 
+/**
+ * @psalm-immutable
+ */
 class PullRequestLineUniDiffRepresentation
 {
     /**

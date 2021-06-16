@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -114,10 +114,7 @@ class InvalidComparisonCollectorVisitor implements Visitor
     }
 
     /**
-     * @param Visitable $parsed_query
-     * @param InvalidSearchablesCollection $invalid_searchables_collection
      * @param Tracker[] $trackers
-     * @param PFUser $user
      */
     public function collectErrors(
         Visitable $parsed_query,

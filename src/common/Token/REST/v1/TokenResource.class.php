@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,13 @@
 namespace Tuleap\Token\REST\v1;
 
 use Luracast\Restler\RestException;
+use Rest_Exception_InvalidTokenException;
+use Tuleap\Cryptography\ConcealedString;
 use Tuleap\Token\REST\TokenRepresentation;
 use Tuleap\REST\Header;
 use Exception;
-use Tuleap\user\PasswordVerifier;
+use Tuleap\User\PasswordVerifier;
+use User_LoginException;
 use UserManager;
 use EventManager;
 use User_LoginManager;
@@ -35,35 +38,41 @@ use PasswordHandlerFactory;
 /**
  * Wrapper for token related REST methods
  */
-class TokenResource {
+class TokenResource
+{
 
     /** @var UserManager */
     private $user_manager;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->user_manager = UserManager::instance();
     }
 
     /**
      * Generate a token
      *
-     * Generate a token for authentication for the current user
+     * Generate a token for authentication for the current user<br/>
+     *
+     * <b>The use of a personal access key should be preferred,
+     * consult the documentation for more information</b>
      *
      * @url POST
      * @status 201
      *
-     * @throws 400
-     * @throws 500
+     * @throws RestException 400
+     * @throws RestException 500
      *
      * @param string $username The username of the user
      * @param string $password The password of the user
      *
      * @return Tuleap\Token\REST\TokenRepresentation
      */
-    public function post($username, $password) {
+    public function post($username, string $password)
+    {
         try {
             $password_handler = PasswordHandlerFactory::getPasswordHandler();
-            $user_login = new User_LoginManager(
+            $user_login       = new User_LoginManager(
                 EventManager::instance(),
                 $this->user_manager,
                 new PasswordVerifier($password_handler),
@@ -71,7 +80,8 @@ class TokenResource {
                 $password_handler
             );
 
-            $user  = $user_login->authenticate($username, $password);
+            $user = $user_login->authenticate($username, new ConcealedString($password));
+            sodium_memzero($password);
             $this->sendAllowHeaders();
 
             $token = new TokenRepresentation();
@@ -79,13 +89,13 @@ class TokenResource {
                 $this->getTokenManager()->generateTokenForUser($user)
             );
             return $token;
-        } catch(User_LoginException $exception) {
+        } catch (User_LoginException $exception) {
             throw new RestException(401, $exception->getMessage());
-        } catch(User_InvalidPasswordWithUserException $exception) {
+        } catch (User_InvalidPasswordWithUserException $exception) {
             throw new RestException(401, $exception->getMessage());
-        } catch(User_InvalidPasswordException $exception) {
+        } catch (User_InvalidPasswordException $exception) {
             throw new RestException(401, $exception->getMessage());
-        } catch(Exception $exception) {
+        } catch (Exception $exception) {
             throw new RestException(500, $exception->getMessage());
         }
     }
@@ -93,15 +103,19 @@ class TokenResource {
     /**
      * Expire a token
      *
-     * Expire a given token of the current user
+     * Expire a given token of the current user<br/>
+     *
+     * <b>The use of a personal access key should be preferred,
+     * consult the documentation for more information</b>
      *
      * @url DELETE {id}
      *
-     * @throws 500
+     * @throws RestException 500
      *
      * @param string $id Id of the token
      */
-    protected function delete($id) {
+    protected function delete($id)
+    {
         $this->sendAllowHeadersForToken();
         try {
             $this->getTokenManager()->expireToken(
@@ -112,7 +126,7 @@ class TokenResource {
             );
         } catch (Rest_Exception_InvalidTokenException $exception) {
             throw new RestException(400, $exception->getMessage());
-        } catch(Exception $exception) {
+        } catch (Exception $exception) {
             throw new RestException(500, $exception->getMessage());
         }
     }
@@ -120,11 +134,15 @@ class TokenResource {
     /**
      * Expire all tokens
      *
-     * Expire all tokens of the current user
+     * Expire all tokens of the current user<br>
+     *
+     * <b>The use of a personal access key should be preferred,
+     * consult the documentation for more information</b>
      *
      * @url DELETE
      */
-    protected function deleteAll() {
+    protected function deleteAll()
+    {
         $this->sendAllowHeaders();
         $this->getTokenManager()->expireAllTokensForUser(
             $this->user_manager->getCurrentUser()
@@ -134,7 +152,8 @@ class TokenResource {
     /**
      * @url OPTIONS
      */
-    public function options() {
+    public function options()
+    {
         $this->sendAllowHeaders();
     }
 
@@ -143,11 +162,13 @@ class TokenResource {
      *
      * @param string $id Id of the token
      */
-    public function optionsForToken($id) {
+    public function optionsForToken($id)
+    {
         $this->sendAllowHeadersForToken();
     }
 
-    private function getTokenManager() {
+    private function getTokenManager()
+    {
         $token_dao = new \Rest_TokenDao();
         return new \Rest_TokenManager(
             $token_dao,
@@ -156,11 +177,13 @@ class TokenResource {
         );
     }
 
-    private function sendAllowHeaders() {
+    private function sendAllowHeaders()
+    {
         Header::allowOptionsPostDelete();
     }
 
-    private function sendAllowHeadersForToken() {
+    private function sendAllowHeadersForToken()
+    {
         Header::allowOptionsDelete();
     }
 }

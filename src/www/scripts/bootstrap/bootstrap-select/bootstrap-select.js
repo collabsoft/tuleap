@@ -82,7 +82,6 @@
         createDropdown: function() {
             //If we are multiple, then add the show-tick class by default
             var multiple = this.multiple ? ' show-tick' : '';
-            var header = this.options.header ? '<div class="popover-title"><button type="button" class="close" aria-hidden="true">&times;</button>' + this.options.header + '</div>' : '';
             var searchbox = this.options.liveSearch ? '<div class="bootstrap-select-searchbox"><input type="text" class="input-block-level form-control" /></div>' : '';
             var drop =
                 "<div class='btn-group bootstrap-select" + multiple + "'>" +
@@ -91,7 +90,6 @@
                         "<div class='caret'></div>" +
                     "</button>" +
                     "<div class='dropdown-menu open'>" +
-                        header +
                         searchbox +
                         "<ul class='dropdown-menu inner selectpicker' role='menu'>" +
                         "</ul>" +
@@ -191,7 +189,7 @@
         createA: function(text, classes, inline) {
             return '<a tabindex="0" class="'+classes+'" style="'+inline+'">' +
                  text +
-                 '<i class="glyphicon glyphicon-ok icon-ok check-mark"></i>' +
+                 '<i class="glyphicon glyphicon-ok fa fa-check check-mark"></i>' +
                  '</a>';
         },
 
@@ -372,7 +370,7 @@
                 };
             this.$newElement.on('click', function() {
                 getPlacement($(this));
-                $drop.appendTo(that.options.container);
+                $drop.appendTo($.find(that.options.container));
                 $drop.toggleClass('open', !$(this).hasClass('open'));
                 $drop.append(that.$menu);
             });
@@ -402,7 +400,7 @@
             this.checkDisabled();
             this.liHeight();
         },
-        
+
         update: function() {
             this.reloadLi();
             this.setWidth();

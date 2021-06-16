@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,12 +20,14 @@
 
 namespace Tuleap\Git\RepositoryList;
 
+use EventManager;
 use GitPlugin;
 use HTTPRequest;
 use Project;
 use TemplateRendererFactory;
+use Tuleap\Event\Events\ProjectProviderEvent;
 use Tuleap\Layout\BaseLayout;
-use Tuleap\Layout\CssAsset;
+use Tuleap\Layout\CssAssetWithoutVariantDeclinaisons;
 use Tuleap\Layout\IncludeAssets;
 use Tuleap\Request;
 
@@ -36,10 +38,6 @@ class GitRepositoryListController implements Request\DispatchableWithRequest, Re
      * @var \ProjectManager
      */
     private $project_manager;
-    /**
-     * @var \GitRepositoryFactory
-     */
-    private $repository_factory;
     /**
      * @var Project
      */
@@ -53,27 +51,29 @@ class GitRepositoryListController implements Request\DispatchableWithRequest, Re
      */
     private $list_presenter_builder;
 
+    /**
+     * @var EventManager
+     */
+    private $event_manager;
+
     public function __construct(
         \ProjectManager $project_manager,
-        \GitRepositoryFactory $repository_factory,
         ListPresenterBuilder $list_presenter_builder,
-        IncludeAssets $include_assets
+        IncludeAssets $include_assets,
+        EventManager $event_manager
     ) {
         $this->project_manager        = $project_manager;
-        $this->repository_factory     = $repository_factory;
         $this->list_presenter_builder = $list_presenter_builder;
         $this->include_assets         = $include_assets;
+        $this->event_manager          = $event_manager;
     }
 
     /**
-     * @param HTTPRequest $request
      * @param array       $variables
      *
      * @throws Request\NotFoundException
-     *
-     * @return null|Project
      */
-    public function getProject(HTTPRequest $request, array $variables)
+    public function getProject(array $variables): Project
     {
         $this->project = $this->project_manager->getProjectByCaseInsensitiveUnixName($variables['project_name']);
         if (! $this->project || $this->project->isError()) {
@@ -86,8 +86,6 @@ class GitRepositoryListController implements Request\DispatchableWithRequest, Re
     /**
      * Is able to process a request routed by FrontRouter
      *
-     * @param HTTPRequest $request
-     * @param BaseLayout  $layout
      * @param array       $variables
      *
      * @return void
@@ -95,21 +93,16 @@ class GitRepositoryListController implements Request\DispatchableWithRequest, Re
      */
     public function process(HTTPRequest $request, BaseLayout $layout, array $variables)
     {
-        if (! $this->project->usesService(gitPlugin::SERVICE_SHORTNAME)) {
+        if (! $this->project->usesService(GitPlugin::SERVICE_SHORTNAME)) {
             throw new Request\NotFoundException(dgettext("tuleap-git", "Git service is disabled."));
         }
 
         \Tuleap\Project\ServiceInstrumentation::increment('git');
 
-        $layout->addCssAsset(
-            new CssAsset(
-                new IncludeAssets(
-                    __DIR__ . '/../../../www/themes/BurningParrot/assets',
-                    GIT_BASE_URL . '/themes/BurningParrot/assets'
-                ),
-                'git'
-            )
-        );
+        $event = new ProjectProviderEvent($this->project);
+        $this->event_manager->processEvent($event);
+
+        $layout->addCssAsset(new CssAssetWithoutVariantDeclinaisons($this->include_assets, 'bp-style'));
 
         $layout->includeFooterJavascriptFile($this->include_assets->getFileURL('repositories-list.js'));
         $this->displayHeader(dgettext('tuleap-git', 'Git repositories'), $this->project);
@@ -126,10 +119,11 @@ class GitRepositoryListController implements Request\DispatchableWithRequest, Re
     private function displayHeader($title, Project $project)
     {
         $params = [
-            'title'      => $title . ' - ' . $project->getUnconvertedPublicName(),
-            'toptab'     => 'plugin_git',
-            'group'      => $project->getID(),
-            'body_class' => []
+            'title'                          => $title . ' - ' . $project->getPublicName(),
+            'toptab'                         => 'plugin_git',
+            'group'                          => $project->getID(),
+            'body_class'                     => [],
+            'without-project-in-breadcrumbs' => true,
         ];
 
         site_project_header($params);

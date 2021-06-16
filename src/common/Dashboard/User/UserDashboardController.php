@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -28,7 +28,7 @@ use ForgeConfig;
 use HTTPRequest;
 use PFUser;
 use TemplateRendererFactory;
-use Tuleap\Dashboard\JavascriptFilesIncluder;
+use Tuleap\Dashboard\AssetsIncluder;
 use Tuleap\Dashboard\NameDashboardAlreadyExistsException;
 use Tuleap\Dashboard\NameDashboardDoesNotExistException;
 use Tuleap\Dashboard\Widget\DashboardWidgetPresenterBuilder;
@@ -37,8 +37,8 @@ use Tuleap\Dashboard\Widget\OwnerInfo;
 
 class UserDashboardController
 {
-    const DASHBOARD_TYPE        = 'user';
-    const LEGACY_DASHBOARD_TYPE = 'u';
+    public const DASHBOARD_TYPE        = 'user';
+    public const LEGACY_DASHBOARD_TYPE = 'u';
 
     /**
      * @var CSRFSynchronizerToken
@@ -77,9 +77,9 @@ class UserDashboardController
      */
     private $widget_minimizor;
     /**
-     * @var JavascriptFilesIncluder
+     * @var AssetsIncluder
      */
-    private $javascript_files_includer;
+    private $assets_includer;
 
     public function __construct(
         CSRFSynchronizerToken $csrf,
@@ -91,23 +91,20 @@ class UserDashboardController
         DashboardWidgetPresenterBuilder $widget_presenter_builder,
         WidgetDeletor $widget_deletor,
         WidgetMinimizor $widget_minimizor,
-        JavascriptFilesIncluder $javascript_files_includer
+        AssetsIncluder $assets_includer
     ) {
-        $this->csrf                      = $csrf;
-        $this->retriever                 = $retriever;
-        $this->saver                     = $saver;
-        $this->deletor                   = $deletor;
-        $this->updator                   = $updator;
-        $this->widget_retriever          = $widget_retriever;
-        $this->widget_presenter_builder  = $widget_presenter_builder;
-        $this->widget_deletor            = $widget_deletor;
-        $this->widget_minimizor          = $widget_minimizor;
-        $this->javascript_files_includer = $javascript_files_includer;
+        $this->csrf                     = $csrf;
+        $this->retriever                = $retriever;
+        $this->saver                    = $saver;
+        $this->deletor                  = $deletor;
+        $this->updator                  = $updator;
+        $this->widget_retriever         = $widget_retriever;
+        $this->widget_presenter_builder = $widget_presenter_builder;
+        $this->widget_deletor           = $widget_deletor;
+        $this->widget_minimizor         = $widget_minimizor;
+        $this->assets_includer          = $assets_includer;
     }
 
-    /**
-     * @param HTTPRequest $request
-     */
     public function display(HTTPRequest $request)
     {
         $current_user    = $request->getCurrentUser();
@@ -129,9 +126,14 @@ class UserDashboardController
 
         $user_dashboards_presenter = $this->getUserDashboardsPresenter($current_user, $dashboard_id, $user_dashboards);
 
-        $title   = $this->getPageTitle($user_dashboards_presenter, $current_user);
+        $this->assets_includer->includeAssets($user_dashboards_presenter);
+
+        $title    = $this->getPageTitle($user_dashboards_presenter, $current_user);
         $purifier = Codendi_HTMLPurifier::instance();
-        $GLOBALS['Response']->header(array('title' => $purifier->purify($title)));
+        $GLOBALS['Response']->header([
+            'title' => $purifier->purify($title),
+            'body_class' => ['body-user-dashboard']
+        ]);
         $renderer = TemplateRendererFactory::build()->getRenderer(
             ForgeConfig::get('tuleap_dir') . '/src/templates/dashboard'
         );
@@ -144,14 +146,11 @@ class UserDashboardController
                 $user_dashboards_presenter
             )
         );
-
-        $this->javascript_files_includer->includeJavascriptFiles($user_dashboards_presenter);
-        $GLOBALS['Response']->footer(array('without_content' => true));
+        $GLOBALS['Response']->footer(['without_content' => true]);
     }
 
     /**
-     * @param HTTPRequest $request
-     * @return integer|null
+     * @return int|null
      */
     public function createDashboard(HTTPRequest $request)
     {
@@ -210,7 +209,7 @@ class UserDashboardController
      */
     private function getUserDashboardsPresenter(PFUser $user, $dashboard_id, array $user_dashboards)
     {
-        $user_dashboards_presenter = array();
+        $user_dashboards_presenter = [];
 
         foreach ($user_dashboards as $index => $dashboard) {
             if (! $dashboard_id && $index === 0) {
@@ -219,7 +218,7 @@ class UserDashboardController
                 $is_active = $dashboard->getId() === $dashboard_id;
             }
 
-            $widgets_presenter = array();
+            $widgets_presenter = [];
             if ($is_active) {
                 $widgets_lines = $this->widget_retriever->getAllWidgets($dashboard->getId(), self::DASHBOARD_TYPE);
                 if ($widgets_lines) {
@@ -290,7 +289,7 @@ class UserDashboardController
 
     private function redirectToDashboard($dashboard_id)
     {
-        $GLOBALS['Response']->redirect('/my/?dashboard_id='. urlencode($dashboard_id));
+        $GLOBALS['Response']->redirect('/my/?dashboard_id=' . urlencode($dashboard_id));
     }
 
     public function editDashboard(HTTPRequest $request)

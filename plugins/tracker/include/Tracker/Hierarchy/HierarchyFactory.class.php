@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\FormElement\Field\ArtifactLink\ArtifactLinkFieldValueDao;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureIsChildLinkRetriever;
+use Tuleap\Tracker\Hierarchy\HierarchyDAO;
 
 class Tracker_HierarchyFactory
 {
@@ -27,15 +30,15 @@ class Tracker_HierarchyFactory
     /**
      * @var array of tracker id (children of a tracker)
      */
-    private $cache_children_of_tracker = array();
+    private $cache_children_of_tracker = [];
 
     /**
      * @var array
      */
-    private $cache_ancestors = array();
+    private $cache_ancestors = [];
 
     /**
-     * @var Tracker_Hierarchy_Dao
+     * @var HierarchyDAO
      */
     private $hierarchy_dao;
 
@@ -58,7 +61,7 @@ class Tracker_HierarchyFactory
     private $child_link_retriever;
 
     public function __construct(
-        Tracker_Hierarchy_Dao $hierarchy_dao,
+        HierarchyDAO $hierarchy_dao,
         TrackerFactory $tracker_factory,
         Tracker_ArtifactFactory $artifact_factory,
         NatureIsChildLinkRetriever $child_link_retriever
@@ -82,23 +85,25 @@ class Tracker_HierarchyFactory
     {
         if (! self::$_instance) {
             self::$_instance = new Tracker_HierarchyFactory(
-                new Tracker_Hierarchy_Dao(),
+                new HierarchyDAO(),
                 TrackerFactory::instance(),
                 Tracker_ArtifactFactory::instance(),
                 new NatureIsChildLinkRetriever(
                     Tracker_ArtifactFactory::instance(),
-                    new Tracker_FormElement_Field_Value_ArtifactLinkDao()
+                    new ArtifactLinkFieldValueDao()
                 )
             );
         }
         return self::$_instance;
     }
 
-    public static function setInstance(Tracker_HierarchyFactory $instance) {
+    public static function setInstance(Tracker_HierarchyFactory $instance)
+    {
         self::$_instance = $instance;
     }
 
-    public static function clearInstance() {
+    public static function clearInstance()
+    {
         self::$_instance = null;
     }
 
@@ -107,11 +112,15 @@ class Tracker_HierarchyFactory
      * @param int $tracker_id
      * @return Tracker[]
      */
-    public function getChildren($tracker_id) {
-        if (!isset($this->cache_children_of_tracker[$tracker_id])) {
-            $this->cache_children_of_tracker[$tracker_id] = array();
-            foreach($this->hierarchy_dao->searchChildTrackerIds($tracker_id) as $row) {
-                $this->cache_children_of_tracker[$tracker_id][] = $this->tracker_factory->getTrackerById($row['id']);
+    public function getChildren($tracker_id): array
+    {
+        if (! isset($this->cache_children_of_tracker[$tracker_id])) {
+            $this->cache_children_of_tracker[$tracker_id] = [];
+            foreach ($this->hierarchy_dao->searchChildTrackerIds($tracker_id) as $row) {
+                $tracker = $this->tracker_factory->getTrackerById($row['id']);
+                if ($tracker !== null && ! $tracker->isDeleted()) {
+                    $this->cache_children_of_tracker[$tracker_id][] = $tracker;
+                }
             }
         }
         return $this->cache_children_of_tracker[$tracker_id];
@@ -124,11 +133,12 @@ class Tracker_HierarchyFactory
      *
      * @return \Tracker_Hierarchy
      */
-    public function getHierarchy($tracker_ids = array()) {
+    public function getHierarchy($tracker_ids = [])
+    {
         $hierarchy             = new Tracker_Hierarchy();
         $search_tracker_ids    = $tracker_ids;
-        $processed_tracker_ids = array();
-        while (!empty($search_tracker_ids)) {
+        $processed_tracker_ids = [];
+        while (! empty($search_tracker_ids)) {
             $this->getHierarchyFromTrackers($hierarchy, $search_tracker_ids, $processed_tracker_ids);
         }
         return $this->fixSingleHierarchy($tracker_ids, $hierarchy);
@@ -138,23 +148,27 @@ class Tracker_HierarchyFactory
      * If no other trackers were found in hierarchy, returns the tracker alone in hierarchy
      *
      * @param array             $tracker_ids
-     * @param Tracker_Hierarchy $hierarchy
      *
      * @return \Tracker_Hierarchy
      */
-    private function fixSingleHierarchy(array $tracker_ids, Tracker_Hierarchy $hierarchy) {
-        if (count($tracker_ids) == 1 && !$hierarchy->flatten()) {
+    private function fixSingleHierarchy(array $tracker_ids, Tracker_Hierarchy $hierarchy)
+    {
+        if (count($tracker_ids) == 1 && ! $hierarchy->flatten()) {
             $hierarchy->addRelationship($tracker_ids[0], 0);
         }
         return $hierarchy;
     }
 
     /**
-     * @return Tracker
+     * @return Tracker|null
      */
-    public function getParent(Tracker $tracker) {
-        $hierarchy         = $this->getHierarchy(array($tracker->getId()));
+    public function getParent(Tracker $tracker)
+    {
+        $hierarchy         = $this->getHierarchy([$tracker->getId()]);
         $parent_tracker_id = $hierarchy->getParent($tracker->getId());
+        if ($parent_tracker_id === null) {
+            return null;
+        }
         return $this->tracker_factory->getTrackerById($parent_tracker_id);
     }
 
@@ -166,12 +180,13 @@ class Tracker_HierarchyFactory
      *
      * @return Tracker[]
      */
-    public function getAllParents(Tracker $tracker) {
-        $hierarchy         = $this->getHierarchy(array($tracker->getId()));
+    public function getAllParents(Tracker $tracker)
+    {
+        $hierarchy         = $this->getHierarchy([$tracker->getId()]);
         $parent_tracker_id = $hierarchy->getParent($tracker->getId());
-        $stack = array();
-        while ($parent_tracker = $this->tracker_factory->getTrackerById($parent_tracker_id)) {
-            $stack[] = $parent_tracker;
+        $stack             = [];
+        while (($parent_tracker_id !== null) && ($parent_tracker = $this->tracker_factory->getTrackerById($parent_tracker_id))) {
+            $stack[]           = $parent_tracker;
             $parent_tracker_id = $hierarchy->getParent($parent_tracker->getId());
         }
         return $stack;
@@ -185,12 +200,13 @@ class Tracker_HierarchyFactory
      *
      * @return Int[] array of IDs
      */
-    public function getUpwardsHierarchyForTracker($tracker_id) {
-        $hierarchy         = $this->getHierarchy(array($tracker_id));
+    public function getUpwardsHierarchyForTracker($tracker_id)
+    {
+        $hierarchy         = $this->getHierarchy([$tracker_id]);
         $parent_tracker_id = $hierarchy->getParent($tracker_id);
-        $stack = array($tracker_id);
+        $stack             = [$tracker_id];
         while ($parent_tracker_id) {
-            $stack[] = $parent_tracker_id;
+            $stack[]           = $parent_tracker_id;
             $parent_tracker_id = $hierarchy->getParent($parent_tracker_id);
         }
         return $stack;
@@ -199,33 +215,23 @@ class Tracker_HierarchyFactory
     /**
      * Return the parent artifact
      *
-     * @param PFUser $user
-     * @param Tracker_Artifact $child
      *
-     * @return null| Tracker_Artifact
+     * @return null| Artifact
      */
-    public function getParentArtifact(PFUser $user, Tracker_Artifact $child) {
-        $parents = array();
+    public function getParentArtifact(PFUser $user, Artifact $child)
+    {
+        $parents = [];
         if ($child->getTracker()->isProjectAllowedToUseNature() === true) {
             $parents = $this->child_link_retriever->getDirectParents($child);
         } else {
-            $dar = $this->hierarchy_dao->getParentsInHierarchy($child->getId());
-            if ($dar && !$dar->isError()) {
-                foreach ($dar as $row) {
-                    $parents[] = $this->artifact_factory->getInstanceFromRow($row);
-                }
+            $rows = $this->hierarchy_dao->getParentsInHierarchy($child->getId());
+            foreach ($rows as $row) {
+                $parents[] = $this->artifact_factory->getInstanceFromRow($row);
             }
         }
 
         if (count($parents) > 1) {
-            $warning = $GLOBALS['Language']->getText(
-                'plugin_tracker_hierarchy',
-                'error_more_than_one_parent',
-                array(
-                    $this->getParentTitle($child),
-                    $this->getParentsList($parents)
-                )
-            );
+            $warning = sprintf(dgettext('tuleap-tracker', 'Artifact %1$s has more than one parent: %2$s'), $this->getParentTitle($child), $this->getParentsList($parents));
             $GLOBALS['Response']->addFeedback('warning', $warning, CODENDI_PURIFIER_LIGHT);
         }
         if (isset($parents[0])) {
@@ -234,12 +240,14 @@ class Tracker_HierarchyFactory
         return null;
     }
 
-    private function getParentsList(array $parents) {
-        return implode(', ', array_map(array($this, 'getParentTitle'), $parents));
+    private function getParentsList(array $parents)
+    {
+        return implode(', ', array_map([$this, 'getParentTitle'], $parents));
     }
 
-    private function getParentTitle(Tracker_Artifact $artifact) {
-        return '"'. $artifact->getTitle() .' ('. $artifact->fetchXRefLink() .')"';
+    private function getParentTitle(Artifact $artifact)
+    {
+        return '"' . $artifact->getTitle() . ' (' . $artifact->fetchXRefLink() . ')"';
     }
 
     /**
@@ -250,20 +258,19 @@ class Tracker_HierarchyFactory
      *     `-- Task
      * getAllAncestors(User, Task) -> ['Story', 'Epic']
      *
-     * @param PFUser $user
-     * @param Tracker_Artifact $child
      * @param array $stack (purly internal for recursion, should not be used
      *
      * @return Array of Tracker_Artifact
      */
-    public function getAllAncestors(PFUser $user, Tracker_Artifact $child, array &$stack = array()) {
-        if (!isset($this->cache_ancestors[$user->getId()][$child->getId()])) {
+    public function getAllAncestors(PFUser $user, Artifact $child, array &$stack = [])
+    {
+        if (! isset($this->cache_ancestors[$user->getId()][$child->getId()])) {
             $parent = $this->getParentArtifact($user, $child);
             if ($parent === null || $parent->getId() == $child->getId() || isset($stack[$parent->getId()])) {
-                $this->cache_ancestors[$user->getId()][$child->getId()] = array();
+                $this->cache_ancestors[$user->getId()][$child->getId()] = [];
             } else {
-                $stack[$parent->getId()] = true;
-                $this->cache_ancestors[$user->getId()][$child->getId()] = array_merge(array($parent), $this->getAllAncestors($user, $parent, $stack));
+                $stack[$parent->getId()]                                = true;
+                $this->cache_ancestors[$user->getId()][$child->getId()] = array_merge([$parent], $this->getAllAncestors($user, $parent, $stack));
             }
         }
         return $this->cache_ancestors[$user->getId()][$child->getId()];
@@ -274,25 +281,28 @@ class Tracker_HierarchyFactory
      *
      * @param Array   $tracker_mapping the trackers mapping during project creation based on a template
      */
-    public function duplicate($tracker_mapping) {
+    public function duplicate($tracker_mapping)
+    {
         $search_tracker_ids = array_keys($tracker_mapping);
-        $hierarchy_dar     = $this->hierarchy_dao->searchTrackerHierarchy($search_tracker_ids);
+        $hierarchy_dar      = $this->hierarchy_dao->searchTrackerHierarchy($search_tracker_ids);
 
         foreach ($hierarchy_dar as $row) {
             $this->hierarchy_dao->duplicate($row['parent_id'], $row['child_id'], $tracker_mapping);
         }
     }
 
-    private function getHierarchyFromTrackers(Tracker_Hierarchy $hierarchy, &$search_tracker_ids, &$processed_tracker_ids) {
+    private function getHierarchyFromTrackers(Tracker_Hierarchy $hierarchy, &$search_tracker_ids, &$processed_tracker_ids)
+    {
         $processed_tracker_ids   = array_merge($processed_tracker_ids, $search_tracker_ids);
         $added_relationships_ids = $this->addRelationships($hierarchy, $search_tracker_ids);
         $search_tracker_ids      = array_values(array_diff($added_relationships_ids, $processed_tracker_ids));
     }
 
-    private function addRelationships(Tracker_Hierarchy $hierarchy, $search_tracker_ids) {
-        $hierarchy_dar     = $this->hierarchy_dao->searchTrackerHierarchy($search_tracker_ids);
+    private function addRelationships(Tracker_Hierarchy $hierarchy, $search_tracker_ids): array
+    {
+        $hierarchy_dar = $this->hierarchy_dao->searchTrackerHierarchy($search_tracker_ids);
 
-        $relationships_ids = array();
+        $relationships_ids = [];
         foreach ($hierarchy_dar as $row) {
             $this->addRelationshipAndStack($hierarchy, $row['parent_id'], $row['child_id'], $relationships_ids);
         }
@@ -300,12 +310,11 @@ class Tracker_HierarchyFactory
         return $relationships_ids;
     }
 
-    private function addRelationshipAndStack($hierarchy, $parent_id, $child_id, &$stack) {
+    private function addRelationshipAndStack($hierarchy, $parent_id, $child_id, &$stack)
+    {
         $hierarchy->addRelationship($parent_id, $child_id);
 
         $stack[] = $parent_id;
         $stack[] = $child_id;
     }
 }
-
-?>

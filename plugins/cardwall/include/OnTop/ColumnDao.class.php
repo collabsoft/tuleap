@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,18 +18,33 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Cardwall_OnTop_ColumnDao extends DataAccessObject {
+class Cardwall_OnTop_ColumnDao extends DataAccessObject
+{
 
-    public function searchColumnsByTrackerId($tracker_id) {
+    public function searchColumnsByTrackerId($tracker_id)
+    {
         $tracker_id = $this->da->escapeInt($tracker_id);
-        $sql = "SELECT *
+        $sql        = "SELECT *
                 FROM plugin_cardwall_on_top_column
                 WHERE tracker_id = $tracker_id
                 ORDER BY id";
         return $this->retrieve($sql);
     }
 
-    public function createWithcolor($tracker_id, $label, $red, $green, $blue) {
+    /**
+     * @return DataAccessResult|false
+     */
+    public function searchByColumnId(int $column_id)
+    {
+        $column_id = $this->da->escapeInt($column_id);
+        $sql       = "SELECT *
+            FROM plugin_cardwall_on_top_column
+            WHERE id = $column_id";
+        return $this->retrieve($sql);
+    }
+
+    public function createWithcolor($tracker_id, $label, $red, $green, $blue)
+    {
         $tracker_id = $this->da->escapeInt($tracker_id);
         $label      = $this->da->quoteSmart($label);
         $red        = $this->da->escapeInt($red, CODENDI_DB_NULL);
@@ -42,7 +57,8 @@ class Cardwall_OnTop_ColumnDao extends DataAccessObject {
         return $this->updateAndGetLastId($sql);
     }
 
-    public function createWithTLPColor($tracker_id, $label, $tlp_color_name) {
+    public function createWithTLPColor($tracker_id, $label, $tlp_color_name)
+    {
         $tracker_id     = $this->da->escapeInt($tracker_id);
         $label          = $this->da->quoteSmart($label);
         $tlp_color_name = $this->da->quoteSmart($tlp_color_name);
@@ -53,7 +69,8 @@ class Cardwall_OnTop_ColumnDao extends DataAccessObject {
         return $this->updateAndGetLastId($sql);
     }
 
-    public function create($tracker_id, $label) {
+    public function create($tracker_id, $label)
+    {
         $tracker_id = $this->da->escapeInt($tracker_id);
         $label      = $this->da->quoteSmart($label);
 
@@ -63,14 +80,15 @@ class Cardwall_OnTop_ColumnDao extends DataAccessObject {
         return $this->updateAndGetLastId($sql);
     }
 
-    public function save($tracker_id, $id, $label, $red, $green, $blue) {
+    public function save($tracker_id, $id, $label, $red, $green, $blue)
+    {
         $id         = $this->da->escapeInt($id);
         $tracker_id = $this->da->escapeInt($tracker_id);
         $label      = $this->da->quoteSmart($label);
         $red        = $this->da->escapeInt($red);
         $green      = $this->da->escapeInt($green);
         $blue       = $this->da->escapeInt($blue);
-        $sql = "UPDATE plugin_cardwall_on_top_column
+        $sql        = "UPDATE plugin_cardwall_on_top_column
                 SET label = $label,
                     bg_red = $red,
                     bg_green = $green,
@@ -83,10 +101,11 @@ class Cardwall_OnTop_ColumnDao extends DataAccessObject {
         }
     }
 
-    public function delete($tracker_id, $id) {
+    public function delete($tracker_id, $id)
+    {
         $id         = $this->da->escapeInt($id);
         $tracker_id = $this->da->escapeInt($tracker_id);
-        $sql = "DELETE FROM plugin_cardwall_on_top_column
+        $sql        = "DELETE FROM plugin_cardwall_on_top_column
                 WHERE tracker_id = $tracker_id
                   AND id = $id";
         return $this->update($sql);
@@ -94,16 +113,16 @@ class Cardwall_OnTop_ColumnDao extends DataAccessObject {
 
     public function duplicate($from_tracker_id, $to_tracker_id, &$mapping)
     {
-        $from_tracker_id = $this->da->escapeInt($from_tracker_id);
-        $to_tracker_id   = $this->da->escapeInt($to_tracker_id);
-        $sql = "SELECT id
+        $from_tracker_id                           = $this->da->escapeInt($from_tracker_id);
+        $to_tracker_id                             = $this->da->escapeInt($to_tracker_id);
+        $sql                                       = "SELECT id
                 FROM plugin_cardwall_on_top_column
                 WHERE tracker_id = $from_tracker_id
                 ORDER BY id ASC";
-        $mapping['plugin_cardwall_column_mapping'] = array();
+        $mapping['plugin_cardwall_column_mapping'] = [];
         foreach ($this->retrieve($sql) as $row) {
             $from_column_id = $row['id'];
-            $sql = "INSERT INTO plugin_cardwall_on_top_column (tracker_id, label, bg_red, bg_green, bg_blue, tlp_color_name)
+            $sql            = "INSERT INTO plugin_cardwall_on_top_column (tracker_id, label, bg_red, bg_green, bg_blue, tlp_color_name)
                     SELECT $to_tracker_id, label, bg_red, bg_green, bg_blue, tlp_color_name
                     FROM plugin_cardwall_on_top_column
                     WHERE id = $from_column_id";

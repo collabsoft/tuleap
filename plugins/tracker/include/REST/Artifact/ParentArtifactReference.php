@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All rights reserved
+ * Copyright (c) Enalean, 2015-Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,18 +20,31 @@
 
 namespace Tuleap\Tracker\REST\Artifact;
 
-use \Tracker_Artifact;
+use Tuleap\Tracker\Artifact\Artifact;
 
-class ParentArtifactReference extends ArtifactReference {
+/**
+ * @psalm-immutable
+ */
+class ParentArtifactReference extends ArtifactReference
+{
 
     /**
      * @var string
      */
     public $title;
 
-    public function build(Tracker_Artifact $artifact, $format = '') {
-        parent::build($artifact, $format);
+    private function __construct(Artifact $artifact, \Tracker $tracker, string $format = '')
+    {
+        parent::__construct($artifact, $tracker, $format);
 
         $this->title = $artifact->getCachedTitle();
+    }
+
+    /**
+     * @return ParentArtifactReference
+     */
+    public static function build(Artifact $artifact, string $format = ''): ArtifactReference
+    {
+        return new self($artifact, $artifact->getTracker(), $format);
     }
 }

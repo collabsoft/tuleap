@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,7 @@ namespace Tuleap\MFA\OTP;
 
 class TOTPMode
 {
-    const SUPPORTED_ALGORITHMS = ['sha1', 'sha256', 'sha512'];
+    public const SUPPORTED_ALGORITHMS = ['sha1', 'sha256', 'sha512'];
 
     /**
      * @var int

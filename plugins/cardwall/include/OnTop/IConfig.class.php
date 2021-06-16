@@ -1,7 +1,6 @@
 <?php
-
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,11 +18,14 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
+
 /**
- * Provide a link between a Tracker_Artifact and a Tracker_FormElement_Field 
+ * Provide a link between a Tracker_Artifact and a Tracker_FormElement_Field
  */
-interface Cardwall_OnTop_IConfig {
-    
+interface Cardwall_OnTop_IConfig
+{
+
     public function getTracker();
 
     public function isEnabled();
@@ -35,20 +37,25 @@ interface Cardwall_OnTop_IConfig {
     public function getDashboardColumns();
 
     public function getRendererColumns(Tracker_FormElement_Field_List $cardwall_field);
-    
+
+    public function getFilteredRendererColumns(Tracker_FormElement_Field_List $cardwall_field, array $filter);
+
     public function getMappings();
 
     public function getTrackers();
 
     public function getMappingFor(Tracker $mapping_tracker);
 
-    public function isInColumn(Tracker_Artifact                                     $artifact, 
-                               Cardwall_FieldProviders_IProvideFieldGivenAnArtifact $field_provider, 
-                               Cardwall_Column                                      $column);
+    public function isInColumn(
+        Artifact $artifact,
+        Cardwall_FieldProviders_IProvideFieldGivenAnArtifact $field_provider,
+        Cardwall_Column $column
+    );
 
     public function getCardwallMappings(array $fields, Cardwall_OnTop_Config_ColumnCollection $cardwall_columns);
 
-    public function fillMappingsWithOnTopMappings(Cardwall_MappingCollection             $mappings, 
-                                                  Cardwall_OnTop_Config_ColumnCollection $columns);
+    public function fillMappingsWithOnTopMappings(
+        Cardwall_MappingCollection $mappings,
+        Cardwall_OnTop_Config_ColumnCollection $columns
+    );
 }
-?>

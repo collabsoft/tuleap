@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2018. All rights reserved.
+ * Copyright Enalean (c) 2018 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -28,7 +28,7 @@ use Exception;
 
 class ArtifactsDeletionLimitReachedException extends Exception
 {
-    const MESSAGE = "The limit of artifacts deletions has been reached for the previous 24 hours.";
+    public const MESSAGE = "The limit of artifacts deletions has been reached for the previous 24 hours.";
 
     public function __construct()
     {

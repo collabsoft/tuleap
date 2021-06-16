@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,13 +22,13 @@ namespace Tuleap\ArtifactsFolders\Folder;
 
 use Codendi_Request;
 use PFUser;
-use Tracker_Artifact_View_View;
-use Tracker_Artifact;
 use TemplateRendererFactory;
+use Tracker_Artifact_View_View;
+use Tuleap\Tracker\Artifact\Artifact;
 
 class ArtifactView extends Tracker_Artifact_View_View
 {
-    const IDENTIFIER = 'artifactsfolders';
+    public const IDENTIFIER = 'artifactsfolders';
 
     /**
      * @var ArtifactPresenterBuilder
@@ -36,7 +36,7 @@ class ArtifactView extends Tracker_Artifact_View_View
     private $artifact_presenter_builder;
 
     public function __construct(
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Codendi_Request $request,
         PFUser $user,
         ArtifactPresenterBuilder $artifact_presenter_builder
@@ -48,7 +48,7 @@ class ArtifactView extends Tracker_Artifact_View_View
     /** @see Tracker_Artifact_View_View::getTitle() */
     public function getTitle()
     {
-        return $GLOBALS['Language']->getText('plugin_folders', 'tab_label');
+        return dgettext('tuleap-artifactsfolders', 'Folder Content');
     }
 
     /** @see Tracker_Artifact_View_View::getIdentifier() */

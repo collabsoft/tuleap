@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  * Copyright (c) 2010 Christopher Han <xiphux@gmail.com>
  *
  * This file is a part of Tuleap.
@@ -24,10 +24,8 @@ namespace Tuleap\Git\GitPHP;
 /**
  * Tree class
  *
- * @package GitPHP
- * @subpackage Git
  */
-class Tree extends FilesystemObject implements GitObjectType
+class Tree extends FilesystemObject
 {
 
     /**
@@ -37,7 +35,7 @@ class Tree extends FilesystemObject implements GitObjectType
      *
      * @access protected
      */
-    protected $contents = array();
+    protected $contents = [];
 
     /**
      * contentsRead
@@ -66,7 +64,7 @@ class Tree extends FilesystemObject implements GitObjectType
      * @param mixed $project the project
      * @param string $hash tree hash
      * @return mixed tree object
-     * @throws Exception exception on invalid hash
+     * @throws \Exception exception on invalid hash
      */
     public function __construct($project, $hash)
     {
@@ -85,9 +83,11 @@ class Tree extends FilesystemObject implements GitObjectType
     {
         parent::SetCommit($commit);
 
-        if ($this->contentsRead && !$this->contentsReferenced) {
+        if ($this->contentsRead && ! $this->contentsReferenced) {
             foreach ($this->contents as $obj) {
-                $obj->SetCommit($commit);
+                if (! $obj->isSubmodule()) {
+                    $obj->SetCommit($commit);
+                }
             }
         }
     }
@@ -102,7 +102,7 @@ class Tree extends FilesystemObject implements GitObjectType
      */
     public function GetContents() // @codingStandardsIgnoreLine
     {
-        if (!$this->contentsRead) {
+        if (! $this->contentsRead) {
             $this->ReadContents();
         }
 
@@ -138,24 +138,24 @@ class Tree extends FilesystemObject implements GitObjectType
         $treeData = $this->GetProject()->GetObject($this->hash);
 
         $start = 0;
-        $len = strlen($treeData);
+        $len   = strlen($treeData);
         while ($start < $len) {
             $pos = strpos($treeData, "\0", $start);
 
-            list($mode, $path) = explode(' ', substr($treeData, $start, $pos-$start), 2);
-            $mode = str_pad($mode, 6, '0', STR_PAD_LEFT);
-            $hash = bin2hex(substr($treeData, $pos+1, 20));
-            $start = $pos + 21;
+            list($mode, $path) = explode(' ', substr($treeData, $start, $pos - $start), 2);
+            $mode              = str_pad($mode, 6, '0', STR_PAD_LEFT);
+            $hash              = bin2hex(substr($treeData, $pos + 1, 20));
+            $start             = $pos + 21;
 
             $octmode = octdec($mode);
 
-            if ($octmode == 57344) {
-                // submodules not currently supported
-                continue;
+            if (! empty($this->path)) {
+                $path = $this->path . '/' . $path;
             }
 
-            if (!empty($this->path)) {
-                $path = $this->path . '/' . $path;
+            if ($octmode === 57344) {
+                $this->contents[] = new Submodule($path, $hash);
+                continue;
             }
 
             $obj = null;
@@ -167,7 +167,7 @@ class Tree extends FilesystemObject implements GitObjectType
                 $obj = $this->GetProject()->GetBlob($hash);
             }
 
-            if (!$obj) {
+            if (! $obj) {
                 continue;
             }
 
@@ -181,44 +181,6 @@ class Tree extends FilesystemObject implements GitObjectType
     }
 
     /**
-     * ReferenceContents
-     *
-     * Turns the contents objects into reference pointers
-     *
-     * @access private
-     */
-    private function ReferenceContents() // @codingStandardsIgnoreLine
-    {
-        if ($this->contentsReferenced) {
-            return;
-        }
-
-        if (!(isset($this->contents) && (count($this->contents) > 0))) {
-            return;
-        }
-
-        for ($i = 0; $i < count($this->contents); ++$i) {
-            $obj = $this->contents[$i];
-            $data = array();
-
-            $data['hash'] = $obj->GetHash();
-            $data['mode'] = $obj->GetMode();
-            $data['path'] = $obj->GetPath();
-
-            if ($obj instanceof Tree) {
-                $data['type'] = 'tree';
-            } elseif ($obj instanceof Blob) {
-                $data['type'] = 'blob';
-                $data['size'] = $obj->GetSize();
-            }
-
-            $this->contents[$i] = $data;
-        }
-
-        $this->contentsReferenced = true;
-    }
-
-    /**
      * DereferenceContents
      *
      * Turns the contents pointers back into objects
@@ -227,19 +189,18 @@ class Tree extends FilesystemObject implements GitObjectType
      */
     private function DereferenceContents() // @codingStandardsIgnoreLine
     {
-        if (!$this->contentsReferenced) {
+        if (! $this->contentsReferenced) {
             return;
         }
 
-        if (!(isset($this->contents) && (count($this->contents) > 0))) {
+        if (! (isset($this->contents) && (count($this->contents) > 0))) {
             return;
         }
 
-        for ($i = 0; $i < count($this->contents); ++$i) {
-            $data = $this->contents[$i];
+        foreach ($this->contents as $i => $data) {
             $obj = null;
 
-            if (!isset($data['hash']) || empty($data['hash'])) {
+            if (! isset($data['hash']) || empty($data['hash'])) {
                 continue;
             }
 
@@ -247,18 +208,18 @@ class Tree extends FilesystemObject implements GitObjectType
                 $obj = $this->GetProject()->GetTree($data['hash']);
             } elseif ($data['type'] == 'blob') {
                 $obj = $this->GetProject()->GetBlob($data['hash']);
-                if (isset($data['size']) && !empty($data['size'])) {
+                if (isset($data['size']) && ! empty($data['size'])) {
                     $obj->SetSize($data['size']);
                 }
             } else {
                 continue;
             }
 
-            if (isset($data['mode']) && !empty($data['mode'])) {
+            if (isset($data['mode']) && ! empty($data['mode'])) {
                 $obj->SetMode($data['mode']);
             }
 
-            if (isset($data['path']) && !empty($data['path'])) {
+            if (isset($data['path']) && ! empty($data['path'])) {
                 $obj->SetPath($data['path']);
             }
 
@@ -278,6 +239,11 @@ class Tree extends FilesystemObject implements GitObjectType
     }
 
     public function isBlob()
+    {
+        return false;
+    }
+
+    public function isSubmodule()
     {
         return false;
     }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -33,17 +33,7 @@ namespace Tuleap\Request;
  *
  * This interface is supposed to be implemented by Routes that need to manage permissions entirely on their own.
  * As a developer or review be very careful, you are alone here, no Black^WBrown magic is there to protect yourself.
- *
- * @package Tuleap\Request
  */
 interface DispatchableWithRequestNoAuthz extends DispatchableWithRequest
 {
-    /**
-     * @param \URLVerification $url_verification
-     * @param \HTTPRequest $request
-     * @param array $variables
-     *
-     * @return boolean Whether access is granted or not
-     */
-    public function userCanAccess(\URLVerification $url_verification, \HTTPRequest $request, array $variables);
 }

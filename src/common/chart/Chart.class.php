@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,13 +19,13 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Chart\ColorsForCharts;
+namespace Tuleap\Chart;
 
-require_once('jpgraph.php');
-require_once('jpgraph_gantt.php');
-require_once('jpgraph_line.php');
-require_once('jpgraph_bar.php');
-require_once('jpgraph_date.php');
+require_once __DIR__ . '/../../embedded_vendor/jpgraph/jpgraph_ttf.inc.php';
+
+use Chart_TTFFactory;
+use Feedback;
+use TTF;
 
 /**
 * Chart
@@ -41,9 +41,6 @@ class Chart
      */
     protected $colors_for_charts;
 
-    private $width  = null;
-    private $height = null;
-
     protected $jpgraph_instance;
 
     /**
@@ -57,31 +54,25 @@ class Chart
     *
     * @return void
     */
-    public function __construct($aWidth = 600, $aHeight = 400, $aCachedName = "", $aTimeOut = 0, $aInline = true) {
-        $this->width  = $aWidth;
-        $this->height = $aHeight;
-
+    public function __construct($aWidth = 600, $aHeight = 400, $aCachedName = "", $aTimeOut = 0, $aInline = true)
+    {
         $this->colors_for_charts = new ColorsForCharts();
 
-        $classname = $this->getGraphClass();
-        $this->jpgraph_instance = new $classname($aWidth,$aHeight,$aCachedName,$aTimeOut,$aInline);
+        $classname              = $this->getGraphClass();
+        $this->jpgraph_instance = new $classname($aWidth, $aHeight, $aCachedName, $aTimeOut, $aInline);
         $this->jpgraph_instance->SetMarginColor($this->getChartBackgroundColor());
         $this->jpgraph_instance->SetFrame(true, $this->getMainColor(), 0);
+
         if ($aWidth && $aHeight) {
-            // Commented because php56-php-gd from remi-safe
-            // does not rely on the GD library bundle with PHP
-            // but by the one provided by the OS which does not
-            // include the antiliasing feature
-            if (function_exists('imageantialias')) {
-                $this->jpgraph_instance->img->SetAntiAliasing();
-            }
+            $this->jpgraph_instance->img->SetAntiAliasing();
         }
+
         Chart_TTFFactory::setUserFont($this->jpgraph_instance);
 
         //Fix margin
         try {
             $this->jpgraph_instance->img->SetMargin(70, 160, 30, 70);
-        } catch(Exception $e) {
+        } catch (\Exception $e) {
             // do nothing, JPGraph displays the error by itself
         }
 
@@ -107,10 +98,11 @@ class Chart
     /**
      * Get the name of the jpgraph class to instantiate
      *
-     * @return string
+     * @psalm-return class-string
      */
-    protected function getGraphClass() {
-        return 'Graph';
+    protected function getGraphClass(): string
+    {
+        return \Graph::class;
     }
 
     /**
@@ -121,7 +113,8 @@ class Chart
      *
      * @return mixed
      */
-    public function __get($name) {
+    public function __get($name)
+    {
         return $this->jpgraph_instance->$name;
     }
 
@@ -134,7 +127,8 @@ class Chart
      *
      * @return mixed the $value
      */
-    public function __set($name, $value) {
+    public function __set($name, $value)
+    {
         return $this->jpgraph_instance->$name = $value;
     }
 
@@ -144,9 +138,10 @@ class Chart
      *
      * @param string $name The name of the property
      *
-     * @return boolean
+     * @return bool
      */
-    public function __isset($name) {
+    public function __isset($name)
+    {
         return isset($this->jpgraph_instance->$name);
     }
 
@@ -156,9 +151,10 @@ class Chart
      *
      * @param string $name The name of the property
      *
-     * @return boolean
+     * @return bool
      */
-    public function __unset($name) {
+    public function __unset($name)
+    {
         unset($this->jpgraph_instance->$name);
     }
 
@@ -171,12 +167,17 @@ class Chart
      *
      * @return mixed
      */
-    public function __call($method, $args) {
-        try{
-            $result = call_user_func_array(array($this->jpgraph_instance, $method), $args);
-        }
-        catch (Exception $exc) {
-            $error_message = $GLOBALS['Language']->getText('plugin_graphontrackers_error', 'jp_graph', array($this->title->t, $exc->getMessage()));
+    public function __call($method, $args)
+    {
+        try {
+            $result = call_user_func_array([$this->jpgraph_instance, $method], $args);
+        } catch (\Exception $exc) {
+            $error_message = sprintf(
+                _('JpGraph error for graph "%s": %s'),
+                $this->title->t,
+                $exc->getMessage()
+            );
+
             if (headers_sent()) {
                 echo '<p class="feedback_error">';
                 echo $error_message;
@@ -186,7 +187,7 @@ class Chart
             }
             return false;
         }
-        if (!strnatcasecmp($method, 'SetScale')) {
+        if (! strnatcasecmp($method, 'SetScale')) {
             $this->jpgraph_instance->xaxis->SetColor($this->getMainColor(), $this->getMainColor());
             $this->jpgraph_instance->xaxis->SetFont($this->getFont(), FS_NORMAL, 8);
             $this->jpgraph_instance->xaxis->SetLabelAngle(45);
@@ -205,7 +206,8 @@ class Chart
      *
      * @return int
      */
-    public function getFont() {
+    public function getFont()
+    {
         return FF_USERFONT;
     }
 
@@ -215,7 +217,8 @@ class Chart
      * @return string
      * @see Layout->getChartMainColor
      */
-    public function getMainColor() {
+    public function getMainColor()
+    {
         return $this->colors_for_charts->getChartMainColor();
     }
 
@@ -225,7 +228,8 @@ class Chart
      * @return array
      * @see Layout->getChartColors
      */
-    public function getThemedColors() {
+    public function getThemedColors()
+    {
         return $this->colors_for_charts->getChartColors();
     }
 
@@ -239,7 +243,8 @@ class Chart
      *
      * @return int
      */
-    public function getTopMargin() {
+    public function getTopMargin()
+    {
         return 20 + $this->jpgraph_instance->title->getTextHeight($this->jpgraph_instance->img) + $this->jpgraph_instance->subtitle->getTextHeight($this->jpgraph_instance->img);
     }
 
@@ -247,28 +252,38 @@ class Chart
      * Diplay a given message as png image
      *
      * @param String $msg Message to display
-     *
-     * @return Void
      */
-    public function displayMessage($msg) {
+    public function displayMessage($msg): void
+    {
         //ttf from jpgraph
         $ttf = new TTF();
         Chart_TTFFactory::setUserFont($ttf);
 
+        if ($msg === '') { // Workaround for an issue with gd 2.3.0, see https://tuleap.net/plugins/tracker/?aid=14721
+            $im = @imagecreate(2, 2);
+            if ($im !== false) {
+                header('Content-type: image/png');
+                imagecolorallocate($im, 0, 0, 0);
+                imagepng($im);
+                imagedestroy($im);
+            }
+            return;
+        }
+
         //Calculate the baseline
         // @see http://www.php.net/manual/fr/function.imagettfbbox.php#75333
         //this should be above baseline
-        $test2    = "H";
+        $test2 = "H";
         //some of these additional letters should go below it
-        $test3    ="Hjgqp";
+        $test3 = "Hjgqp";
         //get the dimension for these two:
         $box2     = imageTTFBbox(10, 0, $ttf->File(FF_USERFONT), $test2);
         $box3     = imageTTFBbox(10, 0, $ttf->File(FF_USERFONT), $test3);
         $baseline = abs((abs($box2[5]) + abs($box2[1])) - (abs($box3[5]) + abs($box3[1])));
         $bbox     = imageTTFBbox(10, 0, $ttf->File(FF_USERFONT), $msg);
         if ($im = @imagecreate($bbox[2] - $bbox[6], $bbox[3] - $bbox[5])) {
-            $backgroundColor  = imagecolorallocate($im, 255, 255, 255);
-            $textColor        = imagecolorallocate($im, 64, 64, 64);
+            $backgroundColor = imagecolorallocate($im, 255, 255, 255);
+            $textColor       = imagecolorallocate($im, 64, 64, 64);
             imagettftext($im, 10, 0, 0, $bbox[3] - $bbox[5] - $baseline, $textColor, $ttf->File(FF_USERFONT), $msg);
             header("Content-type: image/png");
             imagepng($im);

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,17 +18,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/user/User.class.php';
-require_once 'common/project/Project.class.php';
-
 /**
  * Render a tracker switching selectbox. Also display headers and footers
  * See:
  *  + Tracker_IDisplayTrackerLayout
  *  + fetchTrackerSwitcher
  */
-interface Tracker_IFetchTrackerSwitcher extends Tracker_IDisplayTrackerLayout {
-    
+interface Tracker_IFetchTrackerSwitcher extends Tracker_IDisplayTrackerLayout
+{
+
     /**
      * Display a selectbox to switch to a tracker of:
      *  + any projects the user is member of
@@ -44,6 +42,5 @@ interface Tracker_IFetchTrackerSwitcher extends Tracker_IDisplayTrackerLayout {
      *
      * @return string html
      */
-    public function fetchTrackerSwitcher(PFUser $user, $separator, Project $include_project = null, Tracker $current_tracker = null);
+    public function fetchTrackerSwitcher(PFUser $user, $separator, ?Project $include_project = null, ?Tracker $current_tracker = null);
 }
-?>

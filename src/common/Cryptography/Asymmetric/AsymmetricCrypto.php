@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,6 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\Cryptography\Asymmetric;
 
 use Tuleap\Cryptography\Exception\InvalidSignatureException;
@@ -29,34 +31,32 @@ final class AsymmetricCrypto
         throw new \RuntimeException('Do not instantiate this class, invoke the static methods directly');
     }
 
-    /**
-     * @return string
-     */
-    public static function sign($message, SignatureSecretKey $secret_key)
+    public static function sign(string $message, SignatureSecretKey $secret_key): string
     {
-        if (! is_string($message)) {
-            throw new \TypeError('Expected $message to be a string, got ' . gettype($message));
-        }
+        $raw_key_material = $secret_key->getRawKeyMaterial();
 
-        return \sodium_crypto_sign_detached($message, $secret_key->getRawKeyMaterial());
+        $signature = \sodium_crypto_sign_detached($message, $raw_key_material);
+
+        \sodium_memzero($raw_key_material);
+
+        return $signature;
     }
 
     /**
-     * @return bool
      * @throws InvalidSignatureException
      */
-    public static function verify($message, SignaturePublicKey $public_key, $signature)
+    public static function verify(string $message, SignaturePublicKey $public_key, string $signature): bool
     {
-        if (! is_string($message)) {
-            throw new \TypeError('Expected $message to be a string, got ' . gettype($message));
-        }
-        if (! is_string($signature)) {
-            throw new \TypeError('Expected $signature to be a string, got ' . gettype($signature));
-        }
         if (\mb_strlen($signature, '8bit') !== SODIUM_CRYPTO_SIGN_BYTES) {
             throw new InvalidSignatureException('Signature must be SODIUM_CRYPTO_SIGN_BYTES long');
         }
 
-        return \sodium_crypto_sign_verify_detached($signature, $message, $public_key->getRawKeyMaterial());
+        $raw_key_material = $public_key->getRawKeyMaterial();
+
+        $is_valid = \sodium_crypto_sign_verify_detached($signature, $message, $raw_key_material);
+
+        \sodium_memzero($raw_key_material);
+
+        return $is_valid;
     }
 }

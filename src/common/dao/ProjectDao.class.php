@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2016. All rights reserved
  *
  * This file is a part of Codendi.
  *
@@ -19,14 +19,16 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ProjectDao extends DataAccessObject {
+class ProjectDao extends DataAccessObject
+{
 
-    const TABLE_NAME       = 'groups';
-    const GROUP_ID         = 'group_id';
-    const STATUS           = 'status';
-    const UNIX_GROUP_NAME  = 'unix_group_name';
+    public const TABLE_NAME      = 'groups';
+    public const GROUP_ID        = 'group_id';
+    public const STATUS          = 'status';
+    public const UNIX_GROUP_NAME = 'unix_group_name';
 
-    public function __construct($da = null) {
+    public function __construct($da = null)
+    {
         parent::__construct($da);
         $this->table_name = 'groups';
     }
@@ -43,23 +45,25 @@ class ProjectDao extends DataAccessObject {
         }
     }
 
-    public function searchById($id) {
-        $sql = "SELECT *".
-               " FROM ".$this->table_name.
-               " WHERE group_id = ".$this->da->quoteSmart($id);
+    public function searchById($id)
+    {
+        $sql = "SELECT *" .
+               " FROM " . $this->table_name .
+               " WHERE group_id = " . $this->da->quoteSmart($id);
         return $this->retrieve($sql);
     }
 
-    public function searchByStatus($status) {
+    public function searchByStatus($status)
+    {
         $status = $this->da->quoteSmart($status);
-        $sql = "SELECT SQL_CALC_FOUND_ROWS *
+        $sql    = "SELECT SQL_CALC_FOUND_ROWS *
                 FROM $this->table_name
                 WHERE status = $status
                 ORDER BY group_name";
         return $this->retrieve($sql);
     }
 
-    public function countByStatusAndUser($user_id, $status)
+    public function countByStatusAndUser(int $user_id, string $status): int
     {
         $user_id = $this->da->escapeInt($user_id);
         $status  = $this->da->quoteSmart($status);
@@ -74,17 +78,31 @@ class ProjectDao extends DataAccessObject {
         return (int) $this->foundRows();
     }
 
-    public function searchByUnixGroupName($unixGroupName){
-        $unixGroupName= $this->da->quoteSmart($unixGroupName);
-        $sql = "SELECT *
+    public function countByStatus(string $project_status): int
+    {
+        $project_status = $this->da->quoteSmart($project_status);
+
+        $dar = $this->retrieve('SELECT count(*) AS nb FROM `groups` WHERE status = ' . $project_status);
+        if ($dar === false) {
+            return 0;
+        }
+
+        return (int) $dar->getRow()['nb'];
+    }
+
+    public function searchByUnixGroupName($unixGroupName)
+    {
+        $unixGroupName = $this->da->quoteSmart($unixGroupName);
+        $sql           = "SELECT *
                 FROM $this->table_name
                 WHERE unix_group_name=$unixGroupName";
         return $this->retrieve($sql);
     }
 
-    public function searchByCaseInsensitiveUnixGroupName($unixGroupName) {
-        $unixGroupName= $this->da->quoteSmart($unixGroupName);
-        $sql = "SELECT *
+    public function searchByCaseInsensitiveUnixGroupName($unixGroupName)
+    {
+        $unixGroupName = $this->da->quoteSmart($unixGroupName);
+        $sql           = "SELECT *
                 FROM $this->table_name
                 WHERE LOWER(unix_group_name)=LOWER($unixGroupName)";
         return $this->retrieve($sql);
@@ -101,57 +119,66 @@ class ProjectDao extends DataAccessObject {
      * the projects the user is member of or is admin of.
      *
      * @param String  $name
-     * @param Integer $limit
-     * @param Integer $userId
-     * @param Boolean $isMember
-     * @param Boolean $isAdmin
-     * @param Boolean $isPrivate Display private projects if true
+     * @param int $limit
+     * @param int $userId
+     * @param bool $isMember
+     * @param bool $isAdmin
+     * @param bool $isPrivate Display private projects if true
      *
      * @return DataAccessResult
      */
-    public function searchProjectsNameLike($name, $limit, $userId=null, $isMember=false, $isAdmin=false, $isPrivate = false, $offset = 0) {
+    public function searchProjectsNameLike($name, $limit, $userId = null, $isMember = false, $isAdmin = false, $isPrivate = false, $offset = 0)
+    {
         $join    = '';
         $where   = '';
         $groupby = '';
-        $public  = ' g.access != '.$this->da->quoteSmart(Project::ACCESS_PRIVATE);
+
+        $access_private               = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
+        $access_private_wo_restricted = $this->da->quoteSmart(Project::ACCESS_PRIVATE_WO_RESTRICTED);
+
+        $public = ' g.access NOT IN (' . $access_private . ', ' . $access_private_wo_restricted . ')';
         if ($isPrivate) {
-            $public  = ' 1 ';
+            $public = ' 1 ';
         }
         if ($userId != null) {
             if ($isMember || $isAdmin) {
                 // Manage if we search project the user is member or admin of
                 $join  .= ' JOIN user_group ug ON (ug.group_id = g.group_id)';
-                $where .= ' AND ug.user_id = '.$this->da->escapeInt($userId);
+                $where .= ' AND ug.user_id = ' . $this->da->escapeInt($userId);
                 if ($isAdmin) {
                     $where .= ' AND ug.admin_flags = "A"';
                 }
             } else {
                 // Either public projects or private projects the user is member of
                 $join  .= ' LEFT JOIN user_group ug ON (ug.group_id = g.group_id)';
-                $where .= ' AND ('.$public.
-                          '      OR (g.access = '.$this->da->quoteSmart(Project::ACCESS_PRIVATE).' AND ug.user_id = '.$this->da->escapeInt($userId).'))';
+                $where .= ' AND (' . $public .
+                          '     OR (g.access IN (' . $access_private . ', ' . $access_private_wo_restricted . ')
+                                    AND ug.user_id = ' . $this->da->escapeInt($userId) . '
+                                )
+                            )';
             }
             $groupby .= ' GROUP BY g.group_id';
         } else {
             // If no user_id provided, only return public projects
-            $where .= ' AND '.$public;
+            $where .= ' AND ' . $public;
         }
 
-        $sql = "SELECT SQL_CALC_FOUND_ROWS g.*".
-               " FROM ".$this->table_name." g".
-               $join.
-               " WHERE (g.group_name like ".$this->da->quoteSmart($name.'%').
-               " OR g.unix_group_name like ".$this->da->quoteSmart($name.'%').")".
-               " AND g.status='A'".
-               $where.
-               $groupby.
-               " ORDER BY group_name".
-               " LIMIT ".$this->da->escapeInt($offset).", ".$this->da->escapeInt($limit);
+        $sql = "SELECT SQL_CALC_FOUND_ROWS g.*" .
+               " FROM " . $this->table_name . " g" .
+               $join .
+               " WHERE (g.group_name like " . $this->da->quoteSmart($name . '%') .
+               " OR g.unix_group_name like " . $this->da->quoteSmart($name . '%') . ")" .
+               " AND g.status='A'" .
+               $where .
+               $groupby .
+               " ORDER BY group_name" .
+               " LIMIT " . $this->da->escapeInt($offset) . ", " . $this->da->escapeInt($limit);
 
         return $this->retrieve($sql);
     }
 
-    public function searchSiteTemplates() {
+    public function searchSiteTemplates()
+    {
         $sql = "SELECT *
          FROM groups
          WHERE type='2'
@@ -168,17 +195,20 @@ class ProjectDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function searchProjectsUserIsAdmin($user_id) {
+    public function searchProjectsUserIsAdmin($user_id)
+    {
         return $this->searchActiveProjectsByUserStatus($user_id, "AND user_group.admin_flags = 'A'");
     }
 
-    public function searchActiveProjectsForUser($user_id) {
+    public function searchActiveProjectsForUser($user_id)
+    {
         return $this->searchActiveProjectsByUserStatus($user_id);
     }
 
-    private function searchActiveProjectsByUserStatus($user_id, $where = '') {
+    private function searchActiveProjectsByUserStatus($user_id, $where = '')
+    {
         $user_id = $this->da->escapeInt($user_id);
-        $sql = "SELECT groups.*
+        $sql     = "SELECT groups.*
             FROM groups
               JOIN user_group USING (group_id)
             WHERE user_group.user_id = $user_id
@@ -207,14 +237,14 @@ class ProjectDao extends DataAccessObject {
         WHERE ugroup_user.user_id = $user_id
           AND groups.status='A'";
 
-
         return $this->retrieve($sql);
     }
 
-    public function updateStatus($id, $status) {
-        $sql = 'UPDATE groups'.
-            ' SET status = '.$this->da->quoteSmart($status).
-            ' WHERE group_id = '.$this->da->escapeInt($id);
+    public function updateStatus($id, $status)
+    {
+        $sql = 'UPDATE groups' .
+            ' SET status = ' . $this->da->quoteSmart($status) .
+            ' WHERE group_id = ' . $this->da->escapeInt($id);
         return $this->update($sql);
     }
 
@@ -222,42 +252,30 @@ class ProjectDao extends DataAccessObject {
      * Update the http_domain and service when renaming the group
      * @param Project $project
      * @param String  $new_name
-     * @return Boolean
+     * @return bool
      */
-    public function renameProject($project,$new_name){
+    public function renameProject($project, $new_name)
+    {
         //Update 'groups' table
-        $sql = ' UPDATE groups SET unix_group_name= '.$this->da->quoteSmart($new_name).' ,
-                 http_domain=REPLACE (http_domain,'.$this->da->quoteSmart($project->getUnixName(false)).','.$this->da->quoteSmart($new_name).')
-                 WHERE group_id= '.$this->da->quoteSmart($project->getID());
+        $sql        = ' UPDATE groups SET unix_group_name= ' . $this->da->quoteSmart($new_name) . ' ,
+                 http_domain=REPLACE (http_domain,' . $this->da->quoteSmart($project->getUnixName(false)) . ',' . $this->da->quoteSmart($new_name) . ')
+                 WHERE group_id= ' . $this->da->quoteSmart($project->getID());
         $res_groups = $this->update($sql);
 
         //Update 'service' table
-        if ($res_groups){
-            $sql_summary  = ' UPDATE service SET link= REPLACE (link,'.$this->da->quoteSmart($project->getUnixName()).','.$this->da->quoteSmart(strtolower($new_name)).')
+        if ($res_groups) {
+            $sql_summary = ' UPDATE service SET link= REPLACE (link,' . $this->da->quoteSmart($project->getUnixName()) . ',' . $this->da->quoteSmart(strtolower($new_name)) . ')
                               WHERE short_name="summary"
-                              AND group_id= '.$this->da->quoteSmart($project->getID());
+                              AND group_id= ' . $this->da->quoteSmart($project->getID());
             $res_summary = $this->update($sql_summary);
-            if ($res_summary){
-                $sql_homePage = ' UPDATE service SET link= REPLACE (link,'.$this->da->quoteSmart($project->getUnixName()).','.$this->da->quoteSmart(strtolower($new_name)).')
+            if ($res_summary) {
+                $sql_homePage = ' UPDATE service SET link= REPLACE (link,' . $this->da->quoteSmart($project->getUnixName()) . ',' . $this->da->quoteSmart(strtolower($new_name)) . ')
                                   WHERE short_name="homepage"
-                                  AND group_id= '.$this->da->quoteSmart($project->getID());
+                                  AND group_id= ' . $this->da->quoteSmart($project->getID());
                 return $this->update($sql_homePage);
-                }
             }
+        }
         return false;
-    }
-
-    public function renameProjectPluginServiceLink($project_id, $plugin_name, $new_link) {
-        $plugin_name = $this->da->quoteSmart($plugin_name);
-        $new_link    = $this->da->quoteSmart($new_link);
-        $project_id  = $this->da->escapeInt($project_id);
-
-        $sql = "UPDATE service
-           SET link = $new_link
-           WHERE short_name = $plugin_name
-           AND group_id = $project_id";
-
-        return $this->update($sql);
     }
 
     /**
@@ -265,40 +283,40 @@ class ProjectDao extends DataAccessObject {
      *
      * @return Array ('projects' => DataAccessResult, 'numrows' => int)
      */
-    public function returnAllProjects($offset, $limit, $status=false, $groupName=false) {
-        $cond = array();
+    public function returnAllProjects($offset, $limit, $status = false, $groupName = false)
+    {
+        $cond          = [];
         $project_limit = "";
         if ($limit != 0) {
-            $project_limit .= ' LIMIT '.$this->da->escapeInt($offset).', '.$this->da->escapeInt($limit);
+            $project_limit .= ' LIMIT ' . $this->da->escapeInt($offset) . ', ' . $this->da->escapeInt($limit);
         }
         if (is_array($status)) {
             if (! empty($status)) {
-                $cond[] = 'status IN ('.$this->da->quoteSmartImplode(',', $status).')';
+                $cond[] = 'status IN (' . $this->da->quoteSmartImplode(',', $status) . ')';
             }
         } else {
             if ($status != false) {
-                $cond[] = 'status='.$this->da->quoteSmart($status);
+                $cond[] = 'status=' . $this->da->quoteSmart($status);
             }
         }
 
         if ($groupName != false) {
-            $pattern = $this->da->quoteSmart('%'.$groupName.'%');
-            $cond[] = '(group_name LIKE '.$pattern.' OR group_id LIKE '.$pattern.' OR unix_group_name LIKE '.$pattern.')';
+            $pattern = $this->da->quoteSmart('%' . $groupName . '%');
+            $cond[]  = '(group_name LIKE ' . $pattern . ' OR group_id LIKE ' . $pattern . ' OR unix_group_name LIKE ' . $pattern . ')';
         }
 
-
         if (count($cond) > 0) {
-            $stm = ' WHERE '.implode(' AND ', $cond);
+            $stm = ' WHERE ' . implode(' AND ', $cond);
         } else {
             $stm = '';
         }
 
         $sql = 'SELECT SQL_CALC_FOUND_ROWS *
-                FROM groups '.$stm.'
+                FROM groups ' . $stm . '
                 ORDER BY group_name
-                ASC '.$project_limit;
+                ASC ' . $project_limit;
 
-        return array('projects' => $this->retrieve($sql), 'numrows' => $this->foundRows());
+        return ['projects' => $this->retrieve($sql), 'numrows' => $this->foundRows()];
     }
 
     public function searchProjectsWithNumberOfMembers(
@@ -307,20 +325,20 @@ class ProjectDao extends DataAccessObject {
         $status = false,
         $project_name = false
     ) {
-        $conditions = array();
+        $conditions = [];
         $offset     = $this->da->escapeInt($offset);
         $limit      = $this->da->escapeInt($limit);
 
         if (is_array($status)) {
             if (! empty($status)) {
-                $conditions[] = 'status IN ('.$this->da->quoteSmartImplode(',', $status).')';
+                $conditions[] = 'status IN (' . $this->da->quoteSmartImplode(',', $status) . ')';
             }
-        } else if ($status != false) {
-            $conditions[] = 'status = '.$this->da->quoteSmart($status);
+        } elseif ($status != false) {
+            $conditions[] = 'status = ' . $this->da->quoteSmart($status);
         }
 
         if ($project_name != false) {
-            $pattern      = $this->da->quoteSmart('%'.$project_name.'%');
+            $pattern      = $this->da->quoteSmart('%' . $project_name . '%');
             $conditions[] = "(project.group_name LIKE $pattern OR project.group_id LIKE $pattern OR project.unix_group_name LIKE $pattern)";
         }
 
@@ -343,11 +361,14 @@ class ProjectDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function getMyAndPublicProjectsForREST(PFUser $user, $offset, $limit) {
-        $user_id      = $this->da->escapeInt($user->getId());
-        $offset       = $this->da->escapeInt($offset);
-        $limit        = $this->da->escapeInt($limit);
-        $private_type = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
+    public function getMyAndPublicProjectsForREST(PFUser $user, $offset, $limit)
+    {
+        $user_id = $this->da->escapeInt($user->getId());
+        $offset  = $this->da->escapeInt($offset);
+        $limit   = $this->da->escapeInt($limit);
+
+        $private_type               = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
+        $private_wo_restricted_type = $this->da->quoteSmart(Project::ACCESS_PRIVATE_WO_RESTRICTED);
 
         if ($user->isSuperUser()) {
             $sql = "SELECT SQL_CALC_FOUND_ROWS groups.*
@@ -362,7 +383,7 @@ class ProjectDao extends DataAccessObject {
                       JOIN user_group USING (group_id)
                     WHERE status = 'A'
                       AND group_id > 100
-                      AND (access != $private_type
+                      AND (access NOT IN ($private_type, $private_wo_restricted_type)
                         OR user_group.user_id = $user_id)
                     ORDER BY group_id ASC
                     LIMIT $offset, $limit";
@@ -373,9 +394,9 @@ class ProjectDao extends DataAccessObject {
 
     public function getMyProjectsForREST(PFUser $user, $offset, $limit)
     {
-        $user_id      = $this->da->escapeInt($user->getId());
-        $offset       = $this->da->escapeInt($offset);
-        $limit        = $this->da->escapeInt($limit);
+        $user_id = $this->da->escapeInt($user->getId());
+        $offset  = $this->da->escapeInt($offset);
+        $limit   = $this->da->escapeInt($limit);
 
         $sql = "SELECT SQL_CALC_FOUND_ROWS DISTINCT groups.*
                     FROM groups
@@ -389,13 +410,33 @@ class ProjectDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
+    public function getProjectICanAdminForREST(PFUser $user, int $offset, int $limit)
+    {
+        $user_id = $this->da->escapeInt($user->getId());
+        $offset  = $this->da->escapeInt($offset);
+        $limit   = $this->da->escapeInt($limit);
+
+        $sql = "SELECT SQL_CALC_FOUND_ROWS DISTINCT groups.*
+                    FROM groups
+                      JOIN user_group USING (group_id)
+                    WHERE status = 'A'
+                      AND user_group.admin_flags = 'A'
+                      AND user_group.user_id = $user_id
+                    ORDER BY group_id ASC
+                    LIMIT $offset, $limit";
+
+        return $this->retrieve($sql);
+    }
+
     public function searchMyAndPublicProjectsForRESTByShortname($shortname, PFUser $user, $offset, $limit)
     {
-        $user_id      = $this->da->escapeInt($user->getId());
-        $offset       = $this->da->escapeInt($offset);
-        $limit        = $this->da->escapeInt($limit);
-        $private_type = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
-        $shortname    = $this->da->quoteSmart($shortname);
+        $user_id   = $this->da->escapeInt($user->getId());
+        $offset    = $this->da->escapeInt($offset);
+        $limit     = $this->da->escapeInt($limit);
+        $shortname = $this->da->quoteSmart($shortname);
+
+        $private_type               = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
+        $private_wo_restricted_type = $this->da->quoteSmart(Project::ACCESS_PRIVATE_WO_RESTRICTED);
 
         if ($user->isSuperUser()) {
             $sql = "SELECT SQL_CALC_FOUND_ROWS groups.*
@@ -412,7 +453,7 @@ class ProjectDao extends DataAccessObject {
                     WHERE status = 'A'
                       AND group_id > 100
                       AND unix_group_name = $shortname
-                      AND (access != $private_type
+                      AND (access NOT IN ($private_type, $private_wo_restricted_type)
                         OR user_group.user_id = $user_id)
                     ORDER BY group_id ASC
                     LIMIT $offset, $limit";
@@ -421,27 +462,18 @@ class ProjectDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function getAllMyAndPublicProjects(PFUser $user) {
-        $user_id      = $this->da->escapeInt($user->getId());
-        $private_type = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
-
-        $sql = "SELECT DISTINCT groups.*
-                FROM groups
-                  JOIN user_group USING (group_id)
-                WHERE status = 'A'
-                  AND group_id > 100
-                  AND (access != $private_type
-                    OR user_group.user_id = $user_id)
-                ORDER BY group_id ASC";
-
-        return $this->retrieve($sql);
-    }
-
-    public function searchByPublicStatus($is_public){
+    public function searchByPublicStatus($is_public)
+    {
         if ($is_public) {
-            $access_clause = 'access != '.$this->da->quoteSmart(Project::ACCESS_PRIVATE);
+            $access_clause = 'access NOT IN(' .
+                $this->da->quoteSmart(Project::ACCESS_PRIVATE) . ', ' .
+                $this->da->quoteSmart(Project::ACCESS_PRIVATE_WO_RESTRICTED) .
+                ')';
         } else {
-            $access_clause = 'access = '.$this->da->quoteSmart(Project::ACCESS_PRIVATE);
+            $access_clause = 'access IN(' .
+                $this->da->quoteSmart(Project::ACCESS_PRIVATE) . ', ' .
+                $this->da->quoteSmart(Project::ACCESS_PRIVATE_WO_RESTRICTED) .
+                ')';
         }
 
         $sql = "SELECT *
@@ -454,21 +486,22 @@ class ProjectDao extends DataAccessObject {
     /**
      * Filled the ugroups to be notified when admin action is needed
      *
-     * @param Integer $groupId
+     * @param int $groupId
      * @param Array   $ugroups
      *
-     * @return Boolean
+     * @return bool
      */
-    public function setMembershipRequestNotificationUGroup($groupId, $ugroups){
-        $sql = ' DELETE FROM groups_notif_delegation WHERE group_id ='.$this->da->quoteSmart($groupId);
-        if (!$this->update($sql)) {
+    public function setMembershipRequestNotificationUGroup($groupId, $ugroups)
+    {
+        $sql = ' DELETE FROM groups_notif_delegation WHERE group_id =' . $this->da->quoteSmart($groupId);
+        if (! $this->update($sql)) {
             return false;
         }
         foreach ($ugroups as $ugroupId) {
             $sql = ' INSERT INTO groups_notif_delegation (group_id, ugroup_id)
-                 VALUE ('.$this->da->quoteSmart($groupId).', '.$this->da->quoteSmart($ugroupId).')
-                 ON DUPLICATE KEY UPDATE ugroup_id = '.$this->da->quoteSmart($ugroupId);
-            if (!$this->update($sql)) {
+                 VALUE (' . $this->da->quoteSmart($groupId) . ', ' . $this->da->quoteSmart($ugroupId) . ')
+                 ON DUPLICATE KEY UPDATE ugroup_id = ' . $this->da->quoteSmart($ugroupId);
+            if (! $this->update($sql)) {
                 return false;
             }
         }
@@ -478,38 +511,41 @@ class ProjectDao extends DataAccessObject {
      /**
      * Returns the ugroup to be notified when admin action is needed for given project
      *
-     * @param Integer $groupId
+     * @param int $groupId
      *
      * @return DataAccessResult
      */
-    public function getMembershipRequestNotificationUGroup($groupId){
-        $sql = ' SELECT ugroup_id FROM groups_notif_delegation WHERE group_id = '.$this->da->quoteSmart($groupId);
+    public function getMembershipRequestNotificationUGroup($groupId)
+    {
+        $sql = ' SELECT ugroup_id FROM groups_notif_delegation WHERE group_id = ' . $this->da->quoteSmart($groupId);
         return $this->retrieve($sql);
     }
 
     /**
      * Deletes the ugroup to be notified for given project
      *
-     * @param Integer $groupId
+     * @param int $groupId
      *
-     * @return Boolean
+     * @return bool
      */
-    public function deleteMembershipRequestNotificationUGroup($groupId){
+    public function deleteMembershipRequestNotificationUGroup($groupId)
+    {
         $groupId = $this->da->escapeInt($groupId);
-        $sql     = 'DELETE FROM groups_notif_delegation WHERE group_id = '.$groupId;
+        $sql     = 'DELETE FROM groups_notif_delegation WHERE group_id = ' . $groupId;
         return $this->update($sql);
     }
 
     /**
      * Deletes the message set for a given project
      *
-     * @param Integer $groupId
+     * @param int $groupId
      *
-     * @return Boolean
+     * @return bool
      */
-    public function deleteMembershipRequestNotificationMessage($groupId){
+    public function deleteMembershipRequestNotificationMessage($groupId)
+    {
         $groupId = $this->da->escapeInt($groupId);
-        $sql     = 'DELETE FROM groups_notif_delegation_message WHERE group_id = '.$groupId;
+        $sql     = 'DELETE FROM groups_notif_delegation_message WHERE group_id = ' . $groupId;
         return $this->update($sql);
     }
 
@@ -517,62 +553,70 @@ class ProjectDao extends DataAccessObject {
     /**
      * Returns the message to be displayed to requester asking access for a given project
      *
-     * @param Integer $groupId
+     * @param int $groupId
      *
      * @return DataAccessResult
      */
-    public function getMessageToRequesterForAccessProject($groupId) {
-        $sql = 'SELECT msg_to_requester FROM groups_notif_delegation_message WHERE group_id='.$this->da->quoteSmart($groupId);
+    public function getMessageToRequesterForAccessProject($groupId)
+    {
+        $sql = 'SELECT msg_to_requester FROM groups_notif_delegation_message WHERE group_id=' . $this->da->quoteSmart($groupId);
         return $this->retrieve($sql);
     }
 
     /**
      * Updates the message to be displayed to requester asking access for a given project
      *
-     * @param Integer $groupId
+     * @param int $groupId
      * @param String  $message
      */
-    public function setMessageToRequesterForAccessProject($groupId, $message) {
-        $sql = 'INSERT INTO groups_notif_delegation_message (group_id, msg_to_requester) VALUES ('.$this->da->quoteSmart($groupId).', '.$this->da->quoteSmart($message).')'.
-                ' ON DUPLICATE KEY UPDATE msg_to_requester='.$this->da->quoteSmart($message);
+    public function setMessageToRequesterForAccessProject($groupId, $message)
+    {
+        $sql = 'INSERT INTO groups_notif_delegation_message (group_id, msg_to_requester) VALUES (' . $this->da->quoteSmart($groupId) . ', ' . $this->da->quoteSmart($message) . ')' .
+                ' ON DUPLICATE KEY UPDATE msg_to_requester=' . $this->da->quoteSmart($message);
         return $this->update($sql);
     }
 
     /**
      * Set SVN header
      *
-     * @param Integer $groupId
+     * @param int $groupId
      * @param String  $mailingHeader
      *
-     * @return Boolean
+     * @return bool
      */
-    function setSvnHeader($groupId, $mailingHeader) {
+    public function setSvnHeader($groupId, $mailingHeader)
+    {
         $sql = ' UPDATE groups
-                 SET svn_events_mailing_header = '.$this->da->quoteSmart($mailingHeader).'
-                 WHERE group_id = '.$this->da->escapeInt($groupId);
+                 SET svn_events_mailing_header = ' . $this->da->quoteSmart($mailingHeader) . '
+                 WHERE group_id = ' . $this->da->escapeInt($groupId);
         return $this->update($sql);
     }
 
-    public function searchGlobal($words, $offset, $exact) {
+    public function searchGlobal($words, $offset, $exact)
+    {
         return $this->searchGlobalPaginated($words, $offset, $exact, 26);
     }
 
-    public function searchGlobalPaginated($words, $offset, $exact, $limit) {
+    public function searchGlobalPaginated($words, $offset, $exact, $limit)
+    {
         return $this->searchGlobalParams($words, $offset, $exact, '', '', $limit);
     }
 
-    public function searchGlobalForRestrictedUsers($words, $offset, $exact, $user_id) {
+    public function searchGlobalForRestrictedUsers($words, $offset, $exact, $user_id)
+    {
         return $this->searchGlobalPaginatedForRestrictedUsers($words, $offset, $exact, $user_id, 26);
     }
 
-    public function searchGlobalPaginatedForRestrictedUsers($words, $offset, $exact, $user_id, $limit) {
+    public function searchGlobalPaginatedForRestrictedUsers($words, $offset, $exact, $user_id, $limit)
+    {
         $user_id = $this->da->escapeInt($user_id);
-        $from  = " JOIN user_group ON (user_group.group_id = groups.group_id)";
-        $where = " AND user_group.user_id = $user_id";
+        $from    = " JOIN user_group ON (user_group.group_id = groups.group_id)";
+        $where   = " AND user_group.user_id = $user_id";
         return $this->searchGlobalParams($words, $offset, $exact, $from, $where, $limit);
     }
 
-    private function searchGlobalParams($words, $offset, $exact, $from = '', $where = '', $limit = 26) {
+    private function searchGlobalParams($words, $offset, $exact, $from = '', $where = '', $limit = 26)
+    {
         $offset = $this->da->escapeInt($offset);
         $limit  = $this->da->escapeInt($limit);
         if ($exact === true) {
@@ -585,14 +629,15 @@ class ProjectDao extends DataAccessObject {
             $long_desc  = $this->searchExplodeMatch('unix_group_name', $words);
         }
 
-        $private = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
+        $private               = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
+        $private_wo_restricted = $this->da->quoteSmart(Project::ACCESS_PRIVATE_WO_RESTRICTED);
 
         $sql = "SELECT DISTINCT group_name, unix_group_name, groups.group_id, short_description
                 FROM groups
                     LEFT JOIN group_desc_value ON (group_desc_value.group_id = groups.group_id)
                     $from
                 WHERE status='A'
-                AND access != $private
+                AND access NOT IN ($private, $private_wo_restricted)
                 AND (
                         (group_name LIKE $group_name)
                      OR (short_description LIKE $short_desc)
@@ -605,7 +650,8 @@ class ProjectDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    public function setIsPrivate($project_id) {
+    public function setIsPrivate($project_id)
+    {
         $access     = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
         $project_id = $this->da->escapeInt($project_id);
 
@@ -614,7 +660,18 @@ class ProjectDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function setIsPublic($project_id) {
+    public function setIsPrivateWORestricted($project_id)
+    {
+        $access     = $this->da->quoteSmart(Project::ACCESS_PRIVATE_WO_RESTRICTED);
+        $project_id = $this->da->escapeInt($project_id);
+
+        $sql = "UPDATE groups SET access = $access WHERE group_id = $project_id";
+
+        return $this->update($sql);
+    }
+
+    public function setIsPublic($project_id)
+    {
         $project_id = $this->da->escapeInt($project_id);
         $access     = $this->da->quoteSmart(Project::ACCESS_PUBLIC);
 
@@ -623,7 +680,8 @@ class ProjectDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function setUnrestricted($project_id) {
+    public function setUnrestricted($project_id)
+    {
         $project_id = $this->da->escapeInt($project_id);
         $access     = $this->da->quoteSmart(Project::ACCESS_PUBLIC_UNRESTRICTED);
 
@@ -632,15 +690,27 @@ class ProjectDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function disableAllowRestrictedForAll() {
-        $public       = $this->da->quoteSmart(Project::ACCESS_PUBLIC);
-        $unrestricted = $this->da->quoteSmart(Project::ACCESS_PUBLIC_UNRESTRICTED);
-        $sql = "UPDATE groups SET access = $public WHERE access = $unrestricted";
+    public function switchUnrestrictedToPublic()
+    {
+        return $this->switchAccess(Project::ACCESS_PUBLIC_UNRESTRICTED, Project::ACCESS_PUBLIC);
+    }
+
+    public function switchPrivateWithoutRestrictedToPrivate()
+    {
+        return $this->switchAccess(Project::ACCESS_PRIVATE_WO_RESTRICTED, Project::ACCESS_PRIVATE);
+    }
+
+    private function switchAccess($old, $new)
+    {
+        $new_access = $this->da->quoteSmart($new);
+        $old_access = $this->da->quoteSmart($old);
+        $sql        = "UPDATE groups SET access = $new_access WHERE access = $old_access";
 
         return $this->update($sql);
     }
 
-    public function setTruncatedEmailsUsage($project_id, $usage) {
+    public function setTruncatedEmailsUsage($project_id, $usage)
+    {
         $project_id = $this->da->escapeInt($project_id);
         $usage      = $this->da->escapeInt($usage);
 
@@ -649,11 +719,56 @@ class ProjectDao extends DataAccessObject {
         return $this->update($sql);
     }
 
-    public function getProjectMembers($project_id) {
+    public function getProjectMembers($project_id)
+    {
+        $project_id                 = $this->da->quoteSmart($project_id);
+        $private_without_restricted = $this->da->quoteSmart(Project::ACCESS_PRIVATE_WO_RESTRICTED);
+
         return $this->retrieve(
             "SELECT user.user_id AS user_id, user.user_name AS user_name, user.realname AS realname
-             FROM user_group INNER JOIN user USING(user_id)
-             WHERE user_group.group_id=". $this->da->quoteSmart($project_id) ."
-                 AND user.status IN ('A', 'R')");
+             FROM user_group INNER JOIN user USING(user_id) INNER JOIN groups USING(group_id)
+             WHERE user_group.group_id = $project_id
+                 AND (
+                    user.status = 'A'
+                    OR (
+                        user.status = 'R'
+                        AND groups.access <> $private_without_restricted
+                    )
+                 )
+             "
+        );
+    }
+
+    public function getProjectsWithStatusForREST($project_status, $offset, $limit)
+    {
+        $project_status = $this->da->quoteSmart($project_status);
+        $offset         = $this->da->escapeInt($offset);
+        $limit          = $this->da->escapeInt($limit);
+
+        $sql = "SELECT SQL_CALC_FOUND_ROWS groups.*
+                FROM groups
+                WHERE status = $project_status
+                  AND group_id > 100
+                ORDER BY group_id ASC
+                LIMIT $offset, $limit";
+
+        return $this->retrieve($sql);
+    }
+
+    public function getProjectsGroupByStatus()
+    {
+        return $this->retrieve("SELECT status, count(*) AS project_nb FROM groups GROUP BY status");
+    }
+
+    public function countProjectRegisteredBefore($timestamp)
+    {
+        $timestamp = $this->da->escapeInt($timestamp);
+        $status    = $this->da->quoteSmart(Project::STATUS_ACTIVE);
+
+        $sql = "SELECT count(*) AS nb FROM groups WHERE register_time >= $timestamp AND status = $status";
+
+        $row = $this->retrieve($sql)->getRow();
+
+        return $row['nb'];
     }
 }

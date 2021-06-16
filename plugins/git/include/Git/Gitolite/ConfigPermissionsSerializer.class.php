@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -23,8 +23,10 @@ use Tuleap\Git\Permissions\FineGrainedPermissionFactory;
 use Tuleap\Git\Permissions\GetProtectedGitReferences;
 use Tuleap\Git\Permissions\Permission;
 use Tuleap\Git\Permissions\RegexpFineGrainedRetriever;
+use Tuleap\Project\UGroupLiteralizer;
 
-class Git_Gitolite_ConfigPermissionsSerializer {
+class Git_Gitolite_ConfigPermissionsSerializer
+{
 
     /**
      * @var FineGrainedPermissionFactory
@@ -36,8 +38,8 @@ class Git_Gitolite_ConfigPermissionsSerializer {
      */
     private $fine_grained_retriever;
 
-    const TEMPLATES_PATH    = 'gitolite';
-    const REMOVE_PERMISSION = ' - ';
+    public const TEMPLATES_PATH    = 'gitolite';
+    public const REMOVE_PERMISSION = ' - ';
 
     /**
      * @var TemplateRenderer
@@ -54,11 +56,11 @@ class Git_Gitolite_ConfigPermissionsSerializer {
      */
     private $gerrit_status;
 
-    private static $permissions_types = array(
+    private static $permissions_types = [
         Git::PERM_READ   => ' R  ',
         Git::PERM_WRITE  => ' RW ',
         Git::PERM_WPLUS  => ' RW+'
-    );
+    ];
     /**
      * @var RegexpFineGrainedRetriever
      */
@@ -79,7 +81,7 @@ class Git_Gitolite_ConfigPermissionsSerializer {
     ) {
         $this->data_mapper   = $data_mapper;
         $this->gerrit_status = $gerrit_status;
-        $template_dirs       = array();
+        $template_dirs       = [];
         if (is_dir($etc_templates_path)) {
             $template_dirs[] = $etc_templates_path . '/' . self::TEMPLATES_PATH;
         }
@@ -92,7 +94,8 @@ class Git_Gitolite_ConfigPermissionsSerializer {
         $this->event_manager          = $event_manager;
     }
 
-    public function getGitoliteDotConf(array $project_names) {
+    public function getGitoliteDotConf(array $project_names)
+    {
         return $this->template_renderer->renderToString(
             'gitolite.conf',
             new Git_Gitolite_Presenter_GitoliteConfPresenter(
@@ -102,7 +105,8 @@ class Git_Gitolite_ConfigPermissionsSerializer {
         );
     }
 
-    public function getGitoliteDotConfForHostname(array $project_names) {
+    public function getGitoliteDotConfForHostname(array $project_names)
+    {
         return $this->template_renderer->renderToString(
             'gitolite-with-hostname.conf',
             new Git_Gitolite_Presenter_GitoliteConfPresenter(
@@ -112,35 +116,38 @@ class Git_Gitolite_ConfigPermissionsSerializer {
         );
     }
 
-    public function getAllIncludes(array $project_names) {
+    public function getAllIncludes(array $project_names)
+    {
         return $this->template_renderer->renderToString(
             'gitolite-includes.conf',
-            array(
+            [
                 "project_names" => $project_names
-            )
+            ]
         );
     }
 
-    public function getAllIncludesForHostname($hostname, array $project_names) {
+    public function getAllIncludesForHostname($hostname, array $project_names)
+    {
         return $this->template_renderer->renderToString(
             'gitolite-includes-for-hostname.conf',
-            array(
+            [
                 "hostname"      => $hostname,
                 "project_names" => $project_names
-            )
+            ]
         );
     }
 
-    public function getForRepository(GitRepository $repository) {
-        $project = $repository->getProject();
-        $repo_config = '';
+    public function getForRepository(GitRepository $repository)
+    {
+        $project      = $repository->getProject();
+        $repo_config  = '';
         $repo_config .= $this->fetchConfigPermissions($project, $repository, Git::PERM_READ);
         $repo_config .= $this->formatPermission(Git::PERM_READ, $this->getMirrorUserNames($repository));
         $repo_config .= $this->getExternalProtectedReferencesFormattedPermissions($repository);
         if ($this->isMigrationToGerritCompletedWithSuccess($repository)) {
             $key = new Git_RemoteServer_Gerrit_ReplicationSSHKey();
             $key->setGerritHostId($repository->getRemoteServerId());
-            $repo_config .= $this->formatPermission(Git::PERM_WPLUS, array($key->getUserName()));
+            $repo_config .= $this->formatPermission(Git::PERM_WPLUS, [$key->getUserName()]);
         } elseif (! $this->repositoryIsUsingFineGrainedPermissions($repository)) {
             $repo_config .= $this->fetchConfigPermissions($project, $repository, Git::PERM_WRITE);
             $repo_config .= $this->fetchConfigPermissions($project, $repository, Git::PERM_WPLUS);
@@ -148,6 +155,11 @@ class Git_Gitolite_ConfigPermissionsSerializer {
             $repo_config .= $this->getFineGrainedFormattedPermissions($repository);
         }
         return $repo_config;
+    }
+
+    public function denyAccessForRepository()
+    {
+        return self::REMOVE_PERMISSION . "refs/.*$ = @all" . PHP_EOL;
     }
 
     /**
@@ -224,7 +236,8 @@ class Git_Gitolite_ConfigPermissionsSerializer {
 
     private function getPatternConfiguration(GitRepository $repository, array $ugroups, $pattern_for_gitolite, $type)
     {
-        if ((count($ugroups) === 1 && $ugroups[0]->getId() == ProjectUGroup::NONE) ||
+        if (
+            (count($ugroups) === 1 && $ugroups[0]->getId() == ProjectUGroup::NONE) ||
             count($ugroups) === 0
         ) {
             $pattern_config = '';
@@ -245,21 +258,21 @@ class Git_Gitolite_ConfigPermissionsSerializer {
         $config             = '';
         $ugroup_literalizer = new UGroupLiteralizer();
 
-        $ugroup_ids = array();
+        $ugroup_ids = [];
         foreach ($ugroups as $ugroup) {
             $ugroup_ids[] = $ugroup->getId();
         }
 
         $ugroup_names = $ugroup_literalizer->ugroupIdsToString($ugroup_ids, $project);
 
-        $config .= rtrim(self::$permissions_types[$permission_type]) ." $pattern_for_gitolite = " . implode(' ', $ugroup_names) . PHP_EOL;
+        $config .= rtrim(self::$permissions_types[$permission_type]) . " $pattern_for_gitolite = " . implode(' ', $ugroup_names) . PHP_EOL;
 
         return $config;
     }
 
     private function removeAllUgroupForPattern($pattern_for_gitolite)
     {
-        return self::REMOVE_PERMISSION ."$pattern_for_gitolite = @all" . PHP_EOL;
+        return self::REMOVE_PERMISSION . "$pattern_for_gitolite = @all" . PHP_EOL;
     }
 
     private function repositoryIsUsingFineGrainedPermissions(GitRepository $repository)
@@ -267,14 +280,16 @@ class Git_Gitolite_ConfigPermissionsSerializer {
         return $this->fine_grained_retriever->doesRepositoryUseFineGrainedPermissions($repository);
     }
 
-    private function isMigrationToGerritCompletedWithSuccess(GitRepository $repository) {
+    private function isMigrationToGerritCompletedWithSuccess(GitRepository $repository)
+    {
         return $repository->isMigratedToGerrit() &&
                $this->gerrit_status->getStatus($repository) === Git_Driver_Gerrit_ProjectCreatorStatus::DONE;
     }
 
-    private function formatPermission($permission_type, array $granted) {
+    private function formatPermission($permission_type, array $granted)
+    {
         if (count($granted)) {
-            return self::$permissions_types[$permission_type] . ' = ' . implode(' ', $granted).PHP_EOL;
+            return self::$permissions_types[$permission_type] . ' = ' . implode(' ', $granted) . PHP_EOL;
         }
         return '';
     }
@@ -284,8 +299,9 @@ class Git_Gitolite_ConfigPermissionsSerializer {
      *
      * @return string
      */
-    public function fetchConfigPermissions($project, $repository, $permission_type) {
-        if (!isset(self::$permissions_types[$permission_type])) {
+    public function fetchConfigPermissions($project, $repository, $permission_type)
+    {
+        if (! isset(self::$permissions_types[$permission_type])) {
             return '';
         }
         $ugroup_literalizer = new UGroupLiteralizer();
@@ -293,8 +309,9 @@ class Git_Gitolite_ConfigPermissionsSerializer {
         return $this->formatPermission($permission_type, $repository_groups);
     }
 
-    private function getMirrorUserNames(GitRepository $repository) {
-        $names = array();
+    private function getMirrorUserNames(GitRepository $repository)
+    {
+        $names = [];
         foreach ($this->data_mapper->fetchAllRepositoryMirrors($repository) as $mirror) {
             $names[] = $mirror->owner->getUserName();
         }

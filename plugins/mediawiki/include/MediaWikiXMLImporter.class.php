@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,10 +22,10 @@ use Tuleap\Project\XML\Import\ImportConfig;
 
 class MediaWikiXMLImporter
 {
-    const SERVICE_NAME = 'mediawiki';
+    public const SERVICE_NAME = 'mediawiki';
 
     /**
-     * @var Logger
+     * @var \Psr\Log\LoggerInterface
      */
     private $logger;
 
@@ -59,7 +59,7 @@ class MediaWikiXMLImporter
     private $event_manager;
 
     public function __construct(
-        Logger $logger,
+        \Psr\Log\LoggerInterface $logger,
         MediawikiManager $mediawiki_manager,
         MediawikiLanguageManager $language_manager,
         UGroupManager $ugroup_manager,
@@ -82,12 +82,12 @@ class MediaWikiXMLImporter
      * @var Project
      * @var SimpleXMLElement
      * @var String
-     * @return boolean
+     * @return bool
      */
     public function import(ImportConfig $configuration, Project $project, PFUser $creator, SimpleXMLElement $xml_input, $extraction_path)
     {
         $xml_mediawiki = $xml_input->mediawiki;
-        if (!$xml_mediawiki) {
+        if (! $xml_mediawiki) {
             $this->logger->debug('No mediawiki node found into xml.');
             return true;
         }
@@ -108,10 +108,10 @@ class MediaWikiXMLImporter
 
         $this->importRights($project, $xml_mediawiki);
 
-        $mediawiki_storage_path = forge_get_config('projects_path', 'mediawiki') . "/". $project->getID();
-        $owner = ForgeConfig::get('sys_http_user');
+        $mediawiki_storage_path = forge_get_config('projects_path', 'mediawiki') . "/" . (int) $project->getID();
+        $owner                  = ForgeConfig::get('sys_http_user');
         if ($owner) {
-            $no_filter_file_extension = array();
+            $no_filter_file_extension = [];
             $this->backend->recurseChownChgrp($mediawiki_storage_path, $owner, $owner, $no_filter_file_extension);
         } else {
             $this->logger->error("Could not get sys_http_user, permission problems may occur on $mediawiki_storage_path");
@@ -120,63 +120,68 @@ class MediaWikiXMLImporter
         $this->importReferences($configuration, $project, $xml_mediawiki->references);
     }
 
-    private function importPages(Project $project, $backup_path) {
+    private function importPages(Project $project, $backup_path)
+    {
         $this->logger->info("Importing pages for {$project->getUnixName()}");
         $project_name = escapeshellarg($project->getUnixName());
-        $backup_path = escapeshellarg($backup_path);
-        $command = $this->getMaintenanceWrapperPath() . " $project_name importDump.php $backup_path";
+        $backup_path  = escapeshellarg($backup_path);
+        $command      = $this->getMaintenanceWrapperPath() . " $project_name importDump.php $backup_path";
         $this->sys_command->exec($command);
         return true;
     }
 
-    private function importLanguage(Project $project, $language) {
+    private function importLanguage(Project $project, $language)
+    {
         $this->logger->info("Set language to $language for {$project->getUnixName()}");
         try {
             $this->language_manager->saveLanguageOption($project, $language);
         } catch (Mediawiki_UnsupportedLanguageException $e) {
-            $this->logger->warn("Could not set up the language for {$project->getUnixName()} mediawiki, $language is not sopported.");
+            $this->logger->warning("Could not set up the language for {$project->getUnixName()} mediawiki, $language is not sopported.");
         }
     }
 
-    private function importFiles(Project $project, $backup_path) {
+    private function importFiles(Project $project, $backup_path)
+    {
         $this->logger->info("Importing files for {$project->getUnixName()}");
         $project_name = escapeshellarg($project->getUnixName());
-        $backup_path = escapeshellarg($backup_path);
-        $command = $this->getMaintenanceWrapperPath() . " $project_name importImages.php --comment='Tuleap import' $backup_path";
+        $backup_path  = escapeshellarg($backup_path);
+        $command      = $this->getMaintenanceWrapperPath() . " $project_name importImages.php --comment='Tuleap import' $backup_path";
 
         $this->sys_command->exec($command);
         return true;
-
     }
 
-    private function importRights(Project $project, SimpleXMLElement $xml_mediawiki) {
-        if($xml_mediawiki->{'read-access'}) {
+    private function importRights(Project $project, SimpleXMLElement $xml_mediawiki)
+    {
+        if ($xml_mediawiki->{'read-access'}) {
             $this->logger->info("Importing read access rights for {$project->getUnixName()}");
             $ugroups_ids = $this->getUgroupIdsForPermissions($project, $xml_mediawiki->{'read-access'});
-            if(count($ugroups_ids) > 0) {
+            if (count($ugroups_ids) > 0) {
                 $this->mediawiki_manager->saveReadAccessControl($project, $ugroups_ids);
             }
         }
-        if($xml_mediawiki->{'write-access'}) {
+        if ($xml_mediawiki->{'write-access'}) {
             $this->logger->info("Importing write access rights for {$project->getUnixName()}");
             $ugroups_ids = $this->getUgroupIdsForPermissions($project, $xml_mediawiki->{'write-access'});
-            if(count($ugroups_ids) > 0) {
+            if (count($ugroups_ids) > 0) {
                 $this->mediawiki_manager->saveWriteAccessControl($project, $ugroups_ids);
             }
         }
     }
 
-    private function getMaintenanceWrapperPath() {
+    private function getMaintenanceWrapperPath()
+    {
         return __DIR__ . "/../bin/mw-maintenance-wrapper.php";
     }
 
-    private function getUgroupIdsForPermissions(Project $project, SimpleXMLElement $permission_xmlnode) {
-        $ugroup_ids = array();
-        foreach($permission_xmlnode->ugroup as $ugroup) {
-            $ugroup_name = (string)$ugroup;
-            $ugroup = $this->ugroup_manager->getUGroupByName($project, $ugroup_name);
-            if($ugroup === null) {
-                $this->logger->warn("Could not find any ugroup named $ugroup_name, skip it.");
+    private function getUgroupIdsForPermissions(Project $project, SimpleXMLElement $permission_xmlnode)
+    {
+        $ugroup_ids = [];
+        foreach ($permission_xmlnode->ugroup as $ugroup) {
+            $ugroup_name = (string) $ugroup;
+            $ugroup      = $this->ugroup_manager->getUGroupByName($project, $ugroup_name);
+            if ($ugroup === null) {
+                $this->logger->warning("Could not find any ugroup named $ugroup_name, skip it.");
                 continue;
             }
             array_push($ugroup_ids, $ugroup->getId());
@@ -188,15 +193,14 @@ class MediaWikiXMLImporter
     {
         $this->event_manager->processEvent(
             Event::IMPORT_COMPAT_REF_XML,
-            array(
+            [
                 'logger'         => $this->logger,
-                'created_refs'   => array(),
+                'created_refs'   => [],
                 'service_name'   => self::SERVICE_NAME,
                 'xml_content'    => $xml_references,
                 'project'        => $project,
                 'configuration'  => $configuration,
-            )
+            ]
         );
     }
-
 }

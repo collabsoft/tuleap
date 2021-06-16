@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,12 +20,13 @@
 
 use Tuleap\Admin\AdminPageRenderer;
 use Tuleap\Git\AdminAllowedProjectsGerritPresenter;
+use Tuleap\Git\AdminGerritBuilder;
 use Tuleap\Git\GerritServerResourceRestrictor;
 use Tuleap\Git\RemoteServer\Gerrit\Restrictor;
-use Tuleap\Git\AdminGerritBuilder;
+use Tuleap\Layout\IncludeAssets;
 
-class Git_AdminGerritController {
-
+class Git_AdminGerritController //phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace, Squiz.Classes.ValidClassName.NotCamelCaps
+{
     private $servers;
 
     /** @var Git_RemoteServer_GerritServerFactory */
@@ -50,6 +51,10 @@ class Git_AdminGerritController {
      * @var Restrictor
      */
     private $gerrit_restrictor;
+    /**
+     * @var IncludeAssets
+     */
+    private $include_assets;
 
     public function __construct(
         CSRFSynchronizerToken $csrf,
@@ -57,7 +62,8 @@ class Git_AdminGerritController {
         AdminPageRenderer $admin_page_renderer,
         GerritServerResourceRestrictor $gerrit_ressource_restrictor,
         Restrictor $gerrit_restrictor,
-        AdminGerritBuilder $admin_gerrit_builder
+        AdminGerritBuilder $admin_gerrit_builder,
+        IncludeAssets $include_assets
     ) {
         $this->gerrit_server_factory       = $gerrit_server_factory;
         $this->csrf                        = $csrf;
@@ -65,14 +71,16 @@ class Git_AdminGerritController {
         $this->gerrit_ressource_restrictor = $gerrit_ressource_restrictor;
         $this->gerrit_restrictor           = $gerrit_restrictor;
         $this->admin_gerrit_builder        = $admin_gerrit_builder;
+        $this->include_assets              = $include_assets;
     }
 
-    public function process(Codendi_Request $request) {
+    public function process(Codendi_Request $request)
+    {
         if ($request->get('action') == 'edit-gerrit-server') {
             $this->updateGerritServer($request);
-        } else if ($request->get('action') == 'add-gerrit-server') {
+        } elseif ($request->get('action') == 'add-gerrit-server') {
             $this->addGerritServer($request);
-        } else if ($request->get('action') == 'delete-gerrit-server') {
+        } elseif ($request->get('action') == 'delete-gerrit-server') {
             $this->deleteGerritServer($request);
         } elseif ($request->get('action') == 'set-gerrit-server-restriction') {
             $this->gerrit_restrictor->setGerritServerRestriction($request);
@@ -97,23 +105,29 @@ class Git_AdminGerritController {
         $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?pane=gerrit_servers_admin');
     }
 
-    private function updateGerritServer(Codendi_Request $request) {
+    private function updateGerritServer(Codendi_Request $request)
+    {
         $request_gerrit_server = $request->params;
         $this->csrf->check();
         $this->updateServer($request_gerrit_server);
         $GLOBALS['Response']->redirect(GIT_SITE_ADMIN_BASE_URL . '?pane=gerrit_servers_admin');
     }
 
-    public function display(Codendi_Request $request) {
-        $title = $GLOBALS['Language']->getText('plugin_git', 'descriptor_name');
+    public function display(Codendi_Request $request)
+    {
+        $title = dgettext('tuleap-git', 'Git');
 
         switch ($request->get('action')) {
             case 'manage-allowed-projects':
                 try {
                     $presenter     = $this->getManageAllowedProjectsPresenter($request);
-                    $template_path = ForgeConfig::get('codendi_dir') . '/src/templates/resource_restrictor';
-
-                    $GLOBALS['HTML']->includeFooterJavascriptFile('/scripts/tuleap/manage-allowed-projects-on-resource.js');
+                    $template_path = __DIR__ . '/../../../../src/templates/resource_restrictor';
+                    $GLOBALS['HTML']->addJavascriptAsset(
+                        new \Tuleap\Layout\JavascriptAsset(
+                            new \Tuleap\Layout\IncludeCoreAssets(),
+                            'manage-allowed-projects-on-resource.js'
+                        )
+                    );
 
                     $this->admin_page_renderer->renderAPresenter(
                         $title,
@@ -124,7 +138,7 @@ class Git_AdminGerritController {
                 } catch (Git_RemoteServer_NotFoundException $exception) {
                     $GLOBALS['Response']->addFeedback(
                         Feedback::ERROR,
-                        $GLOBALS['Language']->getText('plugin_git', 'gerrit_servers_id_does_not_exist')
+                        dgettext('tuleap-git', 'The requested Gerrit server does not exist.')
                     );
 
                     $this->renderGerritServerList($title);
@@ -145,9 +159,7 @@ class Git_AdminGerritController {
             $this->getListOfGerritServersPresenters()
         );
 
-        $GLOBALS['HTML']->includeFooterJavascriptFile(GIT_BASE_URL . '/scripts/modal-add-gerrit-server.js');
-        $GLOBALS['HTML']->includeFooterJavascriptFile(GIT_BASE_URL . '/scripts/modal-delete-gerrit-server.js');
-        $GLOBALS['HTML']->includeFooterJavascriptFile(GIT_BASE_URL . '/scripts/modal-edit-gerrit-server.js');
+        $GLOBALS['HTML']->includeFooterJavascriptFile($this->include_assets->getFileURL('siteadmin-gerrit.js'));
 
         $this->admin_page_renderer->renderANoFramedPresenter(
             $title,
@@ -157,7 +169,8 @@ class Git_AdminGerritController {
         );
     }
 
-    private function getManageAllowedProjectsPresenter(Codendi_Request $request) {
+    private function getManageAllowedProjectsPresenter(Codendi_Request $request)
+    {
         $gerrit_server_id = $request->get('gerrit_server_id');
         $gerrit_server    = $this->gerrit_server_factory->getServerById($gerrit_server_id);
 
@@ -168,18 +181,20 @@ class Git_AdminGerritController {
         );
     }
 
-    private function fetchGerritServers() {
+    private function fetchGerritServers()
+    {
         if (empty($this->servers)) {
             $this->servers = $this->gerrit_server_factory->getServers();
         }
     }
 
-    private function getListOfGerritServersPresenters() {
+    private function getListOfGerritServersPresenters()
+    {
         $this->fetchGerritServers();
 
-        $list_of_presenters = array();
+        $list_of_presenters = [];
         foreach ($this->servers as $server) {
-            $is_used = $this->gerrit_server_factory->isServerUsed($server);
+            $is_used              = $this->gerrit_server_factory->isServerUsed($server);
             $list_of_presenters[] = new Git_RemoteServer_GerritServerPresenter($server, $is_used);
         }
 
@@ -189,9 +204,8 @@ class Git_AdminGerritController {
     private function addServer($request_gerrit_server)
     {
         if ($this->allGerritServerParamsRequiredExist($request_gerrit_server) && $this->isHTTPPasswordDefined($request_gerrit_server)) {
-
             $gerrit_server = $this->admin_gerrit_builder->buildFromRequest($request_gerrit_server);
-            $server = new Git_RemoteServer_GerritServer(
+            $server        = new Git_RemoteServer_GerritServer(
                 0,
                 $gerrit_server['host'],
                 $gerrit_server['ssh_port'],
@@ -202,14 +216,13 @@ class Git_AdminGerritController {
                 $gerrit_server['use_ssl'],
                 $gerrit_server['gerrit_version'],
                 $gerrit_server['http_password'],
-                '',
-                $gerrit_server['auth_type']
+                ''
             );
 
             $this->gerrit_server_factory->save($server);
             $this->servers[$server->getId()] = $server;
 
-            $this->updateReplicationPassword($server,  $gerrit_server['replication_password']);
+            $this->updateReplicationPassword($server, $gerrit_server['replication_password']);
         }
     }
 
@@ -229,8 +242,9 @@ class Git_AdminGerritController {
             $server = $this->gerrit_server_factory->getServerById($server_id);
 
             if ($this->allGerritServerParamsRequiredExist($request_gerrit_server)) {
-                $gerrit_server = $this->admin_gerrit_builder->buildFromRequestForEdition($request_gerrit_server);
-                if ($gerrit_server['host'] != $server->getHost() ||
+                $gerrit_server = $this->admin_gerrit_builder->buildFromRequest($request_gerrit_server);
+                if (
+                    $gerrit_server['host'] != $server->getHost() ||
                     $gerrit_server['ssh_port'] != $server->getSSHPort() ||
                     $gerrit_server['http_port'] != $server->getHTTPPort() ||
                     $gerrit_server['login'] != $server->getLogin() ||
@@ -238,8 +252,7 @@ class Git_AdminGerritController {
                     $gerrit_server['replication_ssh_key'] != $server->getReplicationKey() ||
                     $gerrit_server['use_ssl'] != $server->usesSSL() ||
                     $gerrit_server['gerrit_version'] != $server->getGerritVersion() ||
-                    $gerrit_server['http_password'] != $server->getHTTPPassword() ||
-                    $gerrit_server['auth_type'] != $server->getAuthType()
+                    $gerrit_server['http_password'] != $server->getHTTPPassword()
                 ) {
                     $server
                         ->setHost($gerrit_server['host'])
@@ -249,8 +262,7 @@ class Git_AdminGerritController {
                         ->setIdentityFile($gerrit_server['identity_file'])
                         ->setReplicationKey($gerrit_server['replication_ssh_key'])
                         ->setUseSSL($gerrit_server['use_ssl'])
-                        ->setGerritVersion($gerrit_server['gerrit_version'])
-                        ->setAuthType($gerrit_server['auth_type']);
+                        ->setGerritVersion($gerrit_server['gerrit_version']);
 
                     if ($gerrit_server['http_password'] !== "") {
                         $server->setHTTPPassword($gerrit_server['http_password']);
@@ -280,13 +292,12 @@ class Git_AdminGerritController {
         return (isset($request_gerrit_server['http_password']) && ! empty($request_gerrit_server['http_password']));
     }
 
-    private function allGerritServerParamsRequiredExist($request_gerrit_server)
+    private function allGerritServerParamsRequiredExist(array $request_gerrit_server): bool
     {
         return (isset($request_gerrit_server['host']) && ! empty($request_gerrit_server['host'])) &&
         (isset($request_gerrit_server['ssh_port']) && ! empty($request_gerrit_server['ssh_port'])) &&
         (isset($request_gerrit_server['http_port']) && ! empty($request_gerrit_server['http_port'])) &&
         (isset($request_gerrit_server['login']) && ! empty($request_gerrit_server['login'])) &&
-        (isset($request_gerrit_server['identity_file']) && ! empty($request_gerrit_server['identity_file'])) &&
-        (isset($request_gerrit_server['auth_type']) && ! empty($request_gerrit_server['auth_type']));
+        (isset($request_gerrit_server['identity_file']) && ! empty($request_gerrit_server['identity_file']));
     }
 }

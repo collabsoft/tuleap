@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,21 +17,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-class GraphOnTrackersV5_InSessionChartSorter {
-    const FREEZE__DONT_MOVE = '--';
-    const BEGINNING         = 'beginning';
-    const END               = 'end';
+class GraphOnTrackersV5_InSessionChartSorter
+{
+    public const FREEZE__DONT_MOVE = '--';
+    public const BEGINNING         = 'beginning';
+    public const END               = 'end';
 
     /**
      * @var Tracker_Report_Session
      */
     private $session;
 
-    public function __construct(Tracker_Report_Session $session) {
+    public function __construct(Tracker_Report_Session $session)
+    {
         $this->session = $session;
     }
 
-    public function sortChartInSession(array $charts, GraphOnTrackersV5_Chart $edited_chart, $wanted_position) {
+    public function sortChartInSession(array $charts, GraphOnTrackersV5_Chart $edited_chart, $wanted_position)
+    {
         $this->moveElementInCollection($charts, $edited_chart, $wanted_position);
 
         $rank = 0;
@@ -43,7 +46,8 @@ class GraphOnTrackersV5_InSessionChartSorter {
         }
     }
 
-    private function moveElementInCollection(array &$charts, GraphOnTrackersV5_Chart $edited_chart, $wanted_position) {
+    private function moveElementInCollection(array &$charts, GraphOnTrackersV5_Chart $edited_chart, $wanted_position)
+    {
         if ($wanted_position === self::FREEZE__DONT_MOVE) {
             return;
         }
@@ -68,6 +72,9 @@ class GraphOnTrackersV5_InSessionChartSorter {
         GraphOnTrackersV5_Chart $edited_chart,
         $wanted_position
     ) {
+        if ($wanted_position === 0 || $wanted_position === '0') {
+            $wanted_position = self::BEGINNING;
+        }
         switch ($wanted_position) {
             case self::BEGINNING:
                 array_unshift($charts, $edited_chart);
@@ -77,7 +84,7 @@ class GraphOnTrackersV5_InSessionChartSorter {
                 break;
             default:
                 $elements_to_move = array_splice($charts, $wanted_position - 1);
-                $charts = array_merge($charts, array($edited_chart), $elements_to_move);
+                $charts           = array_merge($charts, [$edited_chart], $elements_to_move);
         }
     }
 }

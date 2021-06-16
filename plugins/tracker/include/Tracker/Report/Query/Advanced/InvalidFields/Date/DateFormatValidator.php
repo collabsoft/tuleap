@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,11 +20,8 @@
 namespace Tuleap\Tracker\Report\Query\Advanced\InvalidFields\Date;
 
 use DateTime;
-use Tracker_FormElement_Field;
 use Tuleap\Tracker\Report\Query\Advanced\DateFormat;
-use Tuleap\Tracker\Report\Query\Advanced\Grammar\Comparison;
 use Tuleap\Tracker\Report\Query\Advanced\InvalidFields\EmptyStringChecker;
-use Tuleap\Tracker\Report\Query\Advanced\InvalidFields\InvalidFieldException;
 
 class DateFormatValidator
 {

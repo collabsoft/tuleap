@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2014. All rights reserved.
+ * Copyright Enalean (c) 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -23,11 +23,12 @@
  */
 
 
-class Tracker_Exception_Migration_StructureCreationException extends Exception {
+class Tracker_Exception_Migration_StructureCreationException extends Exception
+{
 
-    public function __construct($tracker_name, $tv3_id) {
-        $message = "Error when trying to create ".$tracker_name." from tracker v3 ".$tv3_id;
+    public function __construct($tracker_name, $tv3_id)
+    {
+        $message = "Error when trying to create " . $tracker_name . " from tracker v3 " . $tv3_id;
         parent::__construct($message);
     }
-
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,6 @@
 
 namespace Tuleap\OpenIDConnectClient\Login;
 
-use Tuleap\OpenIDConnectClient\Authentication\Flow;
 use Tuleap\OpenIDConnectClient\Provider\ProviderManager;
 
 class LoginUniqueAuthenticationUrlGenerator
@@ -30,17 +29,17 @@ class LoginUniqueAuthenticationUrlGenerator
      */
     private $provider_manager;
     /**
-     * @var Flow
+     * @var LoginURLGenerator
      */
-    private $authentication_flow;
+    private $login_url_generator;
 
-    public function __construct(ProviderManager $provider_manager, Flow $authentication_flow)
+    public function __construct(ProviderManager $provider_manager, LoginURLGenerator $login_url_generator)
     {
         $this->provider_manager    = $provider_manager;
-        $this->authentication_flow = $authentication_flow;
+        $this->login_url_generator = $login_url_generator;
     }
 
-    public function getURL($return_to)
+    public function getURL(?string $return_to): string
     {
         $providers = $this->provider_manager->getProvidersUsableToLogIn();
         if (count($providers) !== 1) {
@@ -48,7 +47,6 @@ class LoginUniqueAuthenticationUrlGenerator
         }
 
         $unique_authentication_provider = $providers[0];
-
-        return $this->authentication_flow->getAuthorizationRequestUri($unique_authentication_provider, $return_to);
+        return $this->login_url_generator->getLoginURL($unique_authentication_provider, $return_to);
     }
 }

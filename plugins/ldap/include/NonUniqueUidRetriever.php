@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,20 +23,23 @@ namespace Tuleap\LDAP;
 
 use LDAP_UserDao;
 
-class NonUniqueUidRetriever {
+class NonUniqueUidRetriever
+{
 
     /**
      * @var LDAP_UserDao
      */
     private $dao;
 
-    public function __construct(LDAP_UserDao $dao) {
+    public function __construct(LDAP_UserDao $dao)
+    {
         $this->dao = $dao;
     }
 
-    public function getNonUniqueLdapUid() {
+    public function getNonUniqueLdapUid()
+    {
         $rows      = $this->dao->searchNonUniqueLdapUid();
-        $ldap_uids = array();
+        $ldap_uids = [];
 
         foreach ($rows as $row) {
             $ldap_uids[] = $row['ldap_uid'];
@@ -44,5 +47,4 @@ class NonUniqueUidRetriever {
 
         return $ldap_uids;
     }
-
 }

@@ -1,6 +1,6 @@
 <?php
 /**
-  * Copyright (c) Enalean, 2015. All Rights Reserved.
+  * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
   *
   * This file is a part of Tuleap.
   *
@@ -18,13 +18,15 @@
   * along with Tuleap. If not, see <http://www.gnu.org/licenses/
   */
 
-class Admin_Homepage_LogoFinder {
+class Admin_Homepage_LogoFinder
+{
 
-    const PATH       = '/images/homepage-logo.png';
-    const THEME_PATH = '/themes/common';
+    public const PATH       = '/images/homepage-logo.png';
+    public const THEME_PATH = '/themes/common';
 
     /** @return string */
-    public static function getCurrentUrl() {
+    public static function getCurrentUrl()
+    {
         if (self::isCustomLogoUsed()) {
             return self::PATH;
         }
@@ -33,13 +35,14 @@ class Admin_Homepage_LogoFinder {
     }
 
     /** @return string */
-    public static function getCustomPath() {
+    public static function getCustomPath()
+    {
         return ForgeConfig::get('sys_data_dir') . self::PATH;
     }
 
-    /** @return boolean */
-    public static function isCustomLogoUsed() {
+    /** @return bool */
+    public static function isCustomLogoUsed()
+    {
         return is_file(self::getCustomPath());
     }
-
 }

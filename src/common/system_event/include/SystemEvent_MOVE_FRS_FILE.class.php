@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2015. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class SystemEvent_MOVE_FRS_FILE extends SystemEvent {
+class SystemEvent_MOVE_FRS_FILE extends SystemEvent
+{
 
-    const NAME = 'MOVE_FRS_FILE';
+    public const NAME = 'MOVE_FRS_FILE';
 
     /**
      * Set multiple logs
@@ -29,11 +30,12 @@ class SystemEvent_MOVE_FRS_FILE extends SystemEvent {
      *
      * @return void
      */
-    public function setLog($log) {
-        if (!isset($this->log) || $this->log == '') {
+    public function setLog($log)
+    {
+        if (! isset($this->log) || $this->log == '') {
             $this->log = $log;
         } else {
-            $this->log .= PHP_EOL.$log;
+            $this->log .= PHP_EOL . $log;
         }
     }
 
@@ -46,19 +48,21 @@ class SystemEvent_MOVE_FRS_FILE extends SystemEvent {
      *
      * @return string
      */
-    public function verbalizeParameters($with_link) {
-        $txt = '';
+    public function verbalizeParameters($with_link)
+    {
+        $txt                                     = '';
         list($project_path, $file_id, $old_path) = $this->getParametersAsArray();
-        $txt .= 'project_path: '. $project_path.' -file ID: '.$file_id.' -old file path: '.$old_path;
+        $txt                                    .= 'project_path: ' . $project_path . ' -file ID: ' . $file_id . ' -old file path: ' . $old_path;
         return $txt;
     }
 
     /**
      * Process stored event
      *
-     * @return Boolean
+     * @return bool
      */
-    public function process() {
+    public function process()
+    {
         list($project_path, $file_id, $old_path) = $this->getParametersAsArray();
 
         $file_factory = new FRSFileFactory();
@@ -73,7 +77,7 @@ class SystemEvent_MOVE_FRS_FILE extends SystemEvent {
         $this->createNecessaryFolders($project_path, $file_path);
 
         if (! file_exists($project_path . $old_path)) {
-            $this->error('Cannot find file to move: ' . $file_id . ' from: ' . $project_path.$old_path);
+            $this->error('Cannot find file to move: ' . $file_id . ' from: ' . $project_path . $old_path);
             return false;
         }
 
@@ -87,11 +91,12 @@ class SystemEvent_MOVE_FRS_FILE extends SystemEvent {
             return true;
         }
 
-        $this->error('Unable to move file: ' . $file_id . ' from: ' . $project_path.$old_path . ' to ' . $project_path . $file_path);
+        $this->error('Unable to move file: ' . $file_id . ' from: ' . $project_path . $old_path . ' to ' . $project_path . $file_path);
         return false;
     }
 
-    private function createNecessaryFolders($project_path, $file_path) {
+    private function createNecessaryFolders($project_path, $file_path)
+    {
         $path_parts = explode('/', $file_path);
 
         if (count($path_parts) != 2) {
@@ -99,7 +104,7 @@ class SystemEvent_MOVE_FRS_FILE extends SystemEvent {
             return;
         }
 
-        $folder_name = $project_path .$path_parts[0];
+        $folder_name = $project_path . $path_parts[0];
 
         if (! is_dir($folder_name)) {
             mkdir($folder_name);

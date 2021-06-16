@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -32,6 +32,7 @@ use Tuleap\Git\DefaultSettings\Pane\AccessControl;
 use Tuleap\Git\DefaultSettings\Pane\DefaultSettingsPanesCollection;
 use Tuleap\Git\DefaultSettings\Pane\DisabledPane;
 use Tuleap\Git\DefaultSettings\Pane\Mirroring;
+use Tuleap\Git\Events\GitAdminGetExternalPanePresenters;
 use Tuleap\Git\GitViews\Header\HeaderRenderer;
 use Tuleap\Git\Permissions\DefaultFineGrainedPermissionFactory;
 use Tuleap\Git\Permissions\FineGrainedRepresentationBuilder;
@@ -108,9 +109,13 @@ class IndexController
 
         $panes = $this->getPanes($project, $request, $are_mirrors_defined);
 
+        $event = new GitAdminGetExternalPanePresenters($project);
+        $this->event_manager->processEvent($event);
+
         $presenter = new GitPresenters_AdminDefaultSettingsPresenter(
             $project->getID(),
             $are_mirrors_defined,
+            $event->getExternalPanePresenters(),
             $panes
         );
 
@@ -123,8 +128,6 @@ class IndexController
     }
 
     /**
-     * @param Project     $project
-     * @param HTTPRequest $request
      * @param bool        $are_mirrors_defined
      *
      * @return Pane\Pane[]
@@ -139,7 +142,7 @@ class IndexController
 
         $panes = new DefaultSettingsPanesCollection($project, $current_pane);
 
-        $panes->add(new DisabledPane($GLOBALS['Language']->getText('plugin_git', 'admin_settings')));
+        $panes->add(new DisabledPane(dgettext('tuleap-git', 'General settings')));
         $panes->add(
             new AccessControl(
                 $this->access_rights_builder,
@@ -153,14 +156,14 @@ class IndexController
                 $current_pane === AccessControl::NAME
             )
         );
-        $panes->add(new DisabledPane($GLOBALS['Language']->getText('plugin_git', 'view_repo_ci_token')));
+        $panes->add(new DisabledPane(dgettext('tuleap-git', 'CI Token')));
 
         if ($are_mirrors_defined) {
             $panes->add(new Mirroring($this->mirror_data_mapper, $project, $current_pane === Mirroring::NAME));
         }
 
-        $panes->add(new DisabledPane($GLOBALS['Language']->getText('plugin_git', 'admin_mail')));
-        $panes->add(new DisabledPane($GLOBALS['Language']->getText('plugin_git', 'settings_hooks_title')));
+        $panes->add(new DisabledPane(dgettext('tuleap-git', 'Notifications')));
+        $panes->add(new DisabledPane(dgettext('tuleap-git', 'Webhooks')));
 
         $this->event_manager->processEvent($panes);
 
@@ -168,7 +171,6 @@ class IndexController
     }
 
     /**
-     * @param HTTPRequest $request
      * @param             $presenter
      */
     private function render(HTTPRequest $request, $presenter)
@@ -180,7 +182,7 @@ class IndexController
             $request->getCurrentUser(),
             $request->getProject()
         );
-        $renderer->renderToPage('admin', $presenter);
+        $renderer->renderToPage('admin-default-settings', $presenter);
         $GLOBALS['HTML']->footer([]);
     }
 }

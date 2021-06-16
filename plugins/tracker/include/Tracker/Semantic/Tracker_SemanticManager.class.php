@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -20,16 +20,31 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+use Tuleap\Tracker\Admin\ArtifactLinksUsageDao;
+use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
+use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NaturePresenterFactory;
+use Tuleap\Tracker\Semantic\CollectionOfSemanticsUsingAParticularTrackerField;
+use Tuleap\Tracker\Semantic\Progress\MethodBuilder;
+use Tuleap\Tracker\Semantic\Progress\SemanticProgress;
+use Tuleap\Tracker\Semantic\Progress\SemanticProgressBuilder;
+use Tuleap\Tracker\Semantic\Progress\SemanticProgressDao;
+use Tuleap\Tracker\Semantic\Status\Done\SemanticDone;
+use Tuleap\Tracker\Semantic\Timeframe\SemanticTimeframe;
+use Tuleap\Tracker\Semantic\Timeframe\SemanticTimeframeBuilder;
+use Tuleap\Tracker\Semantic\Timeframe\SemanticTimeframeDao;
+
 class Tracker_SemanticManager
 {
     /** @var Tracker */
     protected $tracker;
 
-    public function __construct(Tracker $tracker) {
+    public function __construct(Tracker $tracker)
+    {
         $this->tracker = $tracker;
     }
 
-    public function process(TrackerManager $tracker_manager, $request, $current_user) {
+    public function process(TrackerManager $tracker_manager, $request, $current_user)
+    {
         if ($request->existAndNonEmpty('semantic')) {
             $semantics = $this->getSemantics();
             if (isset($semantics[$request->get('semantic')])) {
@@ -39,22 +54,24 @@ class Tracker_SemanticManager
         $this->displayAdminSemantic($tracker_manager, $request, $current_user);
     }
 
-    public function displayAdminSemantic(TrackerManager $tracker_manager, $request, $current_user) {
-        $hp = Codendi_HTMLPurifier::instance();
+    public function displayAdminSemantic(TrackerManager $tracker_manager, $request, $current_user)
+    {
+        $title = dgettext('tuleap-tracker', 'Manage Semantic');
         $this->tracker->displayWarningArtifactByEmailSemantic();
-        $this->tracker->displayAdminItemHeader($tracker_manager, 'editsemantic');
+        $this->tracker->displayAdminItemHeader($tracker_manager, 'editsemantic', $title);
 
+        echo '<h2 class="almost-tlp-title">' . $title . '</h2>';
         echo '<p>';
-        echo $GLOBALS['Language']->getText('plugin_tracker_admin_semantic','semantic_intro');
+        echo dgettext('tuleap-tracker', 'As trackers can be fully customized, you may want to define what is the title of your artifacts, or when you consider an artifact to be open or close. This information is used in the application to display artifact summary, and tooltip for instance.');
         echo '</p>';
 
-        foreach($this->getSemantics() as $semantic) {
-            echo '<h3>'. $semantic->getLabel() .' <a href="'.TRACKER_BASE_URL.'/?'. http_build_query(array(
+        foreach ($this->getSemantics() as $semantic) {
+            echo '<h3>' . $semantic->getLabel() . ' <a href="' . TRACKER_BASE_URL . '/?' . http_build_query([
                 'tracker'  => $this->tracker->getId(),
                 'func'     => 'admin-semantic',
                 'semantic' => $semantic->getShortName(),
-            )) .'">';
-            echo $GLOBALS['HTML']->getImage('ic/edit.png', array('alt' => 'edit'));
+            ]) . '">';
+            echo $GLOBALS['HTML']->getImage('ic/edit.png', ['alt' => 'edit']);
             echo '</a></h3>';
             $semantic->display();
         }
@@ -62,57 +79,87 @@ class Tracker_SemanticManager
         $this->tracker->displayFooter($tracker_manager);
     }
 
-    public function displaySemanticHeader(Tracker_Semantic $semantic, TrackerManager $tracker_manager) {
+    public function displaySemanticHeader(Tracker_Semantic $semantic, TrackerManager $tracker_manager)
+    {
+        $title = $semantic->getLabel();
         $this->tracker->displayAdminItemHeader(
             $tracker_manager,
             'editsemantic',
-            array(
-                array(
-                    'url'         => TRACKER_BASE_URL.'/?'. http_build_query(array(
-                        'tracker'  => $this->tracker->getId(),
-                        'func'     => 'admin-semantic',
-                        'semantic' => $semantic->getShortName(),
-                    )),
-                    'title'       => $semantic->getLabel(),
-                    'description' => $semantic->getDescription(),
-                )
-            ),
-            $semantic->getLabel()
+            $title
         );
+
+        echo '<h2 class="almost-tlp-title">' . $title . '</h2>';
     }
 
-    public function displaySemanticFooter(Tracker_Semantic $semantic, TrackerManager $tracker_manager) {
+    public function displaySemanticFooter(Tracker_Semantic $semantic, TrackerManager $tracker_manager)
+    {
         $this->tracker->displayFooter($tracker_manager);
         die();
     }
 
-    /**
-     * Is the field used in semantics?
-     *
-     * @param Tracker_FormElement_Field the field to test if it is used in semantics or not
-     *
-     * @return boolean returns true if the field is used in semantics, false otherwise
-     */
-    public function isUsedInSemantics($field) {
-        $semantics = $this->getSemantics();
+    public function getSemanticsTheFieldBelongsTo(Tracker_FormElement_Field $field): CollectionOfSemanticsUsingAParticularTrackerField
+    {
+        $semantics             = $this->getSemantics();
+        $timeframe_dao         = new SemanticTimeframeDao();
+        $semantics_using_field = [];
+
+        $configs                    = $timeframe_dao->getSemanticsImpliedFromGivenTracker($this->tracker->getId()) ?: [];
+        $semantic_timeframe_builder = SemanticTimeframeBuilder::build();
+
         foreach ($semantics as $semantic) {
             if ($semantic->isUsedInSemantics($field)) {
-                return true;
+                $semantics_using_field[] = $semantic;
             }
         }
-        return false;
+
+        foreach ($configs as $config) {
+            $tracker = \TrackerFactory::instance()->getTrackerById($config['tracker_id']);
+            if ($tracker === null) {
+                continue;
+            }
+
+            $semantic_timeframe = $semantic_timeframe_builder->getSemantic($tracker);
+
+            if ($semantic_timeframe->isUsedInSemantics($field)) {
+                $semantics_using_field[] = $semantic_timeframe;
+            }
+        }
+
+        return new CollectionOfSemanticsUsingAParticularTrackerField($field, $semantics_using_field);
     }
 
     /**
      * @return Tracker_SemanticCollection
      */
-    public function getSemantics() {
+    public function getSemantics()
+    {
         $semantics = new Tracker_SemanticCollection();
 
         $semantics->add(Tracker_Semantic_Title::load($this->tracker));
         $semantics->add(Tracker_Semantic_Description::load($this->tracker));
         $semantics->add(Tracker_Semantic_Status::load($this->tracker));
+        $semantics->insertAfter(
+            Tracker_Semantic_Status::NAME,
+            SemanticDone::load($this->tracker)
+        );
         $semantics->add(Tracker_Semantic_Contributor::load($this->tracker));
+
+        $semantic_timeframe    = SemanticTimeframeBuilder::build()->getSemantic($this->tracker);
+        $semantic_progress_dao = new SemanticProgressDao();
+        $semantic_progress     = (new SemanticProgressBuilder(
+            $semantic_progress_dao,
+            new MethodBuilder(
+                \Tracker_FormElementFactory::instance(),
+                $semantic_progress_dao,
+                new NaturePresenterFactory(
+                    new NatureDao(),
+                    new ArtifactLinksUsageDao()
+                )
+            )
+        ))->getSemantic($this->tracker);
+
+        $semantics->add($semantic_timeframe);
+        $semantics->add($semantic_progress);
         $semantics->add($this->tracker->getTooltip());
 
         $this->addOtherSemantics($semantics);
@@ -123,16 +170,16 @@ class Tracker_SemanticManager
     /**
      * Use an event to get semantics from other plugins.
      *
-     * @param Tracker_SemanticCollection $semantics
      */
-    private function addOtherSemantics(Tracker_SemanticCollection $semantics) {
+    private function addOtherSemantics(Tracker_SemanticCollection $semantics)
+    {
          EventManager::instance()->processEvent(
-            TRACKER_EVENT_MANAGE_SEMANTICS,
-            array(
+             TRACKER_EVENT_MANAGE_SEMANTICS,
+             [
                 'semantics'   => $semantics,
                 'tracker'     => $this->tracker,
-            )
-        );
+             ]
+         );
     }
 
     /**
@@ -143,48 +190,37 @@ class Tracker_SemanticManager
      *
      * @return void
      */
-    public function exportToXml(SimpleXMLElement $root, $xmlMapping) {
+    public function exportToXml(SimpleXMLElement $root, $xmlMapping)
+    {
         $semantics = $this->getSemantics();
         foreach ($semantics as $semantic) {
             $semantic->exportToXML($root, $xmlMapping);
         }
     }
 
-    public function exportToREST(PFUser $user) {
-        return array_filter(
-            $this->exportTo($user, 'exportToREST')
-        );
-    }
-
-    /**
-     * Export the semantic to SOAP format
-     * @return array the SOAPification of the semantic
-     */
-    public function exportToSOAP(PFUser $user) {
-        return $this->exportTo($user, 'exportToSOAP');
-    }
-
-    private function exportTo(PFUser $user, $method) {
+    public function exportToREST(PFUser $user)
+    {
+        $results        = [];
         $semantic_order = $this->getSemanticOrder();
         $semantics      = $this->getSemantics();
-        $soap_result    = array();
 
         foreach ($semantic_order as $semantic_key) {
-            if (isset($semantics[$semantic_key])){
-                $soap_result[$semantic_key] = $semantics[$semantic_key]->$method($user);
+            if (isset($semantics[$semantic_key])) {
+                $results[$semantic_key] = $semantics[$semantic_key]->exportToREST($user);
             }
         }
 
-        return $soap_result;
+        return array_filter($results);
     }
 
-    protected function getSemanticOrder() {
-        $order = array('title', 'description', 'status', 'contributor');
+    protected function getSemanticOrder()
+    {
+        $order = ['title', 'description', 'status', 'contributor', SemanticTimeframe::NAME, SemanticProgress::NAME];
         EventManager::instance()->processEvent(
-            TRACKER_EVENT_SOAP_SEMANTICS,
-            array(
+            TRACKER_EVENT_GET_SEMANTICS_NAMES,
+            [
                 'semantics' => &$order
-            )
+            ]
         );
 
         return $order;

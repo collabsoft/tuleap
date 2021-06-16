@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,46 +20,48 @@
 
 namespace Tuleap\Tracker\REST\v1;
 
-use \Tuleap\REST\ProjectAuthorization;
+use Luracast\Restler\RestException;
+use PFUser;
+use Tracker_ArtifactFactory;
+use Tracker_FormElementFactory;
+use Tracker_ReportFactory;
+use Tracker_URLVerification;
+use Tuleap\Markdown\CommonMarkInterpreter;
 use Tuleap\REST\AuthenticatedResource;
-use \Tuleap\REST\Exceptions\LimitOutOfBoundsException;
-use \Luracast\Restler\RestException;
-use \Tuleap\Tracker\REST\ReportRepresentation;
-use \Tracker_ReportFactory;
-use \Tracker_ArtifactFactory;
-use \Tracker_FormElementFactory;
-use \UserManager;
-use \PFUser;
-use \Tuleap\REST\Header;
-use \Tracker_REST_Artifact_ArtifactRepresentationBuilder;
-use \Tracker_URLVerification;
+use Tuleap\REST\Header;
+use Tuleap\REST\ProjectAuthorization;
+use Tuleap\REST\ProjectStatusVerificator;
+use Tuleap\Tracker\Artifact\Artifact;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\CachingTrackerPrivateCommentInformationRetriever;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\PermissionChecker;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentInformationRetriever;
+use Tuleap\Tracker\Artifact\Changeset\Comment\PrivateComment\TrackerPrivateCommentUGroupEnabledDao;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
+use Tuleap\Tracker\REST\Artifact\ArtifactRepresentation;
+use Tuleap\Tracker\REST\Artifact\ArtifactRepresentationBuilder;
+use Tuleap\Tracker\REST\Artifact\Changeset\ChangesetRepresentationBuilder;
+use Tuleap\Tracker\REST\Artifact\Changeset\Comment\CommentRepresentationBuilder;
+use Tuleap\Tracker\REST\MinimalTrackerRepresentation;
+use Tuleap\Tracker\REST\ReportRepresentation;
+use UserManager;
 
 /**
  * Wrapper for Tracker Report related REST methods
  */
 class ReportsResource extends AuthenticatedResource
 {
-    const MAX_LIMIT      = 50;
-    const DEFAULT_LIMIT  = 10;
-    const DEFAULT_OFFSET = 0;
-    const DEFAULT_VALUES = null;
-    const ALL_VALUES     = 'all';
-
-    /** @var Tracker_REST_Artifact_ArtifactRepresentationBuilder */
-    private $builder;
+    public const MAX_LIMIT      = 50;
+    public const DEFAULT_LIMIT  = 10;
+    public const DEFAULT_OFFSET = 0;
+    public const DEFAULT_VALUES = null;
+    public const ALL_VALUES     = 'all';
 
     /** @var ReportArtifactFactory */
     private $report_artifact_factory;
 
     public function __construct()
     {
-        $artifact_factory = Tracker_ArtifactFactory::instance();
-        $this->builder    = new Tracker_REST_Artifact_ArtifactRepresentationBuilder(
-            Tracker_FormElementFactory::instance(),
-            $artifact_factory,
-            new NatureDao()
-        );
+        $artifact_factory              = Tracker_ArtifactFactory::instance();
         $this->report_artifact_factory = new ReportArtifactFactory(
             $artifact_factory
         );
@@ -70,7 +72,8 @@ class ReportsResource extends AuthenticatedResource
      *
      * @param string $id Id of the report
      */
-    public function optionsId($id) {
+    public function optionsId($id)
+    {
         Header::allowOptionsGet();
     }
 
@@ -81,18 +84,26 @@ class ReportsResource extends AuthenticatedResource
      *
      * @url GET {id}
      * @access hybrid
+     * @oauth2-scope read:tracker
      *
      * @param int $id Id of the report
      *
-     * @return Tuleap\Tracker\REST\ReportRepresentation
+     * @return ReportRepresentation
+     * @throws RestException 403
+     * @throws RestException 404
      */
-    public function getId($id) {
+    public function getId($id)
+    {
         $this->checkAccess();
         $user   = UserManager::instance()->getCurrentUser();
         $report = $this->getReportById($user, $id);
 
-        $rest_report = new ReportRepresentation();
-        $rest_report->build($report);
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsOnlySiteAdminToAccessIt(
+            $user,
+            $report->getTracker()->getProject()
+        );
+
+        $rest_report = new ReportRepresentation($report);
 
         Header::allowOptionsGet();
 
@@ -104,7 +115,8 @@ class ReportsResource extends AuthenticatedResource
      *
      * @param string $id Id of the report
      */
-    public function optionsArtifacts($id) {
+    public function optionsArtifacts($id)
+    {
         Header::allowOptionsGet();
     }
 
@@ -130,25 +142,32 @@ class ReportsResource extends AuthenticatedResource
      *
      * @url GET {id}/artifacts
      * @access hybrid
+     * @oauth2-scope read:tracker
      *
-     * @param int    $id      Id of the report
-     * @param string $values  Which fields to include in the response. Default is no field values {@from path}{@choice ,all}
-     * @param int    $limit   Number of elements displayed per page {@from path}{@min 1}
-     * @param int    $offset  Position of the first element to display {@from path}{@min 0}
+     * @param int $id Id of the report
+     * @param string $values Which fields to include in the response. Default is no field values {@from path}{@choice ,all}
+     * @param int $limit Number of elements displayed per page {@from path}{@min 1} {@max 50}
+     * @param int $offset Position of the first element to display {@from path}{@min 0}
      *
      * @return array {@type Tuleap\Tracker\REST\Artifact\ArtifactRepresentation}
+     * @throws RestException 403
+     * @throws RestException 404
      */
     public function getArtifacts(
         $id,
         $values = self::DEFAULT_VALUES,
-        $limit  = self::DEFAULT_LIMIT,
+        $limit = self::DEFAULT_LIMIT,
         $offset = self::DEFAULT_OFFSET
     ) {
         $this->checkAccess();
-        $this->checkLimitValue($limit);
 
         $user   = UserManager::instance()->getCurrentUser();
         $report = $this->getReportById($user, $id);
+
+        ProjectStatusVerificator::build()->checkProjectStatusAllowsOnlySiteAdminToAccessIt(
+            $user,
+            $report->getTracker()->getProject()
+        );
 
         $artifact_collection = $this->report_artifact_factory->getArtifactsMatchingReport(
             $report,
@@ -169,12 +188,26 @@ class ReportsResource extends AuthenticatedResource
     }
 
     /**
-     * @return Tuleap\Tracker\REST\Artifact\ArtifactRepresentation[]
+     * @return ArtifactRepresentation[]
      */
-    private function getListOfArtifactRepresentation(PFUser $user, $artifacts, $with_all_field_values) {
-        $builder = $this->builder;
+    private function getListOfArtifactRepresentation(PFUser $user, $artifacts, $with_all_field_values)
+    {
+        $form_element_factory = Tracker_FormElementFactory::instance();
+        $builder              = new ArtifactRepresentationBuilder(
+            $form_element_factory,
+            Tracker_ArtifactFactory::instance(),
+            new NatureDao(),
+            new ChangesetRepresentationBuilder(
+                UserManager::instance(),
+                $form_element_factory,
+                new CommentRepresentationBuilder(
+                    CommonMarkInterpreter::build(\Codendi_HTMLPurifier::instance())
+                ),
+                new PermissionChecker(new CachingTrackerPrivateCommentInformationRetriever(new TrackerPrivateCommentInformationRetriever(new TrackerPrivateCommentUGroupEnabledDao())))
+            )
+        );
 
-        $build_artifact_representation = function ($artifact) use (
+        $build_artifact_representation = function (?Artifact $artifact) use (
             $builder,
             $user,
             $with_all_field_values
@@ -184,7 +217,9 @@ class ReportsResource extends AuthenticatedResource
             }
 
             if ($with_all_field_values) {
-                return $builder->getArtifactRepresentationWithFieldValues($user, $artifact);
+                $tracker_representation = MinimalTrackerRepresentation::build($artifact->getTracker());
+
+                return $builder->getArtifactRepresentationWithFieldValues($user, $artifact, $tracker_representation);
             } else {
                 return $builder->getArtifactRepresentation($user, $artifact);
             }
@@ -195,10 +230,11 @@ class ReportsResource extends AuthenticatedResource
         return array_values(array_filter($list_of_artifact_representation));
     }
 
-    /** @return Tracker_Report */
-    private function getReportById(\PFUser $user, $id) {
+    /** @return \Tracker_Report */
+    private function getReportById(\PFUser $user, $id)
+    {
         $store_in_session = false;
-        $report = Tracker_ReportFactory::instance()->getReportById(
+        $report           = Tracker_ReportFactory::instance()->getReportById(
             $id,
             $user->getId(),
             $store_in_session
@@ -216,11 +252,5 @@ class ReportsResource extends AuthenticatedResource
         ProjectAuthorization::userCanAccessProject($user, $tracker->getProject(), new Tracker_URLVerification());
 
         return $report;
-    }
-
-    private function checkLimitValue($limit) {
-        if ($limit > self::MAX_LIMIT) {
-            throw new LimitOutOfBoundsException(self::MAX_LIMIT);
-        }
     }
 }

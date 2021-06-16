@@ -1,36 +1,36 @@
 <?php
-/*
+/**
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  * Copyright (c) Xerox, 2008. All Rights Reserved.
  *
  * Originally written by Nicolas Terray, 2008. Xerox Codendi Team.
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi; if not, write to the Free Software
+ * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once 'common/user/UserManager.class.php';
-require_once 'GraphOnTrackersV5_Burndown_Data.class.php';
-
-class GraphOnTrackersV5_Burndown_DataBuilder extends ChartDataBuilderV5 {
+class GraphOnTrackersV5_Burndown_DataBuilder extends ChartDataBuilderV5
+{
     /**
      * build burndown chart properties
      *
      * @param Burndown_Engine $engine object
      */
-    public function buildProperties($engine) {
+    public function buildProperties($engine)
+    {
         parent::buildProperties($engine);
 
         $form_element_factory = Tracker_FormElementFactory::instance();
@@ -38,20 +38,20 @@ class GraphOnTrackersV5_Burndown_DataBuilder extends ChartDataBuilderV5 {
         $type                 = $form_element_factory->getType($effort_field);
 
         if ($this->isValidEffortField($effort_field, $type) && $this->isValidType($type)) {
-            $time_period     = new TimePeriodWithWeekEnd($this->chart->getStartDate(), $this->chart->getDuration());
-            $engine->data    = $this->getBurnDownData($effort_field->getId(), $type, $time_period);
+            $time_period  = new TimePeriodWithWeekEnd($this->chart->getStartDate(), $this->chart->getDuration());
+            $engine->data = $this->getBurnDownData($effort_field->getId(), $type, $time_period);
         }
 
-        $engine->legend      = null;
-        $engine->start_date  = $this->chart->getStartDate();
-        $engine->duration    = $this->chart->getDuration();
+        $engine->legend     = null;
+        $engine->start_date = $this->chart->getStartDate();
+        $engine->duration   = $this->chart->getDuration();
     }
 
     protected function getBurnDownData($effort_field_id, $type, TimePeriodWithWeekEnd $time_period)
     {
         $artifact_ids = explode(',', $this->artifacts['id']);
 
-        $sql          = "SELECT c.artifact_id AS id,
+        $sql = "SELECT c.artifact_id AS id,
                           DATE_FORMAT(FROM_UNIXTIME(c.submitted_on), '%Y%m%d') as day,
                           cvi.value
                         FROM tracker_changeset AS c
@@ -63,7 +63,8 @@ class GraphOnTrackersV5_Burndown_DataBuilder extends ChartDataBuilderV5 {
         return new GraphOnTrackersV5_Burndown_Data(db_query($sql), $artifact_ids, $time_period);
     }
 
-    protected function isValidEffortField($effort_field, $type) {
+    protected function isValidEffortField($effort_field, $type)
+    {
         return $effort_field && $effort_field->userCanRead(UserManager::instance()->getCurrentUser());
     }
 
@@ -72,9 +73,8 @@ class GraphOnTrackersV5_Burndown_DataBuilder extends ChartDataBuilderV5 {
      *
      * @var array
      */
-    protected function isValidType($type) {
-        return in_array($type, array('int', 'float'));
+    protected function isValidType($type)
+    {
+        return in_array($type, ['int', 'float']);
     }
-
 }
-?>

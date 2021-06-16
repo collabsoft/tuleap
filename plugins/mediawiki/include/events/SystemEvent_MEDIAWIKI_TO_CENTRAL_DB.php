@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,16 +28,16 @@ use Exception;
 // @codingStandardsIgnoreLine
 class SystemEvent_MEDIAWIKI_TO_CENTRAL_DB extends SystemEvent
 {
-    const NAME = 'MEDIAWIKI_TO_CENTRAL_DB';
+    public const NAME = 'MEDIAWIKI_TO_CENTRAL_DB';
 
-    const ALL = 'all';
+    public const ALL = 'all';
 
     /** @var MoveToCentralDbDao */
     private $move_to_central_db;
 
     public function injectDependencies(MoveToCentralDbDao $move_to_central_db)
     {
-        $this->move_to_central_db    = $move_to_central_db;
+        $this->move_to_central_db = $move_to_central_db;
     }
 
     public function process()
@@ -70,7 +70,7 @@ class SystemEvent_MEDIAWIKI_TO_CENTRAL_DB extends SystemEvent
         if ($this->areAllProjectsMigrated()) {
             return "All projects";
         } else {
-            return "Project: ".$this->getProjectIdFromParameters();
+            return "Project: " . $this->getProjectIdFromParameters();
         }
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,14 +41,12 @@ class RepositorySimpleRepresentationBuilder
         CollectionOfUGroupRepresentationBuilder $collection_of_ugroups_builder,
         AdminUrlBuilder $url_builder
     ) {
-        $this->permissions_manager = $permissions_manager;
-        $this->url_builder         = $url_builder;
+        $this->permissions_manager           = $permissions_manager;
+        $this->url_builder                   = $url_builder;
         $this->collection_of_ugroups_builder = $collection_of_ugroups_builder;
     }
 
     /**
-     * @param GitRepository $repository
-     * @param Project       $project
      * @param               $selected_ugroup_id
      *
      * @return RepositoryPermissionRepresentation
@@ -60,7 +58,8 @@ class RepositorySimpleRepresentationBuilder
     ) {
         $permissions = $this->permissions_manager->getRepositoryGlobalPermissions($repository);
 
-        if ($selected_ugroup_id
+        if (
+            $selected_ugroup_id
             && ! $this->hasRepositoryAPermissionContainingUGroupId($permissions, $selected_ugroup_id)
         ) {
             return;

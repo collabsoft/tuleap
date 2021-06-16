@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureCreator;
+use Tuleap\Tracker\Artifact\Artifact;
 use Tuleap\Tracker\FormElement\Field\ArtifactLink\Nature\NatureDao;
 
 class Tracker_Artifact_XMLImport_XMLImportFieldStrategyArtifactLink implements Tracker_Artifact_XMLImport_XMLImportFieldStrategy
@@ -30,7 +30,7 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyArtifactLink implements T
      *  - tracker_id: input int
      *  - error : output string
      */
-    const TRACKER_ADD_SYSTEM_NATURES = 'tracker_add_system_natures';
+    public const TRACKER_ADD_SYSTEM_NATURES = 'tracker_add_system_natures';
 
     /**
      * Check that nature is respects rules
@@ -42,12 +42,12 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyArtifactLink implements T
      *  - children_id: input int
      *  - shortname: input string
      */
-    const TRACKER_IS_NATURE_VALID = 'tracker_is_nature_valid';
+    public const TRACKER_IS_NATURE_VALID = 'tracker_is_nature_valid';
 
     /** @var Tracker_XML_Importer_ArtifactImportedMapping */
     private $artifact_id_mapping;
 
-    /** @var Logger  */
+    /** @var \Psr\Log\LoggerInterface  */
     private $logger;
 
     /** @var Tracker_ArtifactFactory  */
@@ -56,53 +56,48 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyArtifactLink implements T
     /** @var NatureDao  */
     private $nature_dao;
 
-    /** @var NatureCreator  */
-    private $nature_creator;
-
     public function __construct(
         Tracker_XML_Importer_ArtifactImportedMapping $artifact_id_mapping,
-        Logger $logger,
+        \Psr\Log\LoggerInterface $logger,
         Tracker_ArtifactFactory $artifact_factory,
-        NatureDao $nature_dao,
-        NatureCreator $nature_creator
+        NatureDao $nature_dao
     ) {
         $this->artifact_id_mapping = $artifact_id_mapping;
         $this->logger              = $logger;
         $this->artifact_factory    = $artifact_factory;
         $this->nature_dao          = $nature_dao;
-        $this->nature_creator      = $nature_creator;
     }
 
     public function getFieldData(
         Tracker_FormElement_Field $field,
         SimpleXMLElement $field_change,
         PFUser $submitted_by,
-        Tracker_Artifact $artifact
+        Artifact $artifact
     ) {
         $new_values     = $this->extractArtifactLinkFromXml($field_change, $artifact);
         $last_changeset = $artifact->getLastChangeset();
 
-        $removed_values = array();
+        $removed_values = [];
         if ($last_changeset) {
             $removed_values = $this->removeValuesIfDontExistInLastChangeset($new_values['new_values'], $last_changeset->getValues());
         }
 
         $add_values = implode(',', $new_values['new_values']);
 
-        return array(
+        return [
             'new_values'     => $add_values,
             'removed_values' => $removed_values,
             'natures'        => $new_values['natures']
-        );
+        ];
     }
 
-    private function extractArtifactLinkFromXml(SimpleXMLElement $field_change, Tracker_Artifact $artifact)
+    private function extractArtifactLinkFromXml(SimpleXMLElement $field_change, Artifact $artifact)
     {
-        $artifact_links = array();
-        $natures        = array();
+        $artifact_links = [];
+        $natures        = [];
 
         foreach ($field_change->value as $artifact_link) {
-            $linked_artifact_id = (int)$artifact_link;
+            $linked_artifact_id = (int) $artifact_link;
 
             if ($this->artifact_id_mapping->containsSource($linked_artifact_id)) {
                 $link             = $this->artifact_id_mapping->get($linked_artifact_id);
@@ -116,12 +111,12 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyArtifactLink implements T
             }
         }
 
-        return array("new_values" => $artifact_links, "natures" => $natures);
+        return ["new_values" => $artifact_links, "natures" => $natures];
     }
 
     private function checkNatureExistOnPlateform($linked_nature, $linked_artifact_id)
     {
-        $system_nature = array();
+        $system_nature = [];
         $this->retrieveSystemNatures($system_nature);
 
         if ($linked_nature && ! in_array($linked_nature, $system_nature)) {
@@ -133,11 +128,11 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyArtifactLink implements T
     }
 
     private function getNatureFromMappedArtifact(
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         SimpleXMLElement $xml_element,
         $mapped_artifact_id
     ) {
-        $nature       = (string)$xml_element['nature'];
+        $nature       = (string) $xml_element['nature'];
         $xml_artifact = $this->artifact_factory->getArtifactById($mapped_artifact_id);
         if ($xml_artifact) {
             $error_message = $this->isLinkValid($xml_artifact->getTrackerId(), $artifact, $mapped_artifact_id, $nature);
@@ -150,7 +145,8 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyArtifactLink implements T
         return $nature;
     }
 
-    private function retrieveSystemNatures(array &$natures) {
+    private function retrieveSystemNatures(array &$natures)
+    {
         $params['natures']   = &$natures;
         $params['natures'][] = Tracker_FormElement_Field_ArtifactLink::NATURE_IS_CHILD;
         EventManager::instance()->processEvent(
@@ -163,10 +159,10 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyArtifactLink implements T
         array $artifact_links,
         array $changesets
     ) {
-        $removed_artifacts = array();
-        foreach($changesets as $changeset) {
+        $removed_artifacts = [];
+        foreach ($changesets as $changeset) {
             if (is_a($changeset, "Tracker_Artifact_ChangesetValue_ArtifactLink")) {
-                foreach($changeset->getArtifactIds() as $artifact_id) {
+                foreach ($changeset->getArtifactIds() as $artifact_id) {
                     if (! in_array($artifact_id, $artifact_links)) {
                         $removed_artifacts[$artifact_id] = $artifact_id;
                     }
@@ -177,7 +173,7 @@ class Tracker_Artifact_XMLImport_XMLImportFieldStrategyArtifactLink implements T
         return $removed_artifacts;
     }
 
-    private function isLinkValid($tracker_id, Tracker_Artifact $artifact, $children_id, $nature)
+    private function isLinkValid($tracker_id, Artifact $artifact, $children_id, $nature)
     {
         $error                 = "";
         $params['error']       = &$error;

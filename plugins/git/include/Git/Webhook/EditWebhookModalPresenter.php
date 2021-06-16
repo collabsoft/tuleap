@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,8 +28,8 @@ class EditWebhookModalPresenter extends WebhookModalPresenter
     {
         parent::__construct($repository);
 
-        $this->title  = $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_edit');
-        $this->save   = $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_edit_save');
+        $this->title  = dgettext('tuleap-git', 'Edit generic webhook');
+        $this->save   = dgettext('tuleap-git', 'Save generic webhook');
         $this->action = 'edit-webhook';
     }
 }

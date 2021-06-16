@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -50,12 +50,12 @@ class WebhookAddController extends WebhookController
         if ($this->dao->create($repository->getId(), $webhook_url)) {
             $GLOBALS['Response']->addFeedback(
                 Feedback::INFO,
-                $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_add_success')
+                dgettext('tuleap-git', 'Webhook added')
             );
         } else {
             $GLOBALS['Response']->addFeedback(
                 Feedback::ERROR,
-                $GLOBALS['Language']->getText('plugin_git', 'settings_hooks_add_error')
+                dgettext('tuleap-git', 'Error while adding the webhook :(')
             );
         }
 

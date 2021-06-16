@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: PageTrail.php,v 1.8 2005/08/06 13:23:14 rurban Exp $');
 /**
  Copyright 1999,2000,2001,2002,2005 $ThePhpWikiProgrammingTeam
@@ -32,38 +33,45 @@ rcs_id('$Id: PageTrail.php,v 1.8 2005/08/06 13:23:14 rurban Exp $');
  * <?plugin PageTrail invisible=1?>
  */
 
-if (!defined('PAGETRAIL_ARROW'))
+if (! defined('PAGETRAIL_ARROW')) {
     define('PAGETRAIL_ARROW', " => ");
+}
 
-class WikiPlugin_PageTrail
-extends WikiPlugin
+class WikiPlugin_PageTrail extends WikiPlugin
 {
     // Four required functions in a WikiPlugin.
-    var $def_numberlinks = 5;
+    public $def_numberlinks = 5;
 
-    function getName () {
+    public function getName()
+    {
         return _("PageTrail");
     }
 
-    function getDescription () {
+    public function getDescription()
+    {
         return _("PageTrail Plugin");
-
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.8 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.8 $"
+        );
     }
 
     // default values
-    function getDefaultArguments() {
-        return array('numberlinks' => $this->def_numberlinks,
+    public function getDefaultArguments()
+    {
+        return ['numberlinks' => $this->def_numberlinks,
                      'invisible'   => false,
                      'duplicates'  => false,
-                     );
+                     ];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         extract($this->getArgs($argstr, $request));
 
         if ($numberlinks > 10 || $numberlinks < 0) {
@@ -72,8 +80,10 @@ extends WikiPlugin
 
         // Get name of the current page we are on
         $thispage = $request->getArg('pagename');
-        $Pages = $request->session->get("PageTrail");
-        if (!is_array($Pages)) $Pages = array();
+        $Pages    = $request->session->get("PageTrail");
+        if (! is_array($Pages)) {
+            $Pages = [];
+        }
 
         if ($duplicates || ($thispage != $Pages[0])) {
             array_unshift($Pages, $thispage);
@@ -82,17 +92,21 @@ extends WikiPlugin
 
         $numberlinks = min(count($Pages), $numberlinks);
         if (! $invisible and $numberlinks) {
-            $html = HTML::tt(WikiLink($Pages[$numberlinks-1], 'auto'));
+            $html = HTML::tt(WikiLink($Pages[$numberlinks - 1], 'auto'));
             for ($i = $numberlinks - 2; $i >= 0; $i--) {
-                if (!empty($Pages[$i]))
-                    $html->pushContent(PAGETRAIL_ARROW, 
-                                       WikiLink($Pages[$i], 'auto'));
+                if (! empty($Pages[$i])) {
+                    $html->pushContent(
+                        PAGETRAIL_ARROW,
+                        WikiLink($Pages[$i], 'auto')
+                    );
+                }
             }
             return $html;
-        } else
+        } else {
             return HTML();
+        }
     }
-};
+}
 
 // $Log: PageTrail.php,v $
 // Revision 1.8  2005/08/06 13:23:14  rurban
@@ -115,8 +129,6 @@ extends WikiPlugin
 //
 // Revision 1.2  2003/01/18 22:22:36  carstenklapp
 // defined constant for arrow, eliminate use of fmt()
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -125,4 +137,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

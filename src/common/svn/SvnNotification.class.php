@@ -18,17 +18,17 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('common/dao/SvnNotificationDao.class.php');
-
-class SvnNotification {
+class SvnNotification
+{
 
     /**
      * Obtain an instance of SvnNotificationDao
      *
      * @return SvnNotificationDao
      */
-    public function _getDao() {
-        if (!isset($this->_dao)) {
+    public function _getDao()
+    {
+        if (! isset($this->_dao)) {
             $this->_dao = new SvnNotificationDao(CodendiDataAccess::instance());
         }
         return $this->_dao;
@@ -37,13 +37,14 @@ class SvnNotification {
     /**
      * Set mailing list notification per path
      *
-     * @param Integer $projectId   Project id
+     * @param int $projectId Project id
      * @param String  $mailingList List of mail addresses
      * @param String  $path        svn path
      *
-     * @return Boolean
+     * @return bool
      */
-    function setSvnMailingList($projectId, $mailingList, $path) {
+    public function setSvnMailingList($projectId, $mailingList, $path)
+    {
         $dao = $this->_getDao();
         return $dao->setSvnMailingList($projectId, $mailingList, $path);
     }
@@ -51,15 +52,16 @@ class SvnNotification {
     /**
      * Get mailing list notification per path
      *
-     * @param Integer $projectId Project id
+     * @param int $projectId Project id
      * @param String  $path      svn path
      *
      * @return String
      */
-    function getSvnMailingList($projectId, $path) {
+    public function getSvnMailingList($projectId, $path)
+    {
         $dao = $this->_getDao();
         $dar = $dao->getSvnMailingList($projectId, $path);
-        if ($dar && !$dar->isError() && $dar->rowCount() == 1) {
+        if ($dar && ! $dar->isError() && $dar->rowCount() == 1) {
             $row = $dar->current();
             return $row['svn_events_mailing_list'];
         } else {
@@ -70,14 +72,15 @@ class SvnNotification {
     /**
      * Get mailing list notification and path for the whole project
      *
-     * @param Integer $projectId Project id
+     * @param int $projectId Project id
      *
      * @return DataAccessResult
      */
-    function getSvnEventNotificationDetails($projectId) {
+    public function getSvnEventNotificationDetails($projectId)
+    {
         $dao = $this->_getDao();
         $dar = $dao->getSvnMailingList($projectId);
-        if ($dar && !$dar->isError() && $dar->rowCount() > 0) {
+        if ($dar && ! $dar->isError() && $dar->rowCount() > 0) {
             return $dar;
         } else {
             return null;
@@ -87,15 +90,16 @@ class SvnNotification {
     /**
      * Remove svn notification details
      *
-     * @param Integer $projectId     Project id
+     * @param int $projectId Project id
      * @param Array   $selectedPaths Contains list of paths to remove.
      *
      * @return void
      */
-    function removeSvnNotification($projectId, $selectedPaths) {
-        if (is_array($selectedPaths) && !empty($selectedPaths)) {
-            $dao = $this->_getDao();
-            $paths = array();
+    public function removeSvnNotification($projectId, $selectedPaths)
+    {
+        if (is_array($selectedPaths) && ! empty($selectedPaths)) {
+            $dao   = $this->_getDao();
+            $paths = [];
             foreach ($selectedPaths as $pathToDelete) {
                 if ($dao->deleteSvnMailingList($projectId, $pathToDelete)) {
                     $paths[] = $pathToDelete;
@@ -103,14 +107,11 @@ class SvnNotification {
                     $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('svn_admin_notification', 'delete_path_fail'));
                 }
             }
-            if (!empty($paths)) {
-                $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('svn_admin_notification', 'delete_path_success', array(implode(',', $paths))));
+            if (! empty($paths)) {
+                $GLOBALS['Response']->addFeedback('info', $GLOBALS['Language']->getText('svn_admin_notification', 'delete_path_success', [implode(',', $paths)]));
             }
         } else {
             $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('svn_admin_notification', 'retrieve_paths_fail'));
         }
     }
-
 }
-
-?>

@@ -2,7 +2,8 @@
 #  *
 #  * Include scripts message catalog (English)
 #  *
-#  * Codendi 
+#  * Tuleap
+#  * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
 #  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
 #  * http://www.codendi.com
 #  *
@@ -14,7 +15,6 @@
 #
 include_account	pwd_length_err	Password must be at least 6 characters.
 include_account	account_notactive	Account '$1' not active. User not added.
-include_account	user_added	User added
 include_account	user_already_member	User is already a member
 include_account	user_not_exist	User does not exist
 include_account	welcome	$1 - Welcome to Project $2
@@ -28,10 +28,9 @@ include_account	reserved	Name is reserved.
 include_account	reserved_cvs	Name is reserved for CVS.
 include_account	reserved_dns	Name is reserved for DNS purposes.
 include_account	dns_error	Short name cannot contain underscore or dot.
-include_account	used_by_svn	This short name is not available: An SVN directory already exists with this name  
+include_account	used_by_svn	This short name is not available: An SVN directory already exists with this name
 include_account	used_by_cvs	This short name is not available: An CVS directory already exists with this name
 include_account	used_by_sys	This short name is not available: A home project already exists with this name
-include_account	change_pwd_err	Please update your password first
 #
 #-----------------------------------------------
 # Script: SF/www/include/account.php
@@ -40,7 +39,7 @@ include_cache	unable_open_cache	Unable to open cache file for writing after obta
 #
 #-----------------------------------------------
 # Script: SF/www/include/exit.php
-#   
+#
 include_exit	error	Error
 include_exit	info	Information
 include_exit	perm_denied	Permission Denied
@@ -56,7 +55,7 @@ include_exit	missing_param_err	Error - Missing Parameters
 include_exit	private_project_no_perm	Private Project. You may only access private projects you are member of.<br><a href="/my/">Back to your personal page</a>
 include_exit	request_to_admin	<em> or you can request to be added as a member.</em><br /> Write your message below and click on the button to send your request to the project administrators.
 include_exit	send_mail	Send mail
-include_exit	request_sent	<b>Your request has been sent to project administrators. You will be informed about any news.</b>
+include_exit	request_sent	Your request has been sent to project administrators. You will be informed about any news.
 include_exit	mail_content_private_project	Dear project administrator,\n\n$1 (login: $2) requests access to the resource $3 from the project "$4":\n$5\n\n$1 wrote a message for you:\n$6\n\nThis project is private, only project members can access it.\nIf you decide to accept the request, please take the appropriate actions to grant access and communicate that information to the requester..\nOtherwise, please inform the requester ($7) that he will not get access to the requested data.\n\nPlease note that adding $1 as project member might not be enough if you set specific permissions on the requested resource.\n--\n$1.
 include_exit	mail_content_restricted_user	Dear project administrator,\n\n$1 (login: $2) requests access to the resource $3 from the project "$4":\n$5\n\n$1 wrote a message for you:\n$6\n\nHe is a restricted user, he may only access web pages of projects he is member of.\nIf you decide to accept the request, please take the appropriate actions to grant access and communicate that information to the requester.\nOtherwise, please inform the requester ($7) that he will not get access to the requested data.\n\nPlease note that adding $1 as project member might not be enough if you set specific permissions on the requested resource.\n--\n$1.
 include_exit	mail_content_unvalid_ugroup	You receive this Email because the selected project: $1 is not valid, it may be empty or have no admins. You should modify it.
@@ -64,43 +63,16 @@ include_exit	mail_subject_private_project	$2 requests to be member of "$1" priva
 include_exit	mail_subject_restricted_user	Restricted user $2 requests to be member of "$1" project
 include_exit	data_type	related to service:
 include_exit	project_status_D	This project is deleted
-include_exit	project_status_I	This project is incomplete
 include_exit	project_status_P	This project is pending
-include_exit	project_status_H	This project is holding
+include_exit	project_status_H	This project is suspended
 include_exit	project_status_s	This is a system project
-include_exit	project_status_	This project is incomplete
-#
-#-----------------------------------------------
-# Script: SF/www/include/features_boxes.php
-#   
-include_features_boxes	stats	Statistics
-include_features_boxes	top_download_yesterday	Top Downloads Yesterday
-include_features_boxes	newest_releases	Newest Releases
-include_features_boxes	rss_format	- RSS Format
-include_features_boxes	xml	XML
-include_features_boxes	newest_projects	Newest Projects
-include_features_boxes	most_active_week	Most Active This Week
-include_features_boxes	most_active	Most Active
-include_features_boxes	top_downloads	Top Downloads
-include_features_boxes	featured_projects	Featured Projects
-include_features_boxes	more	More
-include_features_boxes	no_projects	No Projects
-include_features_boxes	downloads_yesterday	Downloads Yesterday
-include_features_boxes	hosted_projects	Hosted Projects
-include_features_boxes	registered_users	Registered Users
-include_features_boxes	files_download	Files Downloaded
-include_features_boxes	pages_viewed	Pages Viewed
 
+include_exit	project_suspended_cutom_message	All access to its resources are temporarily disabled.
 #
 #-----------------------------------------------
 # Script: SF/www/include/group.php
 #
 include_group	g_not_found	Group Not Found
-#
-#-----------------------------------------------
-# Script: SF/www/include/help.php
-#
-include_help	site_help_sys	Site Help System
 #
 #-----------------------------------------------
 # Script: SF/www/include/html.php
@@ -111,7 +83,6 @@ include_html	highest	Highest
 include_html	g_not_exist	That group does not exist.
 include_html	invalid_g	Invalid Group
 include_html	unknown_value	*** unknown value ***
-include_html	no_trovcat	This project is not categorized please select <a href="$1">[Trove Categorization]</a>
 #
 #-----------------------------------------------
 # Script: SF/www/include/layout.php
@@ -129,7 +100,6 @@ include_layout	template_warning	Beware this project is a template project
 #-----------------------------------------------
 # Script: SF/www/include/menu.php
 #
-include_menu	site_admin	Administration
 include_menu	main_page	Main Page
 include_menu	user_admin	User Admin
 include_menu	group_admin	Group Admin
@@ -142,23 +112,12 @@ include_menu	trove_cat_add	Trove Cat. Add
 include_menu	bugs	Bugs
 include_menu	tasks	Tasks
 include_menu	supp_requ	Support Requests
-include_menu	this_forum	This Forum
-include_menu	this_tracker	This Tracker
 include_menu	all_trackers	All trackers
-include_menu	software_proj	Software Projects
-include_menu	people	People
-include_menu	this_wiki	This Wiki
 include_menu	wiki	Wiki
-include_menu	require_all_words	Require All Words
-include_menu	search	Search
-include_menu	software_map	Software Map
-include_menu	software	Software
 include_menu	new_releases	New Releases
 include_menu	other_site_mirrors	Other Site Mirrors
 include_menu	help_index	Help Index
 include_menu	site_doc	Site Documentation
-include_menu	dev_channel	Developers Channels
-include_menu	discussion_forum	Discussion Forums
 include_menu	contact_us	Contact Us
 include_menu	games	Games
 include_menu	printing	Printing
@@ -168,27 +127,18 @@ include_menu	proj_admin	Project Admin
 include_menu	summary_page	Summary Page
 include_menu	logged_in	Logged In
 include_menu	logout	Logout
-include_menu	register_new_proj	Register New Project
-include_menu	filter_project	Project...
 include_menu	account_maintenance	Account Maintenance
 include_menu	my_perso_page	My Personal Page
 include_menu	bookmark_this_page	Bookmark This Page
-include_menu	not_logged_in	NOT LOGGED IN
 include_menu	login	Login
 include_menu	new_user	New User
-include_menu	auth_prev_success	Previous successful log-on:
 include_menu	auth_last_failure	Last log-on failure:
 include_menu	auth_nb_failure	Number of bad attempts:
 include_menu	help	Help
 include_menu	api	API
-include_menu	extras	More
 include_menu	get_help	Get Help
-include_menu	projects	Projects
-include_menu	browse_projects	Browse all projects
-include_menu	browse_all	Browse all
 include_menu	filter_projects	Filter...
 include_menu	add_project	New project
-include_menu	join_community	Join Tuleap Community
 #
 #-----------------------------------------------
 # Script: SF/www/include/project.php
@@ -197,15 +147,9 @@ include_project	services_not_found	Services not found for this group
 #
 #-----------------------------------------------
 # Script: SF/www/include/project_home.php
-#  
+#
 include_project_home	not_official_site	<P>NOTE: This project entry is maintained by the $1 staff. We are not \nthe official site for this product. Additional copyright information may be found on this project's homepage.\n
-include_project_home	more_info	More information
 include_project_home	no_short_desc	This project has not yet submitted a short description.You can <a href="$1"> submit it</a> now.
-include_project_home	other_info	Other information
-include_project_home	devel_info	Project Team
-include_project_home	proj_admins	Project Admins
-include_project_home	proj_members	Project Members
-include_project_home	view_members	View Members
 include_project_home	latest_file_releases	Latest File Releases
 include_project_home	package	Package
 include_project_home	version	Version
@@ -314,42 +258,13 @@ include_squal_pre	not_connect_db	Could Not Connect to Database
 # Script: SF/www/include/trove.php
 #
 include_trove	none_selected	None Selected
-include_trove	not_categorized_yet	This project has not yet categorized itself in the <A href="$1">Trove Software Map</A>. You can <a href=$2>categorize it</a> now.
 include_trove	now_filter	Now Filtering
 include_trove	filter	Filter
-#
-#-----------------------------------------------
-# Script: SF/www/include/user_home.php
-#
-include_user_home	devel_profile	Developer Profile
-include_user_home	no_such_user	No such User
-include_user_home	perso_info	Personal Information
-include_user_home	user_id	User ID
+
 include_user_home	login_name	Login Name
 include_user_home	real_name	Real Name
-include_user_home	email_addr	Email Addr
-include_user_home	user_prof	User Profile
 include_user_home	member_since	Site Member Since
-include_user_home	user_status	User Status
-include_user_home	active	Active
-include_user_home	restricted	Restricted
-include_user_home	pending	Pending
-include_user_home	deleted	 Deleted
-include_user_home	suspended	Suspended
-include_user_home	unkown	Unkown
-include_user_home	proj_info	Project info
-include_user_home	is_member	This developer is a member of the following projects
-include_user_home	not_member	This developer is not a member of any projects.
-include_user_home	send_message_to	Send a Message to 
-include_user_home	your_address	Your Email Address
-include_user_home	your_name	Your Name
-include_user_home	send_message	Send Message
-include_user_home	send_message_if_logged	You Could Send a Message if you were logged in
-include_user_home	subject	Subject
-include_user_home	message	Message
-include_user_home	cc	CC
-include_user_home	add_cc	Add CC
-include_user_home	fill_cc_list_msg	<b><u>Note:</b></u> for $1 users use their login name rather than their email addresses.<br>Fill your list using comma or semi-column as separator.
+
 #
 #-----------------------------------------------
 # Script: SF/www/include/user.php
@@ -363,10 +278,8 @@ include_user	invalid_u_id	Invalid User ID
 #
 include_utils	prio_colors	Priority Colors
 include_utils	address_problem	There are problems with the following addresses
-include_utils	email_explain	Email addresses must either be valid user names (e.g., 'jdoe') or fully qualified email addresses (e.g., 'jill.doe@somewhere.xerox.com'). Lists of email addresses may be separated by either commas or semicolons.
+include_utils	email_explain	Email addresses must either be valid user names (e.g., 'jdoe') or fully qualified email addresses (e.g., 'jill.doe@example.com'). Lists of email addresses may be separated by either commas or semicolons.
 include_utils	invalid_email	Email format invalid
-include_utils	time_ago	$1 ago
-include_utils	time_in_future	in $1
 include_utils	1_minute	1 minute
 include_utils	less_1_minute	less than a minute
 include_utils	less_than_one_second	less than one second
@@ -403,7 +316,3 @@ include_common_template	test_project	Test Project
 # Script: SF/common/mvc/View.class.php
 #
 common_mvc_view	warn	** WARNING!! ** Please confirm you want to $1
-
-include_browser	ie_deprecated	Please remove Internet Explorer compatibility mode, upgrade to a newer version (at least IE11) or use an alternative.
-include_browser	ie_deprecated_button	Ok, got it. Remind me later.
-include_browser	ie_deprecated_warning_disabled	We will bother you later with the deprecation of IE < 11.

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,8 @@
 /*
  * This represents a milestone at the bottom of a planning hierarchy
  */
-class Planning_Presenter_LastLevelMilestone {
+class Planning_Presenter_LastLevelMilestone
+{
 
      /** @var Planning_Presenter_MilestoneSummaryPresenter[] */
     public $milestone_summary_presenters;
@@ -29,13 +30,14 @@ class Planning_Presenter_LastLevelMilestone {
     /** @var string */
     public $milestone_type_name;
 
-    public function __construct($milestone_summary_presenters, $tracker_name) {
+    public function __construct($milestone_summary_presenters, $tracker_name)
+    {
         $this->milestone_summary_presenters = $milestone_summary_presenters;
         $this->milestone_type_name          = $tracker_name;
     }
 
-    public function no_milestone() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'no_milestone');
+    public function no_milestone()
+    {
+        return dgettext('tuleap-agiledashboard', 'There are no milestones for this period');
     }
 }
-?>

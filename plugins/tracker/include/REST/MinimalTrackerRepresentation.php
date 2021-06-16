@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,10 @@ use Tracker;
 use Tuleap\Project\REST\ProjectReference;
 use Tuleap\REST\JsonCast;
 
-class MinimalTrackerRepresentation
+/**
+ * @psalm-immutable
+ */
+class MinimalTrackerRepresentation implements TrackerRepresentation
 {
     /**
      * @var int ID of the tracker {@type int} {@required true}
@@ -51,15 +54,24 @@ class MinimalTrackerRepresentation
      */
     public $project;
 
-    public function build(Tracker $tracker)
+    private function __construct(int $id, string $uri, string $label, string $color_name, ProjectReference $project)
     {
-        $this->id         = JsonCast::toInt($tracker->getId());
-        $this->uri        = TrackerRepresentation::ROUTE . '/' . $this->id;
-        $this->label      = $tracker->getName();
-        $this->color_name = $tracker->getNormalizedColor();
+        $this->id         = $id;
+        $this->uri        = $uri;
+        $this->label      = $label;
+        $this->color_name = $color_name;
+        $this->project    = $project;
+    }
 
-        $project       = $tracker->getProject();
-        $this->project = new ProjectReference();
-        $this->project->build($project);
+    public static function build(Tracker $tracker): self
+    {
+        $tracker_id = $tracker->getId();
+        return new self(
+            JsonCast::toInt($tracker_id),
+            CompleteTrackerRepresentation::ROUTE . '/' . $tracker_id,
+            $tracker->getName(),
+            $tracker->getColor()->getName(),
+            new ProjectReference($tracker->getProject())
+        );
     }
 }

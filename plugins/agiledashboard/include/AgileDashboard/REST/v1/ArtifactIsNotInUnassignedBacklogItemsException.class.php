@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +19,13 @@
 
 namespace Tuleap\AgileDashboard\REST\v1;
 
-use \Exception;
+use Exception;
 
-class ArtifactIsNotInUnassignedTopBacklogItemsException extends Exception {
+class ArtifactIsNotInUnassignedTopBacklogItemsException extends Exception
+{
 
-    public function __construct($id) {
-        parent::__construct('Artifact '. $id .' is not in unassigned top backlog items list');
+    public function __construct($id)
+    {
+        parent::__construct('Artifact ' . $id . ' is not in unassigned top backlog items list');
     }
-
 }

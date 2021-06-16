@@ -1,7 +1,7 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2017. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,19 +24,21 @@ require_once('include/DataAccessObject.class.php');
 /**
  *  Data Access Object for ProjectUGroup
  */
-class UGroupDao extends DataAccessObject {
+class UGroupDao extends DataAccessObject
+{
 
     /**
      * Searches static ProjectUGroup by GroupId
      * return all static ugroups
      *
-     * @param Integer $group_id Id of the project
+     * @param int $group_id Id of the project
      *
      * @return DataAccessResult
      */
-    function searchByGroupId($group_id) {
+    public function searchByGroupId($group_id)
+    {
         $group_id = $this->da->escapeInt($group_id);
-        $sql = "SELECT * 
+        $sql      = "SELECT * 
                 FROM ugroup 
                 WHERE group_id = $group_id ORDER BY name";
         return $this->retrieve($sql);
@@ -45,19 +47,20 @@ class UGroupDao extends DataAccessObject {
     /**
      * Searches by ugroup id
      *
-     * @param Integer $ugroup_id Id of the ugroup
+     * @param int $ugroup_id Id of the ugroup
      *
      * @return DataAccessResult
      */
-    function searchByUGroupId($ugroup_id) {
+    public function searchByUGroupId($ugroup_id)
+    {
         $ugroup_id = $this->da->escapeInt($ugroup_id);
-        $sql = "SELECT * 
+        $sql       = "SELECT * 
                 FROM ugroup 
                 WHERE ugroup_id = $ugroup_id ORDER BY name";
         return $this->retrieve($sql);
     }
 
-    function searchByListOfUGroupsId(array $ugroup_ids)
+    public function searchByListOfUGroupsId(array $ugroup_ids)
     {
         $ugroup_ids = $this->da->quoteSmartImplode(',', $ugroup_ids);
 
@@ -68,47 +71,52 @@ class UGroupDao extends DataAccessObject {
         return $this->retrieve($sql);
     }
 
-    function searchDynamicAndStaticByGroupId($group_id) {
+    public function searchDynamicAndStaticByGroupId($group_id)
+    {
         $group_id = $this->da->escapeInt($group_id);
-        $sql = "SELECT * 
+        $sql      = "SELECT * 
                 FROM ugroup 
                 WHERE group_id = $group_id OR (group_id = 100 and ugroup_id <= 100)
                 ORDER BY ugroup_id";
         return $this->retrieve($sql);
     }
 
-    function searchStaticByGroupId($group_id) {
+    public function searchStaticByGroupId($group_id)
+    {
         $group_id = $this->da->escapeInt($group_id);
-        $sql = "SELECT *
+        $sql      = "SELECT *
                 FROM ugroup
                 WHERE group_id = $group_id
                 ORDER BY ugroup_id";
         return $this->retrieve($sql);
     }
 
-    public function searchByGroupIdAndUGroupId($group_id, $ugroup_id) {
+    public function searchByGroupIdAndUGroupId($group_id, $ugroup_id)
+    {
         $group_id  = $this->da->escapeInt($group_id);
         $ugroup_id = $this->da->escapeInt($ugroup_id);
-        $sql = "SELECT * 
+        $sql       = "SELECT * 
                 FROM ugroup 
                 WHERE group_id = $group_id AND ugroup_id = $ugroup_id";
         return $this->retrieve($sql);
     }
 
-    function searchNameByGroupIdAndUGroupId($project_id, $ugroup_id) {
+    public function searchNameByGroupIdAndUGroupId($project_id, $ugroup_id)
+    {
         $project_id = $this->da->escapeInt($project_id);
         $ugroup_id  = $this->da->escapeInt($ugroup_id);
-        $sql = "SELECT name
+        $sql        = "SELECT name
                 FROM ugroup
                 WHERE (group_id = $project_id OR group_id = 100)
                   AND ugroup_id = $ugroup_id";
         return $this->retrieve($sql);
     }
 
-    function searchByGroupIdAndName($group_id, $name) {
-        $group_id  = $this->da->escapeInt($group_id);
-        $name      = $this->da->quoteSmart($name);
-        $sql = "SELECT *
+    public function searchByGroupIdAndName($group_id, $name)
+    {
+        $group_id = $this->da->escapeInt($group_id);
+        $name     = $this->da->quoteSmart($name);
+        $sql      = "SELECT *
                 FROM ugroup
                 WHERE group_id = $group_id AND name = $name";
         return $this->retrieve($sql);
@@ -118,13 +126,14 @@ class UGroupDao extends DataAccessObject {
      * Searches group that user belongs to one of its static ugroup
      * return all groups
      *
-     * @param Integer $userId Id of the user
+     * @param int $userId Id of the user
      *
      * @return DataAccessResult
      */
-    function searchGroupByUserId($userId) {
+    public function searchGroupByUserId($userId)
+    {
         $user_id = $this->da->escapeInt($userId);
-        $sql = "SELECT groups.group_id
+        $sql     = "SELECT groups.group_id
                   FROM ugroup
                   JOIN ugroup_user USING (ugroup_id)
                   JOIN groups USING (group_id)
@@ -141,7 +150,8 @@ class UGroupDao extends DataAccessObject {
      *
      * @return DataAccessResult
      */
-    public function searchByUserId($user_id) {
+    public function searchByUserId($user_id)
+    {
         $user_id = $this->da->quoteSmart($user_id);
 
         $sql = "SELECT ug.*
@@ -154,11 +164,13 @@ class UGroupDao extends DataAccessObject {
 
     public function searchByUserIdTakingAccountUserProjectMembership($user_id)
     {
-        $user_id      = $this->da->quoteSmart($user_id);
-        $restricted   = $this->da->quoteSmart(ForgeAccess::RESTRICTED);
-        $unrestricted = $this->da->quoteSmart(Project::ACCESS_PUBLIC_UNRESTRICTED);
-        $public       = $this->da->quoteSmart(Project::ACCESS_PUBLIC);
-        $private      = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
+        $user_id               = $this->da->quoteSmart($user_id);
+        $restricted            = $this->da->quoteSmart(ForgeAccess::RESTRICTED);
+        $unrestricted          = $this->da->quoteSmart(Project::ACCESS_PUBLIC_UNRESTRICTED);
+        $public                = $this->da->quoteSmart(Project::ACCESS_PUBLIC);
+        $private               = $this->da->quoteSmart(Project::ACCESS_PRIVATE);
+        $private_wo_restricted = $this->da->quoteSmart(Project::ACCESS_PRIVATE_WO_RESTRICTED);
+        $active                = $this->da->quoteSmart(Project::STATUS_ACTIVE);
 
         $sql = "SELECT ug.*
                 FROM ugroup_user AS ug_u
@@ -185,10 +197,11 @@ class UGroupDao extends DataAccessObject {
                         AND (
                             user_group.group_id IS NOT NULL
                             OR
-                            g.access <> ($private)
+                            g.access NOT IN ($private, $private_wo_restricted)
                         )
                     )
-                  )";
+                  )
+                  AND g.status = $active";
 
         return $this->retrieve($sql);
     }
@@ -196,20 +209,21 @@ class UGroupDao extends DataAccessObject {
     /**
      * Checks ProjectUGroup  validity by GroupId
      *
-     * @param Integer $groupId  The group id
-     * @param Integer $ugroupId The ugroup id
+     * @param int $groupId The group id
+     * @param int $ugroupId The ugroup id
      *
-     * @return Boolean
+     * @return bool
      */
-    function checkUGroupValidityByGroupId($groupId, $ugroupId) {
-        $groupId = $this->da->escapeInt($groupId);
+    public function checkUGroupValidityByGroupId($groupId, $ugroupId)
+    {
+        $groupId  = $this->da->escapeInt($groupId);
         $ugroupId = $this->da->escapeInt($ugroupId);
 
         $sql = 'SELECT NULL
                 FROM ugroup 
-                WHERE group_id = '. $groupId .' AND ugroup_id = '. $ugroupId;
+                WHERE group_id = ' . $groupId . ' AND ugroup_id = ' . $ugroupId;
         $res = $this->retrieve($sql);
-        if ($res && !$res->isError() && $res->rowCount() == 1) {
+        if ($res && ! $res->isError() && $res->rowCount() == 1) {
             return true;
         } else {
             return false;
@@ -219,33 +233,35 @@ class UGroupDao extends DataAccessObject {
     /**
      * Update binding option for a given ProjectUGroup
      *
-     * @param Integer $ugroupId The bound ugroup id
-     * @param Integer $sourceId The ugroup id we want to clone
+     * @param int $ugroupId The bound ugroup id
+     * @param int $sourceId The ugroup id we want to clone
      *
-     * @return Boolean
+     * @return bool
      */
-    function updateUgroupBinding($ugroupId, $sourceId = null) {
+    public function updateUgroupBinding($ugroupId, $sourceId = null)
+    {
         $ugroupId = $this->da->escapeInt($ugroupId);
         if (isset($sourceId)) {
             $sourceId      = $this->da->escapeInt($sourceId);
-            $bindingclause = " SET source_id = ".$sourceId;
+            $bindingclause = " SET source_id = " . $sourceId;
         } else {
             $bindingclause = " SET source_id = NULL";
         }
-        $sql = "UPDATE ugroup ".$bindingclause." WHERE ugroup_id = ".$ugroupId;
+        $sql = "UPDATE ugroup " . $bindingclause . " WHERE ugroup_id = " . $ugroupId;
          return $this->update($sql);
     }
 
     /**
      * Retrieve all bound UGroups of a given ProjectUGroup
      *
-     * @param Integer $sourceId The source ugroup id
+     * @param int $sourceId The source ugroup id
      *
      * @return DataAccessResult
      */
-    function searchUGroupByBindingSource($sourceId) {
+    public function searchUGroupByBindingSource($sourceId)
+    {
         $ugroupId = $this->da->escapeInt($sourceId);
-        $sql      = "SELECT * FROM ugroup WHERE source_id = ".$sourceId;
+        $sql      = "SELECT * FROM ugroup WHERE source_id = " . $sourceId;
         return $this->retrieve($sql);
     }
 
@@ -267,16 +283,17 @@ class UGroupDao extends DataAccessObject {
     /**
      * Retrieve the source user group from a given bound ugroup id
      *
-     * @param Integer $ugroupId The source ugroup id
+     * @param int $ugroupId The source ugroup id
      *
      * @return DataAccessResult
      */
-    function getUgroupBindingSource($ugroupId) {
+    public function getUgroupBindingSource($ugroupId)
+    {
         $ugroupId = $this->da->escapeInt($ugroupId);
         $sql      = "SELECT source.*
                      FROM ugroup u 
                        JOIN ugroup source ON (source.ugroup_id = u.source_id)
-                     WHERE u.ugroup_id = ".$ugroupId;
+                     WHERE u.ugroup_id = " . $ugroupId;
         return $this->retrieve($sql);
     }
 
@@ -295,8 +312,8 @@ class UGroupDao extends DataAccessObject {
 
     public function createBinding($new_project_id, $ugroup_id, $new_ugroup_id)
     {
-        $ugroup_id     = $this->da->escapeInt($ugroup_id);
-        $new_ugroup_id = $this->da->escapeInt($new_ugroup_id);
+        $ugroup_id      = $this->da->escapeInt($ugroup_id);
+        $new_ugroup_id  = $this->da->escapeInt($new_ugroup_id);
         $new_project_id = $this->da->escapeInt($new_project_id);
 
         $create_binding = "INSERT INTO ugroup_mapping (to_group_id, src_ugroup_id, dst_ugroup_id)

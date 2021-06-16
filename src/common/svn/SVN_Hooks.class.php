@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -25,14 +25,16 @@
 /**
  * I'm responsible of helping svn hooks to find relevant data
  */
-class SVN_Hooks {
+class SVN_Hooks
+{
     /** @var ProjectManager */
     private $project_manager;
 
     /** @var UserManager */
     private $user_manager;
 
-    public function __construct(ProjectManager $project_manager, UserManager $user_manager) {
+    public function __construct(ProjectManager $project_manager, UserManager $user_manager)
+    {
         $this->project_manager = $project_manager;
         $this->user_manager    = $user_manager;
     }
@@ -44,7 +46,8 @@ class SVN_Hooks {
      * @return PFUser
      * @throws Exception
      */
-    public function getUserByName($user_name) {
+    public function getUserByName($user_name)
+    {
         $user = $this->user_manager->findUser($user_name);
         if ($user && $user->isAlive()) {
             return $user;
@@ -59,10 +62,11 @@ class SVN_Hooks {
      * @return Project
      * @throws Exception
      */
-    public function getProjectFromRepositoryPath($repository_path) {
+    public function getProjectFromRepositoryPath($repository_path)
+    {
         $unix_group_name = substr($repository_path, strlen(ForgeConfig::get('svn_prefix')) + 1);
-        $project = $this->project_manager->getProjectByUnixName($unix_group_name);
-        if ($project && !$project->isError() && !$project->isDeleted()) {
+        $project         = $this->project_manager->getProjectByUnixName($unix_group_name);
+        if ($project && ! $project->isError() && ! $project->isDeleted()) {
             return $project;
         }
         throw new Exception('Invalid project');
@@ -75,7 +79,8 @@ class SVN_Hooks {
      * @param String $txn
      * @return String
      */
-    public function getMessageFromTransaction($repository, $txn) {
+    public function getMessageFromTransaction($repository, $txn)
+    {
         return $this->getMessageFromSvnLook("-t '$txn' '$repository'");
     }
 
@@ -86,15 +91,15 @@ class SVN_Hooks {
      * @param String $revision
      * @return String
      */
-    public function getMessageFromRevision($repository, $revision) {
+    public function getMessageFromRevision($repository, $revision)
+    {
         return $this->getMessageFromSvnLook("'$repository' -r '$revision'");
     }
 
-    private function getMessageFromSvnLook($parameters) {
-        $logmsg = array();
+    private function getMessageFromSvnLook($parameters)
+    {
+        $logmsg = [];
         exec("/usr/bin/svnlook log $parameters", $logmsg);
         return implode("\n", $logmsg);
     }
 }
-
-?>

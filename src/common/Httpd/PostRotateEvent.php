@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,21 +22,21 @@
 namespace Tuleap\Httpd;
 
 use Tuleap\Event\Dispatchable;
-use Logger;
+use Psr\Log\LoggerInterface;
 
 /**
  * Event emitted after HTTP log rotation
  */
 class PostRotateEvent implements Dispatchable
 {
-    const NAME = 'httpdPostRotate';
+    public const NAME = 'httpdPostRotate';
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
 
-    public function __construct(Logger $logger)
+    public function __construct(LoggerInterface $logger)
     {
         $this->logger = $logger;
     }

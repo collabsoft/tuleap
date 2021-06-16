@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,27 +22,30 @@
  * ColorHelper
  * All the color manupilation related functions
  */
-class ColorHelper {
+class ColorHelper
+{
 
     /** @return string like '#efdabc' */
-    public static function RGBToHexa($r, $g, $b) {
+    public static function RGBToHexa($r, $g, $b)
+    {
         return sprintf('#%02X%02X%02X', $r, $g, $b);
     }
 
     /** @return string like '#efdabc' from a string like 'rgb(123,12,1)' */
-    public static function CssRGBToHexa($rgb) {
+    public static function CssRGBToHexa($rgb)
+    {
         preg_match_all('/\d{1,3}/', $rgb, $out);
         return self::RGBToHexa($out[0][0], $out[0][1], $out[0][2]);
     }
 
     /** @return array like {232, 123, 312} */
-    public static function HexatoRGB($hex) {
+    public static function HexatoRGB($hex)
+    {
         $delta = strlen($hex) == 4 ? 1 : 2;
-        return array(
+        return [
             hexdec(substr($hex, 1 + 0 * $delta, $delta)),
             hexdec(substr($hex, 1 + 1 * $delta, $delta)),
             hexdec(substr($hex, 1 + 2 * $delta, $delta)),
-        );
+        ];
     }
 }
-?>

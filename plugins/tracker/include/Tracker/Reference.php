@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,12 +18,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Reference extends Reference {
+use Tuleap\Tracker\Artifact\Artifact;
+
+class Tracker_Reference extends Reference
+{
 
     /**
      * @return Reference
      */
-    public function __construct(Tracker $tracker, $keyword) {
+    public function __construct(Tracker $tracker, $keyword)
+    {
         $base_id    = 0;
         $visibility = 'P';
         $is_used    = 1;
@@ -31,14 +35,13 @@ class Tracker_Reference extends Reference {
         parent::__construct(
             $base_id,
             $keyword,
-            $GLOBALS['Language']->getText('project_reference','reference_art_desc_key') .' - '. $tracker->getName(),
-            TRACKER_BASE_URL.'/?aid=$1&group_id=$group_id',
+            $GLOBALS['Language']->getText('project_reference', 'reference_art_desc_key') . ' - ' . $tracker->getName(),
+            TRACKER_BASE_URL . '/?aid=$1&group_id=$group_id',
             $visibility,
             trackerPlugin::SERVICE_SHORTNAME,
-            Tracker_Artifact::REFERENCE_NATURE,
+            Artifact::REFERENCE_NATURE,
             $is_used,
             $tracker->getGroupId()
         );
     }
-
 }

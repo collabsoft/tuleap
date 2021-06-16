@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) Enalean, 2011 - 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,7 +19,7 @@
  */
 
 /**
- * Class CSRFSynchronizerToken
+ *
  *
  * This class deals with a CSRF countermeasure. Usage:
  *
@@ -42,9 +42,9 @@
  */
 class CSRFSynchronizerToken
 {
-    const DEFAULT_TOKEN_NAME    = 'challenge';
-    const STORAGE_PREFIX        = 'synchronizer_token';
-    const MAX_TOKEN_PER_STORAGE = 4096;
+    public const DEFAULT_TOKEN_NAME    = 'challenge';
+    public const STORAGE_PREFIX        = 'synchronizer_token';
+    public const MAX_TOKEN_PER_STORAGE = 4096;
 
     /**
      * @var string a pseudorandom generated token
@@ -172,10 +172,10 @@ class CSRFSynchronizerToken
     {
         $random_number_generator                         = new RandomNumberGenerator();
         $this->token                                     = $random_number_generator->getNumber();
-        $this->storage[self::STORAGE_PREFIX][$this->url] = array(
+        $this->storage[self::STORAGE_PREFIX][$this->url] = [
             'token'   => $this->token,
             'created' => time()
-        );
+        ];
         $this->recycleTokens();
     }
 

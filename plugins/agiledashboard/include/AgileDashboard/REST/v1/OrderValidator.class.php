@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,19 +21,21 @@
 
 namespace Tuleap\AgileDashboard\REST\v1;
 
-class OrderValidator {
+class OrderValidator
+{
     private $index;
 
-    public function __construct(array $index) {
+    public function __construct(array $index)
+    {
         $this->index = $index;
     }
 
     /**
-     * @param \Tuleap\AgileDashboard\REST\v1\OrderRepresentation $order
      * @throws IdsFromBodyAreNotUniqueException
      * @throws OrderIdOutOfBoundException
      */
-    public function validate(OrderRepresentation $order) {
+    public function validate(OrderRepresentation $order)
+    {
         if (! $this->areIdsUnique($order->ids)) {
             throw new IdsFromBodyAreNotUniqueException();
         }
@@ -44,13 +46,15 @@ class OrderValidator {
         }
     }
 
-    private function assertIdPartOfIndex($id) {
+    private function assertIdPartOfIndex($id)
+    {
         if (! isset($this->index[$id])) {
             throw new OrderIdOutOfBoundException($id);
         }
     }
 
-    private function areIdsUnique(array $ids) {
+    private function areIdsUnique(array $ids)
+    {
         $ids_unique = array_unique($ids);
         return count($ids) == count($ids_unique);
     }

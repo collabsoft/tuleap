@@ -1,6 +1,6 @@
 <?php
-/*
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+/**
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Originally written by Yoann Celton, 2013. Jtekt Europe SAS.
  *
@@ -21,15 +21,29 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once 'common/user/UserManager.class.php';
+use Tuleap\GraphOnTrackersV5\DataTransformation\CumulativeFlowColumnBuilder;
 
-class GraphOnTrackersV5_CumulativeFlow_DataBuilder extends ChartDataBuilderV5 {
+class GraphOnTrackersV5_CumulativeFlow_DataBuilder extends ChartDataBuilderV5
+{
 
-    const MAX_STEPS = 75;
+    public const MAX_STEPS = 75;
     protected $timeFiller;
+    /**
+     * @var int
+     * (timestamp)
+     */
     protected $startDate;
     protected $stopDate;
+    /**
+     * @var int
+     * 0 - Day
+     * 1 - Week
+     * 2 - Month
+     */
     protected $scale;
+    /**
+     * @var int
+     */
     protected $nbSteps;
     protected $labels;
     protected $observed_field_id;
@@ -37,70 +51,141 @@ class GraphOnTrackersV5_CumulativeFlow_DataBuilder extends ChartDataBuilderV5 {
     /**
      * build cumulative_flow chart properties
      *
-     * @param CumulativeFlow_Engine $engine object
+     * @param GraphOnTrackersV5_Engine_CumulativeFlow $engine object
      */
-    public function buildProperties($engine) {
+    public function buildProperties($engine)
+    {
         parent::buildProperties($engine);
 
         $form_element_factory = Tracker_FormElementFactory::instance();
         $observed_field       = $form_element_factory->getFormElementById($this->chart->getFieldId());
-        $type                 = $form_element_factory->getType($observed_field);
-        $this->observed_field_id = $observed_field->getId();
-        $this->timeFiller = array(GraphOnTrackersV5_Chart_CumulativeFlow::SCALE_DAY => 3600*24,
-            GraphOnTrackersV5_Chart_CumulativeFlow::SCALE_WEEK => 3600*24*7,
-            GraphOnTrackersV5_Chart_CumulativeFlow::SCALE_MONTH => 3600*24*30.45
-        );
-        $this->startDate = $this->chart->getStartDate();
-        $this->stopDate = $this->chart->getStopDate() ? $this->chart->getStopDate() : time();
-        $this->scale = $this->chart->getScale();
-        $this->nbSteps = ceil(($this->stopDate - $this->startDate)/$this->timeFiller[$this->scale]);
-
-        if ($this->isValidObservedField($observed_field, $type) && $this->isValidType($type)) {
-            $engine->data    = $this->getCumulativeFlowData($engine);
+        if (! $this->isValidObservedField($observed_field) || ! $this->isValidType($form_element_factory->getType($observed_field))) {
+            throw new \Tuleap\GraphOnTrackersV5\DataTransformation\ChartFieldNotFoundException($this->chart->getTitle());
         }
+        $this->observed_field_id = $observed_field->getId();
+        $this->timeFiller        = [GraphOnTrackersV5_Chart_CumulativeFlow::SCALE_DAY => 3600 * 24,
+            GraphOnTrackersV5_Chart_CumulativeFlow::SCALE_WEEK => 3600 * 24 * 7,
+            GraphOnTrackersV5_Chart_CumulativeFlow::SCALE_MONTH => 3600 * 24 * 30.45
+        ];
+        $this->startDate         = $this->chart->getStartDate();
+        $this->stopDate          = $this->chart->getStopDate() ? $this->chart->getStopDate() : time();
+        $this->scale             = $this->chart->getScale() ?? GraphOnTrackersV5_Chart_CumulativeFlow::SCALE_DAY;
+        $this->nbSteps           = (int) ceil(($this->stopDate - $this->startDate) / $this->timeFiller[$this->scale]);
 
-        $engine->legend      = null;
-        $engine->start_date  = $this->chart->getStartDate();
-        $engine->scale        = $this->chart->getScale();
-        $engine->stop_date   = $this->chart->getStopDate();
+        $engine->data = $this->getCumulativeFlowData($engine);
+
+        $engine->legend     = null;
+        $engine->start_date = $this->chart->getStartDate();
+        $engine->scale      = (int) $this->chart->getScale();
+        $engine->stop_date  = $this->chart->getStopDate();
     }
 
-    protected function getCumulativeFlowData($engine) {
-        $result = array();
+    private function getCumulativeFlowColumnBuilder(): CumulativeFlowColumnBuilder
+    {
+        return CumulativeFlowColumnBuilder::build();
+    }
 
-        if($this->nbSteps > GraphOnTrackersV5_CumulativeFlow_DataBuilder::MAX_STEPS) {
-            //STHAP
-            //$GLOBALS['Response']->addFeedback('error', "Please choose a smaller period, or increase the scale");
-            $engine->error = new ErrorChart($GLOBALS['Language']->getText('plugin_tracker', 'unable_to_render_the_chart'),
-            $GLOBALS['Language']->getText('plugin_graphontrackersv5_cumulative_flow', 'error_too_many_points'), 400, 200);
-        } else {
-            $tmpResult = $this->initEmptyResultArrayFromField($engine);
+    protected function getCumulativeFlowData($engine)
+    {
+        if ($this->nbSteps > self::MAX_STEPS) {
+            $engine->setError(
+                dgettext('tuleap-graphontrackersv5', 'Please choose a smaller period, or increase the scale.')
+            );
 
-            for ($i = 0 ; $i <= $this->nbSteps; $i++ ) {
-                $timestamp = $this->startDate + ($i * $this->timeFiller[$this->scale]) ;
-                $changesets = $this->getLastChangesetsBefore($timestamp);
+            return [];
+        }
 
-                // Count the number of occurence of each label of the source field at the given date.
-                // Return {Label, count}
-                $sql = "SELECT l.bindvalue_id, count(*) as count
-    	FROM `tracker_changeset` as c
-    	JOIN `tracker_changeset_value` v ON (v.changeset_id = c.id AND v.field_id = $this->observed_field_id )
-    	JOIN tracker_changeset_value_list l ON (l.changeset_value_id = v.id)
-    	WHERE artifact_id in (". $this->artifacts['id'] .")
-    	AND c.id IN (". implode(',', $changesets) .")
-    	GROUP BY l.bindvalue_id";
-                $res = db_query($sql);
-                while($data = db_fetch_array($res)) {
-                   $tmpResult[$timestamp][$data['bindvalue_id']] = intval($data['count']);
+        $empty_columns = $this->getCumulativeFlowColumnBuilder()->initEmptyColumns(
+            (int) $this->observed_field_id,
+            $this->startDate,
+            $this->nbSteps,
+            $this->timeFiller,
+            (int) $this->scale
+        );
+
+        for ($i = 0; $i <= $this->nbSteps; $i++) {
+            $timestamp  = $this->startDate + ($i * $this->timeFiller[$this->scale]);
+            $changesets = $this->getLastChangesetsBefore($timestamp);
+
+            // Count the number of occurence of each label of the source field at the given date.
+            // Return {Label, count}
+            $sql = "SELECT l.bindvalue_id, count(*) as count
+                    FROM `tracker_changeset` as c
+                    JOIN `tracker_changeset_value` v ON (v.changeset_id = c.id AND v.field_id = $this->observed_field_id )
+                    JOIN tracker_changeset_value_list l ON (l.changeset_value_id = v.id)
+                    WHERE artifact_id in (" . $this->artifacts['id'] . ")
+                    AND c.id IN (" . implode(',', $changesets) . ")
+                    GROUP BY l.bindvalue_id";
+
+            $res = db_query($sql);
+            while ($data = db_fetch_array($res)) {
+                if (array_key_exists((int) $data['bindvalue_id'], $empty_columns)) {
+                    $empty_columns[$data['bindvalue_id']]['values'][$timestamp]['count'] = (int) $data['count'];
                 }
-
-                $result[$timestamp] = $this->switchArrayKeys($tmpResult[$timestamp]);
             }
         }
-        return $this->filterEmptyLines($result);;
+
+        return $this->getColumns($empty_columns);
     }
 
-    protected function isValidObservedField($observed_field, $type) {
+    public function getColumns(array $data)
+    {
+        $report_filter = $this->getReportFilter();
+
+        $columns = [];
+        foreach ($data as $column_id => $column) {
+            if (count($report_filter) > 0 && ! in_array($column_id, $report_filter)) {
+                continue;
+            }
+
+            $values = array_values($column['values']);
+
+            if (! $this->isColumnEmpty($values)) {
+                $column['values'] = $values;
+                $columns[]        = $column;
+            }
+        }
+
+        return $columns;
+    }
+
+    private function getReportFilter(): array
+    {
+        $tracker_report = $this->chart->getRenderer()->getReport();
+        assert($tracker_report instanceof Tracker_Report);
+
+        $report_filter = [];
+        foreach ($tracker_report->getCriteria() as $criterion) {
+            $criterion_field = $criterion->getField();
+            if ((int) $criterion_field->getId() === (int) $this->chart->getFieldId()) {
+                $criterion_value = $criterion_field->getCriteriaValue($criterion);
+                if (is_array($criterion_value)) {
+                    $report_filter = $criterion_value;
+                }
+                break;
+            }
+        }
+
+        return $report_filter;
+    }
+
+    private function isColumnEmpty(array $column_values)
+    {
+        $counts = array_map(
+            function ($value) {
+                return $value['count'];
+            },
+            $column_values
+        );
+
+        return array_sum($counts) === 0;
+    }
+
+    /**
+     * @psalm-assert-if-true !null $observed_field
+     */
+    private function isValidObservedField($observed_field): bool
+    {
         return $observed_field && $observed_field->userCanRead(UserManager::instance()->getCurrentUser());
     }
 
@@ -109,95 +194,33 @@ class GraphOnTrackersV5_CumulativeFlow_DataBuilder extends ChartDataBuilderV5 {
      *
      * @var array
      */
-    protected function isValidType($type) {
-        return in_array($type, array('sb', 'msb', 'cb'));
-    }
-
-    /**
-     *
-     * Fetch the colors, and initialize an empty result array. => $tempData[timestamp][label_id] = 0
-     * @param int $field_id ID of the observed field
-     * @return array $resultArray Initialized array for this graph
-     */
-    private function initEmptyResultArrayFromField($engine) {
-
-            //Return {Label, r, g, b}
-            $sql = "SELECT val.id, val.label, deco.red, deco.green, deco.blue, deco.tlp_color_name
-    FROM  tracker_field_list_bind_static_value val
-    LEFT JOIN tracker_field_list_bind_decorator deco ON (val.id = deco.value_id)
-    WHERE val.field_id = $this->observed_field_id
-    ORDER BY val.rank";
-            $res = db_query($sql);
-            $this->labels[100] = $GLOBALS['Language']->getText('global','none');
-            $engine->colors[$this->labels[100]] = array(null, null, null);
-            $resultArray = array();
-            while($data = db_fetch_array($res)) {
-               $engine->colors[$data['label']] = $this->getColorForJPGraph($data);
-               $this->labels[$data['id']] = $data['label'];
-               for ($i = 0 ; $i <= $this->nbSteps; $i++ ) {
-                   $timestamp = $this->startDate + ($i * $this->timeFiller[$this->scale]) ;
-                   $resultArray[$timestamp][100] =  0;
-                   $resultArray[$timestamp][$data['id']] =  0;
-               }
-            }
-            foreach ($resultArray as $timestamp => $values) {
-                $resultArray[$timestamp] = array_reverse($resultArray[$timestamp], true);
-            }
-        return $resultArray;
+    protected function isValidType($type)
+    {
+        return in_array($type, ['sb', 'msb', 'cb']);
     }
 
     /**
      *
      * Get the the last changeset BEFORE the timestamp for each artifact
-     * @param int $beforeTimestamp
-     * @return $changesets array of changeset_id
+     *
+     * @param int $timestamp
+     *
+     * @return array $changesets array of changeset_id
      */
-    private function getLastChangesetsBefore($timestamp) {
+    private function getLastChangesetsBefore($timestamp)
+    {
         $sql = "SELECT MAX(id) as id
             FROM `tracker_changeset` c
             WHERE c.submitted_on < $timestamp
-            AND c.artifact_id IN (". $this->artifacts['id'] .")
+            AND c.artifact_id IN (" . $this->artifacts['id'] . ")
             GROUP BY artifact_id";
 
-        $res = db_query($sql);
-        $changesets = array();
-        while($data = db_fetch_array($res)) {
-           $changesets[] = $data['id'];
+        $res        = db_query($sql);
+        $changesets = [];
+        while ($data = db_fetch_array($res)) {
+            $changesets[] = $data['id'];
         }
+
         return $changesets;
     }
-
-    /**
-     *
-     * Switch field_value_id to field_value_label
-     * @param array $tmpArray Array to convert
-     * @return array $result Switched array
-     */
-    private function switchArrayKeys($tmpArray) {
-        $result = array();
-        foreach ($tmpArray as $k => $v) {
-            $result[$this->labels[$k]] = $v;
-        }
-        return $result;
-    }
-
-    /**
-     * Filter empty lines from chart data
-     * protected for testing purpose
-     * @param  array $array array to filter
-     *                      array structure must be: $array[timestamp][bind_value]= count
-     * @return array        filtered array
-     */
-     protected function filterEmptyLines(array $array) {
-        $lines_with_values = array();
-        foreach ($array as $entry) {
-            $lines_with_values += array_filter($entry);
-        }
-        array_walk($array, array($this, 'keepLinesWithValues'), $lines_with_values);
-        return $array;
-    }
-    private function keepLinesWithValues(&$entry, $key, $lines_with_values) {
-        $entry = array_intersect_key($entry, $lines_with_values);
-    }
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Layout\IncludeAssets;
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../include/pre.php';
 
 $request = HTTPRequest::instance();
 $request->checkUserIsSuperUser();
@@ -81,7 +80,8 @@ if ($notification_to_delete) {
 $notification_to_update = $request->get('followers');
 if ($notification_to_update) {
     $token->check();
-    list($id, $info) = each($notification_to_update);
+    $id   = key($notification_to_update);
+    $info = current($notification_to_update);
     if (isset($info['emails']) && $info['emails']) {
         if (isset($info['types']) && is_array($info['types']) && count($info['types'])) {
             if ($dao->save($id, $info['emails'], implode(',', $info['types']))) {
@@ -110,52 +110,51 @@ if ($notification_to_update) {
     $GLOBALS['Response']->redirect('/admin/system_events/notifications.php');
 }
 
-$notifications = array();
+$notifications = [];
 foreach ($dao->searchAll() as $row) {
     $status_selected = explode(',', $row['types']);
-    $checked = false;
-    $status = array(
-        array(
+    $checked         = false;
+    $status          = [
+        [
             'label'            => ucfirst(strtolower(SystemEvent::STATUS_NEW)),
             'value'            => SystemEvent::STATUS_NEW,
             'checked'          => in_array(SystemEvent::STATUS_NEW, $status_selected),
             'is_first_checked' => in_array(SystemEvent::STATUS_NEW, $status_selected) && ! $checked ? $checked = true : false
-        ),
-        array(
+        ],
+        [
             'label'            => ucfirst(strtolower(SystemEvent::STATUS_RUNNING)),
             'value'            => SystemEvent::STATUS_RUNNING,
             'checked'          => in_array(SystemEvent::STATUS_RUNNING, $status_selected),
             'is_first_checked' => in_array(SystemEvent::STATUS_RUNNING, $status_selected) && ! $checked ? $checked = true : false
-        ),
-        array(
+        ],
+        [
             'label'            => ucfirst(strtolower(SystemEvent::STATUS_DONE)),
             'value'            => SystemEvent::STATUS_DONE,
             'checked'          => in_array(SystemEvent::STATUS_DONE, $status_selected),
             'is_first_checked' => in_array(SystemEvent::STATUS_DONE, $status_selected) && ! $checked ? $checked = true : false
-        ),
-        array(
+        ],
+        [
             'label'            => ucfirst(strtolower(SystemEvent::STATUS_WARNING)),
             'value'            => SystemEvent::STATUS_WARNING,
             'checked'          => in_array(SystemEvent::STATUS_WARNING, $status_selected),
             'is_first_checked' => in_array(SystemEvent::STATUS_WARNING, $status_selected) && ! $checked ? $checked = true : false
-        ),
-        array(
+        ],
+        [
             'label'            => ucfirst(strtolower(SystemEvent::STATUS_ERROR)),
             'value'            => SystemEvent::STATUS_ERROR,
             'checked'          => in_array(SystemEvent::STATUS_ERROR, $status_selected),
             'is_first_checked' => in_array(SystemEvent::STATUS_ERROR, $status_selected) && ! $checked ? $checked = true : false
-        )
-    );
+        ]
+    ];
 
-    $notifications[] = array(
+    $notifications[] = [
         'id'     => $row['id'],
         'emails' => $row['emails'],
         'status' => $status
-    );
+    ];
 }
 
-$assets_path    = ForgeConfig::get('tuleap_dir') . '/src/www/assets';
-$include_assets = new IncludeAssets($assets_path, '/assets');
+$include_assets = new \Tuleap\Layout\IncludeCoreAssets();
 
 $GLOBALS['HTML']->includeFooterJavascriptFile(
     $include_assets->getFileURL('site-admin-system-events-notifications.js')
@@ -164,7 +163,7 @@ $GLOBALS['HTML']->includeFooterJavascriptFile(
 $renderer = new \Tuleap\Admin\AdminPageRenderer();
 $renderer->renderANoFramedPresenter(
     $title,
-    ForgeConfig::get('codendi_dir') .'/src/templates/admin/system_events/',
+    ForgeConfig::get('codendi_dir') . '/src/templates/admin/system_events/',
     'notifications',
     new \Tuleap\SystemEvent\NotificationsPresenter(
         $title,

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 if ($argc != 3) {
     throw new RuntimeException("Should be run with 2 arguments: username and password");
@@ -31,6 +31,6 @@ if ($plugin_manager->isPluginAvailable($ldap_plugin)) {
     $user = UserManager::instance()->getUserByUserName($argv[1]);
     if ($user !== null) {
         $user->setPassword($argv[2]);
-        $ldap_plugin->user_manager_update_db(array('user' => $user));
+        $ldap_plugin->user_manager_update_db(['user' => $user]);
     }
 }

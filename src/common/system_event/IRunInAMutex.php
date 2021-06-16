@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2011, 2012, 2013. All rights reserved.
+ * Copyright Enalean (c) 2011, 2012, 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -25,7 +25,8 @@
 /**
  * Control process to be run by SystemEventProcessorMutex
  */
-interface IRunInAMutex {
+interface IRunInAMutex
+{
 
     /**
      * The method to be executed by the mutex

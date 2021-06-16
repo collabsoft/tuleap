@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,13 +17,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-!(function ($) {
-    $(document).ready(function() {
-        if (!$('#timezone option[selected]').val()) {
-            var timezone = jstz.determine();
-            $("#timezone").val(timezone.name()).prop('selected', true);
-        }
+document.addEventListener("DOMContentLoaded", () => {
+    const select = document.querySelector("#timezone");
+    if (!(select instanceof HTMLSelectElement)) {
+        throw new Error("#timezone not found or is not select");
+    }
 
-        $("#timezone").select2();
-    });
-})(window.jQuery);
+    if (!select.value) {
+        select.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    }
+
+    window.jQuery("#timezone").select2();
+});

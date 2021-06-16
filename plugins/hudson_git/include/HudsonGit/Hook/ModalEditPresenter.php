@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -27,7 +27,7 @@ class ModalEditPresenter
 
     public function __construct()
     {
-        $this->title = $GLOBALS['Language']->getText('plugin_hudson_git', 'edit_jenkins_hook');
-        $this->save  = $GLOBALS['Language']->getText('plugin_hudson_git', 'btn_save_jenkins');
+        $this->title = dgettext('tuleap-hudson_git', 'Edit the Jenkins webhook');
+        $this->save  = dgettext('tuleap-hudson_git', 'Save Jenkins webhook');
     }
 }

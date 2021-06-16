@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,19 +18,22 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Permission_PermissionPresenterBuilder {
+class Tracker_Permission_PermissionPresenterBuilder
+{
 
-    public function getPresenter(Tracker $tracker) {
+    public function getPresenter(Tracker $tracker)
+    {
         return new Tracker_Permission_PermissionPresenter($tracker, $this->getUGroupList($tracker));
     }
 
-    private function getUGroupList(Tracker $tracker) {
-        $ugroup_list = array();
+    private function getUGroupList(Tracker $tracker)
+    {
+        $ugroup_list = [];
 
         $ugroups_permissions = plugin_tracker_permission_get_tracker_ugroups_permissions($tracker->getGroupId(), $tracker->getId());
         ksort($ugroups_permissions);
         reset($ugroups_permissions);
-        foreach($ugroups_permissions as $ugroup_permissions) {
+        foreach ($ugroups_permissions as $ugroup_permissions) {
             $ugroup      = $ugroup_permissions['ugroup'];
             $permissions = $ugroup_permissions['permissions'];
 
@@ -47,50 +50,51 @@ class Tracker_Permission_PermissionPresenterBuilder {
         return $ugroup_list;
     }
 
-    private function getPermissionTypeList($ugroup_id, $permissions) {
-        $permission_type_list = array();
+    private function getPermissionTypeList($ugroup_id, $permissions)
+    {
+        $permission_type_list = [];
 
         $permission_type_list[] = new Tracker_Permission_PermissionTypePresenter(
             Tracker_Permission_Command::PERMISSION_NONE,
-            $GLOBALS['Language']->getText('plugin_tracker_admin_permissions', Tracker::PERMISSION_NONE),
+            dgettext('tuleap-tracker', '-'),
             count($permissions) == 0
         );
 
         $permission_type_list[] = new Tracker_Permission_PermissionTypePresenter(
             Tracker_Permission_Command::PERMISSION_FULL,
-            $GLOBALS['Language']->getText('plugin_tracker_admin_permissions', Tracker::PERMISSION_FULL),
+            dgettext('tuleap-tracker', 'have access to all artifacts'),
             isset($permissions[Tracker::PERMISSION_FULL])
         );
 
         if ($ugroup_id != ProjectUGroup::ANONYMOUS) {
             $permission_type_list[] = new Tracker_Permission_PermissionTypePresenter(
                 Tracker_Permission_Command::PERMISSION_SUBMITTER_ONLY,
-                $GLOBALS['Language']->getText('plugin_tracker_admin_permissions', Tracker::PERMISSION_SUBMITTER_ONLY),
+                dgettext('tuleap-tracker', 'have access to artifacts they submitted'),
                 isset($permissions[Tracker::PERMISSION_SUBMITTER_ONLY])
             );
 
             if ($ugroup_id != ProjectUGroup::REGISTERED) {
                 $permission_type_list[] = new Tracker_Permission_PermissionTypePresenter(
                     Tracker_Permission_Command::PERMISSION_ASSIGNEE,
-                    $GLOBALS['Language']->getText('plugin_tracker_admin_permissions', Tracker::PERMISSION_ASSIGNEE),
-                    (isset($permissions[Tracker::PERMISSION_ASSIGNEE]) && !isset($permissions[Tracker::PERMISSION_SUBMITTER]))
+                    dgettext('tuleap-tracker', 'have access to artifacts assigned to group'),
+                    (isset($permissions[Tracker::PERMISSION_ASSIGNEE]) && ! isset($permissions[Tracker::PERMISSION_SUBMITTER]))
                 );
 
                 $permission_type_list[] = new Tracker_Permission_PermissionTypePresenter(
                     Tracker_Permission_Command::PERMISSION_SUBMITTER,
-                    $GLOBALS['Language']->getText('plugin_tracker_admin_permissions', Tracker::PERMISSION_SUBMITTER),
-                    !isset($permissions[Tracker::PERMISSION_ASSIGNEE]) && isset($permissions[Tracker::PERMISSION_SUBMITTER])
+                    dgettext('tuleap-tracker', 'have access to artifacts submitted by group'),
+                    ! isset($permissions[Tracker::PERMISSION_ASSIGNEE]) && isset($permissions[Tracker::PERMISSION_SUBMITTER])
                 );
 
                 $permission_type_list[] = new Tracker_Permission_PermissionTypePresenter(
                     Tracker_Permission_Command::PERMISSION_ASSIGNEE_AND_SUBMITTER,
-                    $GLOBALS['Language']->getText('plugin_tracker_admin_permissions', Tracker::PERMISSION_ASSIGNEE .'_AND_'. Tracker::PERMISSION_SUBMITTER),
+                    dgettext('tuleap-tracker', 'have access to artifacts assigned to or submitted by group'),
                     isset($permissions[Tracker::PERMISSION_ASSIGNEE]) && isset($permissions[Tracker::PERMISSION_SUBMITTER])
                 );
 
                 $permission_type_list[] = new Tracker_Permission_PermissionTypePresenter(
                     Tracker_Permission_Command::PERMISSION_ADMIN,
-                    $GLOBALS['Language']->getText('plugin_tracker_admin_permissions', Tracker::PERMISSION_ADMIN),
+                    dgettext('tuleap-tracker', 'are admin of the tracker'),
                     isset($permissions[Tracker::PERMISSION_ADMIN])
                 );
             }

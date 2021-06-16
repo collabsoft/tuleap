@@ -1,5 +1,4 @@
-<?php 
-rcs_id('$Id: _GroupInfo.php,v 1.1 2004/11/28 20:42:33 rurban Exp $');
+<?php
 /*
  Copyright 2004 $ThePhpWikiProgrammingTeam
 
@@ -23,48 +22,53 @@ rcs_id('$Id: _GroupInfo.php,v 1.1 2004/11/28 20:42:33 rurban Exp $');
 /**
  * @author: Charles Corrigan
  */
-class WikiPlugin__GroupInfo
-extends WikiPlugin
+class WikiPlugin__GroupInfo extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return _("DebugGroupInfo");
     }
 
-    function getDescription () {
+    public function getDescription()
+    {
         return sprintf(_("Show Group Information"));
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.1 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.1 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array();
+    public function getDefaultArguments()
+    {
+        return [];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         $args = $this->getArgs($argstr, $request);
         extract($args);
 
         $output = HTML(HTML::h1("Group Info"));
 
-        $group = WikiGroup::getGroup();
+        $group     = WikiGroup::getGroup();
         $allGroups = $group->getAllGroupsIn();
 
         foreach ($allGroups as $g) {
-          $members = $group->getMembersOf($g);
-          $output->pushContent(HTML::h3($g . " - members: " .
-sizeof($members) . " - isMember: " . ($group->isMember($g) ? "yes" : "no")
-));
-          foreach($members as $m) {
-            $output->pushContent($m);
-            $output->pushContent(HTML::br());
-          }
+            $members = $group->getMembersOf($g);
+            $output->pushContent(HTML::h3($g . " - members: " .
+            sizeof($members) . " - isMember: " . ($group->isMember($g) ? "yes" : "no")));
+            foreach ($members as $m) {
+                $output->pushContent($m);
+                $output->pushContent(HTML::br());
+            }
         }
         $output->pushContent(HTML::p("--- the end ---"));
 
         return $output;
     }
-};
-?>
+}

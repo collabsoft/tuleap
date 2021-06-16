@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,7 @@
 
 namespace Tuleap\SVN\REST;
 
-use \Luracast\Restler\Restler;
+use Luracast\Restler\Restler;
 use Project;
 use Tuleap\SVN\REST\v1\RepositoryRepresentation;
 use Tuleap\Project\REST\ProjectResourceReference;
@@ -37,9 +37,9 @@ class ResourcesInjector
 
     public function declareProjectResource(array &$resources, Project $project)
     {
-        $routes = array(
+        $routes = [
             RepositoryRepresentation::ROUTE,
-        );
+        ];
 
         foreach ($routes as $route) {
             $resource_reference = new ProjectResourceReference();

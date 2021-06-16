@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -46,8 +46,8 @@ class GitPaneSectionCollector
 
     public function collectSections(PermissionPerGroupPaneCollector $pane_collector)
     {
-        $service_section_presenter     = $this->git_section_builder->buildPresenter($pane_collector);
-        $project                       = $pane_collector->getProject();
+        $service_section_presenter = $this->git_section_builder->buildPresenter($pane_collector);
+        $project                   = $pane_collector->getProject();
 
         $user_group = $this->ugroup_manager->getUGroup($project, $pane_collector->getSelectedUGroupId());
 
@@ -57,9 +57,11 @@ class GitPaneSectionCollector
             $user_group
         );
 
-        $rank_in_project = $project->getService(
-            GitPlugin::SERVICE_SHORTNAME
-        )->getRank();
+        $service = $project->getService(GitPlugin::SERVICE_SHORTNAME);
+        if ($service === null) {
+            return;
+        }
+        $rank_in_project = $service->getRank();
 
         $templates_dir = GIT_TEMPLATE_DIR . '/project-admin/';
         $pane          = TemplateRendererFactory::build()

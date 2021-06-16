@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,28 +24,33 @@ use Tuleap\AgileDashboard\REST\v1\PlanningRepresentation;
 use Tuleap\AgileDashboard\REST\v1\Kanban\KanbanRepresentation;
 use Tuleap\AgileDashboard\REST\v1\Kanban\KanbanColumnRepresentation;
 use Tuleap\AgileDashboard\REST\v1\Kanban\KanbanItemPOSTRepresentation;
+use Tuleap\Project\REST\ProjectRepresentation;
 use Tuleap\Project\REST\ProjectResourceReference;
 
 /**
  * Inject resource into restler
  */
-class AgileDashboard_REST_ResourcesInjector {
+class AgileDashboard_REST_ResourcesInjector
+{
 
-    public function populate(Luracast\Restler\Restler $restler) {
+    public function populate(Luracast\Restler\Restler $restler)
+    {
+        $restler->addAPIClass('\\Tuleap\\AgileDashboard\\REST\\AgileDashboardProjectResource', ProjectRepresentation::ROUTE);
         $restler->addAPIClass('\\Tuleap\\AgileDashboard\\REST\\v1\\MilestoneResource', MilestoneRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\AgileDashboard\\REST\\v1\\PlanningResource',  PlanningRepresentation::ROUTE);
-        $restler->addAPIClass('\\Tuleap\\AgileDashboard\\REST\\v1\\BacklogItemResource',  BacklogItemRepresentation::ROUTE);
+        $restler->addAPIClass('\\Tuleap\\AgileDashboard\\REST\\v1\\PlanningResource', PlanningRepresentation::ROUTE);
+        $restler->addAPIClass('\\Tuleap\\AgileDashboard\\REST\\v1\\BacklogItemResource', BacklogItemRepresentation::ROUTE);
         $restler->addAPIClass('\\Tuleap\\AgileDashboard\\REST\\v1\\Kanban\\KanbanResource', KanbanRepresentation::ROUTE);
         $restler->addAPIClass('\\Tuleap\\AgileDashboard\\REST\\v1\\Kanban\\KanbanColumnsResource', KanbanColumnRepresentation::ROUTE);
         $restler->addAPIClass('\\Tuleap\\AgileDashboard\\REST\\v1\\Kanban\\KanbanItemsResource', KanbanItemPOSTRepresentation::ROUTE);
     }
 
-    public function declareProjectPlanningResource(array &$resources, Project $project) {
-        $routes = array(
+    public function declareProjectPlanningResource(array &$resources, Project $project)
+    {
+        $routes = [
             BacklogItemRepresentation::BACKLOG_ROUTE,
             MilestoneRepresentation::ROUTE,
             PlanningRepresentation::ROUTE
-        );
+        ];
         foreach ($routes as $route) {
             $resource_reference = new ProjectResourceReference();
             $resource_reference->build($project, $route);

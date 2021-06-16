@@ -21,7 +21,8 @@
 /**
  * Widget displaying last git pushes for the project
  */
-class Git_Widget_ProjectPushes extends Widget {
+class Git_Widget_ProjectPushes extends Widget
+{
 
     public $pluginPath;
 
@@ -32,7 +33,8 @@ class Git_Widget_ProjectPushes extends Widget {
      *
      * @return Void
      */
-    public function __construct($pluginPath) {
+    public function __construct($pluginPath)
+    {
         $this->pluginPath = $pluginPath;
         // TODO: Make weeks number as a widget preferences stored by project.
         parent::__construct('plugin_git_project_pushes');
@@ -43,8 +45,9 @@ class Git_Widget_ProjectPushes extends Widget {
      *
      * @return string
      */
-    public function getTitle() {
-        return $GLOBALS['Language']->getText('plugin_git', 'widget_project_pushes_title');
+    public function getTitle()
+    {
+        return dgettext('tuleap-git', 'Last Git pushes');
     }
 
     /**
@@ -52,16 +55,17 @@ class Git_Widget_ProjectPushes extends Widget {
      *
      * @return string html
      */
-    public function getContent() {        
-        $request = HTTPRequest::instance();
-        $groupId = $request->get('group_id');
-        $plugin = PluginManager::instance()->getPluginByName('git');
+    public function getContent()
+    {
+        $request     = HTTPRequest::instance();
+        $groupId     = $request->get('group_id');
+        $plugin      = PluginManager::instance()->getPluginByName('git');
         $weeksNumber = $request->get('weeks_number');
         if (empty($weeksNumber)) {
             $weeksNumber =  $plugin->getPluginInfo()->getPropVal('weeks_number');
         }
         $content = '<div style="text-align:center"><p>
-                        <img src="'.$this->pluginPath.'/index.php?group_id='.$groupId.'&weeks_number='.$weeksNumber.'&action=view_last_git_pushes" title="'.$GLOBALS['Language']->getText('plugin_git', 'widget_project_pushes_title').'" />
+                        <img src="' . $this->pluginPath . '/index.php?group_id=' . $groupId . '&weeks_number=' . $weeksNumber . '&action=view_last_git_pushes" title="' . dgettext('tuleap-git', 'Last Git pushes') . '" />
                     </div>';
         return $content;
     }
@@ -71,8 +75,9 @@ class Git_Widget_ProjectPushes extends Widget {
      *
      * @return string
      */
-    function getCategory() {
-        return 'scm';
+    public function getCategory()
+    {
+        return _('Source code management');
     }
 
     /**
@@ -80,7 +85,8 @@ class Git_Widget_ProjectPushes extends Widget {
      *
      * @return String
      */
-    function getDescription() {
-        return $GLOBALS['Language']->getText('plugin_git', 'widget_project_pushes_description');
+    public function getDescription()
+    {
+        return dgettext('tuleap-git', 'Display last Git pushes of the project.');
     }
 }

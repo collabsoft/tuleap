@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,10 +18,13 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\SystemEvent\SystemEventInstrumentation;
+
 require_once 'SystemEventManager.class.php';
 require_once 'IRunInAMutex.php';
 
-abstract class SystemEventProcessor implements IRunInAMutex {
+abstract class SystemEventProcessor implements IRunInAMutex
+{
 
     /**
      * @var SystemEventProcess
@@ -39,7 +42,7 @@ abstract class SystemEventProcessor implements IRunInAMutex {
     protected $dao;
 
     /**
-     * @var Logger
+     * @var \Psr\Log\LoggerInterface
      */
     protected $logger;
 
@@ -47,7 +50,7 @@ abstract class SystemEventProcessor implements IRunInAMutex {
         SystemEventProcess $process,
         SystemEventManager $system_event_manager,
         SystemEventDao $dao,
-        Logger $logger
+        \Psr\Log\LoggerInterface $logger
     ) {
         $this->process              = $process;
         $this->system_event_manager = $system_event_manager;
@@ -55,27 +58,30 @@ abstract class SystemEventProcessor implements IRunInAMutex {
         $this->logger               = $logger;
     }
 
-    public function getProcess() {
+    public function getProcess()
+    {
         return $this->process;
     }
 
-    public function execute($queue) {
+    public function execute($queue)
+    {
         $executed_events_ids = $this->loopOverEventsForOwner($this->getOwner(), $queue);
         try {
             $this->postEventsActions($executed_events_ids, $queue);
-        } catch(Exception $exception) {
-            $this->logger->error("[SystemEventProcessor] An error happened during execution of post actions: ".$exception->getMessage());
+        } catch (Exception $exception) {
+            $this->logger->error("[SystemEventProcessor] An error happened during execution of post actions: " . $exception->getMessage());
         }
     }
 
-    protected function loopOverEventsForOwner($owner, $queue) {
+    protected function loopOverEventsForOwner($owner, $queue)
+    {
         $types = $this->system_event_manager->getTypesForQueue($queue);
         if (! $types) {
-            return array();
+            return [];
         }
 
-        $executed_events_ids = array();
-        while (($dar=$this->dao->checkOutNextEvent($owner, $types)) != null) {
+        $executed_events_ids = [];
+        while (($dar = $this->dao->checkOutNextEvent($owner, $types)) != null) {
             $sysevent = $this->getSystemEventFromDar($dar);
             if ($sysevent) {
                 $this->executeSystemEvent($sysevent);
@@ -86,28 +92,31 @@ abstract class SystemEventProcessor implements IRunInAMutex {
         return $executed_events_ids;
     }
 
-    private function getSystemEventFromDar($dar) {
+    private function getSystemEventFromDar($dar)
+    {
         if ($row = $dar->getRow()) {
             return $this->system_event_manager->getInstanceFromRow($row);
         }
         return null;
     }
 
-    private function executeSystemEvent(SystemEvent $sysevent) {
-        $this->logger->info("Processing event #".$sysevent->getId()." ".$sysevent->getType()."(".$sysevent->getParameters().")");
+    private function executeSystemEvent(SystemEvent $sysevent)
+    {
+        $this->logger->info("Processing event #" . $sysevent->getId() . " " . $sysevent->getType() . "(" . $sysevent->getParameters() . ")");
         try {
+            SystemEventInstrumentation::increment(SystemEvent::STATUS_RUNNING);
             $sysevent->process();
         } catch (Exception $exception) {
             $sysevent->logException($exception);
         }
+        SystemEventInstrumentation::increment($sysevent->getStatus());
         $this->dao->close($sysevent);
+        SystemEventInstrumentation::durationHistogram($this->dao->getElapsedTime($sysevent));
         $sysevent->notify();
-        $this->logger->info("Processing event #".$sysevent->getId().": done.", Backend::LOG_INFO);
-        // Output errors???
+        $this->logger->info("Processing event #" . $sysevent->getId() . ": done.");
     }
 
     abstract protected function getOwner();
 
     abstract protected function postEventsActions(array $executed_events_ids, $queue_name);
-
 }

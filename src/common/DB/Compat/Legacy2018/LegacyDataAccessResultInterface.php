@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -70,7 +70,8 @@ interface LegacyDataAccessResultInterface extends \IProvideDataAccessResult
 
     /**
      * @deprecated
-     * @return array Return the current element
+     * @return false|array Return the current element
+     * @psalm-ignore-falsable-return
      */
     public function current();
 
@@ -88,7 +89,7 @@ interface LegacyDataAccessResultInterface extends \IProvideDataAccessResult
      *
      * @deprecated
      *
-     * @return boolean
+     * @return bool
      */
     public function valid();
 

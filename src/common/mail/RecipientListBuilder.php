@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,22 +23,24 @@
  *
  * A valid address is the address of an active/restricted/… user or an external address.
  */
-class Mail_RecipientListBuilder {
+class Mail_RecipientListBuilder
+{
 
     /**
      * @var UserManager
      */
     private $user_manager;
 
-    private $allowed_status = array(
+    private $allowed_status = [
         PFUser::STATUS_ACTIVE ,
         PFUser::STATUS_RESTRICTED,
         PFUser::STATUS_PENDING,
         PFUser::STATUS_VALIDATED,
         PFUser::STATUS_VALIDATED_RESTRICTED
-    );
+    ];
 
-    public function __construct(UserManager $user_manager) {
+    public function __construct(UserManager $user_manager)
+    {
         $this->user_manager = $user_manager;
     }
 
@@ -47,8 +49,9 @@ class Mail_RecipientListBuilder {
      *
      * @return array of array('email' => 'jdoe@example.com', 'real_name' => 'John Doe')
      */
-    public function getValidRecipientsFromUsers(array $users) {
-        $recipients = array();
+    public function getValidRecipientsFromUsers(array $users)
+    {
+        $recipients = [];
         foreach ($users as $user) {
             if ($this->hasAllowedStatus($user)) {
                 $this->addUser($recipients, $user);
@@ -59,12 +62,13 @@ class Mail_RecipientListBuilder {
     }
 
     /**
-     * @param string $addresses array('jdoe@example.com', …)
+     * @param string[] $addresses array('jdoe@example.com', …)
      *
      * @return array of array('email' => 'jdoe@example.com', 'real_name' => 'John Doe')
      */
-    public function getValidRecipientsFromAddresses(array $addresses) {
-        $recipients = array();
+    public function getValidRecipientsFromAddresses(array $addresses)
+    {
+        $recipients = [];
         foreach ($addresses as $address) {
             $matching_users = $this->user_manager->getAllUsersByEmail($address);
             if ($matching_users) {
@@ -77,7 +81,8 @@ class Mail_RecipientListBuilder {
         return $recipients;
     }
 
-    private function fallbackOnFindUser(array &$recipients, $identifier) {
+    private function fallbackOnFindUser(array &$recipients, $identifier)
+    {
         $user = $this->user_manager->findUser($identifier);
         if ($user) {
             $this->addUser($recipients, $user);
@@ -86,11 +91,13 @@ class Mail_RecipientListBuilder {
         }
     }
 
-    private function fallbackOnExternalAddress(array &$recipients, $address) {
+    private function fallbackOnExternalAddress(array &$recipients, $address)
+    {
         $this->addExternalAddress($recipients, $address);
     }
 
-    private function addUserFromMatchingOnes(array &$recipients, array $matching_users) {
+    private function addUserFromMatchingOnes(array &$recipients, array $matching_users)
+    {
         foreach ($matching_users as $user) {
             if ($this->hasAllowedStatus($user)) {
                 $this->addUser($recipients, $user);
@@ -99,21 +106,24 @@ class Mail_RecipientListBuilder {
         }
     }
 
-    private function hasAllowedStatus(PFUser $user) {
+    private function hasAllowedStatus(PFUser $user)
+    {
         return in_array($user->getStatus(), $this->allowed_status);
     }
 
-    private function addExternalAddress(array &$recipients, $address) {
-        $recipients[] = array(
+    private function addExternalAddress(array &$recipients, $address)
+    {
+        $recipients[] = [
             'email'     => $address,
             'real_name' => ''
-        );
+        ];
     }
 
-    private function addUser(array &$recipients, PFUser $user) {
-        $recipients[] = array(
+    private function addUser(array &$recipients, PFUser $user)
+    {
+        $recipients[] = [
             'email'     => $user->getEmail(),
             'real_name' => $user->getRealName()
-        );
+        ];
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,29 +17,30 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-var tuleap = tuleap || { };
+/* global codendi:readonly */
+
+var tuleap = tuleap || {};
 
 (function ($) {
     /**
      * @see http://tarruda.github.io/bootstrap-datetimepicker/
      */
     tuleap.dateTimePicker = {
-        init: function() {
-            $('.tuleap_field_date').datetimepicker({
-                 language: codendi.locale,
-                 pickTime: false
+        init: function () {
+            $(".tuleap_field_date").datetimepicker({
+                language: codendi.locale,
+                pickTime: false,
             });
 
-            $('.tuleap_field_datetime').datetimepicker({
-                 language: codendi.locale,
-                 pickTime: true,
-                 pickSeconds: false
+            $(".tuleap_field_datetime").datetimepicker({
+                language: codendi.locale,
+                pickTime: true,
+                pickSeconds: false,
             });
-        }
+        },
     };
 
     $(document).ready(function () {
         tuleap.dateTimePicker.init();
     });
-
 })(window.jQuery);

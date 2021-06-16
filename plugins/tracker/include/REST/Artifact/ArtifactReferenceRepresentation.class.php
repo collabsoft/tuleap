@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,13 +18,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace Tuleap\Tracker\REST\Artifact;
 
-use Tuleap\Tracker\REST\Artifact\ArtifactRepresentation;
-use Tuleap\REST\JsonCast;
-use Exception;
-
-class ArtifactReferenceRepresentation {
+/**
+ * @psalm-immutable
+ */
+class ArtifactReferenceRepresentation
+{
     /**
      * @var int ID of the artifact
      */
@@ -35,14 +37,9 @@ class ArtifactReferenceRepresentation {
      */
     public $uri;
 
-    public function build($reference) {
-        if ($reference instanceof Tracker_Artifact) {
-            $this->id = JsonCast::toInt($reference->getId());
-        } elseif (is_int($reference)) {
-            $this->id = JsonCast::toInt($reference);
-        } else {
-            throw new Exception('Unknown artifact reference');
-        }
+    public function __construct(int $id)
+    {
+        $this->id  = $id;
         $this->uri = ArtifactRepresentation::ROUTE . '/' . $this->id;
     }
 }

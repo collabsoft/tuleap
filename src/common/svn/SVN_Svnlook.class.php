@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,13 +24,15 @@ class SVN_Svnlook
     private $timeout = '/usr/bin/timeout 5s';
     private $svnlook = '/usr/bin/svnlook';
 
-    public function getDirectoryListing(Project $project, $svn_path) {
-        $command = 'tree --non-recursive --full-paths '.escapeshellarg($project->getSVNRootPath()).' '.escapeshellarg($svn_path);
+    public function getDirectoryListing(Project $project, $svn_path)
+    {
+        $command = 'tree --non-recursive --full-paths ' . escapeshellarg($project->getSVNRootPath()) . ' ' . escapeshellarg($svn_path);
         return $this->execute($command);
     }
 
-    public function getTree(Project $project) {
-        $command = 'tree --full-paths '.escapeshellarg($project->getSVNRootPath());
+    public function getTree(Project $project)
+    {
+        $command = 'tree --full-paths ' . escapeshellarg($project->getSVNRootPath());
         return $this->execute($command);
     }
 
@@ -39,23 +41,24 @@ class SVN_Svnlook
      *
      * @return array
      */
-    public function getPathLastHistory(Project $project, $svn_path) {
-        $command = 'history --limit 1 '.escapeshellarg($project->getSVNRootPath()).' '.escapeshellarg($svn_path);
+    public function getPathLastHistory(Project $project, $svn_path)
+    {
+        $command = 'history --limit 1 ' . escapeshellarg($project->getSVNRootPath()) . ' ' . escapeshellarg($svn_path);
         return $this->execute($command);
     }
 
     /**
      * Returns transaction path
      *
-     * @param Project $project
      * @param int $transaction
      *
      * @throw SVN_SvnlookException
      *
      * @return array
      */
-    public function getTransactionPath(Project $project, $transaction) {
-        $command = 'changed -t ' . escapeshellarg($transaction) . ' ' .escapeshellarg($project->getSVNRootPath());
+    public function getTransactionPath(Project $project, $transaction)
+    {
+        $command = 'changed -t ' . escapeshellarg($transaction) . ' ' . escapeshellarg($project->getSVNRootPath());
         return $this->execute($command);
     }
 
@@ -67,20 +70,21 @@ class SVN_Svnlook
      *      'my message',   //log message
      *  );
      *
-     * @param Project $project
      * @param int $revision
      *
      * @throw SVN_SvnlookException
      *
      * @return array
      */
-    public function getInfo(Project $project, $revision) {
+    public function getInfo(Project $project, $revision)
+    {
         $command = 'info -r ' . escapeshellarg($revision) . ' ' . escapeshellarg($project->getSVNRootPath());
         return $this->execute($command);
     }
 
-    private function execute($command) {
-        $output  = array();
+    private function execute($command)
+    {
+        $output  = [];
         $ret_val = 1;
         exec("$this->timeout $this->svnlook $command 2>&1", $output, $ret_val);
         if ($ret_val == 0) {

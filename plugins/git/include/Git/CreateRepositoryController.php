@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -67,12 +67,17 @@ class CreateRepositoryController extends RouterLink
         $project    = $request->getProject();
         $project_id = $project->getID();
 
+        $redirect_url = '/plugins/git/?action=index&group_id=' . urlencode((string) $project_id);
+        if ($repository_name === null) {
+            $GLOBALS['Response']->redirect($redirect_url);
+            return;
+        }
+
         try {
-            $repository = $this->repository_creator->create($project, $creator, $repository_name);
+            $repository   = $this->repository_creator->create($project, $creator, $repository_name);
             $redirect_url = $this->url_manager->getRepositoryBaseUrl($repository);
         } catch (Exception $exception) {
             $GLOBALS['Response']->addFeedback('error', $exception->getMessage());
-            $redirect_url = '/plugins/git/?action=index&group_id='. $project_id;
         }
 
         $GLOBALS['Response']->redirect($redirect_url);

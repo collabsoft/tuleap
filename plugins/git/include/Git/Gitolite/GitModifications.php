@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All rights reserved
+ * Copyright (c) Enalean, 2015 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>
  */
 
-class Git_Gitolite_GitModifications {
+class Git_Gitolite_GitModifications
+{
 
     private $files_to_add;
 
@@ -26,33 +27,40 @@ class Git_Gitolite_GitModifications {
 
     private $files_to_remove;
 
-    public function __construct() {
-        $this->files_to_add    = array();
-        $this->files_to_move   = array();
-        $this->files_to_remove = array();
+    public function __construct()
+    {
+        $this->files_to_add    = [];
+        $this->files_to_move   = [];
+        $this->files_to_remove = [];
     }
 
-    public function add($file) {
+    public function add($file)
+    {
         $this->files_to_add[] = $file;
     }
 
-    public function move($old_file, $new_file) {
+    public function move($old_file, $new_file)
+    {
         $this->files_to_move[$old_file] = $new_file;
     }
 
-    public function remove($file) {
+    public function remove($file)
+    {
         $this->files_to_remove[] = $file;
     }
 
-    public function toAdd() {
+    public function toAdd()
+    {
         return $this->files_to_add;
     }
 
-    public function toMove() {
+    public function toMove()
+    {
         return $this->files_to_move;
     }
 
-    public function toRemove() {
+    public function toRemove()
+    {
         return $this->files_to_remove;
     }
 }

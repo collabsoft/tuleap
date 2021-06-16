@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -41,7 +41,7 @@ class b201610241145_update_frs_admin_description extends ForgeUpgrade_Bucket
                 WHERE name = 'FRS_Admin' AND description = 'FRS Admin'";
 
         if ($this->db->dbh->exec($sql) === false) {
-            $this->rollBackOnError('An error occured while migrating admin frs permissions for ugroup'.$sql);
+            $this->rollBackOnError('An error occured while migrating admin frs permissions for ugroup' . $sql);
         }
 
         $this->db->dbh->commit();

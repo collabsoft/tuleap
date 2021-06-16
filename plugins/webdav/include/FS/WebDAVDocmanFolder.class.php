@@ -1,145 +1,125 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2019-Present. All Rights Reserved
  * Copyright (c) STMicroelectronics, 2010. All Rights Reserved.
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once (dirname(__FILE__).'/../../../docman/include/Docman_ItemFactory.class.php');
-require_once (dirname(__FILE__).'/../../../docman/include/Docman_FileStorage.class.php');
-require_once (dirname(__FILE__).'/../../../docman/include/constants.php');
-require_once ('WebDAVDocmanDocument.class.php');
-require_once ('WebDAVDocmanFile.class.php');
-require_once (dirname(__FILE__).'/../WebDAV_Request.class.php');
-require_once ('WebDAV_DocmanController.class.php');
+use Tuleap\WebDAV\Docman\DocumentDownloader;
 
-/**
- * This class Represents Docman folders in WebDAV
- *
- * It's an implementation of the abstract class Sabre_DAV_Directory methods
- */
-class WebDAVDocmanFolder extends Sabre_DAV_Directory {
+class WebDAVDocmanFolder extends \Sabre\DAV\FS\Directory
+{
+    private const DUPLICATE                                 = 'duplicate';
+    private const ITEM_EXISTS_BUT_NOT_DISPLAYABLE_IN_WEBDAV = 'exists-not-displayed';
 
+    /**
+     * @var PFUser
+     */
     private $user;
+    /**
+     * @var Project
+     */
     private $project;
-    protected $item;
-    private $maxFileSize;
-
     /**
-     * Constructor of the class
-     *
-     * @param PFUser $user
-     * @param Project $project
-     * @param Docman_Folder $item
-     *
-     * @return void
+     * @var Docman_Folder
      */
-    function __construct($user, $project, $item, $maxFileSize) {
-        $this->user = $user;
+    private $item;
+    /**
+     * @var WebDAVUtils
+     */
+    private $utils;
+
+    public function __construct(PFUser $user, Project $project, Docman_Folder $item, WebDAVUtils $utils)
+    {
+        $this->user    = $user;
         $this->project = $project;
-        $this->item = $item;
-        $this->maxFileSize = $maxFileSize;
+        $this->item    = $item;
+        $this->utils   = $utils;
     }
 
-    /**
-     * Returns the max file size
-     *
-     * @return Integer
-     */
-    public function getMaxFileSize() {
-        return $this->maxFileSize;
+    private function getMaxFileSize(): int
+    {
+        return (int) ForgeConfig::get(DocmanPlugin::PLUGIN_DOCMAN_MAX_FILE_SIZE_SETTING);
     }
 
-    /**
-     * Sets the max file size
-     *
-     * @param Integer $maxFileSize
-     *
-     * @return void
-     */
-    public function setMaxFileSize($maxFileSize) {
-        $this->maxFileSize = $maxFileSize;
-    }
-    
     /**
      * Returns the content of the folder
      * including indication about duplicate entries
-     *
-     * @return Array
      */
-    function getChildList() {
-        $children = array();
-        // hey ! for docman never add something in WebDAVUtils, docman may be not present ;)
-        $docmanItemFactory = $this->getUtils()->getDocmanItemFactory();
-        $nodes = $docmanItemFactory->getChildrenFromParent($this->getItem());
-        $docmanPermissionManager = $this->getUtils()->getDocmanPermissionsManager($this->getProject());
+    public function getChildList(): array
+    {
+        $children                = [];
+        $docmanItemFactory       = $this->utils->getDocmanItemFactory();
+        $nodes                   = $docmanItemFactory->getChildrenFromParent($this->item);
+        $docmanPermissionManager = $this->utils->getDocmanPermissionsManager($this->project);
 
         foreach ($nodes as $node) {
-            if ($docmanPermissionManager->userCanAccess($this->getUser(), $node->getId())) {
+            if ($docmanPermissionManager->userCanAccess($this->user, $node->getId())) {
                 $class = get_class($node);
                 switch ($class) {
-                    case 'Docman_File':
+                    case Docman_File::class:
                         $item = $docmanItemFactory->getItemFromDb($node->getId());
+                        assert($item instanceof Docman_File);
                         $version = $item->getCurrentVersion();
-                        $index = $version->getFilename();
-                        $method = 'getWebDAVDocmanFile';
+                        $this->appendChildren($children, $version->getFilename(), new WebDAVDocmanFile($this->user, $this->project, $item, new DocumentDownloader(), $this->utils));
                         break;
-                    case 'Docman_EmbeddedFile':
-                        $index = $node->getTitle();
-                        $method = 'getWebDAVDocmanFile';
+                    case Docman_EmbeddedFile::class:
+                        $item = $docmanItemFactory->getItemFromDb($node->getId());
+                        assert($item instanceof Docman_EmbeddedFile);
+                        $this->appendChildren($children, $node->getTitle(), new WebDAVDocmanFile($this->user, $this->project, $item, new DocumentDownloader(), $this->utils));
                         break;
-                    case 'Docman_Empty':
-                    case 'Docman_Wiki':
-                    case 'Docman_Link':
-                        $index = $node->getTitle();
-                        $method = 'getWebDAVDocmanDocument';
+                    case Docman_Empty::class:
+                    case Docman_Wiki::class:
+                    case Docman_Link::class:
+                        $this->appendChildren($children, $node->getTitle(), self::ITEM_EXISTS_BUT_NOT_DISPLAYABLE_IN_WEBDAV);
                         break;
                     default:
-                        $index = $node->getTitle();
-                        $method = 'getWebDAVDocmanFolder';
+                        $this->appendChildren($children, $node->getTitle(), new WebDAVDocmanFolder($this->user, $this->project, $node, $this->utils));
                         break;
-                }
-
-                // When it's a duplicate say it, so it can be processed later
-                foreach ($children as $key => $value) {
-                    if (strcasecmp($key, $index) === 0) {
-                        $children[$key]   = 'duplicate';
-                        $children[$index] = 'duplicate';
-                    }
-                }
-                if (!isset($children[$index])) {
-                    $children[$index] = call_user_func(array($this,$method), $node);
                 }
             }
         }
         return $children;
     }
 
+    private function appendChildren(array &$children, string $index, $item): void
+    {
+        // When it's a duplicate say it, so it can be processed later
+        foreach ($children as $key => $value) {
+            if (strcasecmp($key, $index) === 0) {
+                $children[$key] = self::DUPLICATE;
+            }
+        }
+        if (! isset($children[$index])) {
+            $children[$index] = $item;
+        }
+    }
+
     /**
      * Returns the visible content of the folder
      *
-     * @return Array
-     *
-     * @see plugins/webdav/include/lib/Sabre/DAV/Sabre_DAV_ICollection::getChildren()
+     * @return \Sabre\DAV\INode[]
      */
-    function getChildren() {
+    public function getChildren(): array
+    {
         $children = $this->getChildList();
         // Remove all duplicate elements
         foreach ($children as $key => $node) {
-            if ($node === 'duplicate') {
+            if ($node === self::DUPLICATE || $node === self::ITEM_EXISTS_BUT_NOT_DISPLAYABLE_IN_WEBDAV) {
                 unset($children[$key]);
             }
         }
@@ -149,187 +129,134 @@ class WebDAVDocmanFolder extends Sabre_DAV_Directory {
     /**
      * Returns the given node
      *
-     * @param String $name
-     *
-     * @return Docman_Item
-     *
-     * @see plugins/webdav/include/lib/Sabre/DAV/Sabre_DAV_Directory::getChild()
+     * @param string $name
      */
-    function getChild($name) {
-        $name = $this->getUtils()->retrieveName($name);
+    public function getChild($name): \Sabre\DAV\INode
+    {
+        $name     = $this->utils->retrieveName($name);
         $children = $this->getChildList();
 
-        if (!isset($children[$name])) {
-            throw new Sabre_DAV_Exception_FileNotFound($GLOBALS['Language']->getText('plugin_webdav_common', 'docman_item_not_available'));
-        } elseif ($children[$name] === 'duplicate') {
-            throw new Sabre_DAV_Exception_Conflict($GLOBALS['Language']->getText('plugin_webdav_common', 'docman_item_duplicated'));
-        } else {
-            return $children[$name];
+        if (! isset($children[$name])) {
+            throw new \Sabre\DAV\Exception\NotFound($GLOBALS['Language']->getText('plugin_webdav_common', 'docman_item_not_available'));
         }
+
+        if ($children[$name] === self::DUPLICATE) {
+            throw new \Sabre\DAV\Exception\Conflict($GLOBALS['Language']->getText('plugin_webdav_common', 'docman_item_duplicated'));
+        }
+
+        if ($children[$name] === self::ITEM_EXISTS_BUT_NOT_DISPLAYABLE_IN_WEBDAV) {
+            throw new \Sabre\DAV\Exception\BadRequest(dgettext('tuleap-webdav', 'Item exists but cannot be displayed over webdav (link, wiki, empty)'));
+        }
+
+        return $children[$name];
     }
 
     /**
      * Returns the name of the folder
-     *
-     * @return String
-     *
-     * @see plugins/webdav/include/lib/Sabre/DAV/Sabre_DAV_INode::getName()
      */
-    function getName() {
+    public function getName(): string
+    {
         if ($this->isDocmanRoot()) {
             // case of the root
             return 'Documents';
         }
-        $utils = $this->getUtils();
-        return $utils->unconvertHTMLSpecialChars($this->getItem()->getTitle());
+        return $this->utils->unconvertHTMLSpecialChars($this->item->getTitle());
     }
 
-    /**
-     * Returns the last modification date
-     *
-     * @return date
-     *
-     * @see plugins/webdav/include/lib/Sabre/DAV/Sabre_DAV_Node::getLastModified()
-     */
-    function getLastModified() {
-        return $this->getItem()->getUpdateDate();
+    public function getLastModified(): int
+    {
+        return $this->item->getUpdateDate();
     }
 
-    /**
-     * Returns the represented folder
-     *
-     * @return Docman_Folder
-     */
-    function getItem() {
-        return $this->item;
-    }
-
-    /**
-     * Returns the project
-     *
-     * @return Project
-     */
-    function getProject() {
-        return $this->project;
-    }
-
-    /**
-     * Returns the user
-     *
-     * @return PFUser
-     */
-    function getUser() {
-        return $this->user;
-    }
-
-    /**
-     * Returns an instance of WebDAVUtils
-     *
-     * @return WebDAVUtils
-     */
-    function getUtils() {
-        return WebDAVUtils::getInstance();
-    }
-
-    /**
-     * Tell if the folder is docman root
-     *
-     * @return Boolean
-     */
-    function isDocmanRoot() {
-        return !$this->getItem()->getParentId();
-    }
-
-    /**
-     * Returns a new WebDAVDocmanFile
-     *
-     * @params Docman_File $item
-     *
-     * @return WebDAVDocmanFile
-     */
-    function getWebDAVDocmanFile($item) {
-        return new WebDAVDocmanFile($this->user, $this->getProject(), $item, $this->maxFileSize);
-    }
-
-    /**
-     * Returns a new WebDAVDocmanEmpty
-     *
-     * @params mixed $item
-     *
-     * @return WebDAVDocmanEmpty
-     */
-    function getWebDAVDocmanDocument($item) {
-        return new WebDAVDocmanDocument($this->user, $this->getProject(), $item);
-    }
-
-    /**
-     * Returns a new WebDAVDocmanFolder
-     *
-     * @params Docman_Folder $folder
-     *
-     * @return WebDAVDocmanFolder
-     */
-    function getWebDAVDocmanFolder($folder) {
-        return new WebDAVDocmanFolder($this->user, $this->getProject(), $folder, $this->maxFileSize);
+    private function isDocmanRoot(): bool
+    {
+        return ! $this->item->getParentId();
     }
 
     /**
      * Create a new docman folder
      *
-     * @param String $name Name of the folder to create
-     *
-     * @return void
+     * @param string $name Name of the folder to create
      */
-    function createDirectory($name) {
-        if ($this->getUtils()->isWriteEnabled()) {
+    public function createDirectory($name): void
+    {
+        if ($this->utils->isWriteEnabled()) {
             // Request
             $params['action']   = 'createItem';
-            $params['group_id'] = $this->getProject()->getGroupId();
+            $params['group_id'] = $this->project->getGroupId();
             $params['ordering'] = 'beginning';
             $params['confirm']  = true;
-            
+
             // Item details
             $params['item']['item_type'] = PLUGIN_DOCMAN_ITEM_TYPE_FOLDER;
-            $params['item']['parent_id'] = $this->getItem()->getId();
+            $params['item']['parent_id'] = $this->item->getId();
             $params['item']['title']     = $name;
-            
-            $this->getUtils()->processDocmanRequest(new WebDAV_Request($params));
+
+            $this->utils->processDocmanRequest(new WebDAV_Request($params));
         } else {
-            throw new Sabre_DAV_Exception_Forbidden($GLOBALS['Language']->getText('plugin_webdav_common', 'folder_denied_create'));
+            throw new \Sabre\DAV\Exception\Forbidden($GLOBALS['Language']->getText('plugin_webdav_common', 'folder_denied_create'));
         }
     }
-    
+
     /**
      * Creates a new document under the folder
      *
-     * @param String $name Name of the document
-     * @param Binary $data Content of the document
-     *
-     * @return void
+     * @param string               $name Name of the file
+     * @param resource|string|null $data Initial payload
      */
-    function createFile($name, $data = null) {
-        if ($this->getUtils()->isWriteEnabled()) {
+    public function createFile($name, $data = null): void
+    {
+        if ($this->utils->isWriteEnabled()) {
             // Request
-            $params['action']   = 'createItem';
-            $params['group_id'] = $this->getProject()->getGroupId();
+            $params           = [];
+            $params['action'] = 'createItem';
+            if ($this->childExists($name)) {
+                $params['action'] = 'new_version';
+            }
+            $params['group_id'] = $this->project->getGroupId();
             $params['ordering'] = 'beginning';
             $params['confirm']  = true;
 
             // File stuff
-            $params['file_name']      = $name;
-            $params['upload_content'] = stream_get_contents($data);
-            if (strlen($params['upload_content']) <= $this->getMaxFileSize()) {
-                $params['item']['item_type']      = PLUGIN_DOCMAN_ITEM_TYPE_FILE;
-                $params['item']['parent_id']      = $this->getItem()->getId();
-                $params['item']['title']          = $name;
-                
-                $this->getUtils()->processDocmanRequest(new WebDAV_Request($params));
+            $params['file_name'] = $name;
+
+            if ($data === null) {
+                $params['upload_content'] = '';
+            } elseif (is_resource($data)) {
+                $params['upload_content'] = stream_get_contents($data);
             } else {
-                throw new Sabre_DAV_Exception_RequestedRangeNotSatisfiable($GLOBALS['Language']->getText('plugin_webdav_download', 'error_file_size'));
+                $params['upload_content'] = $data;
+            }
+            if (strlen($params['upload_content']) <= $this->getMaxFileSize()) {
+                $params['item']['item_type'] = PLUGIN_DOCMAN_ITEM_TYPE_FILE;
+                $params['item']['parent_id'] = $this->item->getId();
+                $params['item']['title']     = $name;
+
+                $this->utils->processDocmanRequest(new WebDAV_Request($params));
+            } else {
+                throw new \Sabre\DAV\Exception\RequestedRangeNotSatisfiable($GLOBALS['Language']->getText('plugin_webdav_download', 'error_file_size'));
             }
         } else {
-            throw new Sabre_DAV_Exception_Forbidden($GLOBALS['Language']->getText('plugin_webdav_common', 'file_denied_create'));
+            throw new \Sabre\DAV\Exception\Forbidden($GLOBALS['Language']->getText('plugin_webdav_common', 'file_denied_create'));
         }
+    }
+
+    /**
+     * @param string $name
+     */
+    public function childExists($name): bool
+    {
+        try {
+            $child = $this->getChild($name);
+        } catch (\Sabre\DAV\Exception\NotFound $ex) {
+            return false;
+        } catch (\Sabre\DAV\Exception\Conflict $ex) {
+            return true;
+        } catch (\Sabre\DAV\Exception\BadRequest $ex) {
+            return true;
+        }
+
+        return true;
     }
 
     /**
@@ -340,44 +267,45 @@ class WebDAVDocmanFolder extends Sabre_DAV_Directory {
      * then upload another one with the same content and a new name
      * Which is very different from just renaming the directory
      *
-     * @param String $name New name of the folder
-     *
-     * @return void
+     * @param string $name New name of the folder
      */
-    function setName($name) {
-        if ($this->getUtils()->isWriteEnabled()) {
+    public function setName($name): void
+    {
+        if ($this->utils->isWriteEnabled()) {
             // Request
+            $params             = [];
             $params['action']   = 'update';
-            $params['group_id'] = $this->getProject()->getGroupId();
+            $params['group_id'] = $this->project->getGroupId();
             $params['confirm']  = true;
-            
+
             // Item details
-            $params['item']['id']    = $this->getItem()->getId();
+            $params['item']['id']    = $this->item->getId();
             $params['item']['title'] = $name;
-            
-            $this->getUtils()->processDocmanRequest(new WebDAV_Request($params));
+
+            $this->utils->processDocmanRequest(new WebDAV_Request($params));
         } else {
-            throw new Sabre_DAV_Exception_MethodNotAllowed($GLOBALS['Language']->getText('plugin_webdav_common', 'folder_denied_rename'));
+            throw new \Sabre\DAV\Exception\MethodNotAllowed($GLOBALS['Language']->getText('plugin_webdav_common', 'folder_denied_rename'));
         }
     }
 
-    /**
-     * Delete the folder
-     *
-     * @return void
-     */
-    function delete() {
-        if ($this->getUtils()->isWriteEnabled()) {
+    public function delete(): void
+    {
+        if ($this->utils->isWriteEnabled()) {
             // Request
+            $params             = [];
             $params['action']   = 'delete';
-            $params['group_id'] = $this->getProject()->getGroupId();
+            $params['group_id'] = $this->project->getGroupId();
             $params['confirm']  = true;
-            $params['id']       = $this->getItem()->getId();
-            $this->getUtils()->processDocmanRequest(new WebDAV_Request($params));
+            $params['id']       = $this->item->getId();
+            $this->utils->processDocmanRequest(new WebDAV_Request($params));
         } else {
-            throw new Sabre_DAV_Exception_Forbidden($GLOBALS['Language']->getText('plugin_webdav_common', 'file_denied_delete'));
+            throw new \Sabre\DAV\Exception\Forbidden($GLOBALS['Language']->getText('plugin_webdav_common', 'file_denied_delete'));
         }
+    }
+
+    public function userCanWrite(): bool
+    {
+        $docmanPermissionManager = $this->utils->getDocmanPermissionsManager($this->project);
+        return $this->utils->isWriteEnabled() && $docmanPermissionManager->userCanWrite($this->user, $this->item->getId());
     }
 }
-
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,22 +18,24 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Cardwall_UserPreferences_UserPreferencesDisplayUser implements Tracker_CardDisplayPreferences {
-    
-    const ASSIGNED_TO_USERNAME_PREFERENCE_NAME = 'AD_cardwall_assign_to_display_username_';
+class Cardwall_UserPreferences_UserPreferencesDisplayUser implements Tracker_CardDisplayPreferences
+{
 
-    const DISPLAY_USERNAMES                    = 0;
-    const DISPLAY_AVATARS                      = 1;
+    public const ASSIGNED_TO_USERNAME_PREFERENCE_NAME = 'AD_cardwall_assign_to_display_username_';
+
+    public const DISPLAY_USERNAMES = 0;
+    public const DISPLAY_AVATARS   = 1;
 
     /** @var bool */
     private $should_display_avatars;
 
-    public function __construct($should_display_avatars) {
+    public function __construct($should_display_avatars)
+    {
         $this->should_display_avatars = $should_display_avatars;
     }
-    
-    public function shouldDisplayAvatars() {
+
+    public function shouldDisplayAvatars()
+    {
         return $this->should_display_avatars;
     }
 }
-?>

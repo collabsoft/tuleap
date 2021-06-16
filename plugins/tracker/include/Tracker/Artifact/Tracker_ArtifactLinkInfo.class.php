@@ -1,41 +1,52 @@
 <?php
 /**
+ * Copyright Enalean (c) 2014 - Present. All rights reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright Enalean (c) 2014 - 2016. All rights reserved.
  *
  * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_ArtifactLinkInfo {
+use Tuleap\Tracker\Artifact\Artifact;
 
+class Tracker_ArtifactLinkInfo
+{
     protected $artifact_id;
     protected $keyword;
     protected $group_id;
     protected $tracker_id;
     protected $last_changeset_id;
-    private   $nature;
 
     /**
-     * @param integer $artifact_id
-     * @param string  $keyword
-     * @param integer $group_id
-     * @param integer $last_changeset_id
-     * @param string $nature
+     * @var string|null
      */
-    public function __construct($artifact_id, $keyword, $group_id, $tracker_id, $last_changeset_id, $nature) {
+    private $nature;
+
+    /**
+     * @var Artifact
+     */
+    private $artifact;
+
+    /**
+     * @param int $artifact_id
+     * @param string  $keyword
+     * @param int $group_id
+     * @param int $last_changeset_id
+     */
+    public function __construct($artifact_id, $keyword, $group_id, $tracker_id, $last_changeset_id, ?string $nature)
+    {
         $this->artifact_id       = $artifact_id;
         $this->keyword           = $keyword;
         $this->group_id          = $group_id;
@@ -44,73 +55,69 @@ class Tracker_ArtifactLinkInfo {
         $this->nature            = $nature;
     }
 
-    /**
-     * Instanciate a new object based on a artifact
-     *
-     * @param Tracker_Artifact $artifact
-     *
-     * @return Tracker_ArtifactLinkInfo
-     */
-    public static function buildFromArtifact(Tracker_Artifact $artifact, $nature) {
+    public static function buildFromArtifact(Artifact $artifact, string $nature): self
+    {
         $tracker = $artifact->getTracker();
 
         $changeset_id   = 0;
         $last_changeset = $artifact->getLastChangeset();
         if ($last_changeset) {
-            $changeset_id = $last_changeset->getId();
+            $changeset_id = (int) $last_changeset->getId();
         }
 
-        return new Tracker_ArtifactLinkInfo(
-            $artifact->getId(),
-            $tracker->getItemName(),
-            $tracker->getGroupId(),
-            $tracker->getId(),
-            $changeset_id,
-            $nature
-        );
+        return (
+            new Tracker_ArtifactLinkInfo(
+                $artifact->getId(),
+                $tracker->getItemName(),
+                $tracker->getGroupId(),
+                $tracker->getId(),
+                $changeset_id,
+                $nature
+            )
+        )->setArtifact($artifact);
     }
 
-    /**
-     * @return int the id of the artifact link
-     */
-    public function getArtifactId() {
-        return $this->artifact_id;
+    public function getArtifactId(): int
+    {
+        return (int) $this->artifact_id;
     }
 
     /**
      * @return string the keyword of the artifact link
      */
-    public function getKeyword() {
+    public function getKeyword()
+    {
         return $this->keyword;
     }
 
     /**
      * @return int the group_id of the artifact link
      */
-    public function getGroupId() {
+    public function getGroupId()
+    {
         return $this->group_id;
     }
 
-    /**
-     * @return int the tracker_id of the artifact link
-     */
-    public function getTrackerId() {
-        return $this->tracker_id;
+    public function getTrackerId(): int
+    {
+        return (int) $this->tracker_id;
     }
 
     /**
      * Returns the tracker this artifact belongs to
      *
-     * @return Tracker The tracker this artifact belongs to
+     * @return Tracker|null The tracker this artifact belongs to
      */
-    public function getTracker() {
+    public function getTracker()
+    {
         return TrackerFactory::instance()->getTrackerByid($this->tracker_id);
     }
 
     /**
      * @return int the last changeset_id of the artifact link
      */
-    public function getLastChangesetId() {
+    public function getLastChangesetId()
+    {
         return $this->last_changeset_id;
     }
 
@@ -124,13 +131,14 @@ class Tracker_ArtifactLinkInfo {
         return '<a class="cross-reference" href="' . $this->getUrl() . '">' . Codendi_HTMLPurifier::instance()->purify($this->getLabel()) . '</a>';
     }
 
-    public function getUrl() {
-        return get_server_url() . '/goto?'. http_build_query(
-            array(
+    public function getUrl()
+    {
+        return HTTPRequest::instance()->getServerUrl() . '/goto?' . http_build_query(
+            [
                 'key'      => $this->getKeyword(),
                 'val'      => $this->getArtifactId(),
                 'group_id' => $this->getGroupId()
-            )
+            ]
         );
     }
 
@@ -139,47 +147,60 @@ class Tracker_ArtifactLinkInfo {
      *
      * @return string the raw value of this artifact link
      */
-    public function getLabel() {
+    public function getLabel()
+    {
         return $this->getKeyword() . ' #' . $this->getArtifactId();
     }
 
-    public function getNature() {
+    public function getNature(): ?string
+    {
         return $this->nature;
     }
 
-    public function setNature($nature) {
+    public function setNature(?string $nature)
+    {
         $this->nature = $nature;
     }
 
     /**
      * Returns true is the current user can see the artifact
      *
-     * @return boolean
+     * @return bool
      */
-    public function userCanView(PFUser $user) {
+    public function userCanView(PFUser $user)
+    {
         $artifact = $this->getArtifact();
 
-        return $artifact->userCanView($user);
+        return $artifact !== null && $artifact->userCanView($user);
     }
 
-    /**
-     * @return Tracker_Artifact
-     */
-    public function getArtifact() {
-        return Tracker_ArtifactFactory::instance()->getArtifactById($this->artifact_id);
+    public function getArtifact(): ?Artifact
+    {
+        if (! $this->artifact) {
+            $this->artifact = Tracker_ArtifactFactory::instance()->getArtifactById($this->artifact_id);
+        }
+        return $this->artifact;
     }
 
-    public function __toString() {
+    private function setArtifact(Artifact $artifact): self
+    {
+        $this->artifact    = $artifact;
+        $this->artifact_id = $artifact->getId();
+        return $this;
+    }
+
+    public function __toString()
+    {
         return $this->getLabel();
     }
 
     public function shouldLinkBeHidden($nature)
     {
         $hide_artifact = false;
-        $params = array(
+        $params        = [
             'nature'        => $nature,
             'hide_artifact' => &$hide_artifact
-        );
+        ];
         EventManager::instance()->processEvent(
             Tracker_Artifact_ChangesetValue_ArtifactLinkDiff::HIDE_ARTIFACT,
             $params

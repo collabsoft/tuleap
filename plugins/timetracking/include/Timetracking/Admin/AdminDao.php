@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -49,5 +49,33 @@ class AdminDao extends DataAccessObject
         $this->getDB()->run($sql, $tracker_id);
 
         return $this->foundRows() > 0;
+    }
+
+    public function getProjectstWithEnabledTimetracking($limit, $offset)
+    {
+        $sql = 'SELECT DISTINCT groups.group_id
+                FROM plugin_timetracking_enabled_trackers
+                INNER JOIN tracker AS tracker
+                        ON tracker.id = plugin_timetracking_enabled_trackers.tracker_id
+                 INNER JOIN groups AS groups
+                        ON groups.group_id = tracker.group_id
+                WHERE groups.status = "A"
+                ORDER BY groups.group_name
+                LIMIT ?
+                OFFSET ?';
+
+        return $this->getDB()->run($sql, $limit, $offset);
+    }
+
+    public function getProjectTrackersWithEnabledTimetracking($project_id, $limit, $offset)
+    {
+        $sql = 'SELECT SQL_CALC_FOUND_ROWS *
+                FROM plugin_timetracking_enabled_trackers
+                INNER JOIN tracker AS tracker
+                        ON tracker.id = plugin_timetracking_enabled_trackers.tracker_id
+                WHERE tracker.group_id = ?
+                LIMIT ?, ?';
+
+        return $this->getDB()->run($sql, $project_id, $offset, $limit);
     }
 }

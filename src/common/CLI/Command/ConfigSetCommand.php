@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,39 +21,27 @@
 
 namespace Tuleap\CLI\Command;
 
-use ConfigDao;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Tuleap\Instrument\Prometheus\Prometheus;
+use Tuleap\Config\ConfigSet;
+use Tuleap\Config\InvalidConfigKeyException;
 
 class ConfigSetCommand extends Command
 {
-    const NAME = 'config-set';
-    /**
-     * @var ConfigDao
-     */
-    private $white_listed_keys = [
-        \ProjectManager::CONFIG_PROJECT_APPROVAL => true,
-        \ProjectManager::CONFIG_NB_PROJECTS_WAITING_FOR_VALIDATION_PER_USER => true,
-        \ProjectManager::CONFIG_NB_PROJECTS_WAITING_FOR_VALIDATION => true,
-        \ForgeAccess::ANONYMOUS_CAN_SEE_CONTACT => true,
-        \ForgeAccess::ANONYMOUS_CAN_SEE_SITE_HOMEPAGE => true,
-        \ForgeAccess::PROJECT_ADMIN_CAN_CHOOSE_VISIBILITY => true,
-        Prometheus::CONFIG_PROMETHEUS_PLATFORM => true,
-        Prometheus::CONFIG_PROMETHEUS_NODE_EXPORTER => true,
-    ];
-    /**
-     * @var ConfigDao
-     */
-    private $config_dao;
+    public const NAME = 'config-set';
 
-    public function __construct(ConfigDao $config_dao)
+    /**
+     * @var ConfigSet
+     */
+    private $config_set;
+
+    public function __construct(ConfigSet $config_set)
     {
         parent::__construct(self::NAME);
-        $this->config_dao = $config_dao;
+        $this->config_set = $config_set;
     }
 
     protected function configure()
@@ -63,21 +51,20 @@ class ConfigSetCommand extends Command
             ->addArgument('value', InputArgument::REQUIRED, 'Variable value');
     }
 
-    public function execute(InputInterface $input, OutputInterface $output)
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
-        $key = $input->getArgument('key');
+        try {
+            $key = $input->getArgument('key');
+            assert(is_string($key));
+            $value = $input->getArgument('value');
+            assert(is_string($value));
 
-        if (! $this->keyIsWhitelisted($key)) {
-            throw new InvalidArgumentException(self::NAME." only supports a subset of keys:\n* ".implode("\n* ", array_keys($this->white_listed_keys)));
+            $this->config_set->set($key, $value);
+        } catch (InvalidConfigKeyException $exception) {
+            $keys = $exception->getWhiteListedKeys();
+            sort($keys, SORT_STRING);
+            throw new InvalidArgumentException(self::NAME . " only supports a subset of keys:\n* " . implode("\n* ", $keys));
         }
-
-        $value = $input->getArgument('value');
-
-        $this->config_dao->save($key, $value);
-    }
-
-    private function keyIsWhitelisted($key)
-    {
-        return isset($this->white_listed_keys[$key]);
+        return 0;
     }
 }

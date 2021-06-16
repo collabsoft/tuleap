@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,7 +28,7 @@ class PackageMinimalRepresentationPaginatedCollection
     private $package_representations;
 
     /**
-     * @var integer
+     * @var int
      */
     private $total_size;
 

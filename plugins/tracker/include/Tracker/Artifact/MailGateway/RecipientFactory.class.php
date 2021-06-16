@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013-2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,15 +18,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
+
 /**
  * Builds instances of Tracker_Artifact_MailGateway_Recipient
  */
-class Tracker_Artifact_MailGateway_RecipientFactory {
+class Tracker_Artifact_MailGateway_RecipientFactory
+{
 
-    const ARTIFACT_ID_INDEX = 'artifact_id';
-    const USER_ID_INDEX     = 'user_id';
-    const HASH_INDEX        = 'hash';
-    const EMAIL_PATTERN     = '/
+    public const ARTIFACT_ID_INDEX = 'artifact_id';
+    public const USER_ID_INDEX     = 'user_id';
+    public const HASH_INDEX        = 'hash';
+    public const EMAIL_PATTERN     = '/
         <
         (?P<artifact_id>\d+)
         -
@@ -53,10 +56,10 @@ class Tracker_Artifact_MailGateway_RecipientFactory {
     private $host;
 
     public function __construct(
-            Tracker_ArtifactFactory $artifact_factory,
-            UserManager $user_manager,
-            $salt,
-            $host
+        Tracker_ArtifactFactory $artifact_factory,
+        UserManager $user_manager,
+        $salt,
+        $host
     ) {
         $this->artifact_factory = $artifact_factory;
         $this->user_manager     = $user_manager;
@@ -67,7 +70,8 @@ class Tracker_Artifact_MailGateway_RecipientFactory {
     /**
      * @return Tracker_Artifact_MailGateway_RecipientFactory
      */
-    public static function build() {
+    public static function build()
+    {
         $dao = new MailGatewaySaltDao();
         $row = $dao->searchMailSalt()->getRow();
 
@@ -88,10 +92,11 @@ class Tracker_Artifact_MailGateway_RecipientFactory {
      *
      * @return Tracker_Artifact_MailGateway_Recipient
      */
-    public function getFromEmail($email) {
+    public function getFromEmail($email)
+    {
         preg_match(self::EMAIL_PATTERN, $email, $email_parts);
-        $artifact = $this->getArtifact((int)$email_parts[self::ARTIFACT_ID_INDEX]);
-        $user     = $this->getUser((int)$email_parts[self::USER_ID_INDEX]);
+        $artifact = $this->getArtifact((int) $email_parts[self::ARTIFACT_ID_INDEX]);
+        $user     = $this->getUser((int) $email_parts[self::USER_ID_INDEX]);
 
         $this->checkHash($user, $artifact, $email_parts[self::HASH_INDEX]);
 
@@ -117,7 +122,7 @@ class Tracker_Artifact_MailGateway_RecipientFactory {
 
     private function getEmail(
         PFUser $user,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         Tracker_Artifact_Changeset $changeset
     ) {
         return $artifact->getId() . "-" .
@@ -127,7 +132,8 @@ class Tracker_Artifact_MailGateway_RecipientFactory {
             "@" . $this->host;
     }
 
-    private function getArtifact($artifact_id) {
+    private function getArtifact($artifact_id)
+    {
         $artifact = $this->artifact_factory->getArtifactById($artifact_id);
         if (! $artifact) {
             throw new Tracker_Artifact_MailGateway_ArtifactDoesNotExistException();
@@ -136,7 +142,8 @@ class Tracker_Artifact_MailGateway_RecipientFactory {
         return $artifact;
     }
 
-    private function getUser($user_id) {
+    private function getUser($user_id)
+    {
         $user = $this->user_manager->getUserById($user_id);
         if (! $user) {
             throw new Tracker_Artifact_MailGateway_RecipientUserDoesNotExistException();
@@ -147,7 +154,7 @@ class Tracker_Artifact_MailGateway_RecipientFactory {
 
     private function checkHash(
         PFUser $user,
-        Tracker_Artifact $artifact,
+        Artifact $artifact,
         $submitted_hash
     ) {
         if ($this->getHash($user, $artifact) != $submitted_hash) {
@@ -157,7 +164,7 @@ class Tracker_Artifact_MailGateway_RecipientFactory {
 
     private function getHash(
         PFUser $user,
-        Tracker_Artifact $artifact
+        Artifact $artifact
     ) {
         return md5($user->getId() . "-" . $artifact->getId() . "-" . $this->salt);
     }

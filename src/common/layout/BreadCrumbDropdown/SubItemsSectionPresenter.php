@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -36,7 +36,7 @@ class SubItemsSectionPresenter
     public $has_label;
 
     /**
-     * SubItemsSectionPresenter constructor.
+     *
      *
      * @param string                    $label
      * @param BreadCrumbLinkPresenter[] $links

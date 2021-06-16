@@ -3,7 +3,7 @@
  * Copyright (c) STMicroelectronics, 2006. All Rights Reserved.
  *
  * Originally written by Manuel Vacelet, 2006
- * 
+ *
  * This file is a part of Codendi.
  *
  * Codendi is free software; you can redistribute it and/or modify
@@ -20,101 +20,108 @@
  * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('Docman_SettingsDao.class.php');
+class Docman_SettingsBo
+{
+    public $row;
+    public $groupId;
+    public $dao;
 
-class Docman_SettingsBo {
-    var $row;
-    var $groupId;
-    var $dao;
-
-    function __construct($groupId) {
+    public function __construct($groupId)
+    {
         $this->groupId = $groupId;
-        $this->row = null;
-        $this->dao = null;
+        $this->row     = null;
+        $this->dao     = null;
     }
 
-    function &instance($groupId) {
+    public static function instance($groupId)
+    {
         static $_plugin_docman_settings_bo_i;
-        if(!isset($_plugin_docman_settings_bo_i[$groupId])) {
+        if (! isset($_plugin_docman_settings_bo_i[$groupId])) {
             $_plugin_docman_settings_bo_i[$groupId] = new Docman_SettingsBo($groupId);
         }
         return $_plugin_docman_settings_bo_i[$groupId];
     }
 
-    function &getDao() {
-        if($this->dao === null) {
+    public function &getDao()
+    {
+        if ($this->dao === null) {
             $this->dao = new Docman_SettingsDao(CodendiDataAccess::instance());
         }
         return $this->dao;
     }
 
-    function _cacheGroupSettings() {
-        if($this->row === null) {
-            $dao =& $this->getDao();
+    public function _cacheGroupSettings()
+    {
+        if ($this->row === null) {
+            $dao = $this->getDao();
             $dar = $dao->searchByGroupId($this->groupId);
-            if($dar && !$dar->isError() && $dar->valid()) {
+            if ($dar && ! $dar->isError() && $dar->valid()) {
                 $this->row = $dar->current();
             }
         }
     }
 
-    function getView() {
-        $this->_cacheGroupSettings();        
-
-        if(isset($this->row['view'])) {
-            return $this->row['view'];
-        }
-        else {
-            return false;
-        }
-    }
-
-    function getMetadataUsage($metadata) {
-        $this->_cacheGroupSettings();        
-
-        if(isset($this->row['use_'.$metadata])) {
-            return $this->row['use_'.$metadata];
-        }
-        else {
-            return false;
-        }
-    }
-
-    function settingsExist() {        
+    public function getView()
+    {
         $this->_cacheGroupSettings();
-        if($this->row === null) {
+
+        if (isset($this->row['view'])) {
+            return $this->row['view'];
+        } else {
             return false;
         }
-        else {
+    }
+
+    public function getMetadataUsage($metadata)
+    {
+        $this->_cacheGroupSettings();
+
+        if (isset($this->row['use_' . $metadata])) {
+            return $this->row['use_' . $metadata];
+        } else {
+            return false;
+        }
+    }
+
+    public function settingsExist()
+    {
+        $this->_cacheGroupSettings();
+        if ($this->row === null) {
+            return false;
+        } else {
             return true;
         }
     }
 
-    function updateView($view) {
-        $dao =& $this->getDao();
-        if($this->settingsExist()) {
+    public function updateView($view)
+    {
+        $dao = $this->getDao();
+        if ($this->settingsExist()) {
             return $dao->updateViewForGroupId($this->groupId, $view);
-        }
-        else {
+        } else {
             return $dao->create($this->groupId, $view);
         }
     }
-    
-    function updateMetadataUsage($label, $useIt) {
-        $dao =& $this->getDao();
-        if(!$this->settingsExist()) {            
+
+    public function updateMetadataUsage($label, $useIt)
+    {
+        $dao = $this->getDao();
+        if (! $this->settingsExist()) {
             $dao->create($this->groupId, 'Tree');
         }
         return $dao->updateMetadataUsageForGroupId($this->groupId, $label, $useIt);
     }
 
-    function cloneMetadataSettings($targetGroupId) {
-        if($this->settingsExist()) {
-            $dao =& $this->getDao();
-            $dao->create($targetGroupId,
-                         $this->getView(),
-                         $this->getMetadataUsage('obsolescence_date'),
-                         $this->getMetadataUsage('status'));
+    public function cloneMetadataSettings($targetGroupId)
+    {
+        if ($this->settingsExist()) {
+            $dao = $this->getDao();
+            $dao->create(
+                $targetGroupId,
+                $this->getView(),
+                $this->getMetadataUsage('obsolescence_date'),
+                $this->getMetadataUsage('status')
+            );
         }
     }
 
@@ -128,22 +135,23 @@ class Docman_SettingsBo {
      *
      * @access: public
      */
-    function exportMetadataUsage($dstGroupId) {
-        $dstBo =& Docman_SettingsBo::instance($dstGroupId);
+    public function exportMetadataUsage($dstGroupId)
+    {
+        $dstBo = self::instance($dstGroupId);
         $dstBo->_importMetadataUsage($this, 'obsolescence_date');
         $dstBo->_importMetadataUsage($this, 'status');
     }
-        
+
      /**
       * @access: private
       */
-    function _importMetadataUsage($srcBo, $label) {
-        if($srcBo->getMetadataUsage($label) == true &&
-           $this->getMetadataUsage($label) != true) {
+    public function _importMetadataUsage($srcBo, $label)
+    {
+        if (
+            $srcBo->getMetadataUsage($label) == true &&
+            $this->getMetadataUsage($label) != true
+        ) {
             $this->updateMetadataUsage($label, true);
         }
     }
-        
 }
-
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ class NotInComparison implements Term, Visitable, Comparison
 
     public function __construct(Searchable $searchable, InValueWrapper $value_wrapper)
     {
-        $this->searchable         = $searchable;
+        $this->searchable    = $searchable;
         $this->value_wrapper = $value_wrapper;
     }
 

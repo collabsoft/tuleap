@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,20 +23,22 @@ namespace Tuleap\Svn;
 
 use Backend;
 use ForgeConfig;
-use Logger;
+use Psr\Log\LoggerInterface;
+use Tuleap\DB\DBConnection;
 use Tuleap\Queue\QueueFactory;
 use Tuleap\System\ApacheServiceControl;
 use Tuleap\System\ServiceControl;
+use TuleapCfg\Command\ProcessFactory;
 use WrapperLogger;
 use Exception;
 
 class SvnrootUpdater
 {
-    const QUEUE_PREFIX = 'tuleap_svnroot_update';
-    const TOPIC        = 'tuleap.svn.svnroot.update';
+    public const QUEUE_PREFIX = 'tuleap_svnroot_update';
+    public const TOPIC        = 'tuleap.svn.svnroot.update';
 
     /**
-     * @var Logger
+     * @var LoggerInterface
      */
     private $logger;
 
@@ -44,16 +46,21 @@ class SvnrootUpdater
      * @var \Tuleap\Queue\PersistentQueue
      */
     private $queue;
+    /**
+     * @var DBConnection
+     */
+    private $db_connection;
 
-    public function __construct(Logger $logger)
+    public function __construct(LoggerInterface $logger, DBConnection $db_connection)
     {
-        $this->logger = new WrapperLogger($logger, 'svnroot_updater');
-        $this->queue  = QueueFactory::getPersistentQueue($this->logger, self::QUEUE_PREFIX);
+        $this->logger        = new WrapperLogger($logger, 'svnroot_updater');
+        $this->queue         = (new QueueFactory($this->logger))->getPersistentQueue(self::QUEUE_PREFIX);
+        $this->db_connection = $db_connection;
     }
 
     public function push()
     {
-        $this->logger->info('Send message to '.self::TOPIC);
+        $this->logger->info('Send message to ' . self::TOPIC);
         $this->queue->pushSinglePersistentMessage(self::TOPIC, 'Update');
         $this->logger->debug('Done');
     }
@@ -63,32 +70,35 @@ class SvnrootUpdater
      */
     public function listen($server_id)
     {
-        $this->logger->info("Wait for messages");
+        $this->logger->info("Wait for messages on " . get_class($this->queue));
 
-        $generate = function () {
+        $generate = function (): void {
+            $this->db_connection->reconnectAfterALongRunningProcess();
             ForgeConfig::set('svn_root_file', '/etc/httpd/conf.d/svnroot.conf');
 
             $apache_conf_generator = new ApacheConfGenerator(
-                (new ApacheServiceControl(
-                    new ServiceControl()
-                ))->disableInitUsage(),
-                Backend::instance('SVN')
+                new ApacheServiceControl(
+                    new ServiceControl(),
+                    new ProcessFactory()
+                ),
+                Backend::instanceSVN()
             );
             $apache_conf_generator->generate();
         };
 
+        $this->logger->debug('Re-generate conf at start');
         $generate();
 
         $logger = $this->logger;
 
-        $this->queue->listen(self::QUEUE_PREFIX.$server_id, self::TOPIC, function ($msg) use ($logger, $generate) {
+        $this->logger->debug('Waiting for new events');
+        $this->queue->listen(self::QUEUE_PREFIX . $server_id, self::TOPIC, static function (string $msg) use ($logger, $generate): void {
             try {
-                $logger->info("Received ", $msg->body);
+                $logger->info("Received " . $msg);
                 $generate();
-                $msg->delivery_info['channel']->basic_ack($msg->delivery_info['delivery_tag']);
                 $logger->info("Update completed");
             } catch (Exception $e) {
-                $logger->error("Caught exception ".get_class($e).": ".$e->getMessage());
+                $logger->error("Caught exception " . get_class($e) . ": " . $e->getMessage());
             }
         });
     }

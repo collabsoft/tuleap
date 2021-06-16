@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -39,8 +39,6 @@ class ProjectCategoriesDisplayController implements DispatchableWithRequest
     /**
      * Is able to process a request routed by FrontRouter
      *
-     * @param HTTPRequest $request
-     * @param BaseLayout $layout
      * @param array $variables
      * @throws NotFoundException
      * @throws ForbiddenException
@@ -52,20 +50,22 @@ class ProjectCategoriesDisplayController implements DispatchableWithRequest
             throw new ForbiddenException();
         }
 
-        $layout->includeFooterJavascriptFile('/scripts/tuleap/trovecat.js');
+        $include_assets = new \Tuleap\Layout\IncludeCoreAssets();
 
-        $csrf_token = new \CSRFSynchronizerToken('/admin/project-creation/categories');
-        $trove_dao = new TroveCatDao();
+        $layout->includeFooterJavascriptFile($include_assets->getFileURL('trovecat-admin.js'));
+
+        $csrf_token   = new \CSRFSynchronizerToken('/admin/project-creation/categories');
+        $trove_dao    = new TroveCatDao();
         $list_builder = new TroveCatHierarchyRetriever($trove_dao);
 
-        $last_parent    = array();
-        $already_seen   = array();
-        $trove_cat_list = array();
-        $hierarchy_ids  = array();
+        $last_parent    = [];
+        $already_seen   = [];
+        $trove_cat_list = [];
+        $hierarchy_ids  = [];
 
         $list_builder->retrieveFullHierarchy(0, $last_parent, $already_seen, $trove_cat_list, $hierarchy_ids);
 
-        $presenter  = new TroveCatListPresenter(
+        $presenter = new TroveCatListPresenter(
             new ProjectCreationNavBarPresenter('categories'),
             $trove_cat_list,
             $csrf_token
@@ -78,6 +78,5 @@ class ProjectCategoriesDisplayController implements DispatchableWithRequest
             'trovecatlist',
             $presenter
         );
-
     }
 }

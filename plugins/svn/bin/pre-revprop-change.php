@@ -1,7 +1,7 @@
 #!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright Enalean (c) 2016 - 2017. All rights reserved.
+ * Copyright Enalean (c) 2016 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -23,21 +23,21 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\Svn\AccessControl\AccessFileHistoryDao;
-use Tuleap\Svn\AccessControl\AccessFileHistoryFactory;
-use Tuleap\Svn\Admin\Destructor;
-use Tuleap\Svn\Dao;
-use Tuleap\Svn\Hooks\PreRevpropChange;
-use Tuleap\Svn\Repository\HookConfigRetriever;
-use Tuleap\Svn\Repository\HookConfigSanitizer;
-use Tuleap\Svn\Repository\HookDao;
-use Tuleap\Svn\Repository\RepositoryManager;
-use Tuleap\Svn\SvnAdmin;
-use Tuleap\Svn\SvnLogger;
+require_once __DIR__ . '/../../../src/www/include/pre.php';
+require_once __DIR__ . '/../include/svnPlugin.php';
+
+use Tuleap\SVN\AccessControl\AccessFileHistoryDao;
+use Tuleap\SVN\AccessControl\AccessFileHistoryFactory;
+use Tuleap\SVN\Repository\Destructor;
+use Tuleap\SVN\Dao;
+use Tuleap\SVN\Hooks\PreRevpropChange;
+use Tuleap\SVN\Repository\HookConfigRetriever;
+use Tuleap\SVN\Repository\HookConfigSanitizer;
+use Tuleap\SVN\Repository\HookDao;
+use Tuleap\SVN\Repository\RepositoryManager;
+use Tuleap\SVN\SvnAdmin;
 
 try {
-    require_once 'pre.php';
-
     $repository         = $argv[1];
     $propname           = $argv[4];
     $action             = $argv[5];
@@ -51,15 +51,15 @@ try {
         new RepositoryManager(
             new Dao(),
             ProjectManager::instance(),
-            new SvnAdmin(new System_Command(), new SvnLogger(), Backend::instance(Backend::SVN)),
-            new SvnLogger(),
+            new SvnAdmin(new System_Command(), SvnPlugin::getLogger(), Backend::instanceSVN()),
+            SvnPlugin::getLogger(),
             new System_Command(),
             new Destructor(
                 new Dao(),
-                new SvnLogger()
+                SvnPlugin::getLogger()
             ),
             EventManager::instance(),
-            Backend::instance(Backend::SVN),
+            Backend::instanceSVN(),
             new AccessFileHistoryFactory(new AccessFileHistoryDao())
         ),
         new HookConfigRetriever(new HookDao(), new HookConfigSanitizer())
@@ -69,6 +69,6 @@ try {
 
     exit(0);
 } catch (Exception $exception) {
-    fwrite (STDERR, $exception->getMessage());
+    fwrite(STDERR, $exception->getMessage());
     exit(1);
 }

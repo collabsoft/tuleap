@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,22 +20,21 @@
 
 namespace Tuleap\DynamicCredentials\REST;
 
-use Guzzle\Http\Exception\ClientErrorResponseException;
-
 require_once 'bootstrap.php';
 
 class DynamicCredentialsTest extends \RestBase
 {
-    const USERNAME         = 'forge__dynamic_credential-user1';
-    const USERNAME_EXPIRED = DynamicCredentialsTest::USERNAME . '-expired';
-    const PASSWORD         = 'password';
+    public const USERNAME         = 'forge__dynamic_credential-user1';
+    public const USERNAME_EXPIRED = self::USERNAME . '-expired';
+    public const PASSWORD         = 'password';
 
     public function testPOSTNewAccountAndLogin()
     {
         $expiration_date = new \DateTimeImmutable('+30 minutes');
 
         $this->createAccount(self::USERNAME, self::PASSWORD, $expiration_date);
-        $this->login(self::USERNAME, self::PASSWORD);
+        $response = $this->login(self::USERNAME, self::PASSWORD);
+        $this->assertSame(201, $response->getStatusCode());
     }
 
     public function testPOSTNewAccountAndLoginFailureWithExpiredAccount()
@@ -49,24 +48,20 @@ class DynamicCredentialsTest extends \RestBase
     public function testPOSTInvalidSignatureRejected()
     {
         $expiration_date = new \DateTimeImmutable('+30 minutes');
-        $expiration = $expiration_date->format(\DateTime::ATOM);
+        $expiration      = $expiration_date->format(\DateTime::ATOM);
 
-        try {
-            $this->getResponseWithoutAuth($this->client->post(
-                'dynamic_credentials',
-                null,
-                json_encode([
-                    'username'   => self::USERNAME . 'reject_me',
-                    'password'   => self::PASSWORD,
-                    'expiration' => $expiration,
-                    'signature'  => $this->getSignatureForPostAction('wrong_username', self::PASSWORD, $expiration)
-                ])
-            ));
-        } catch (ClientErrorResponseException $ex) {
-            $this->assertEquals(403, $ex->getResponse()->getStatusCode());
-            return;
-        }
-        $this->fail();
+        $response = $this->getResponseWithoutAuth($this->client->post(
+            'dynamic_credentials',
+            null,
+            json_encode([
+                'username'   => self::USERNAME . 'reject_me',
+                'password'   => self::PASSWORD,
+                'expiration' => $expiration,
+                'signature'  => $this->getSignatureForPostAction('wrong_username', self::PASSWORD, $expiration)
+            ])
+        ));
+
+        $this->assertEquals(403, $response->getStatusCode());
     }
 
 
@@ -76,38 +71,31 @@ class DynamicCredentialsTest extends \RestBase
      */
     public function testDELETEAccount()
     {
-        $uri = 'dynamic_credentials/' . urlencode(self::USERNAME) . '?' . http_build_query([
+        $uri      = 'dynamic_credentials/' . urlencode(self::USERNAME) . '?' . http_build_query([
                 'signature'  => $this->getSignatureForDeleteAction(self::USERNAME)
             ]);
-        $this->getResponseWithoutAuth($this->client->delete($uri));
+        $response = $this->getResponseWithoutAuth($this->client->delete($uri));
+        $this->assertSame(200, $response->getStatusCode());
     }
 
     public function testDELETEInvalidSignatureRejected()
     {
-        $uri = 'dynamic_credentials/' . urlencode(self::USERNAME . 'reject_me') . '?'  . http_build_query([
+        $uri      = 'dynamic_credentials/' . urlencode(self::USERNAME . 'reject_me') . '?'  . http_build_query([
                 'signature' => $this->getSignatureForDeleteAction('wrong_username')
             ]);
-        try {
-            $this->getResponseWithoutAuth($this->client->delete($uri));
-        } catch (ClientErrorResponseException $ex) {
-            $this->assertEquals(403, $ex->getResponse()->getStatusCode());
-            return;
-        }
-        $this->fail();
+        $response = $this->getResponseWithoutAuth($this->client->delete($uri));
+
+        $this->assertEquals(403, $response->getStatusCode());
     }
 
     public function testDELETENonExistingAccount()
     {
-        $uri = 'dynamic_credentials/' . urlencode(self::USERNAME. 'donotexist') . '?' . http_build_query([
-                'signature'  => $this->getSignatureForDeleteAction(self::USERNAME. 'donotexist')
+        $uri      = 'dynamic_credentials/' . urlencode(self::USERNAME . 'donotexist') . '?' . http_build_query([
+                'signature'  => $this->getSignatureForDeleteAction(self::USERNAME . 'donotexist')
             ]);
-        try {
-            $this->getResponseWithoutAuth($this->client->delete($uri));
-        } catch (ClientErrorResponseException $ex) {
-            $this->assertEquals(404, $ex->getResponse()->getStatusCode());
-            return;
-        }
-        $this->fail();
+        $response = $this->getResponseWithoutAuth($this->client->delete($uri));
+
+        $this->assertEquals(404, $response->getStatusCode());
     }
 
     /**
@@ -135,7 +123,7 @@ class DynamicCredentialsTest extends \RestBase
 
     private function login(string $username, string $password)
     {
-        $this->getResponseWithoutAuth($this->client->post(
+        return $this->getResponseWithoutAuth($this->client->post(
             'tokens',
             null,
             json_encode([
@@ -147,13 +135,9 @@ class DynamicCredentialsTest extends \RestBase
 
     private function ensureLoginFail(string $username, string $password)
     {
-        try {
-            $this->login($username, $password);
-        } catch (ClientErrorResponseException $ex) {
-            $this->assertEquals(401, $ex->getResponse()->getStatusCode());
-            return;
-        }
-        $this->fail();
+        $response = $this->login($username, $password);
+
+        $this->assertEquals(401, $response->getStatusCode());
     }
 
     private function getSignatureForPostAction(string $username, string $password, string $expiration_date): string

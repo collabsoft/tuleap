@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,62 +18,18 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class XML_Security {
-
-    public function enableExternalLoadOfEntities() {
-        return $this->setExternalLoadOfEntities(false);
-    }
-
-    /**
-     * Prevent XXE attacks
-     *
-     * Important facts:
-     * * not available for PHP 5.1.6
-     * * not thread safe (php-fpm)
-     *
-     * Useful links:
-     * https://www.owasp.org/index.php/XML_External_Entity_%28XXE%29_Processing
-     * https://bugs.php.net/bug.php?id=64938
-     *
-     * @return The previous value
-     */
-    public function disableExternalLoadOfEntities() {
-        return $this->setExternalLoadOfEntities(true);
-    }
-
-    private function setExternalLoadOfEntities($value) {
-        if ($this->canExternalLoadingBeDisabled()) {
-            return libxml_disable_entity_loader($value);
+/**
+ * @deprecated
+ */
+class XML_Security
+{
+    public static function enableExternalLoadOfEntities(callable $callback): void
+    {
+        \libxml_disable_entity_loader(false); // phpcs:ignore Generic.PHP.ForbiddenFunctions.Found
+        try {
+            $callback();
+        } finally {
+            \libxml_disable_entity_loader(true); // phpcs:ignore Generic.PHP.ForbiddenFunctions.Found
         }
-    }
-
-    /**
-     * @param string $filename
-     *
-     * @return SimpleXMLElement
-     */
-    public function loadFile($filename) {
-        $xml_string  = file_get_contents($filename);
-
-        return $this->loadString($xml_string);
-    }
-
-    /**
-     * @param string $xml_string
-     *
-     * @return SimpleXMLElement
-     */
-    public function loadString($xml_string) {
-        $previous_setting = $this->disableExternalLoadOfEntities();
-
-        $xml_element = simplexml_load_string($xml_string);
-
-        $this->setExternalLoadOfEntities($previous_setting);
-
-        return $xml_element;
-    }
-
-    private function canExternalLoadingBeDisabled() {
-        return function_exists('libxml_disable_entity_loader');
     }
 }

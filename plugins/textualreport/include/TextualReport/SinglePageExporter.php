@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,7 +20,6 @@
 
 namespace Tuleap\TextualReport;
 
-use PDOStatement;
 use PFUser;
 use TemplateRenderer;
 use Tracker;
@@ -43,9 +42,7 @@ class SinglePageExporter
     }
 
     /**
-     * @param Tracker $tracker
      * @param array   $ordered_artifact_rows
-     * @param PFUser  $current_user
      * @param string  $server_url
      */
     public function exportAsSinglePage(
@@ -65,16 +62,17 @@ class SinglePageExporter
 
     private function sendFileDownloadHeaders(Tracker $tracker)
     {
-        $file_name = str_replace(' ', '_', 'artifact_' . $tracker->getItemName());
+        $file_name  = str_replace(' ', '_', 'artifact_' . $tracker->getItemName());
         $file_name .= '_' . $tracker->getProject()->getUnixName() . '.html';
         header('Content-Disposition: attachment; filename="' . $this->purifyFileName($file_name) . '"');
         header('Content-type: text/html');
-        header('Content-Security-Policy: default-src \'none\'; frame-ancestors \'none\'; form-action \'none\'');
         header('X-DNS-Prefetch-Control: off');
     }
 
     /**
      * @return string
+     *
+     * @psalm-taint-escape header
      */
     private function purifyFileName($file_name)
     {

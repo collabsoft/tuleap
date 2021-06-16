@@ -1,39 +1,38 @@
 <?php
 /**
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
- * This file is a part of Codendi.
+ * This file is a part of Tuleap.
  *
- * Codendi is free software; you can redistribute it and/or modify
+ * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Codendi is distributed in the hope that it will be useful,
+ * Tuleap is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Codendi. If not, see <http://www.gnu.org/licenses/>.
+ * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-require_once('common/dao/CodendiDataAccess.class.php');
-require_once('common/user/UserManager.class.php');
-require_once('Docman_TokenDao.class.php');
 
 /**
- *  Docman_Token 
+ *  Docman_Token
  */
-class Docman_Token {
-    var $tok;
+class Docman_Token
+{
+    public $tok;
     /**
      * Generate a random token for the current user.
      * This token is stored with the referer.
-     * @return the generated 
+     * @return the generated
      */
-    function __construct() {
+    public function __construct()
+    {
         $tok     = null;
         $user_id = $this->_getCurrentUserId();
         $referer = $this->_getReferer();
@@ -50,25 +49,26 @@ class Docman_Token {
                         $args['action'] == 'details'
                         &&
                         (
-                            !isset($args['section']) //Properties
+                            ! isset($args['section']) //Properties
                             ||
                             $args['section'] == 'history' //History
                         )
                     )
                 );
                 if ($is_valid) {
-                    $this->tok = md5(uniqid(rand(), true));
+                    $this->tok = bin2hex(random_bytes(16));
                     $dao       = $this->_getDao();
                     $dao->create($user_id, $this->tok, $referer);
                 }
             }
         }
     }
-    /* static */ function retrieveUrl($token) {
-        $url  = null;
-        $um   = UserManager::instance();
-        $dao  = new Docman_TokenDao(CodendiDataAccess::instance());
-        $user = $um->getCurrentUser();
+    /* static */ public function retrieveUrl($token)
+    {
+        $url     = null;
+        $um      = UserManager::instance();
+        $dao     = new Docman_TokenDao(CodendiDataAccess::instance());
+        $user    = $um->getCurrentUser();
         $user_id = $user->getId();
         if ($user_id) {
             $dar = $dao->searchUrl($user_id, $token);
@@ -80,26 +80,28 @@ class Docman_Token {
         }
         return $url;
     }
-    
-    function getToken() {
+
+    public function getToken()
+    {
         return $this->tok;
     }
-    protected function _getDao() {
+    protected function _getDao()
+    {
         $d = new Docman_TokenDao(CodendiDataAccess::instance());
         return $d;
     }
-    function _getReferer() {
+    public function _getReferer()
+    {
         return isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
     }
-    function _getCurrentUserId() {
+    public function _getCurrentUserId()
+    {
         $um   = UserManager::instance();
         $user = $um->getCurrentUser();
         return $user->isAnonymous() ? null : $user->getId();
     }
-    function _getHTTPRequest() {
+    public function _getHTTPRequest()
+    {
         return HTTPRequest::instance();
     }
 }
-
-
-?>

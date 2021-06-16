@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2014. All rights reserved
+ * Copyright (c) Enalean SAS 2014 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,16 +19,20 @@
 /**
  * Add a table to store UGroup permissions that are valid for all the forge
  */
-class b201403061540_add_forge_permissions_table extends ForgeUpgrade_Bucket {
-    public function description() {
+class b201403061540_add_forge_permissions_table extends ForgeUpgrade_Bucket
+{
+    public function description()
+    {
         return "Add a table to store UGroup permissions that are valid for all the forge and update ugroup table";
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
+    public function up()
+    {
         $sql = "CREATE TABLE IF NOT EXISTS ugroup_forge_permission (
                     ugroup_id INT(11) NOT NULL,
                     permission_id INT(11) NOT NULL,
@@ -51,5 +55,3 @@ class b201403061540_add_forge_permissions_table extends ForgeUpgrade_Bucket {
         }
     }
 }
-
-?>

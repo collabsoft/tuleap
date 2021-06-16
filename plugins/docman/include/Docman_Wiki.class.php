@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017-2018. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,46 +19,48 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('Docman_Document.class.php');
-
 /**
  * Wiki is a transport object (aka container) used to share data between
  * Model/Controler and View layer of the application
  */
-class Docman_Wiki extends Docman_Document {
-    
-    function __construct($data = null) {
+class Docman_Wiki extends Docman_Document
+{
+
+    public function __construct($data = null)
+    {
         parent::__construct($data);
     }
-    
-    var $pagename;
-    function getPagename() { 
-        return $this->pagename; 
+
+    public $pagename;
+    public function getPagename()
+    {
+        return $this->pagename;
     }
-    function setPagename($pagename) { 
+    public function setPagename($pagename)
+    {
         $this->pagename = $pagename;
     }
 
     public function getType()
     {
-        return $GLOBALS['Language']->getText('plugin_docman', 'doc_type_wiki');
+        return dgettext('tuleap-docman', 'Wiki');
     }
 
-    function initFromRow($row) {
+    public function initFromRow($row)
+    {
         parent::initFromRow($row);
         $this->setPagename($row['wiki_page']);
     }
-    function toRow() {
-        $row = parent::toRow();
+    public function toRow()
+    {
+        $row              = parent::toRow();
         $row['wiki_page'] = $this->getPagename();
         $row['item_type'] = PLUGIN_DOCMAN_ITEM_TYPE_WIKI;
         return $row;
     }
 
-    public function accept($visitor, $params = array())
+    public function accept($visitor, $params = [])
     {
         return $visitor->visitWiki($this, $params);
     }
 }
-
-?>

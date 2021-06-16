@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean 2017-2018. All rights reserved
+ * Copyright (c) Enalean 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -22,20 +22,23 @@
 use Tuleap\Dashboard\Project\ProjectDashboardController;
 use Tuleap\Dashboard\User\UserDashboardController;
 
-abstract class HudsonWidget extends Widget {
+abstract class HudsonWidget extends Widget
+{
 
     /**
      * @var MinimalHudsonJobFactory
      */
     private $minimal_hudson_job_factory;
 
-    public function __construct($widget_id, MinimalHudsonJobFactory $factory) {
+    public function __construct($widget_id, MinimalHudsonJobFactory $factory)
+    {
         parent::__construct($widget_id);
         $this->minimal_hudson_job_factory = $factory;
     }
 
-    function getCategory() {
-        return 'ci';
+    public function getCategory()
+    {
+        return dgettext('tuleap-hudson', 'Continuous integration');
     }
 
     protected function getAvailableJobs()
@@ -57,7 +60,8 @@ abstract class HudsonWidget extends Widget {
         );
     }
 
-    function isAjax() {
+    public function isAjax()
+    {
         return true;
     }
 }

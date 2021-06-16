@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,11 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 $unsigned_int_validator = new Valid_UInt();
 if ($argc !== 2 || ! $unsigned_int_validator->validate($argv[1])) {
-    fwrite(STDERR, "Usage: {$argv[0]} number_of_months_to_keep". PHP_EOL);
+    fwrite(STDERR, "Usage: {$argv[0]} number_of_months_to_keep" . PHP_EOL);
     exit(1);
 }
 

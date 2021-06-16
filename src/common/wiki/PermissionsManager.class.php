@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,6 +18,9 @@
  * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+use Tuleap\PHPWiki\WikiPage;
+use Tuleap\Project\UGroupLiteralizer;
 
 /*
  * I extract permissions according wiki page rights, wiki service rights
@@ -54,10 +57,11 @@
  *
  */
 
-class Wiki_PermissionsManager {
+class Wiki_PermissionsManager
+{
 
-    const WIKI_PERMISSION_READ         = 'WIKIPAGE_READ';
-    const SERVICE_WIKI_PERMISSION_READ = 'WIKI_READ';
+    public const WIKI_PERMISSION_READ         = 'WIKIPAGE_READ';
+    public const SERVICE_WIKI_PERMISSION_READ = 'WIKI_READ';
 
     /** @var PermissionsManager */
     private $permission_manager;
@@ -78,7 +82,8 @@ class Wiki_PermissionsManager {
         $this->literalizer        = $literalizer;
     }
 
-    public function getFromattedUgroupsThatCanReadWikiPage(WikiPage $wiki_page) {
+    public function getFromattedUgroupsThatCanReadWikiPage(WikiPage $wiki_page)
+    {
         $project    = $this->project_manager->getProject($wiki_page->getGid());
         $ugroup_ids = $this->permission_manager->getAuthorizedUgroupIds(
             $wiki_page->getId(),
@@ -91,10 +96,11 @@ class Wiki_PermissionsManager {
         return $this->literalizer->ugroupIdsToString($ugroup_ids, $project);
     }
 
-    private function filterWikiPagePermissionsAccordingToService(Project $project, array $wiki_page_ugroup_ids) {
+    private function filterWikiPagePermissionsAccordingToService(Project $project, array $wiki_page_ugroup_ids)
+    {
         $wiki_service_ugroup_ids = $this->getWikiServicePermissions($project);
 
-        foreach($wiki_service_ugroup_ids as $wiki_service_ugroup_id) {
+        foreach ($wiki_service_ugroup_ids as $wiki_service_ugroup_id) {
             $this->checkServiceOverridesPagePermission($wiki_page_ugroup_ids, $wiki_service_ugroup_id);
         }
 
@@ -105,19 +111,20 @@ class Wiki_PermissionsManager {
         return array_merge($wiki_page_ugroup_ids, $this->getWikiAdminsGroups());
     }
 
-    private function checkServiceOverridesPagePermission(array &$wiki_page_ugroup_ids, $wiki_service_ugroup_id) {
-        foreach($wiki_page_ugroup_ids as $key => $wiki_page_ugroup_id) {
-
+    private function checkServiceOverridesPagePermission(array &$wiki_page_ugroup_ids, $wiki_service_ugroup_id)
+    {
+        foreach ($wiki_page_ugroup_ids as $key => $wiki_page_ugroup_id) {
             $comparable_wiki_page_ugroup_id    = $this->getComparableUGroupId($wiki_page_ugroup_id);
             $comparable_wiki_service_ugroup_id = $this->getComparableUGroupId($wiki_service_ugroup_id);
 
-            if ((int)$comparable_wiki_service_ugroup_id > (int)$comparable_wiki_page_ugroup_id) {
+            if ((int) $comparable_wiki_service_ugroup_id > (int) $comparable_wiki_page_ugroup_id) {
                 unset($wiki_page_ugroup_ids[$key]);
             }
         }
     }
 
-    private function filterWikiPagePermissionsAccordingToProject(Project $project, $ugroup_ids) {
+    private function filterWikiPagePermissionsAccordingToProject(Project $project, $ugroup_ids)
+    {
         if (! $project->isPublic()) {
             $ugroup_ids = array_diff($ugroup_ids, $this->getNonProjectMembersGroups());
         }
@@ -130,8 +137,9 @@ class Wiki_PermissionsManager {
         return $this->permission_manager->getAuthorizedUgroupIds($project->getID(), self::SERVICE_WIKI_PERMISSION_READ);
     }
 
-    private function getNonProjectMembersGroups() {
-        return array(ProjectUGroup::REGISTERED, ProjectUGroup::ANONYMOUS);
+    private function getNonProjectMembersGroups()
+    {
+        return [ProjectUGroup::REGISTERED, ProjectUGroup::ANONYMOUS];
     }
 
     /**
@@ -139,7 +147,7 @@ class Wiki_PermissionsManager {
      */
     public function getWikiAdminsGroups()
     {
-        return array(ProjectUGroup::PROJECT_ADMIN, ProjectUGroup::WIKI_ADMIN);
+        return [ProjectUGroup::PROJECT_ADMIN, ProjectUGroup::WIKI_ADMIN];
     }
 
     /**
@@ -147,7 +155,8 @@ class Wiki_PermissionsManager {
      *
      * @return int
      */
-    private function getComparableUGroupId($comparable_ugroup_id) {
+    private function getComparableUGroupId($comparable_ugroup_id)
+    {
         if ($comparable_ugroup_id > 100) {
             return ProjectUGroup::PROJECT_MEMBERS;
         }
@@ -155,7 +164,8 @@ class Wiki_PermissionsManager {
         return $comparable_ugroup_id;
     }
 
-    public function isUgroupUsed($ugroup_id, $project_id) {
+    public function isUgroupUsed($ugroup_id, $project_id)
+    {
         $project = $this->project_manager->getProject($project_id);
         if (! $project->usesWiki()) {
             return false;

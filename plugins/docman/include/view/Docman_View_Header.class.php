@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
- * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,10 +19,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* abstract */ class Docman_View_Header extends Docman_View_View {
+/* abstract */ class Docman_View_Header extends Docman_View_View
+{
 
-    function _header($params) {
-        if (!headers_sent()) {
+    public function _header($params)
+    {
+        if (! headers_sent()) {
             header("Cache-Control: no-store, no-cache, must-revalidate"); // HTTP/1.1
             header("Expires: Mon, 26 Jul 1997 05:00:00 GMT"); // Date in the past
         }
@@ -33,8 +35,10 @@
             $htmlParams['title'] = $this->_getTitle($params);
         }
 
-        $htmlParams                 = array_merge($htmlParams, $this->_getAdditionalHtmlParams($params));
-        $htmlParams['service_name'] = $params['docman']->plugin->getServiceShortname();
+        $htmlParams = array_merge($htmlParams, $this->_getAdditionalHtmlParams($params));
+        if (isset($params['docman'])) {
+            $htmlParams['service_name'] = $params['docman']->plugin->getServiceShortname();
+        }
 
         if (isset($params['pv']) && $params['pv'] > 0) {
             $htmlParams['pv'] = $params['pv'];
@@ -42,8 +46,8 @@
         } else {
             $project = $this->getProjectFromParams($params);
             if ($project) {
-                /** @var Tuleap\Docman\ServiceDocman $service */
                 $service = $project->getService($htmlParams['service_name']);
+                \assert($service instanceof Tuleap\Docman\ServiceDocman);
                 if ($service) {
                     $service->displayHeader($htmlParams['title'], [], $this->getToolbar($params));
                 } else {
@@ -52,6 +56,7 @@
                 }
             } else {
                 $GLOBALS['HTML']->includeCalendarScripts();
+                $htmlParams['body_class'] = ['docman-body'];
                 site_header($htmlParams);
             }
         }
@@ -59,34 +64,49 @@
 
     protected function getToolbar(array $params)
     {
-        return array();
+        return [];
     }
 
-    /* protected */ function _getTitle($params) {
-        $title = '';
+    /* protected */ public function _getTitle($params)
+    {
+        $title   = '';
         $project = $this->getProjectFromParams($params);
         if ($project) {
-            $title .= $project->getPublicName().' - ';
+            $title .= Codendi_HTMLPurifier::instance()->purify($project->getPublicName()) . ' - ';
         }
-        $title .= $GLOBALS['Language']->getText('plugin_docman','title');
+        $title .= dgettext('tuleap-docman', 'Project Documentation');
 
         return $title;
     }
 
-    /* protected */ function _footer($params) {
-        if(isset($params['pv']) && $params['pv'] > 0) {
-            $GLOBALS['HTML']->pv_footer(array());
+    protected function getUnconvertedTitle(array $params)
+    {
+        $title   = '';
+        $project = $this->getProjectFromParams($params);
+        if ($project) {
+            $title .= $project->getPublicName() . ' - ';
         }
-        else {
-            $GLOBALS['HTML']->footer(array());
+        $title .= dgettext('tuleap-docman', 'Project Documentation');
+
+        return $title;
+    }
+
+    /* protected */ public function _footer($params)
+    {
+        if (isset($params['pv']) && $params['pv'] > 0) {
+            $GLOBALS['HTML']->pv_footer([]);
+        } else {
+            $GLOBALS['HTML']->footer([]);
         }
     }
 
-    /* protected */ function _getAdditionalHtmlParams($params) {
-        return  array();
+    /* protected */ public function _getAdditionalHtmlParams($params)
+    {
+        return [];
     }
 
-    /* protected */ function _feedback($params) {
+    /* protected */ public function _feedback($params)
+    {
         //$this->_controller->feedback->display();
     }
 
@@ -95,7 +115,7 @@
         $project_id = null;
         if (isset($params['group_id'])) {
             $project_id = $params['group_id'];
-        } else if (isset($params['item']) && $params['item'] != null) {
+        } elseif (isset($params['item']) && $params['item'] != null) {
             $project_id = $params['item']->getGroupId();
         }
 

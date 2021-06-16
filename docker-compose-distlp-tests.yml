@@ -2,7 +2,6 @@ version: "2"
 
 services:
   test-cli:
-    container_name: ${BUILD_TAG}tuleap_runtests_test
     image: tuleap-run-tests-v2
     build:
       context: tests/e2e/distlp/DockerImage
@@ -17,9 +16,12 @@ services:
       - external-connectivity
 
   test-cypress:
-    container_name: ${BUILD_TAG}tuleap_runtests_test-e2e
     build:
-      context: ./tests/e2e/DockerImage
+      context: ./tests/e2e/docker
+      dockerfile: run-tests.dockerfile
+      args:
+        DOCKER_REGISTRY: ${DOCKER_REGISTRY:-docker.io}
+        CYPRESS_VERSION: $CYPRESS_VERSION
     command: /tuleap/tests/e2e/distlp/cypress/run.sh
     volumes:
       - .:/tuleap
@@ -31,8 +33,7 @@ services:
       - external-connectivity
 
   reverse-proxy:
-    container_name: ${BUILD_TAG}tuleap_runtests_reverse-proxy
-    image: enalean/tuleap-reverseproxy:distlp-1.2
+    image: ${DOCKER_REGISTRY:-docker.io}/enalean/tuleap-reverseproxy:distlp-1.5
     command: /tuleap/tools/distlp/reverse-proxy/run.sh
     volumes:
       - .:/tuleap
@@ -44,42 +45,39 @@ services:
       - tuleap
 
   backend-web:
-    container_name: ${BUILD_TAG}tuleap_runtests_backend-web
-    image: enalean/tuleap-aio-dev:c6-php56-nginx-v1.12
-    environment:
-      RUN_COMMAND: "/opt/remi/php56/root/usr/bin/php /usr/share/tuleap/tools/distlp/backend-web/run.php test"
-      MYSQL_ROOT_PASSWORD: DumpPass4Tests
-      LDAP_MANAGER_PASSWORD: DumpPass4Tests
-      VIRTUAL_HOST: reverse-proxy
+    image: ${DOCKER_REGISTRY:-docker.io}/enalean/tuleap-aio-dev:c7-php74-nginx-v2
     volumes:
       - .:/usr/share/tuleap
       - tests-tuleap-data:/data
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - ./tests/e2e/distlp/environment-backend-web:/root/.tuleap_env:ro
+    tmpfs: /run
     depends_on:
       - ldap
       - db
-      - rabbitmq
+      - redis
     networks:
       - tuleap
 
   backend-svn:
-    container_name: ${BUILD_TAG}tuleap_runtests_backend-svn
-    image: enalean/tuleap-dev:1.8
+    image: ${DOCKER_REGISTRY:-docker.io}/enalean/tuleap-aio-dev:c7-php74-nginx-v2
     command: /usr/share/tuleap/tools/distlp/backend-svn/backend-svn.sh
     volumes:
       - .:/usr/share/tuleap
       - tests-tuleap-data:/data
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    tmpfs: /run
     environment:
       MYSQL_ROOT_PASSWORD: DumpPass4Tests
     depends_on:
       - ldap
       - db
-      - rabbitmq
+      - redis
     networks:
       - tuleap
 
   ldap:
-    container_name: ${BUILD_TAG}tuleap_runtests_ldap
-    image: enalean/ldap
+    image: ${DOCKER_REGISTRY:-docker.io}/enalean/ldap
     environment:
       LDAP_ROOT_PASSWORD: DumpPass4Tests
       LDAP_MANAGER_PASSWORD: DumpPass4Tests
@@ -89,25 +87,21 @@ services:
       - tuleap
 
   db:
-    container_name: ${BUILD_TAG}tuleap_runtests_db
-    image: mysql:5.5
+    image: ${DOCKER_REGISTRY:-docker.io}/mysql:5.7
     environment:
       MYSQL_ROOT_PASSWORD: DumpPass4Tests
     volumes:
       - tests-db-data:/var/lib/mysql
+      - ./src/etc/tuleap-mysql57-dev.cnf:/etc/mysql/mysql.conf.d/tuleap.cnf:ro,cached
     networks:
       - tuleap
 
-  rabbitmq:
-    container_name: ${BUILD_TAG}tuleap_runtests_rabbitmq
-    image: rabbitmq:3.6
-    volumes:
-      - tests-rabbitmq-data:/var/lib/rabbitmq
+  redis:
+    image: ${DOCKER_REGISTRY:-docker.io}/redis:3.2
     networks:
-      - tuleap
+     - tuleap
 
 volumes:
-  tests-rabbitmq-data:
   tests-db-data:
   tests-ldap-data:
   tests-tuleap-data:

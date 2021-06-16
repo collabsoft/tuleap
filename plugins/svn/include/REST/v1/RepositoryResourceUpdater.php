@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,15 +20,16 @@
 
 namespace Tuleap\SVN\REST\v1;
 
-use Tuleap\Svn\AccessControl\AccessFileHistoryCreator;
-use Tuleap\Svn\AccessControl\AccessFileHistoryFactory;
-use Tuleap\Svn\Admin\ImmutableTag;
-use Tuleap\Svn\Admin\ImmutableTagCreator;
-use Tuleap\Svn\Admin\ImmutableTagFactory;
-use Tuleap\Svn\Admin\MailNotificationManager;
-use Tuleap\Svn\Repository\HookConfigUpdator;
-use Tuleap\Svn\Repository\Repository;
-use Tuleap\Svn\Repository\Settings;
+use SVN_AccessFile_Writer;
+use Tuleap\SVN\AccessControl\AccessFileHistoryCreator;
+use Tuleap\SVN\AccessControl\AccessFileHistoryFactory;
+use Tuleap\SVN\Admin\ImmutableTag;
+use Tuleap\SVN\Admin\ImmutableTagCreator;
+use Tuleap\SVN\Admin\ImmutableTagFactory;
+use Tuleap\SVN\Admin\MailNotificationManager;
+use Tuleap\SVN\Repository\HookConfigUpdator;
+use Tuleap\SVN\Repository\Repository;
+use Tuleap\SVN\Repository\Settings;
 
 class RepositoryResourceUpdater
 {
@@ -93,7 +94,12 @@ class RepositoryResourceUpdater
 
         $current_version = $this->access_file_history_factory->getCurrentVersion($repository);
         if ($current_version->getContent() !== $settings->getAccessFileContent()) {
-            $this->access_file_history_creator->create($repository, $settings->getAccessFileContent(), time());
+            $this->access_file_history_creator->create(
+                $repository,
+                $settings->getAccessFileContent(),
+                time(),
+                new SVN_AccessFile_Writer($repository->getSystemPath())
+            );
         }
 
         if ($this->notification_update_checker->hasNotificationChanged($repository, $settings->getMailNotification())) {

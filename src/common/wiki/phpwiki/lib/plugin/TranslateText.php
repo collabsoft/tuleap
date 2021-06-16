@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: TranslateText.php,v 1.5 2004/07/08 20:30:07 rurban Exp $');
 /*
  Copyright 2004 $ThePhpWikiProgrammingTeam
@@ -37,48 +38,58 @@ rcs_id('$Id: TranslateText.php,v 1.5 2004/07/08 20:30:07 rurban Exp $');
 
 require_once("lib/plugin/_WikiTranslation.php");
 
-class WikiPlugin_TranslateText
-extends WikiPlugin__WikiTranslation
+class WikiPlugin_TranslateText extends WikiPlugin__WikiTranslation
 {
-    function getName() {
+    public function getName()
+    {
         return _("TranslateText");
     }
 
-    function getDescription() {
+    public function getDescription()
+    {
         return _("Define a translation for a specified text");
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.5 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.5 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return 
-            array( 'lang'      => false,
+    public function getDefaultArguments()
+    {
+        return [ 'lang'      => false,
                    'pagename'  => '[pagename]',
                    'translate' => false,
-                 );
+                 ];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         extract($this->getArgs($argstr, $request));
-        if (!$lang)
+        if (! $lang) {
             return $this->error(
-                _("This internal action page cannot viewed.")."\n".
-                _("You can only use it via the _WikiTranslation plugin."));
-           
+                _("This internal action page cannot viewed.") . "\n" .
+                _("You can only use it via the _WikiTranslation plugin.")
+            );
+        }
+
         $this->lang = $lang;
         //action=save
-        if (!empty($translate) and isset($translate['submit']) and $request->isPost()) {
+        if (! empty($translate) and isset($translate['submit']) and $request->isPost()) {
             $trans = $translate["content"];
             if (empty($trans) or $trans == $pagename) {
-                $header = HTML(HTML::h2(_("Translation Error!")),
-                               HTML::p(_("Your translated text is either empty or equal to the untranslated text. Please try again.")));
+                $header = HTML(
+                    HTML::h2(_("Translation Error!")),
+                    HTML::p(_("Your translated text is either empty or equal to the untranslated text. Please try again."))
+                );
             } else {
                 //save translation in a users subpage
-                $user = $request->getUser();
-                $homepage = $user->_HomePagehandle;
+                $user          = $request->getUser();
+                $homepage      = $user->_HomePagehandle;
                 $transpagename = $homepage->getName() . SUBPAGE_SEPARATOR . _("ContributedTranslations");
 
                 $page    = $dbi->getPage($transpagename);
@@ -89,52 +100,73 @@ extends WikiPlugin__WikiTranslation
                     $meta = $current->_data;
                 } else {
                     $text = '';
-                    $meta = array('markup' => 2.0,
-                                  'author' => $user->getId());
+                    $meta = ['markup' => 2.0,
+                                  'author' => $user->getId()];
                 }
-                $text .= $user->getId() . " " . Iso8601DateTime() . "\n" .
-                         "* " . sprintf(_("Translate '%s' to '%s' in *%s*"),
-                                        $pagename, $trans, $lang);
-                $text .= "\n  <verbatim>locale/po/$lang.po:\n  msgid \"".$pagename."\"\n  msgstr \"".$trans."\"\n  </verbatim>";
-                $meta['summary'] = sprintf(_("Translate %s to %s in %s"),
-                                           substr($pagename,0,15),substr($trans,0,15),$lang);
+                $text           .= $user->getId() . " " . Iso8601DateTime() . "\n" .
+                         "* " . sprintf(
+                             _("Translate '%s' to '%s' in *%s*"),
+                             $pagename,
+                             $trans,
+                             $lang
+                         );
+                $text           .= "\n  <verbatim>locale/po/$lang.po:\n  msgid \"" . $pagename . "\"\n  msgstr \"" . $trans . "\"\n  </verbatim>";
+                $meta['summary'] = sprintf(
+                    _("Translate %s to %s in %s"),
+                    substr($pagename, 0, 15),
+                    substr($trans, 0, 15),
+                    $lang
+                );
                 $page->save($text, $version + 1, $meta);
                 // TODO: admin notification
-                return HTML(HTML::h2(_("Thanks for adding this translation!")),
-                            HTML::p(fmt("Your translated text doesn't yet appear in this %s, but the Administrator will pick it up and add to the installation.", 
-                                       WIKI_NAME)),
-                            fmt("Your translation is stored in %s",WikiLink($transpagename)));
+                return HTML(
+                    HTML::h2(_("Thanks for adding this translation!")),
+                    HTML::p(fmt(
+                        "Your translated text doesn't yet appear in this %s, but the Administrator will pick it up and add to the installation.",
+                        WIKI_NAME
+                    )),
+                    fmt("Your translation is stored in %s", WikiLink($transpagename))
+                );
             }
         }
-        $trans = $this->translate($pagename,$lang,'en');
+        $trans = $this->translate($pagename, $lang, 'en');
         //Todo: google lookup or at least a google lookup button.
-        if (isset($header))
-            $header = HTML($header,fmt("From english to %s: ", HTML::strong($lang)));
-        else
+        if (isset($header)) {
+            $header = HTML($header, fmt("From english to %s: ", HTML::strong($lang)));
+        } else {
             $header = fmt("From english to %s: ", HTML::strong($lang));
+        }
         $button_label = _("Translate");
 
-        $buttons = HTML::p(Button('submit:translate[submit]', $button_label, 'wikiadmin'),
-                           Button('submit:translate[cancel]', _("Cancel"), 'button'));
-        return HTML::form(array('action' => $request->getPostURL(),
-                                'method' => 'post'),
-                          $header,
-                          HTML::textarea(array('class' => 'wikiedit',
+        $buttons = HTML::p(
+            Button('submit:translate[submit]', $button_label, 'wikiadmin'),
+            Button('submit:translate[cancel]', _("Cancel"), 'button')
+        );
+        return HTML::form(
+            ['action' => $request->getPostURL(),
+                                'method' => 'post'],
+            $header,
+            HTML::textarea(
+                ['class' => 'wikiedit',
                                                'name' => 'translate[content]',
                                                'id'   => 'translate[content]',
                                                'rows' => 4,
                                                'cols' => $request->getPref('editWidth'),
-                                               'wrap' => 'virtual'),
-                                         $trans),
-                          HiddenInputs($request->getArgs(),
-                                        false,
-                                        array('translate')),
-                          HiddenInputs(array('translate[action]' => $pagename,
+                                               'wrap' => 'virtual'],
+                $trans
+            ),
+            HiddenInputs(
+                $request->getArgs(),
+                false,
+                ['translate']
+            ),
+            HiddenInputs(['translate[action]' => $pagename,
                                              'require_authority_for_post' => WIKIAUTH_BOGO,
-                                             )),
-                          $buttons);
-       }
-};
+                                             ]),
+            $buttons
+        );
+    }
+}
 
 // $Log: TranslateText.php,v $
 // Revision 1.5  2004/07/08 20:30:07  rurban
@@ -149,9 +181,6 @@ extends WikiPlugin__WikiTranslation
 //
 // Revision 1.2  2004/03/17 12:04:36  rurban
 // more docs
-//
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -160,4 +189,3 @@ extends WikiPlugin__WikiTranslation
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

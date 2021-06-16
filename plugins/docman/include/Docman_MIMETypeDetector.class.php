@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Docman_MIMETypeDetector {
+class Docman_MIMETypeDetector
+{
 
-    private $office_types = array(
+    private $office_types = [
         '.doc'  => 'application/msword',
         '.dot'  => 'application/msword',
         '.docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -48,14 +49,15 @@ class Docman_MIMETypeDetector {
         '.potm' => 'application/vnd.ms-powerpoint.template.macroEnabled.12',
         '.ppsm' => 'application/vnd.ms-powerpoint.slideshow.macroEnabled.12',
         '.xps'  => 'application/vnd.ms-xpsdocument'
-    );
+    ];
 
     /**
      * @param string $filename
      *
-     * @return boolean True if the file is an office one
+     * @return bool True if the file is an office one
      */
-    public function isAnOfficeFile($filename) {
+    public function isAnOfficeFile($filename)
+    {
         return $this->getRightOfficeType($filename) != null;
     }
 
@@ -64,7 +66,8 @@ class Docman_MIMETypeDetector {
      *
      * @return string The mime type corresponding to the extension
      */
-    public function getRightOfficeType($filename) {
+    public function getRightOfficeType($filename)
+    {
         $file_extension = '.' . pathinfo($filename, PATHINFO_EXTENSION);
 
         if (isset($this->office_types[$file_extension])) {

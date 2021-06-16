@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,7 +18,8 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class AdminKanbanPresenter {
+class AdminKanbanPresenter
+{
 
     /** @var int */
     public $group_id;
@@ -32,63 +33,74 @@ class AdminKanbanPresenter {
     /** @var bool */
     public $has_kanban;
 
+    /**
+     * @var bool
+     * @psalm-readonly
+     */
+    public $is_scrum_accessible;
+    /**
+     * @var bool
+     */
+    public $can_burnup_be_configured;
+
     public function __construct(
         $group_id,
         $kanban_activated,
         $kanban_title,
-        $has_kanban
+        $has_kanban,
+        bool $is_scrum_accessible,
+        bool $can_burnup_be_configured
     ) {
-        $this->group_id         = $group_id;
-        $this->kanban_activated = $kanban_activated;
-        $this->kanban_title     = $kanban_title;
-        $this->has_kanban       = $has_kanban;
+        $this->group_id                 = $group_id;
+        $this->kanban_activated         = $kanban_activated;
+        $this->kanban_title             = $kanban_title;
+        $this->has_kanban               = $has_kanban;
+        $this->is_scrum_accessible      = $is_scrum_accessible;
+        $this->can_burnup_be_configured = $can_burnup_be_configured;
     }
 
-    public function config_title() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'config_title');
+    public function config_submit_label()
+    {
+        return dgettext('tuleap-agiledashboard', 'Save');
     }
 
-    public function config_submit_label() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'config_submit_label');
+    public function general_settings_section()
+    {
+        return dgettext('tuleap-agiledashboard', 'General settings');
     }
 
-    public function general_settings_section() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'general_settings_section');
+    public function activate_kanban_label()
+    {
+        return dgettext('tuleap-agiledashboard', 'Activate Kanban');
     }
 
-    public function kanban_label() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'kanban_label');
+    public function title_label()
+    {
+        return dgettext('tuleap-agiledashboard', 'Title');
     }
 
-    public function scrum_label() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'scrum_label');
+    public function title_label_help()
+    {
+        return dgettext('tuleap-agiledashboard', 'This will be used to identify the Kanban section from the Agile Dashboard homepage.');
     }
 
-    public function activate_kanban_label() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'activate_kanban_label');
+    public function kanban_activated_label()
+    {
+        return dgettext('tuleap-agiledashboard', 'Kanban is currently active.');
     }
 
-    public function title_label() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'title');
+    public function kanban_not_activated_label()
+    {
+        return dgettext('tuleap-agiledashboard', 'Kanban is not currently active.');
     }
 
-    public function title_label_help() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'title_kanban_help');
+    public function first_kanban_will_be_created()
+    {
+        return dgettext('tuleap-agiledashboard', 'A first Kanban will be created during the activation. This operation can take a few seconds.');
     }
 
-    public function kanban_activated_label() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'kanban_activated_label');
-    }
-
-    public function kanban_not_activated_label() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'kanban_not_activated_label');
-    }
-
-    public function first_kanban_will_be_created() {
-        return $GLOBALS['Language']->getText('plugin_agiledashboard', 'first_kanban_will_be_created');
-    }
-
-    public function token() {
+    public function token()
+    {
         $token = new CSRFSynchronizerToken('/plugins/agiledashboard/?action=admin');
         return $token->fetchHTMLInput();
     }

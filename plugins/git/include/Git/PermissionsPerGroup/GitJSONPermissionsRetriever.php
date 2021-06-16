@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -37,12 +37,12 @@ class GitJSONPermissionsRetriever
     {
         if (! $project->usesService(GitPlugin::SERVICE_SHORTNAME)) {
             $GLOBALS['Response']->send400JSONErrors(
-                array(
+                [
                     Feedback::ERROR => dgettext(
                         'tuleap-git',
                         "Git service is disabled."
                     )
-                )
+                ]
             );
         }
 

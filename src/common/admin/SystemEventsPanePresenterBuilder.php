@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,12 +20,12 @@
 
 namespace Tuleap\Admin\SystemEvents;
 
-use Event;
 use EventManager;
 use SystemEvent;
 use SystemEventDao;
 use SystemEventManager;
 use SystemEventQueue;
+use Tuleap\SystemEvent\GetSystemEventQueuesEvent;
 
 class HomepagePanePresenterBuilder
 {
@@ -63,15 +63,18 @@ class HomepagePanePresenterBuilder
 
     private function getAllSectionPresenters()
     {
-        $available_queues = array(
-            SystemEventQueue::NAME => new SystemEventQueue()
+        $event = new GetSystemEventQueuesEvent(
+            [
+                SystemEventQueue::NAME => new SystemEventQueue()
+            ]
         );
         $this->event_manager->processEvent(
-            Event::SYSTEM_EVENT_GET_CUSTOM_QUEUES,
-            array('queues' => &$available_queues)
+            $event
         );
 
-        $section_presenters = array();
+        $available_queues = $event->getAvailableQueues();
+
+        $section_presenters = [];
         foreach ($available_queues as $queue) {
             $this->addQueueSectionPresenter($section_presenters, $queue);
         }
@@ -81,13 +84,13 @@ class HomepagePanePresenterBuilder
 
     private function addQueueSectionPresenter(array &$section_presenters, SystemEventQueue $queue)
     {
-        $stats_by_status = array(
+        $stats_by_status = [
             SystemEvent::STATUS_NEW     => 0,
             SystemEvent::STATUS_RUNNING => 0,
             SystemEvent::STATUS_DONE    => 0,
             SystemEvent::STATUS_WARNING => 0,
             SystemEvent::STATUS_ERROR   => 0,
-        );
+        ];
 
         $types = $this->system_event_manager->getTypesForQueue($queue->getName());
         foreach ($this->dao->searchQueueStatsForLastDay($types) as $row) {

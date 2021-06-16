@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,18 +18,15 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'common/plugin/PluginInfo.class.php';
-require_once 'AgileDashboardPluginDescriptor.class.php';
-
-
 /**
  * AgileDashboardPluginInfo
  */
-class AgileDashboardPluginInfo extends PluginInfo {
+class AgileDashboardPluginInfo extends PluginInfo
+{
 
-    function __construct($plugin) {
+    public function __construct($plugin)
+    {
         parent::__construct($plugin);
         $this->setPluginDescriptor(new AgileDashboardPluginDescriptor());
     }
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016-2018. All rights reserved
+ * Copyright (c) Enalean, 2016 - Present. All rights reserved
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 class HudsonJob
 {
     /**
@@ -65,40 +65,31 @@ class HudsonJob
         switch ($this->getColor()) {
             case "blue":
                 // The last build was successful.
-                return $GLOBALS['Language']->getText('plugin_hudson','status_blue');
-                break;
+                return dgettext('tuleap-hudson', 'Success');
             case "blue_anime":
                 // The last build was successful. A new build is in progress.
-                return $GLOBALS['Language']->getText('plugin_hudson','status_blue_anime');
-                break;
+                return dgettext('tuleap-hudson', 'In progress');
             case "yellow":
                 // The last build was successful but unstable. This is primarily used to represent test failures.
-                return $GLOBALS['Language']->getText('plugin_hudson','status_yellow'); 
-                break;
+                return dgettext('tuleap-hudson', 'Unstable');
             case "yellow_anime":
                 // The last build was successful but unstable. This is primarily used to represent test failures. A new build is in progress.
-                return $GLOBALS['Language']->getText('plugin_hudson','status_yellow_anime'); 
-                break;
+                return dgettext('tuleap-hudson', 'In progress');
             case "red":
                 // The last build fatally failed.
-                return $GLOBALS['Language']->getText('plugin_hudson','status_red');
-                break;
+                return dgettext('tuleap-hudson', 'Failure');
             case "red_anime":
                 // The last build fatally failed. A new build is in progress.
-                return $GLOBALS['Language']->getText('plugin_hudson','status_red_anime');
-                break;
+                return dgettext('tuleap-hudson', 'In progress');
             case "grey":
                 // The project has never been built before, or the project is disabled.
-                return $GLOBALS['Language']->getText('plugin_hudson','status_grey');
-                break;
+                return dgettext('tuleap-hudson', 'Pending');
             case "grey_anime":
                 // The project has never been built before, or the project is disabled. The first build of this project is in progress.
-                return $GLOBALS['Language']->getText('plugin_hudson','status_grey_anime');
-                break;
+                return dgettext('tuleap-hudson', 'In progress');
             default:
                 // Can we have anime icons here?
-                return $GLOBALS['Language']->getText('plugin_hudson','status_unknown');
-                break;
+                return dgettext('tuleap-hudson', 'Unknown status');
         }
     }
 
@@ -107,48 +98,39 @@ class HudsonJob
         switch ($this->getColor()) {
             case "blue":
                 // The last build was successful.
-                return hudsonPlugin::ICONS_PATH."status_blue.png";
-                break;
+                return hudsonPlugin::ICONS_PATH . "status_blue.png";
             case "blue_anime":
                 // The last build was successful. A new build is in progress.
-                return hudsonPlugin::ICONS_PATH."status_blue.png";
-                break;
+                return hudsonPlugin::ICONS_PATH . "status_blue.png";
             case "yellow":
                 // The last build was successful but unstable. This is primarily used to represent test failures.
-                return hudsonPlugin::ICONS_PATH."status_yellow.png";
-                break;
+                return hudsonPlugin::ICONS_PATH . "status_yellow.png";
             case "yellow_anime":
                 // The last build was successful but unstable. A new build is in progress.
-                return hudsonPlugin::ICONS_PATH."status_yellow.png";
-                break;
+                return hudsonPlugin::ICONS_PATH . "status_yellow.png";
             case "red":
                 // The last build fatally failed.
-                return hudsonPlugin::ICONS_PATH."status_red.png";
-                break;
+                return hudsonPlugin::ICONS_PATH . "status_red.png";
             case "red_anime":
                 // The last build fatally failed. A new build is in progress.
-                return hudsonPlugin::ICONS_PATH."status_red.png";
-                break;
+                return hudsonPlugin::ICONS_PATH . "status_red.png";
             case "grey":
                 // The project has never been built before, or the project is disabled.
-                return hudsonPlugin::ICONS_PATH."status_grey.png";
-                break;
+                return hudsonPlugin::ICONS_PATH . "status_grey.png";
             case "grey_anime":
                 // The first build of the project is in progress.
-                return hudsonPlugin::ICONS_PATH."status_grey.png";
-                break;
+                return hudsonPlugin::ICONS_PATH . "status_grey.png";
             default:
                 // Can we have anime icons here?
-                return hudsonPlugin::ICONS_PATH."status_unknown.png";
-                break;
+                return hudsonPlugin::ICONS_PATH . "status_unknown.png";
         }
     }
-    
+
     public function hasBuilds()
     {
         return $this->getLastBuildNumber() !== 0;
     }
-    
+
     public function getLastBuildNumber()
     {
         if ($this->xml_content->lastBuild->number) {
@@ -156,7 +138,7 @@ class HudsonJob
         }
         return 0;
     }
-    
+
     public function getLastSuccessfulBuildNumber()
     {
         if (isset($this->xml_content->lastSuccessfulBuild->number)) {
@@ -172,7 +154,7 @@ class HudsonJob
         }
         return '';
     }
-    
+
     public function getLastFailedBuildNumber()
     {
         if ($this->xml_content !== null) {
@@ -188,13 +170,13 @@ class HudsonJob
         }
         return '';
     }
-    
+
     private function getHealthScores()
     {
         if (! isset($this->xml_content->healthReport)) {
             return [];
         }
-        $scores = array();
+        $scores = [];
         foreach ($this->xml_content->healthReport as $health_report) {
             if (isset($health_report->score)) {
                 $scores[] = (int) $health_report->score;
@@ -209,22 +191,22 @@ class HudsonJob
         if (count($health_scores) <= 0) {
             return 0;
         }
-        return floor(array_sum($health_scores)/count($health_scores));
+        return floor(array_sum($health_scores) / count($health_scores));
     }
-    
+
     public function getWeatherReportIcon()
     {
         $score = $this->getHealthAverageScore();
         if ($score >= 80) {
-            return hudsonPlugin::ICONS_PATH."health_80_plus.gif";
+            return hudsonPlugin::ICONS_PATH . "health_80_plus.gif";
         } elseif ($score >= 60) {
-            return hudsonPlugin::ICONS_PATH."health_60_to_79.gif";
+            return hudsonPlugin::ICONS_PATH . "health_60_to_79.gif";
         } elseif ($score >= 40) {
-            return hudsonPlugin::ICONS_PATH."health_40_to_59.gif";
+            return hudsonPlugin::ICONS_PATH . "health_40_to_59.gif";
         } elseif ($score >= 20) {
-            return hudsonPlugin::ICONS_PATH."health_20_to_39.gif";
+            return hudsonPlugin::ICONS_PATH . "health_20_to_39.gif";
         } else {
-            return hudsonPlugin::ICONS_PATH."health_00_to_19.gif";
+            return hudsonPlugin::ICONS_PATH . "health_00_to_19.gif";
         }
     }
 }

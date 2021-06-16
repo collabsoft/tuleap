@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -21,6 +21,7 @@
 namespace Tuleap\Dashboard\Widget;
 
 use Tuleap\Dashboard\Dashboard;
+use Tuleap\Layout\CssAssetCollection;
 use Widget;
 
 class DashboardWidgetPresenter
@@ -44,6 +45,8 @@ class DashboardWidgetPresenter
     public $javascript_dependencies;
     public $has_custom_title;
     public $purified_custom_title;
+    /** @var CssAssetCollection */
+    public $stylesheet_dependencies;
 
     public function __construct(
         Dashboard $dashboard,
@@ -56,6 +59,7 @@ class DashboardWidgetPresenter
         $this->is_minimized = $dashboard_widget->isMinimized();
 
         $widget->setDashboardWidgetId($dashboard_widget->getId());
+        $widget->setDashboardId($dashboard->getId());
 
         $this->title            = $widget->getTitle();
         $this->has_custom_title = $widget->hasCustomTitle();
@@ -63,19 +67,20 @@ class DashboardWidgetPresenter
             $this->purified_custom_title = $widget->getPurifiedCustomTitle();
         }
 
-        $this->is_editable    = $widget->hasPreferences($this->widget_id);
-        $this->has_rss        = $widget->hasRss();
-        $this->rss_url        = (string) $widget->getRssUrl($widget->owner_id, $widget->owner_type);
-        $this->icon           = $widget->getIcon();
-        $this->has_icon       = (bool) $this->icon;
+        $this->is_editable = $widget->hasPreferences($this->widget_id);
+        $this->has_rss     = $widget->hasRss();
+        $this->rss_url     = (string) $widget->getRssUrl($widget->owner_id, $widget->owner_type);
+        $this->icon        = $widget->getIcon();
+        $this->has_icon    = (bool) $this->icon;
 
         $this->javascript_dependencies = $widget->getJavascriptDependencies();
+        $this->stylesheet_dependencies = $widget->getStylesheetDependencies();
 
         $this->has_actions = $this->has_rss || $can_update_dashboards;
 
         $this->is_content_loaded_asynchronously = $widget->isAjax();
         if ($this->is_content_loaded_asynchronously) {
-            $this->content = '';
+            $this->content  = '';
             $this->ajax_url = $widget->getAjaxUrl($widget->owner_id, $widget->owner_type, $dashboard->getId());
         } else {
             $this->content  = $widget->getContent();

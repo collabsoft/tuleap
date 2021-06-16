@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class LDAP_AuthenticationFailedException extends Exception {
-    public function __construct() {
+class LDAP_AuthenticationFailedException extends Exception
+{
+    public function __construct()
+    {
         parent::__construct('LDAP authentication failed');
     }
 }

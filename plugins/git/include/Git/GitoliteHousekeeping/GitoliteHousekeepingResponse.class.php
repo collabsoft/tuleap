@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,39 +18,45 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Git_GitoliteHousekeeping_GitoliteHousekeepingResponse {
+class Git_GitoliteHousekeeping_GitoliteHousekeepingResponse
+{
 
-    const ANSI_NOCOLOR = "\033[0m";
-    const ANSI_GREEN   = "\033[32m";
-    const ANSI_YELLOW  = "\033[35m";
-    const ANSI_RED     = "\033[31m";
+    public const ANSI_NOCOLOR = "\033[0m";
+    public const ANSI_GREEN   = "\033[32m";
+    public const ANSI_YELLOW  = "\033[35m";
+    public const ANSI_RED     = "\033[31m";
 
-    const LOG_PREFIX = '[GITOLITE_HOUSEKEEPING] ';
+    public const LOG_PREFIX = '[GITOLITE_HOUSEKEEPING] ';
 
-    /** @var Logger */
+    /** @var \Psr\Log\LoggerInterface */
     private $logger;
 
-    public function __construct(Logger $logger) {
+    public function __construct(\Psr\Log\LoggerInterface $logger)
+    {
         $this->logger = $logger;
     }
 
-    public function abort() {
+    public function abort()
+    {
         $this->error('Aborting');
         exit(1);
     }
 
-    public function success() {
+    public function success()
+    {
         $this->info('Exiting with success status');
         exit(0);
     }
 
-    public function error($msg) {
-        $this->logger->error(self::LOG_PREFIX. $msg);
-        echo self::ANSI_RED .'[ERROR] '. self::ANSI_NOCOLOR . $msg . PHP_EOL;
+    public function error($msg)
+    {
+        $this->logger->error(self::LOG_PREFIX . $msg);
+        echo self::ANSI_RED . '[ERROR] ' . self::ANSI_NOCOLOR . $msg . PHP_EOL;
     }
 
-    public function info($msg) {
-        $this->logger->info(self::LOG_PREFIX. $msg);
-        echo self::ANSI_GREEN .'[INFO] '. self::ANSI_NOCOLOR . $msg . PHP_EOL;
+    public function info($msg)
+    {
+        $this->logger->info(self::LOG_PREFIX . $msg);
+        echo self::ANSI_GREEN . '[INFO] ' . self::ANSI_NOCOLOR . $msg . PHP_EOL;
     }
 }

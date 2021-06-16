@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ThemeVariant {
+class ThemeVariant
+{
 
-    const PREFERENCE_NAME = 'theme_variant';
+    public const PREFERENCE_NAME = 'theme_variant';
 
     /** @var string */
     private $default;
@@ -42,11 +43,11 @@ class ThemeVariant {
         $this->allowed = array_map('trim', $this->allowed);
         $this->allowed = array_filter($this->allowed);
 
-        if (! is_file('../../www/themes/FlamingParrot/FlamingParrot_Theme.class.php')) {
+        if (! is_file(__DIR__ . '/../../www/themes/FlamingParrot/FlamingParrot_Theme.class.php')) {
             return;
         }
 
-        require_once '../../www/themes/FlamingParrot/FlamingParrot_Theme.class.php';
+        require_once __DIR__ . '/../../www/themes/FlamingParrot/FlamingParrot_Theme.class.php';
         $this->unsetInvalidThemes();
     }
 
@@ -57,7 +58,8 @@ class ThemeVariant {
         }
     }
 
-    public function getVariantForUser(PFUser $user) {
+    public function getVariantForUser(PFUser $user)
+    {
         $variant = $user->getPreference(self::PREFERENCE_NAME);
         if (! $variant || ! $this->isAllowed($variant)) {
             $variant = $this->default;
@@ -66,22 +68,26 @@ class ThemeVariant {
         return $variant;
     }
 
-    public function getAllowedVariants() {
+    public function getAllowedVariants()
+    {
         return $this->allowed;
     }
 
-    public function isAllowed($variant) {
+    public function isAllowed($variant)
+    {
         return in_array($variant, $this->allowed);
     }
 
-    public function getDefault() {
+    public function getDefault()
+    {
         return $this->default;
     }
 
-    private function unsetInvalidThemes() {
+    private function unsetInvalidThemes()
+    {
         foreach ($this->allowed as $index => $item) {
             if (! in_array($item, FlamingParrot_Theme::getVariants())) {
-               unset($this->allowed[$index]);
+                unset($this->allowed[$index]);
             }
         }
 

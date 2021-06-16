@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,10 +21,11 @@
 /**
  * I am responsible of reading the content of a zip archive to import artifacts history
  */
-class Tracker_Artifact_XMLImport_XMLImportZipArchive {
+class Tracker_Artifact_XMLImport_XMLImportZipArchive
+{
 
-    const RESOURCE_NAME          = 'tv5';
-    const ARTIFACTS_XML_FILENAME = "artifacts.xml";
+    public const RESOURCE_NAME          = 'tv5';
+    public const ARTIFACTS_XML_FILENAME = "artifacts.xml";
 
     /** @var ZipArchive */
     private $zip;
@@ -33,7 +34,8 @@ class Tracker_Artifact_XMLImport_XMLImportZipArchive {
     private $extraction_path;
 
 
-    public function __construct(Tracker $tracker, ZipArchive $zip, $extraction_path){
+    public function __construct(Tracker $tracker, ZipArchive $zip, $extraction_path)
+    {
         $this->zip = $zip;
 
         $this->extraction_path = $this->tempdir($extraction_path, self::RESOURCE_NAME, $tracker->getId());
@@ -42,25 +44,29 @@ class Tracker_Artifact_XMLImport_XMLImportZipArchive {
     /**
      * @return string
      */
-    public function getExtractionPath() {
+    public function getExtractionPath()
+    {
         return $this->extraction_path;
     }
 
     /**
      * @return bool
      */
-    public function extractFiles() {
+    public function extractFiles()
+    {
         return $this->zip->extractTo($this->extraction_path);
     }
 
-    public function cleanUp() {
+    public function cleanUp()
+    {
         exec("rm -rf $this->extraction_path");
     }
 
     /**
      * @return string The xml content of artifacts.xml in the zip archive
      */
-    public function getXML() {
+    public function getXML()
+    {
         return $this->zip->getFromName(self::ARTIFACTS_XML_FILENAME);
     }
 
@@ -71,8 +77,9 @@ class Tracker_Artifact_XMLImport_XMLImportZipArchive {
      *
      * @return string Path to the new directory
      */
-    private function tempdir($tmp_dir, $resource_name, $id) {
-        $template = 'import_'. $resource_name .'_'. $id .'_XXXXXX';
+    private function tempdir($tmp_dir, $resource_name, $id)
+    {
+        $template = 'import_' . $resource_name . '_' . $id . '_XXXXXX';
 
         return trim(`mktemp -d -p $tmp_dir $template`);
     }

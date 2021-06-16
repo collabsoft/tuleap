@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,20 +23,45 @@
  *
  * It ensures that sections are xml compatible by enforcing/converting the encoding
  */
-class XML_SimpleXMLCDATAFactory {
+class XML_SimpleXMLCDATAFactory
+{
+
+    public function insert(SimpleXMLElement $parent_node, string $node_name, $node_value): SimpleXMLElement
+    {
+        $node = $parent_node->addChild($node_name);
+        $this->addCDATAContentToXMLNode($node, $node_value);
+
+        return $node;
+    }
 
     /**
-     *
-     * @param SimpleXMLElement $parent_node
-     * @param string $node_name
-     * @param string $node_value
+     * @param array<string, string> $attributes
      */
-    public function insert(SimpleXMLElement $parent_node, $node_name, $node_value) {
-        $node     = $parent_node->addChild($node_name);
+    public function insertWithAttributes(
+        SimpleXMLElement $parent_node,
+        string $node_name,
+        string $node_value,
+        array $attributes
+    ): SimpleXMLElement {
+        $node = $parent_node->addChild($node_name);
+        foreach ($attributes as $name => $value) {
+            $node->addAttribute((string) $name, (string) $value);
+        }
+
+        $this->addCDATAContentToXMLNode($node, $node_value);
+
+        return $node;
+    }
+
+    private function addCDATAContentToXMLNode(SimpleXMLElement $node, $node_value): void
+    {
         $dom_node = dom_import_simplexml($node);
         $document = $dom_node->ownerDocument;
-        $value    = Encoding_SupportedXmlCharEncoding::getXMLCompatibleString($node_value);
-        $cdata    = $document->createCDATASection($value);
+        if ($document === null) {
+            return;
+        }
+        $value = Encoding_SupportedXmlCharEncoding::getXMLCompatibleString($node_value);
+        $cdata = $document->createCDATASection($value);
         $dom_node->appendChild($cdata);
     }
 }

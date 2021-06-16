@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -22,7 +22,6 @@ namespace Tuleap\AgileDashboard\Kanban\TrackerReport;
 
 use AgileDashboard_Kanban;
 use Tracker_ReportFactory;
-use Tuleap\AgileDashboard\Kanban\TrackerReport\TrackerReportDao;
 
 class TrackerReportBuilder
 {
@@ -51,14 +50,14 @@ class TrackerReportBuilder
     public function build($selected_tracker_report_id)
     {
         $selectable_report_ids  = $this->tracker_report_dao->searchReportIdsForKanban($this->kanban->getId());
-        $filters_tracker_report = array();
+        $filters_tracker_report = [];
         $reports                = $this->tracker_report_factory->getReportsByTrackerId($this->kanban->getTrackerId(), null);
         foreach ($reports as $report) {
             $report_id             = (int) $report->getId();
-            $filter_tracker_report = array(
+            $filter_tracker_report = [
                 'id'   => $report_id,
                 'name' => $report->getName()
-            );
+            ];
 
             if (in_array($report_id, $selectable_report_ids)) {
                 $filter_tracker_report['selectable'] = true;

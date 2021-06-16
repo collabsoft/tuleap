@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,31 +19,37 @@
 
 require_once 'XMLDocmanImport.class.php';
 
-class Docman_ImportFromDocmanV1 {
+class Docman_ImportFromDocmanV1
+{
 
     private $temporary_directory;
     private $wsdl_url;
     private $user_login;
     private $user_password;
 
-    public function __construct($wsdl_url, $login, $password) {
+    public function __construct($wsdl_url, $login, $password)
+    {
         $this->temporary_directory = tempnam(ForgeConfig::get('tmp_dir'), 'docmanv1-docmanv2-');
         $this->wsdl_url            = $wsdl_url;
         $this->user_login          = $login;
         $this->user_password       = $password;
-        $xml_security = new XML_Security();
-        $xml_security->enableExternalLoadOfEntities();
     }
 
-    public function migrate(Project $project) {
+    public function migrate(Project $project)
+    {
         $this->createTemporaryDirectory();
-        $this->dumpDocmanV1($project);
-        $folder_id = $this->createTarget($project);
-        $this->importDump($project, $folder_id);
+        XML_Security::enableExternalLoadOfEntities(
+            function () use ($project) {
+                $this->dumpDocmanV1($project);
+                $folder_id = $this->createTarget($project);
+                $this->importDump($project, $folder_id);
+            }
+        );
         $this->removeTemporaryDirectory();
     }
 
-    private function dumpDocmanV1(Project $project) {
+    private function dumpDocmanV1(Project $project)
+    {
         $XMLExport = new DocmanV1_XMLExport(
             $project,
             $this->temporary_directory,
@@ -53,7 +59,8 @@ class Docman_ImportFromDocmanV1 {
         $XMLExport->dumpPackage();
     }
 
-    private function createTarget(Project $project) {
+    private function createTarget(Project $project)
+    {
         $client = new SoapClient($this->wsdl_url);
 
         // Establish connection to the server
@@ -66,36 +73,37 @@ class Docman_ImportFromDocmanV1 {
             $project->getID(),
             $root_folder_id,
             'Docman v1 import',
-            'Documents imported from legacy documentation system on '.date('c', $_SERVER['REQUEST_TIME']),
+            'Documents imported from legacy documentation system on ' . date('c', $_SERVER['REQUEST_TIME']),
             'begin',
             'none',
-            array(
-                array(
+            [
+                [
                     'type'      => DocmanV1_XMLExportData::V2_SOAP_PERM_NONE,
                     'ugroup_id' => ProjectUGroup::ANONYMOUS,
-                ),
-                array(
+                ],
+                [
                     'type'      => DocmanV1_XMLExportData::V2_SOAP_PERM_NONE,
                     'ugroup_id' => ProjectUGroup::REGISTERED,
-                ),
-                array(
+                ],
+                [
                     'type'      => DocmanV1_XMLExportData::V2_SOAP_PERM_NONE,
                     'ugroup_id' => ProjectUGroup::PROJECT_MEMBERS,
-                ),
-                array(
+                ],
+                [
                     'type'      => DocmanV1_XMLExportData::V2_SOAP_PERM_MANAGE,
                     'ugroup_id' => ProjectUGroup::PROJECT_ADMIN,
-                ),
-            ),
-            array(),
+                ],
+            ],
+            [],
             'admin',
             $_SERVER['REQUEST_TIME'],
             $_SERVER['REQUEST_TIME']
         );
     }
 
-    private function importDump(Project $project, $folder_id) {
-        $logger = new WrapperLogger(new Log_ConsoleLogger(), 'Import Docman');
+    private function importDump(Project $project, $folder_id)
+    {
+        $logger     = new WrapperLogger(new Log_ConsoleLogger(), 'Import Docman');
         $xml_import = new XMLDocmanImport(
             'import:',
             $project->getUnixNameLowerCase(),
@@ -110,19 +118,19 @@ class Docman_ImportFromDocmanV1 {
             $logger
         );
 
-        $xml_import->importPath($this->temporary_directory, $folder_id, '/'.DocmanV1_XMLExportData::ROOT_FOLDER_NAME);
+        $xml_import->importPath($this->temporary_directory, $folder_id, '/' . DocmanV1_XMLExportData::ROOT_FOLDER_NAME);
     }
 
-    private function createTemporaryDirectory() {
+    private function createTemporaryDirectory()
+    {
         unlink($this->temporary_directory);
         mkdir($this->temporary_directory, 0700);
     }
 
-    private function removeTemporaryDirectory() {
+    private function removeTemporaryDirectory()
+    {
         $system = Backend::instance(Backend::SYSTEM);
         $system->recurseDeleteInDir($this->temporary_directory);
         rmdir($this->temporary_directory);
     }
-
-
 }

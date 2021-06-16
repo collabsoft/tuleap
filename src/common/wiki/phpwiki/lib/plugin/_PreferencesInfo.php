@@ -1,4 +1,5 @@
-<?php // -*-php-*-
+<?php
+// -*-php-*-
 rcs_id('$Id: _PreferencesInfo.php,v 1.3 2004/02/17 12:11:36 rurban Exp $');
 /**
  Copyright 1999, 2000, 2001, 2002 $ThePhpWikiProgrammingTeam
@@ -23,34 +24,43 @@ rcs_id('$Id: _PreferencesInfo.php,v 1.3 2004/02/17 12:11:36 rurban Exp $');
 /**
  * Plugin to display the current preferences without auth check.
  */
-class WikiPlugin__PreferencesInfo
-extends WikiPlugin
+class WikiPlugin__PreferencesInfo extends WikiPlugin
 {
-    function getName () {
+    public function getName()
+    {
         return _("PreferencesInfo");
     }
 
-    function getDescription () {
-        return sprintf(_("Get preferences information for current user %s."),
-                       '[userid]');
+    public function getDescription()
+    {
+        return sprintf(
+            _("Get preferences information for current user %s."),
+            '[userid]'
+        );
     }
 
-    function getVersion() {
-        return preg_replace("/[Revision: $]/", '',
-                            "\$Revision: 1.3 $");
+    public function getVersion()
+    {
+        return preg_replace(
+            "/[Revision: $]/",
+            '',
+            "\$Revision: 1.3 $"
+        );
     }
 
-    function getDefaultArguments() {
-        return array('page' => '[pagename]',
-                     'userid' => '[userid]');
+    public function getDefaultArguments()
+    {
+        return ['page' => '[pagename]',
+                     'userid' => '[userid]'];
     }
 
-    function run($dbi, $argstr, &$request, $basepage) {
+    public function run($dbi, $argstr, &$request, $basepage)
+    {
         $args = $this->getArgs($argstr, $request);
         // $user = &$request->getUser();
         return Template('userprefs', $args);
     }
-};
+}
 
 // $Log: _PreferencesInfo.php,v $
 // Revision 1.3  2004/02/17 12:11:36  rurban
@@ -59,8 +69,6 @@ extends WikiPlugin
 // Revision 1.2  2003/01/18 21:19:25  carstenklapp
 // Code cleanup:
 // Reformatting; added copyleft, getVersion, getDescription
-//
-
 // For emacs users
 // Local Variables:
 // mode: php
@@ -69,4 +77,3 @@ extends WikiPlugin
 // c-hanging-comment-ender-p: nil
 // indent-tabs-mode: nil
 // End:
-?>

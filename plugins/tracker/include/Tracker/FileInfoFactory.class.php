@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,8 +18,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Tuleap\Tracker\Artifact\Artifact;
 
-class Tracker_FileInfoFactory {
+class Tracker_FileInfoFactory
+{
     /**
      * @var Tracker_FileInfoDao
      */
@@ -35,21 +37,16 @@ class Tracker_FileInfoFactory {
      */
     private $artifact_factory;
 
-    public function __construct(Tracker_FileInfoDao $dao, Tracker_FormElementFactory $formelement_factory, Tracker_ArtifactFactory $artifact_factory) {
+    public function __construct(Tracker_FileInfoDao $dao, Tracker_FormElementFactory $formelement_factory, Tracker_ArtifactFactory $artifact_factory)
+    {
         $this->dao                 = $dao;
         $this->formelement_factory = $formelement_factory;
         $this->artifact_factory    = $artifact_factory;
     }
 
-    /**
-     *
-     * @param type $id
-     *
-     * @return Tracker_FileInfo
-     */
-    public function getById($id)
+    public function getById(int $id): ?Tracker_FileInfo
     {
-        static $cache = array();
+        static $cache = [];
 
         if (isset($cache[$id])) {
             return $cache[$id];
@@ -57,21 +54,21 @@ class Tracker_FileInfoFactory {
 
         $row = $this->dao->searchById($id)->getRow();
         if (! $row) {
-            return;
+            return null;
         }
 
         $field_id = $this->dao->searchFieldIdByFileInfoId($id);
         if (! $field_id) {
-            return;
+            return null;
         }
 
         $field = $this->formelement_factory->getFormElementById($field_id);
         if (! $field) {
-            return;
+            return null;
         }
 
         if (! $field->isUsed()) {
-            return;
+            return null;
         }
 
         $file_info = new Tracker_FileInfo(
@@ -90,38 +87,31 @@ class Tracker_FileInfoFactory {
     }
 
     /**
-     *
-     * @param type $id
-     *
-     * @return Tracker_Artifact
      * @throws Tracker_FileInfo_InvalidFileInfoException
      * @throws Tracker_FileInfo_UnauthorisedException
      */
-    public function getArtifactByFileInfoIdAndUser(PFUser $user, $id) {
+    public function getArtifactByFileInfoIdAndUser(PFUser $user, int $id): Artifact
+    {
         $row = $this->dao->searchArtifactIdByFileInfoIdInLastChangeset($id)->getRow();
         if (! $row) {
             throw new Tracker_FileInfo_InvalidFileInfoException('File does not exist');
         }
 
         $artifact = $this->artifact_factory->getArtifactByIdUserCanView($user, $row['artifact_id']);
-        if ($artifact == null) {
+        if ($artifact === null) {
             throw new Tracker_FileInfo_UnauthorisedException('User can\'t access the artifact the file is attached to');
         }
         return $artifact;
     }
 
     /**
-     *
-     * @param type $id
-     *
-     * @return Tracker_Artifact
-     * @throws Tracker_FileInfo_InvalidFileInfoException
-     * @throws Tracker_FileInfo_UnauthorisedException
+     * @return Artifact|null
      */
-    public function getArtifactByFileInfoIdInLastChangeset($id) {
+    public function getArtifactByFileInfoIdInLastChangeset(int $id)
+    {
         $row = $this->dao->searchArtifactIdByFileInfoIdInLastChangeset($id)->getRow();
         if (! $row) {
-            return;
+            return null;
         }
 
         return $this->artifact_factory->getArtifactById($row['artifact_id']);
@@ -131,10 +121,11 @@ class Tracker_FileInfoFactory {
      *
      * @param int $id
      *
-     * @return Tracker_Artifact | null
+     * @return Artifact | null
      */
-    public function getArtifactByFileInfoId($id) {
-        static $cache = array();
+    public function getArtifactByFileInfoId($id)
+    {
+        static $cache = [];
         if (! isset($cache[$id])) {
             $row = $this->dao->searchArtifactIdByFileInfoId($id)->getRow();
             if (! $row) {
@@ -147,8 +138,9 @@ class Tracker_FileInfoFactory {
         return $this->artifact_factory->getArtifactById($cache[$id]);
     }
 
-    public function buildFileInfoData(Tracker_Artifact_Attachment_TemporaryFile $file, $path) {
-        return array(
+    public function buildFileInfoData(Tracker_Artifact_Attachment_TemporaryFile $file, $path)
+    {
+        return [
             'id'           => $file->getTemporaryName(),
             'submitted_by' => $file->getCreatorId(),
             'description'  => $file->getDescription(),
@@ -158,8 +150,6 @@ class Tracker_FileInfoFactory {
             'type'         => $file->getType(),
             'error'        => UPLOAD_ERR_OK,
             'action'       => ''
-        );
+        ];
     }
 }
-
-?>

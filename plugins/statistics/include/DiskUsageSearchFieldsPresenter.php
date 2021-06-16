@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -39,15 +39,15 @@ class DiskUsageSearchFieldsPresenter
         $start_date_value,
         $end_date_value
     ) {
-        $this->service_values     = $service_values;
-        $this->fields_values_url  = $fields_values_url;
-        $this->start_date_value   = $start_date_value;
-        $this->end_date_value     = $end_date_value;
+        $this->service_values    = $service_values;
+        $this->fields_values_url = $fields_values_url;
+        $this->start_date_value  = $start_date_value;
+        $this->end_date_value    = $end_date_value;
 
         $this->title            = $GLOBALS['Language']->getText('global', 'search_title');
-        $this->services_label   = $GLOBALS['Language']->getText('plugin_statistics', 'services_label');
-        $this->start_date_label = $GLOBALS['Language']->getText('plugin_statistics', 'start_date');
-        $this->end_date_label   = $GLOBALS['Language']->getText('plugin_statistics', 'end_date');
+        $this->services_label   = dgettext('tuleap-statistics', 'Services');
+        $this->start_date_label = dgettext('tuleap-statistics', 'Start date');
+        $this->end_date_label   = dgettext('tuleap-statistics', 'End date');
         $this->search           = $GLOBALS['Language']->getText('global', 'btn_search');
     }
 }

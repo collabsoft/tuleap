@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright 1999-2000 (c) The SourceForge Crew
- * Copyright (c) Enalean, 2016 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('pre.php');
+require_once __DIR__ . '/../include/pre.php';
 
 $request = HTTPRequest::instance();
 $request->checkUserIsSuperUser();
@@ -27,14 +27,16 @@ $csrf->check();
 
 $request = HTTPRequest::instance();
 if ($request->isPost() && $request->existAndNonEmpty('destination')) {
-
-    $validDestination = new Valid_WhiteList('destination',
-        array('preview', 'comm', 'sf', 'all', 'admin', 'sfadmin', 'devel'));
+    $validDestination = new Valid_WhiteList(
+        'destination',
+        ['preview', 'comm', 'sf', 'all', 'admin', 'sfadmin', 'devel']
+    );
     $destination      = $request->getValidated('destination', $validDestination);
 
-    $validFormat = new Valid_WhiteList('comment_format', array('html', 'text'));
+    $validFormat = new Valid_WhiteList('comment_format', ['html', 'text']);
     $bodyFormat  = $request->getValidated('comment_format', $validFormat, 'text');
 
+    $mailMessage  = '';
     $validMessage = new Valid_Text('mail_message');
     if ($request->valid($validMessage)) {
         $mailMessage = $request->get('mail_message');
@@ -50,15 +52,15 @@ if ($request->isPost() && $request->existAndNonEmpty('destination')) {
         $event_manager = EventManager::instance();
         $event_manager->processEvent(
             Event::MASSMAIL,
-            array(
+            [
                 'destination' => $destination,
                 'message'     => $mailMessage,
                 'subject'     => $mailSubject
-            )
+            ]
         );
         $GLOBALS['Response']->addFeedback(
             Feedback::INFO,
-            $GLOBALS['Language']->getText('admin_massmail', 'massmail_queued', '/admin/system_events/?queue=default'),
+            sprintf(_('The sending of the mail has been <a href="%1$s">put in the queue</a>'), '/admin/system_events/?queue=default'),
             CODENDI_PURIFIER_LIGHT
         );
         $GLOBALS['Response']->redirect('/admin/massmail.php');
@@ -73,7 +75,7 @@ if ($request->isPost() && $request->existAndNonEmpty('destination')) {
         $mail->setSubject($mailSubject);
 
         // This part would send a preview email, parameters are retrieved within the function sendPreview() in MassMail.js
-        $validMails = array();
+        $validMails = [];
         $addresses  = array_filter(
             array_map('trim', preg_split('/[,;]/', $request->get('preview-destination-external')))
         );
@@ -104,10 +106,10 @@ if ($request->isPost() && $request->existAndNonEmpty('destination')) {
         $previewDestination = implode(', ', $validMails);
         if (! $previewDestination) {
             $GLOBALS['Response']->sendJSON(
-                array(
+                [
                     'success' => false,
-                    'message' => $GLOBALS['Language']->getText('admin_massmail_execute', 'no_mails')
-                )
+                    'message' => _('No valid email to send the preview.')
+                ]
             );
             exit;
         }
@@ -115,17 +117,17 @@ if ($request->isPost() && $request->existAndNonEmpty('destination')) {
 
         if ($mail->send()) {
             $GLOBALS['Response']->sendJSON(
-                array(
+                [
                     'success' => true,
-                    'message' => $GLOBALS['Language']->getText('admin_massmail_execute', 'sending')
-                )
+                    'message' => _('Preview sent')
+                ]
             );
         } else {
             $GLOBALS['Response']->sendJSON(
-                array(
+                [
                     'success' => false,
-                    'message' => $GLOBALS['Language']->getText('admin_massmail_execute', 'no_sending')
-                )
+                    'message' => _('Preview could not be sent')
+                ]
             );
         }
     }

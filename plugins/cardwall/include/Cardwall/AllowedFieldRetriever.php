@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -51,13 +51,10 @@ class AllowedFieldRetriever
         switch ($this->form_element_factory->getType($field)) {
             case 'sb':
                 return ['rb'];
-                break;
             case 'rb':
                 return ['sb'];
-                break;
             default:
                 return [];
-                break;
         }
     }
 }

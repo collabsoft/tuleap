@@ -1,5 +1,5 @@
-/**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+/*
+ * Copyright (c) Enalean, 2018-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,12 +17,12 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const easygettextCompile = require('easygettext/src/compile.js');
+const easygettextCompile = require("./gettext/compile.js");
 
 /**
  * "Compiles" po files to easygettext json format
  */
-module.exports = function(content) {
+module.exports = function (content) {
     const json = easygettextCompile.po2json(content);
     return JSON.stringify(json);
 };

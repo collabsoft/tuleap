@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All rights reserved
+ * Copyright (c) Enalean, 2014 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -20,8 +20,8 @@
 
 namespace Test\Rest\Tracker;
 
-use \Guzzle\Http\Client;
-use \Test\Rest\RequestWrapper;
+use Guzzle\Http\Client;
+use Test\Rest\RequestWrapper;
 
 class TrackerFactory
 {

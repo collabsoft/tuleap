@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -39,15 +39,15 @@ class DB_mysql_pdo extends DB_common // @codingStandardsIgnoreLine
     public function __construct()
     {
         parent::__construct();
-        $this->phptype = 'mysql';
-        $this->dbsyntax = 'mysql';
-        $this->features = array(
+        $this->phptype       = 'mysql';
+        $this->dbsyntax      = 'mysql';
+        $this->features      = [
             'prepare' => false,
             'pconnect' => true,
             'transactions' => true,
             'limit' => 'alter'
-        );
-        $this->errorcode_map = array(
+        ];
+        $this->errorcode_map = [
             1004 => DB_ERROR_CANNOT_CREATE,
             1005 => DB_ERROR_CANNOT_CREATE,
             1006 => DB_ERROR_CANNOT_CREATE,
@@ -65,12 +65,12 @@ class DB_mysql_pdo extends DB_common // @codingStandardsIgnoreLine
             1146 => DB_ERROR_NOSUCHTABLE,
             1048 => DB_ERROR_CONSTRAINT,
             1216 => DB_ERROR_CONSTRAINT
-        );
+        ];
     }
 
     public function connect()
     {
-        $this->connection = DBFactory::getMainTuleapDB();
+        $this->connection = DBFactory::getMainTuleapDBConnection()->getDB();
         return DB_OK;
     }
 
@@ -83,7 +83,7 @@ class DB_mysql_pdo extends DB_common // @codingStandardsIgnoreLine
     {
         $this->last_query        = $query;
         $this->num_affected_rows = 0;
-        $query                    = $this->modifyQuery($query);
+        $query                   = $this->modifyQuery($query);
 
         try {
             $this->connection->getPdo()->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, true);

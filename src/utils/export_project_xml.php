@@ -1,7 +1,7 @@
-#!/usr/share/codendi/src/utils/php-launcher.sh
+#!/usr/share/tuleap/src/utils/php-launcher.sh
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,14 +19,16 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once 'pre.php';
+require_once __DIR__ . '/../www/include/pre.php';
 
+use Tuleap\Project\UGroups\SynchronizedProjectMembershipDao;
+use Tuleap\Project\UGroups\SynchronizedProjectMembershipDetector;
 use Tuleap\Project\XML\Export;
 
 $posix_user = posix_getpwuid(posix_geteuid());
 $sys_user   = $posix_user['name'];
-if ( $sys_user !== 'root' && $sys_user !== 'codendiadm' ) {
-    fwrite(STDERR, 'Unsufficient privileges for user '.$sys_user.PHP_EOL);
+if ($sys_user !== 'root' && $sys_user !== 'codendiadm') {
+    fwrite(STDERR, 'Unsufficient privileges for user ' . $sys_user . PHP_EOL);
     exit(1);
 }
 
@@ -39,11 +41,15 @@ $usage_options .= 'f';  // should we force the export
 $usage_options .= 'h';  // should we display the usage
 $usage_options .= 'x';  // should we display the XML content
 
-$long_options = array(
+$long_options = [
     'dir', 'all'
-);
+];
 
-function usage() {
+/**
+ * @psalm-return never-return
+ */
+function usage(): void
+{
     global $argv;
 
     echo <<< EOT
@@ -88,6 +94,7 @@ if (! isset($arguments['o'])) {
     usage();
 } else {
     $output = $arguments['o'];
+    assert(is_string($output));
 }
 
 $display_xml = false;
@@ -95,9 +102,9 @@ if (isset($arguments['x'])) {
     $display_xml = true;
 }
 
-$options = array();
+$options = [];
 if (isset($arguments['t'])) {
-    $options['tracker_id'] = (int)$arguments['t'];
+    $options['tracker_id'] = (int) $arguments['t'];
 }
 
 $options['force'] = isset($arguments['f']);
@@ -117,19 +124,17 @@ try {
         new UGroupManager(),
         $rng_validator,
         new UserXMLExporter(UserManager::instance(), $users_collection),
-        new ProjectXMLExporterLogger()
+        new SynchronizedProjectMembershipDetector(new SynchronizedProjectMembershipDao()),
+        ProjectXMLExporter::getLogger(),
     );
 
-    if (isset ($arguments['dir'])) {
+    if (isset($arguments['dir'])) {
         $archive = new Export\DirectoryArchive($output);
     } else {
         $archive = new Export\ZipArchive($output);
     }
 
-    $xml_security = new XML_Security();
-    $xml_security->enableExternalLoadOfEntities();
-
-    $user = UserManager::instance()->forceLogin($username);
+    $user                              = UserManager::instance()->forceLogin($username);
     $temporary_dump_path_on_filesystem = $archive->getArchivePath() . time();
 
     $xml_content       = $xml_exporter->export($project, $options, $user, $archive, $temporary_dump_path_on_filesystem);
@@ -144,58 +149,62 @@ try {
     $archive->addFromString(Export\ArchiveInterface::PROJECT_FILE, $xml_content);
     $archive->addFromString(Export\ArchiveInterface::USER_FILE, $users_xml_content);
 
-    $xml_security->disableExternalLoadOfEntities();
-
     $archive->close();
 
     $system_command = new System_Command();
-    $command = "rm -rf $temporary_dump_path_on_filesystem";
+    $command        = "rm -rf $temporary_dump_path_on_filesystem";
     $system_command->exec($command);
 
     fwrite(STDOUT, "Archive $output created." . PHP_EOL);
 
     exit(0);
 } catch (XML_ParseException $exception) {
-    fwrite(STDERR, "*** PARSE ERROR: ".$exception->getIndentedXml().PHP_EOL);
+    fwrite(STDERR, "*** PARSE ERROR: " . $exception->getIndentedXml() . PHP_EOL);
     foreach ($exception->getErrors() as $parse_error) {
-        fwrite(STDERR, "*** PARSE ERROR: ".$parse_error.PHP_EOL);
+        fwrite(STDERR, "*** PARSE ERROR: " . $parse_error . PHP_EOL);
     }
-    fwrite(STDERR, "RNG path: ". $exception->getRngPath() . PHP_EOL);
+    fwrite(STDERR, "RNG path: " . $exception->getRngPath() . PHP_EOL);
     exit(1);
 } catch (Project_NotFoundException $exception) {
-    fwrite(STDERR, "*** ERROR: Invalid -p <project> parameter: project not found".PHP_EOL);
+    fwrite(STDERR, "*** ERROR: Invalid -p <project> parameter: project not found" . PHP_EOL);
     exit(1);
 } catch (Exception $exception) {
-    fwrite(STDERR, "*** ERROR: ".$exception->getMessage().PHP_EOL);
+    fwrite(STDERR, "*** ERROR: " . $exception->getMessage() . PHP_EOL);
     exit(1);
 }
 
-class ProjectXMLExport_Archive extends ZipArchive {
+class ProjectXMLExport_Archive extends ZipArchive
+{
 
     private $archive_path;
 
-    public function open($filename, $flags = null) {
+    public function open($filename, $flags = null)
+    {
         $this->archive_path = $filename;
         return mkdir($filename, 0700, true);
     }
 
-    public function close() {
+    public function close()
+    {
         return true;
     }
 
-    public function addEmptyDir($dirname) {
-        if (!is_dir($this->archive_path.DIRECTORY_SEPARATOR.$dirname)) {
-            return mkdir($this->archive_path.DIRECTORY_SEPARATOR.$dirname, 0700);
+    public function addEmptyDir($dirname)
+    {
+        if (! is_dir($this->archive_path . DIRECTORY_SEPARATOR . $dirname)) {
+            return mkdir($this->archive_path . DIRECTORY_SEPARATOR . $dirname, 0700);
         }
         return true;
     }
 
-    public function addFile($filename, $localname = null, $start = 0, $length = 0) {
-        return copy($filename, $this->archive_path.DIRECTORY_SEPARATOR.$localname);
+    public function addFile($filename, $localname = null, $start = 0, $length = 0)
+    {
+        return copy($filename, $this->archive_path . DIRECTORY_SEPARATOR . $localname);
     }
 
-    public function addFromString($localname, $contents) {
-        file_put_contents($this->archive_path.DIRECTORY_SEPARATOR.$localname, $contents);
+    public function addFromString($localname, $contents)
+    {
+        file_put_contents($this->archive_path . DIRECTORY_SEPARATOR . $localname, $contents);
         return true;
     }
 }

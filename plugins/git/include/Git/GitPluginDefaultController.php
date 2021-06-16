@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -23,9 +23,7 @@ namespace Tuleap\Git;
 
 use EventManager;
 use GitPlugin;
-use GitRepositoryFactory;
 use HTTPRequest;
-use Tuleap\Git\GitViews\ShowRepo\RepoHeader;
 use Tuleap\Layout\BaseLayout;
 use Tuleap\Request\DispatchableWithRequest;
 
@@ -40,27 +38,16 @@ class GitPluginDefaultController implements DispatchableWithRequest
      * @var EventManager
      */
     private $event_manager;
-    /**
-     * @var GitRepositoryFactory
-     */
-    private $repository_factory;
-    /**
-     * @var RepoHeader
-     */
-    private $repo_header;
 
-    public function __construct(RouterLink $router_link, GitRepositoryFactory $repository_factory, EventManager $event_manager, RepoHeader $repo_header)
+    public function __construct(RouterLink $router_link, EventManager $event_manager)
     {
-        $this->router_link        = $router_link;
-        $this->event_manager      = $event_manager;
-        $this->repository_factory = $repository_factory;
-        $this->repo_header        = $repo_header;
+        $this->router_link   = $router_link;
+        $this->event_manager = $event_manager;
     }
 
     /**
      * Is able to process a request routed by FrontRouter
      *
-     * @param HTTPRequest $request
      * @param array       $variables
      *
      * @return void
@@ -68,19 +55,14 @@ class GitPluginDefaultController implements DispatchableWithRequest
      */
     public function process(HTTPRequest $request, BaseLayout $layout, array $variables)
     {
-        if (! $request->getProject()->usesService(gitPlugin::SERVICE_SHORTNAME)) {
+        if (! $request->getProject()->usesService(GitPlugin::SERVICE_SHORTNAME)) {
             throw new \Tuleap\Request\NotFoundException(dgettext("tuleap-git", "Git service is disabled."));
         }
 
         \Tuleap\Project\ServiceInstrumentation::increment('git');
 
         $this->event_manager->processEvent(
-            new GitAdditionalActionEvent(
-                $request,
-                $layout,
-                $this->repository_factory,
-                $this->repo_header
-            )
+            new GitAdditionalActionEvent($request)
         );
 
         $this->router_link->process($request);

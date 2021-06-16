@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All rights reserved
+ * Copyright (c) Enalean, 2015 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -18,28 +18,34 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/
  */
 
-class MediawikiAdminPanePresenter {
+class MediawikiAdminPanePresenter
+{
 
     /** @var Project */
     protected $project;
 
-    public function __construct(Project $project) {
+    public function __construct(Project $project)
+    {
         $this->project = $project;
     }
 
-    public function admin_title() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'admin_title');
+    public function admin_title()
+    {
+        return dgettext('tuleap-mediawiki', 'Mediawiki Administration');
     }
 
-    public function permissions_label() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'permissions_label');
+    public function permissions_label()
+    {
+        return dgettext('tuleap-mediawiki', 'Permissions');
     }
 
-    public function language_label() {
-        return $GLOBALS['Language']->getText('plugin_mediawiki', 'language_label');
+    public function language_label()
+    {
+        return dgettext('tuleap-mediawiki', 'Language');
     }
 
-    public function group_id() {
+    public function group_id()
+    {
         return $this->project->getID();
     }
 }

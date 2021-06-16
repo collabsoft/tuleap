@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,12 +19,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once 'common/include/Response.class.php';
+class WebDAV_Response extends Response
+{
 
-class WebDAV_Response extends Response {
-    
-    public function __construct() {
+    public function __construct()
+    {
         $this->_feedback = new Feedback();
     }
 }
-?>

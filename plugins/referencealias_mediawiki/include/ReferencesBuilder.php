@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -47,12 +47,10 @@ class ReferencesBuilder
 
     /**
      * Get a reference given a project, keyword and value (number after '#')
-     *
-     * @return Reference or null
      */
-    public function getReference(Project $project, $keyword, $value)
+    public function getReference(Project $project, $keyword, $value): ?Reference
     {
-        return $this->findReference($project, $keyword, $keyword.$value);
+        return $this->findReference($project, $keyword, $keyword . $value);
     }
 
     /**
@@ -62,9 +60,9 @@ class ReferencesBuilder
      */
     public function getExtraReferenceSpecs()
     {
-        return array(
-            array(
-                'cb'     => array($this, 'referenceFromMatch'),
+        return [
+            [
+                'cb'     => [$this, 'referenceFromMatch'],
                 'regexp' => '/
                     (?<![_a-zA-Z0-9])  # ensure the pattern is not following digits or letters
                     (?P<ref>
@@ -73,8 +71,8 @@ class ReferencesBuilder
                     )
                     (?![_A-Za-z0-9])   # ensure the pattern is not followed by digits or letters
                 /x'
-            )
-        );
+            ]
+        ];
     }
 
     /**
@@ -83,10 +81,10 @@ class ReferencesBuilder
      */
     public function referenceFromMatch($match, $project_id)
     {
-        $project         = $this->project_manager->getProject($project_id);
-        $ref             = $match['ref'];
-        $keyword         = $match['key'];
-        $value           = $match['val'];
+        $project = $this->project_manager->getProject($project_id);
+        $ref     = $match['ref'];
+        $keyword = $match['key'];
+        $value   = $match['val'];
 
         $reference = $this->findReference($project, $keyword, $ref);
 
@@ -105,11 +103,10 @@ class ReferencesBuilder
      * @param $project Project
      * @param $keyword string reference keyword (wiki)
      * @param $reference string full reference (wiki76532)
-     * @return Reference or null
      */
-    private function findReference(Project $project, $keyword, $reference)
+    private function findReference(Project $project, $keyword, $reference): ?Reference
     {
-        $row = $this->dao->getRef($reference)->getRow();
+        $row = $this->dao->getRef($reference);
         if (empty($row)) {
             return null;
         }
@@ -121,7 +118,7 @@ class ReferencesBuilder
             case 'wiki':
                 $base_id     = 0;
                 $description = '';
-                $url         = "plugins/mediawiki/wiki/".urlencode($project->getUnixNameLowerCase())."/index.php/".urlencode($target);
+                $url         = "plugins/mediawiki/wiki/" . urlencode($project->getUnixNameLowerCase()) . "/index.php/" . urlencode($target);
                 $visibility  = 'P';
                 $service     = 'mediawiki';
                 $nature      = 'mediawiki';

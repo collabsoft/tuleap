@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,11 +18,12 @@
  */
 
 /**
- * Class Rest_Token
+ *
  * I'm a token for Rest authentication
  */
 
-class Rest_Token {
+class Rest_Token
+{
 
     /** @var int */
     private $user_id;
@@ -30,16 +31,19 @@ class Rest_Token {
     /** @var  string */
     private $token_value;
 
-    public function __construct($user_id, $token_value) {
+    public function __construct($user_id, $token_value)
+    {
         $this->user_id     = $user_id;
         $this->token_value = $token_value;
     }
 
-    public function getUserId() {
+    public function getUserId()
+    {
         return $this->user_id;
     }
 
-    public function getTokenValue() {
+    public function getTokenValue()
+    {
         return $this->token_value;
     }
 }

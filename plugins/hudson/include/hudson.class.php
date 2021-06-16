@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2013 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2013 - Present. All Rights Reserved.
  * Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
  *
  * This file is a part of Tuleap.
@@ -19,78 +19,76 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('common/mvc/Controler.class.php');
-require_once('hudsonViews.class.php');
-require_once('hudsonActions.class.php');
 /**
  * hudson */
 class hudson extends Controler
 {
 
-    function request() {
-        $request =& HTTPRequest::instance();
-        $vgi = new Valid_GroupId();
+    public function request()
+    {
+        $request = HTTPRequest::instance();
+        $vgi     = new Valid_GroupId();
         $vgi->required();
         if ($request->valid($vgi)) {
             $group_id = $request->get('group_id');
-            $pm = ProjectManager::instance();
-            $project = $pm->getProject($group_id);
+            $pm       = ProjectManager::instance();
+            $project  = $pm->getProject($group_id);
             if ($project->usesService('hudson')) {
                 $user = UserManager::instance()->getCurrentUser();
                 if ($user->isMember($group_id)) {
-                    switch($request->get('action')) {
+                    switch ($request->get('action')) {
                         case 'add_job':
                             if ($user->isMember($group_id, 'A')) {
-                                if ( $request->exist('hudson_job_url') && trim($request->get('hudson_job_url') != '') ) {
+                                if ($request->exist('hudson_job_url') && trim($request->get('hudson_job_url') != '')) {
                                     $this->action = 'addJob';
                                 } else {
-                                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_hudson','job_url_missing'));
+                                    $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-hudson', 'Missing Jenkins job URL (eg: http://myCIserver:8080/jenkins/job/MyJob)'));
                                 }
                                 $this->view = 'projectOverview';
                             } else {
-                                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global','perm_denied'));
+                                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global', 'perm_denied'));
                                 $this->view = 'projectOverview';
                             }
                             break;
                         case 'edit_job':
-                            if ($user->isMember($group_id,'A')) {
+                            if ($user->isMember($group_id, 'A')) {
                                 if ($request->exist('job_id')) {
                                     $this->view = 'editJob';
                                 } else {
-                                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_hudson','job_id_missing'));
+                                    $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-hudson', 'Missing Jenkins job ID'));
                                 }
                             } else {
-                                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global','perm_denied'));
+                                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global', 'perm_denied'));
                                 $this->view = 'projectOverview';
                             }
                             break;
                         case 'update_job':
-                            if ($user->isMember($group_id,'A')) {
+                            if ($user->isMember($group_id, 'A')) {
                                 if ($request->exist('job_id')) {
                                     if ($request->exist('hudson_job_url') && $request->get('hudson_job_url') != '') {
                                         $this->action = 'updateJob';
                                     } else {
-                                        $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_hudson','job_url_missing'));
+                                        $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-hudson', 'Missing Jenkins job URL (eg: http://myCIserver:8080/jenkins/job/MyJob)'));
                                     }
                                 } else {
-                                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_hudson','job_id_missing'));
+                                    $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-hudson', 'Missing Jenkins job ID'));
                                 }
                                 $this->view = 'projectOverview';
                             } else {
-                                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global','perm_denied'));
+                                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global', 'perm_denied'));
                                 $this->view = 'projectOverview';
                             }
                             break;
                         case 'delete_job':
-                            if ($user->isMember($group_id,'A')) {
+                            if ($user->isMember($group_id, 'A')) {
                                 if ($request->exist('job_id')) {
                                     $this->action = 'deleteJob';
                                 } else {
-                                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_hudson','job_id_missing'));
+                                    $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-hudson', 'Missing Jenkins job ID'));
                                 }
                                 $this->view = 'projectOverview';
                             } else {
-                                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global','perm_denied'));
+                                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global', 'perm_denied'));
                                 $this->view = 'projectOverview';
                             }
                             break;
@@ -111,14 +109,13 @@ class hudson extends Controler
                             break;
                     }
                 } else {
-                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global','perm_denied'));
+                    $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('global', 'perm_denied'));
                 }
-
             } else {
-                $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_hudson','service_not_used'));
+                $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-hudson', 'Continuous integration service is not enabled'));
             }
         } else {
-            $GLOBALS['Response']->addFeedback('error', $GLOBALS['Language']->getText('plugin_hudson','group_id_missing'));
+            $GLOBALS['Response']->addFeedback('error', dgettext('tuleap-hudson', 'Missing group_id parameter.'));
         }
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,17 +19,19 @@
  */
 
 
-abstract class GitRepositoryCreatorImpl implements GitRepositoryCreator {
+abstract class GitRepositoryCreatorImpl implements GitRepositoryCreator
+{
 
-    public function isNameValid($name) {
+    public function isNameValid($name)
+    {
         $len = strlen($name);
         return 1 <= $len && $len < GitDao::REPO_NAME_MAX_LENGTH &&
-               !preg_match('`[^'. $this->getAllowedCharsInNamePattern() .']`', $name) &&
-               !preg_match('`(?:^|/)\.`', $name) && //do not allow dot at the begining of a world
-               !preg_match('%/$|^/%', $name) && //do not allow a slash at the beginning nor the end
-               !preg_match('`\.\.`', $name) && //do not allow double dots (prevent path collisions)
-               !preg_match('/\.git$/', $name) && //do not allow ".git" at the end since Tuleap will automatically add it, to avoid repository names like "repository.git.git"
-               !preg_match('%^u/%', $name);
+               ! preg_match('`[^' . $this->getAllowedCharsInNamePattern() . ']`', $name) &&
+               ! preg_match('`(?:^|/)\.`', $name) && //do not allow dot at the beginning of a world
+               ! preg_match('%/$|^/%', $name) && //do not allow a slash at the beginning nor the end
+               ! preg_match('`\.\.`', $name) && //do not allow double dots (prevent path collisions)
+               ! preg_match('/\.git$|\.git\//', $name) && //do not allow ".git" at the end of a repository, Tuleap will automatically add it on te git repository and the previous repository are not git repositories"
+               ! preg_match('%^u/%', $name);
     }
 
     /**
@@ -37,9 +39,9 @@ abstract class GitRepositoryCreatorImpl implements GitRepositoryCreator {
      *
      * @return string
      */
-    public function getAllowedCharsInNamePattern() {
+    public function getAllowedCharsInNamePattern()
+    {
         //alphanums, underscores, slashes and dash
         return 'a-zA-Z0-9/_.-';
     }
 }
-?>

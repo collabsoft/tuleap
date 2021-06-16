@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean 2017. All Rights Reserved.
+ * Copyright (c) Enalean 2017 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,7 +24,7 @@ use Tuleap\Event\Dispatchable;
 
 class GetAdditionalScrumAdminPaneContent implements Dispatchable
 {
-    const NAME = 'additional_scrum_admin_pane_content';
+    public const NAME = 'additional_scrum_admin_pane_content';
 
     private $additional_content = '';
 

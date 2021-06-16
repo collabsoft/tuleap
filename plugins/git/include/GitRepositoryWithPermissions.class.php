@@ -1,7 +1,6 @@
 <?php
-
 /*
- * Copyright Enalean (c) 2011, 2012, 2013. All rights reserved.
+ * Copyright Enalean (c) 2011, 2012, 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -27,25 +26,28 @@
 /**
  * Git Repository with its permissions
  */
-class GitRepositoryWithPermissions {
+class GitRepositoryWithPermissions
+{
     private $repository;
-    private $permissions = array(
-        Git::PERM_READ          => array(),
-        Git::PERM_WRITE         => array(),
-        Git::PERM_WPLUS         => array(),
-        Git::SPECIAL_PERM_ADMIN => array()
-    );
+    private $permissions = [
+        Git::PERM_READ          => [],
+        Git::PERM_WRITE         => [],
+        Git::PERM_WPLUS         => [],
+        Git::SPECIAL_PERM_ADMIN => []
+    ];
 
-    public function __construct(GitRepository $repository, array $permissions = array()) {
-        $this->repository  = $repository;
+    public function __construct(GitRepository $repository, array $permissions = [])
+    {
+        $this->repository = $repository;
         if (count($permissions) > 0) {
             $this->permissions = $permissions;
         }
     }
 
-    public function addUGroupForPermissionType($permission_type, $ugroup_id) {
-        if (!isset($this->permissions[$permission_type])) {
-            throw new RuntimeException('Invalid GIT permission type '.$permission_type);
+    public function addUGroupForPermissionType($permission_type, $ugroup_id)
+    {
+        if (! isset($this->permissions[$permission_type])) {
+            throw new RuntimeException('Invalid GIT permission type ' . $permission_type);
         }
         $this->permissions[$permission_type][] = $ugroup_id;
     }
@@ -53,7 +55,8 @@ class GitRepositoryWithPermissions {
     /**
      * @return GitRepository
      */
-    public function getRepository() {
+    public function getRepository()
+    {
         return $this->repository;
     }
 
@@ -63,9 +66,8 @@ class GitRepositoryWithPermissions {
      *
      * @return Array
      */
-    public function getPermissions() {
+    public function getPermissions()
+    {
         return $this->permissions;
     }
 }
-
-?>

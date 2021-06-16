@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -24,9 +24,13 @@ namespace Tuleap\PhpWiki\REST\v1;
 use Tuleap\REST\v1\PhpWikiPageRepresentation;
 use WikiPageVersion;
 
-class PhpWikiPageVersionRepresentation {
+/**
+ * @psalm-immutable
+ */
+class PhpWikiPageVersionRepresentation
+{
 
-    const ROUTE = 'versions';
+    public const ROUTE = 'versions';
 
     /**
      * @var int {@type int}
@@ -38,8 +42,14 @@ class PhpWikiPageVersionRepresentation {
      */
     public $uri;
 
-    public function build(WikiPageVersion $version) {
+    protected function __construct(WikiPageVersion $version)
+    {
         $this->version_id = $version->getVersionId();
-        $this->uri        = PhpWikiPageRepresentation::ROUTE . '/' . $version->getPageId() . '/'.self::ROUTE .'?version_id='.$this->version_id;
+        $this->uri        = PhpWikiPageRepresentation::ROUTE . '/' . $version->getPageId() . '/' . self::ROUTE . '?version_id=' . $this->version_id;
+    }
+
+    public static function build(WikiPageVersion $version): PhpWikiPageVersionRepresentation
+    {
+        return new self($version);
     }
 }

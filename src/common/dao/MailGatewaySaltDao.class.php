@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean SAS 2014. All rights reserved
+ * Copyright (c) Enalean SAS 2014 - Present. All rights reserved
  *
  * Tuleap is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +16,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class MailGatewaySaltDao extends DataAccessObject {
+class MailGatewaySaltDao extends DataAccessObject
+{
 
-    public function searchMailSalt(){
+    public function searchMailSalt()
+    {
         $sql = "SELECT salt
                 FROM email_gateway_salt";
 

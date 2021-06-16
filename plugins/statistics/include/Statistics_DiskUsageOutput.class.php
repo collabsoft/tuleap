@@ -21,20 +21,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-require_once 'Statistics_DiskUsageManager.class.php';
-
-class Statistics_DiskUsageOutput {
+class Statistics_DiskUsageOutput
+{
     protected $_dum;
-    
-    public function __construct(Statistics_DiskUsageManager $dum) {
+
+    public function __construct(Statistics_DiskUsageManager $dum)
+    {
         $this->_dum = $dum;
     }
 
     /**
      * Return human readable sizes
      *
-     * @author      Aidan Lister <aidan@php.net>
-     * @version     1.3.0
      * @link        http://aidanlister.com/repos/v/function.size_readable.php
      * @param       int     $size        size in bytes
      * @param       string  $max         maximum unit
@@ -44,11 +42,11 @@ class Statistics_DiskUsageOutput {
     public function sizeReadable($size, $max = null, $system = 'bi', $retstring = 'auto')
     {
         // Pick units
-        $systems['si']['prefix'] = array('B', 'K', 'MB', 'GB', 'TB', 'PB');
+        $systems['si']['prefix'] = ['B', 'K', 'MB', 'GB', 'TB', 'PB'];
         $systems['si']['size']   = 1000;
-        $systems['bi']['prefix'] = array('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB');
+        $systems['bi']['prefix'] = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
         $systems['bi']['size']   = 1024;
-        $sys = isset($systems[$system]) ? $systems[$system] : $systems['si'];
+        $sys                     = isset($systems[$system]) ? $systems[$system] : $systems['si'];
 
         // Max unit to display
         $depth = count($sys['prefix']) - 1;
@@ -66,16 +64,20 @@ class Statistics_DiskUsageOutput {
         // Adapt the decimal places to the number of digit:
         // 1.24 / 12.3 / 123
         if ($retstring == 'auto') {
-            $nbDigit = (int)(log(abs($size))/log(10)) + 1;
+            $nbDigit = (int) (log(abs($size)) / log(10)) + 1;
             switch ($nbDigit) {
-            case 1:  $retstring = '%.2f %s'; break;
-            case 2:  $retstring = '%.1f %s'; break;
-            default: $retstring = '%d %s'; break;
+                case 1:
+                    $retstring = '%.2f %s';
+                    break;
+                case 2:
+                    $retstring = '%.1f %s';
+                    break;
+                default:
+                    $retstring = '%d %s';
+                    break;
             }
         }
 
         return sprintf($retstring, $size, $sys['prefix'][$i]);
     }
 }
-
-?>

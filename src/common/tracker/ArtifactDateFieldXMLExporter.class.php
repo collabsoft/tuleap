@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,28 +18,33 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ArtifactDateFieldXMLExporter extends ArtifactAlphaNumFieldXMLExporter {
-    const TV3_DISPLAY_TYPE = 'DF';
-    const TV3_DATA_TYPE    = '4';
-    const TV3_VALUE_INDEX  = 'valueDate';
-    const TV3_TYPE         = 'DF_4';
-    const TV5_TYPE         = 'date';
+class ArtifactDateFieldXMLExporter extends ArtifactAlphaNumFieldXMLExporter
+{
+    public const TV3_DISPLAY_TYPE = 'DF';
+    public const TV3_DATA_TYPE    = '4';
+    public const TV3_VALUE_INDEX  = 'valueDate';
+    public const TV3_TYPE         = 'DF_4';
+    public const TV5_TYPE         = 'date';
 
-    const SPECIAL_DATE_FIELD = 'close_date';
+    public const SPECIAL_DATE_FIELD = 'close_date';
 
-    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row) {
+    public function appendNode(DOMElement $changeset_node, $tracker_id, $artifact_id, array $row)
+    {
         $this->appendStringNode($changeset_node, self::TV5_TYPE, $row);
     }
 
-    protected function getNodeValue($value) {
+    protected function getNodeValue($value)
+    {
         return $this->node_helper->getDateNodeFromTimestamp('value', $value);
     }
 
-    public function getFieldValueIndex() {
+    public function getFieldValueIndex()
+    {
         return self::TV3_VALUE_INDEX;
     }
 
-    public function getCurrentFieldValue(array $field_value_row, $tracker_id) {
+    public function getCurrentFieldValue(array $field_value_row, $tracker_id)
+    {
         if ($field_value_row['field_name'] === self::SPECIAL_DATE_FIELD) {
             return;
         }

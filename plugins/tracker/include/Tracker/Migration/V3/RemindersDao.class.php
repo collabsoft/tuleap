@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,9 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Migration_V3_RemindersDao extends DataAccessObject {
+class Tracker_Migration_V3_RemindersDao extends DataAccessObject
+{
 
-    public function create($tv3_id, $tv5_id) {
+    public function create($tv3_id, $tv5_id)
+    {
         $tv3_id = $this->da->escapeInt($tv3_id);
         $tv5_id = $this->da->escapeInt($tv5_id);
 
@@ -34,8 +36,8 @@ class Tracker_Migration_V3_RemindersDao extends DataAccessObject {
                 WHERE group_artifact_id = $tv3_id";
         foreach ($this->retrieve($sql) as $old_date_reminder) {
             $ugroups = $this->extractUgroups($old_date_reminder['notified_people']);
-            $roles = $this->extractTrackerRoles($old_date_reminder['notified_people']);
-            if (! $ugroups && !$roles) {
+            $roles   = $this->extractTrackerRoles($old_date_reminder['notified_people']);
+            if (! $ugroups && ! $roles) {
                 continue;
             }
 
@@ -56,7 +58,8 @@ class Tracker_Migration_V3_RemindersDao extends DataAccessObject {
         return count($this->retrieve($sql_v3)) > 0;
     }
 
-    private function getStart($old_date_reminder) {
+    private function getStart($old_date_reminder)
+    {
         $start = $old_date_reminder['notification_start'];
         if ($old_date_reminder['notification_type'] == Tracker_DateReminder::AFTER) {
             $start = -$start;
@@ -64,40 +67,42 @@ class Tracker_Migration_V3_RemindersDao extends DataAccessObject {
         return $start;
     }
 
-    private function createReminderList($nb_emails, $tv5_id, $field_id, $ugroups, $roles, $notification_type, $start, $frequency) {
-        for ($i = 0 ; $i < $nb_emails ; $i++) {
+    private function createReminderList($nb_emails, $tv5_id, $field_id, $ugroups, $roles, $notification_type, $start, $frequency)
+    {
+        for ($i = 0; $i < $nb_emails; $i++) {
             $this->createReminder($i, $tv5_id, $field_id, $ugroups, $roles, $notification_type, $start, $frequency);
         }
     }
 
-    private function createReminder($i, $tv5_id, $field_id, $ugroups, $roles, $notification_type, $start, $frequency) {
+    private function createReminder($i, $tv5_id, $field_id, $ugroups, $roles, $notification_type, $start, $frequency)
+    {
         $status  = Tracker_DateReminder::ENABLED;
         $ugroups = $this->da->quoteSmart($ugroups);
 
         $distance = $start - $i * $frequency;
         if ($distance < 0) {
-            $distance = abs($distance);
+            $distance          = abs($distance);
             $notification_type = Tracker_DateReminder::AFTER;
         }
-        $sql = "INSERT INTO tracker_reminder (tracker_id, field_id, ugroups, notification_type, distance, status)
+        $sql        = "INSERT INTO tracker_reminder (tracker_id, field_id, ugroups, notification_type, distance, status)
                 VALUES ($tv5_id, $field_id, $ugroups,  $notification_type, $distance, $status)";
         $reminderId = $this->updateAndGetLastId($sql);
-        if ($reminderId && !empty($roles)) {
-            $values = array();
-            foreach($roles as $role) {
-                $role = (int)$this->da->escapeInt($role);
+        if ($reminderId && ! empty($roles)) {
+            $values = [];
+            foreach ($roles as $role) {
+                $role     = (int) $this->da->escapeInt($role);
                 $values[] = " (
-                        ".$reminderId.",
-                        ".$role."
+                        " . $reminderId . ",
+                        " . $role . "
                     )";
             }
             $values = implode(', ', $values);
-            $sql = "INSERT INTO tracker_reminder_notified_roles
+            $sql    = "INSERT INTO tracker_reminder_notified_roles
                         (
                         reminder_id,
                         role_id
                         )
-                    VALUES ".$values;
+                    VALUES " . $values;
             $this->update($sql);
         }
     }
@@ -109,11 +114,12 @@ class Tracker_Migration_V3_RemindersDao extends DataAccessObject {
      *
      * @return string
      */
-    private function extractUgroups($notified_people) {
-        $ugroups = array();
+    private function extractUgroups($notified_people)
+    {
+        $ugroups = [];
         foreach (explode(',', $notified_people) as $id) {
             $id = trim($id);
-            if ($id{0} == 'g') {
+            if ($id[0] == 'g') {
                 $ugroups[] = substr($id, 1);
             }
         }
@@ -129,11 +135,12 @@ class Tracker_Migration_V3_RemindersDao extends DataAccessObject {
      *
      * @return Array
      */
-    private function extractTrackerRoles($notified_people) {
-        $roles = array();
+    private function extractTrackerRoles($notified_people)
+    {
+        $roles = [];
         foreach (explode(',', $notified_people) as $id) {
-            $id = trim($id);
-            $role = array("1", "2", "4");
+            $id   = trim($id);
+            $role = ["1", "2", "4"];
             if (in_array($id, $role)) {
                 $roles[] = ($id == "4") ? "3" : $id;
             }
@@ -141,5 +148,3 @@ class Tracker_Migration_V3_RemindersDao extends DataAccessObject {
         return $roles;
     }
 }
-
-?>

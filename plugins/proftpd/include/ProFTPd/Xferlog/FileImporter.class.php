@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2014 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2014 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,11 +20,9 @@
 
 namespace Tuleap\ProFTPd\Xferlog;
 
-use \Exception;
-use \PFUser;
-use \ProjectManager;
+use ProjectManager;
 use UserDao;
-use \UserManager;
+use UserManager;
 
 class FileImporter
 {
@@ -41,7 +39,7 @@ class FileImporter
     /** @var ProjectManager */
     private $project_manager;
 
-    /** @var integer */
+    /** @var int */
     private $nb_lines_imported;
 
     /** @var string[] */
@@ -138,7 +136,7 @@ class FileImporter
         $project_name = $this->getProjectUnixName($entry);
         if ($project_name) {
             $project = $this->project_manager->getProjectByUnixName($project_name);
-            if ($project && !$project->isError()) {
+            if ($project && ! $project->isError()) {
                 return $project->getId();
             }
         }
@@ -150,9 +148,8 @@ class FileImporter
     {
         if (strpos($entry->filename, $this->base_dir) === 0) {
             $entry->filename = substr($entry->filename, strlen($this->base_dir));
-
         }
-        $matches = array();
+        $matches = [];
         if (preg_match('%^/([^/]+)/.*%', $entry->filename, $matches)) {
             return $matches[1];
         }

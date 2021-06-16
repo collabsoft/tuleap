@@ -1,5 +1,4 @@
 <?php
-//
 //  Pear DB Pager - Retrieve and return information of databases
 //                  result sets
 //
@@ -22,9 +21,8 @@
 //
 // $Id: Pager.php,v 1.2 2004/04/26 20:44:37 rurban Exp $
 ///
-// Based on DB_Pager 0.7 from the pear.php.net repository. 
+// Based on DB_Pager 0.7 from the pear.php.net repository.
 // The only modifications made have been modification of the include paths.
-//
 rcs_id('$Id: Pager.php,v 1.2 2004/04/26 20:44:37 rurban Exp $');
 rcs_id('From Pear CVS: Id: Pager.php,v 1.3 2002/05/12 13:59:40 cox Exp');
 
@@ -61,8 +59,6 @@ require_once 'DB.php';
 * // XXX code for building the pager here
 * ? >
 *
-* @version 0.7
-* @author Tomas V.V.Cox <cox@idecnet.com>
 * @see http://vulcanonet.com/soft/pager/
 */
 
@@ -81,11 +77,11 @@ class DB_Pager extends PEAR
     *    and supply later to the constructor
     * @deprecated
     */
-    function __construct (&$res, $from, $limit, $numrows = null)
+    public function __construct(&$res, $from, $limit, $numrows = null)
     {
-        $this->res = $res;
-        $this->from = $from;
-        $this->limit = $limit;
+        $this->res     = $res;
+        $this->from    = $from;
+        $this->limit   = $limit;
         $this->numrows = $numrows;
     }
 
@@ -97,7 +93,7 @@ class DB_Pager extends PEAR
     * @see DB_Pager::getData
     * @deprecated
     */
-    function build()
+    public function build()
     {
         // if there is no numrows given, calculate it
         if ($this->numrows === null) {
@@ -111,14 +107,14 @@ class DB_Pager extends PEAR
             return $data;
         }
         $this->current = $this->from - 1;
-        $this->top = $data['to'];
+        $this->top     = $data['to'];
         return $data;
     }
 
     /**
     * @deprecated
     */
-    function fetchRow($mode=DB_FETCHMODE_DEFAULT)
+    public function fetchRow($mode = DB_FETCHMODE_DEFAULT)
     {
         $this->current++;
         if ($this->current >= $this->top) {
@@ -130,7 +126,7 @@ class DB_Pager extends PEAR
     /**
     * @deprecated
     */
-    function fetchInto(&$arr, $mode=DB_FETCHMODE_DEFAULT)
+    public function fetchInto(&$arr, $mode = DB_FETCHMODE_DEFAULT)
     {
         $this->current++;
         if ($this->current >= $this->top) {
@@ -170,7 +166,7 @@ class DB_Pager extends PEAR
     * @return array associative array with data or DB_error on error
     *
     */
-    function &getData($from, $limit, $numrows, $maxpages = false)
+    public function &getData($from, $limit, $numrows, $maxpages = false)
     {
         if (empty($numrows) || ($numrows < 0)) {
             return null;
@@ -178,12 +174,19 @@ class DB_Pager extends PEAR
         $from = (empty($from)) ? 0 : $from;
 
         if ($limit <= 0) {
-            return PEAR::raiseError (null, 'wrong "limit" param', null,
-                                     null, null, 'DB_Error', true);
+            return PEAR::raiseError(
+                null,
+                'wrong "limit" param',
+                null,
+                null,
+                null,
+                'DB_Error',
+                true
+            );
         }
 
         // Total number of pages
-        $pages = ceil($numrows/$limit);
+        $pages            = ceil($numrows / $limit);
         $data['numpages'] = $pages;
 
         // first & last page
@@ -191,9 +194,9 @@ class DB_Pager extends PEAR
         $data['lastpage']  = $pages;
 
         // Build pages array
-        $data['pages'] = array();
-        for ($i=1; $i <= $pages; $i++) {
-            $offset = $limit * ($i-1);
+        $data['pages'] = [];
+        for ($i = 1; $i <= $pages; $i++) {
+            $offset            = $limit * ($i - 1);
             $data['pages'][$i] = $offset;
             // $from must point to one page
             if ($from == $offset) {
@@ -201,14 +204,21 @@ class DB_Pager extends PEAR
                 $data['current'] = $i;
             }
         }
-        if (!isset($data['current'])) {
-            return PEAR::raiseError (null, 'wrong "from" param', null,
-                                     null, null, 'DB_Error', true);
+        if (! isset($data['current'])) {
+            return PEAR::raiseError(
+                null,
+                'wrong "from" param',
+                null,
+                null,
+                null,
+                'DB_Error',
+                true
+            );
         }
 
         // Limit number of pages (goole algoritm)
         if ($maxpages) {
-            $radio = floor($maxpages/2);
+            $radio   = floor($maxpages / 2);
             $minpage = $data['current'] - $radio;
             if ($minpage < 1) {
                 $minpage = 1;
@@ -220,27 +230,27 @@ class DB_Pager extends PEAR
             foreach (range($minpage, $maxpage) as $page) {
                 $tmp[$page] = $data['pages'][$page];
             }
-            $data['pages'] = $tmp;
+            $data['pages']    = $tmp;
             $data['maxpages'] = $maxpages;
         } else {
             $data['maxpages'] = null;
         }
 
         // Prev link
-        $prev = $from - $limit;
+        $prev         = $from - $limit;
         $data['prev'] = ($prev >= 0) ? $prev : null;
 
         // Next link
-        $next = $from + $limit;
+        $next         = $from + $limit;
         $data['next'] = ($next < $numrows) ? $next : null;
 
         // Results remaining in next page & Last row to fetch
         if ($data['current'] == $pages) {
             $data['remain'] = 0;
-            $data['to'] = $numrows;
+            $data['to']     = $numrows;
         } else {
             if ($data['current'] == ($pages - 1)) {
-                $data['remain'] = $numrows - ($limit*($pages-1));
+                $data['remain'] = $numrows - ($limit * ($pages - 1));
             } else {
                 $data['remain'] = $limit;
             }
@@ -253,4 +263,3 @@ class DB_Pager extends PEAR
         return $data;
     }
 }
-?>

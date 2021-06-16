@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012-Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,43 +21,42 @@
 /**
  * This class allows a human to read a wsdl
  */
-class SOAP_WSDLRenderer {
-    
+class SOAP_WSDLRenderer
+{
+
     /**
      * Output a html view of the given wsdl
      *
      * @param string $wsdl_uri https://example.com/plugins/statistics/soap/?wsdl
      */
-    public function render($wsdl_uri) {
-        $xml_security = new XML_Security();
-        $xml_security->enableExternalLoadOfEntities();
-
+    public function render($wsdl_uri)
+    {
         $proc = new XSLTProcessor();
 
         $xslDoc = new DOMDocument();
-        $xslDoc->load(ForgeConfig::get('codendi_dir')."/src/www/soap/wsdl-viewer.xsl");
+        $xslDoc->loadXML(\file_get_contents(__DIR__ . '/../../www/soap/wsdl-viewer.xsl'));
         $proc->importStylesheet($xslDoc);
-        
+
         $xmlDoc = new DOMDocument();
         $xmlDoc->loadXML($this->getWSDL($wsdl_uri));
         echo $proc->transformToXML($xmlDoc);
-
-        $xml_security->disableExternalLoadOfEntities();
     }
 
-    private function getWSDL($wsdl_uri) {
+    private function getWSDL($wsdl_uri)
+    {
         return file_get_contents($wsdl_uri, false, stream_context_create($this->getHTTPContext()));
     }
 
-    private function getHTTPContext() {
+    private function getHTTPContext()
+    {
         if (ForgeConfig::get('sys_use_unsecure_ssl_certificate', false)) {
-            return array(
-                'ssl' => array(
+            return [
+                'ssl' => [
                     'verify_peer'       => false,
                     'verify_peer_name'  => false,
-                )
-            );
+                ]
+            ];
         }
-        return array();
+        return [];
     }
 }

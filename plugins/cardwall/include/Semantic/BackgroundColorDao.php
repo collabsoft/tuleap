@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2018 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -28,7 +28,7 @@ class BackgroundColorDao extends DataAccessObject
     {
         $sql = "SELECT field_id FROM plugin_cardwall_background_color_card_field WHERE tracker_id = ?";
 
-        return $this->getDB()->single($sql, [ $tracker_id ]);
+        return $this->getDB()->single($sql, [$tracker_id]);
     }
 
     public function save($tracker_id, $field_id)

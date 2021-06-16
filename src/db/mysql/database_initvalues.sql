@@ -1,5 +1,5 @@
 #
-# Copyright (c) Enalean 2014-2017. All rights reserved
+# Copyright (c) Enalean 2014 - Present. All rights reserved
 # Copyright (c) Xerox Corporation, Codendi Team, 2001-2009. All rights reserved
 #
 # This file is a part of Tuleap.
@@ -55,7 +55,6 @@ INSERT INTO user SET \
         authorized_keys = NULL, \
         email_new = NULL, \
         timezone = 'GMT', \
-        theme = '', \
         language_id = 'en_US', \
         last_pwd_update = '0';
 
@@ -86,7 +85,6 @@ INSERT INTO user SET \
         authorized_keys = NULL, \
         email_new = NULL, \
         timezone = 'GMT', \
-        theme = '', \
         language_id = 'en_US', \
         last_pwd_update = '0';
 
@@ -112,20 +110,8 @@ INSERT INTO groups SET \
   svn_box = 'svn1', \
   register_time = 940000000, \
   rand_hash = '', \
-  new_bug_address = 'codendi-admin@_DOMAIN_NAME_', \
-  new_patch_address = 'codendi-admin@_DOMAIN_NAME_', \
-  new_support_address = 'codendi-admin@_DOMAIN_NAME_', \
   type = '1', \
-  send_all_bugs = '1', \
-  send_all_patches = '1', \
-  send_all_support = '1', \
-  bug_preamble = '', \
-  support_preamble = '', \
-  patch_preamble = '', \
-  pm_preamble = '', \
-  xrx_export_ettm = '0', \
   built_from_template = '100', \
-  bug_allow_anon = '1', \
   cvs_tracker = '1', \
   cvs_events_mailing_list = '', \
   cvs_events_mailing_header = '', \
@@ -149,20 +135,8 @@ INSERT INTO groups SET \
   svn_box = 'svn1', \
   register_time = 940000000, \
   rand_hash = '', \
-  new_bug_address = '', \
-  new_patch_address = '', \
-  new_support_address = '', \
   type = '1', \
-  send_all_bugs = '0', \
-  send_all_patches = '0', \
-  send_all_support = '0', \
-  bug_preamble = '', \
-  support_preamble = '', \
-  patch_preamble = '', \
-  pm_preamble = '', \
-  xrx_export_ettm = '0', \
   built_from_template = '100', \
-  bug_allow_anon = '1', \
   cvs_tracker = '0', \
   cvs_events_mailing_list = '', \
   cvs_events_mailing_header = '', \
@@ -187,20 +161,8 @@ INSERT INTO groups SET \
   svn_box = '', \
   register_time = 940000000, \
   rand_hash = '', \
-  new_bug_address = '', \
-  new_patch_address = '', \
-  new_support_address = '', \
   type = '2', \
-  send_all_bugs = '0', \
-  send_all_patches = '0', \
-  send_all_support = '0', \
-  bug_preamble = '', \
-  support_preamble = '', \
-  patch_preamble = '', \
-  pm_preamble = '', \
-  xrx_export_ettm = '0', \
   built_from_template = '100', \
-  bug_allow_anon = '1', \
   cvs_tracker = '1', \
   cvs_events_mailing_list = '', \
   cvs_events_mailing_header = '', \
@@ -257,14 +219,10 @@ INSERT INTO frs_filetype VALUES ('8002','html');
 INSERT INTO frs_filetype VALUES ('8003','pdf');
 INSERT INTO frs_filetype VALUES ('9999','Other');
 
-INSERT INTO frs_processor VALUES ('1000','i386','10','100');
 INSERT INTO frs_processor VALUES ('1500','x86_64','15','100');
-INSERT INTO frs_processor VALUES ('2000','PPC','20','100');
-INSERT INTO frs_processor VALUES ('3000','MIPS','30','100');
-INSERT INTO frs_processor VALUES ('4000','Sparc','40','100');
-INSERT INTO frs_processor VALUES ('5000','UltraSparc','50','100');
-INSERT INTO frs_processor VALUES ('6000','IA64','60','100');
-INSERT INTO frs_processor VALUES ('7000','Alpha','70','100');
+INSERT INTO frs_processor VALUES ('2000','ARMv7','20','100');
+INSERT INTO frs_processor VALUES ('3000','ARMv8','30','100');
+INSERT INTO frs_processor VALUES ('4000','RISC-V','40','100');
 INSERT INTO frs_processor VALUES ('8000','Any','80','100');
 INSERT INTO frs_processor VALUES ('9999','Other','90','100');
 
@@ -496,7 +454,7 @@ INSERT INTO reference SET \
     id='15',        \
     keyword='file', \
     description='reference_file_desc_key', \
-    link='/file/confirm_download.php?group_id=$group_id&file_id=$1', \
+    link='', \
     scope='S', \
     service_short_name='file', \
     nature='file';
@@ -591,16 +549,18 @@ INSERT INTO forum_group_list (group_id,forum_name,is_public,description) VALUES 
 
 INSERT INTO system_events_followers (emails, types) VALUES ('admin', 'WARNING,ERROR');
 
-INSERT INTO homepage (use_standard_homepage) VALUES (1);
-
-INSERT INTO homepage_headline (language_id, headline) VALUES
-('en_US', 'Tuleap helps teams to deliver awesome applications, better, faster, and easier.
-Here you plan, track, code, and collaborate on software projects.'),
-('fr_FR', 'Avec Tuleap, les équipes livrent les applications plus rapidement, plus efficacement et de meilleure qualité.
-Venez planifier, suivre, développer & collaborer sur vos projets logiciels.');
-
 INSERT INTO forgeconfig (name, value) VALUES ('access_mode', 'anonymous');
-INSERT INTO forgeconfig (name, value) VALUES ('sys_project_approval', '1');
+INSERT INTO forgeconfig (name, value) VALUES ('sys_project_approval', '0');
+INSERT INTO forgeconfig (name, value) VALUES ('sys_user_approval', '0');
+INSERT INTO forgeconfig (name, value) VALUES ('display_homepage_statistics', '1');
+INSERT INTO forgeconfig (name, value) VALUES ('display_homepage_news', '1');
+INSERT INTO forgeconfig (name, value) VALUES ('display_tuleap_review_link', '1');
+INSERT INTO forgeconfig (name, value) VALUES ('default_project_visibility', 'public');
+INSERT INTO forgeconfig (name, value) VALUES ('sys_suspend_inactive_accounts_notification_delay', '0');
+INSERT INTO forgeconfig (name, value) VALUES ('enable_not_mandatory_description', '1');
+INSERT INTO forgeconfig (name, value) VALUES ('force_new_project_creation_usage', '1');
+INSERT INTO forgeconfig (name, value) VALUES ('can_use_default_site_template', '0');
+INSERT INTO forgeconfig (name, value) VALUES ('sys_suspend_send_account_suspension_email', '0');
 
 INSERT INTO password_configuration (breached_password_enabled) VALUES (1);
 

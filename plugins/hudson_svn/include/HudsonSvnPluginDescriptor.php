@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -20,15 +20,15 @@
 
 namespace Tuleap\HudsonSvn\Plugin;
 
-class HudsonSvnPluginDescriptor extends \PluginDescriptor {
+class HudsonSvnPluginDescriptor extends \PluginDescriptor
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct(
-            $GLOBALS['Language']->getText('plugin_hudson_svn', 'descriptor_name'),
+            dgettext('tuleap-hudson_svn', 'Continuous Integration for Subversion plugin'),
             false,
-            $GLOBALS['Language']->getText('plugin_hudson_svn', 'descriptor_description')
+            dgettext('tuleap-hudson_svn', 'Continuous Integration with Hudson/Jenkins for Subversion plugin')
         );
-
-        $this->setVersionFromFile(HUDSON_SVN_BASE_DIR.'/VERSION');
     }
 }

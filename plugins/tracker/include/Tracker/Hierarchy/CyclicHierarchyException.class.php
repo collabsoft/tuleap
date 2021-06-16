@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2012. All Rights Reserved.
+ * Copyright (c) Enalean, 2012 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,10 +18,11 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class Tracker_Hierarchy_CyclicHierarchyException extends Exception {
-    
-    function __construct() {
-        parent::__construct($GLOBALS['Language']->getText('plugin_tracker_hierarchy', 'error_is_cyclic'));
+class Tracker_Hierarchy_CyclicHierarchyException extends Exception
+{
+
+    public function __construct()
+    {
+        parent::__construct(dgettext('tuleap-tracker', 'Tracker hierarchy is Cyclic'));
     }
 }
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -19,21 +19,23 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-class PermissionsUGroupMapper {
+class PermissionsUGroupMapper
+{
 
-    private $mapping = array(
+    private $mapping = [
         ProjectUGroup::ANONYMOUS     => ProjectUGroup::ANONYMOUS,
         ProjectUGroup::AUTHENTICATED => ProjectUGroup::REGISTERED,
         ProjectUGroup::REGISTERED    => ProjectUGroup::REGISTERED,
-    );
+    ];
 
-    public function __construct(Project $project) {
+    public function __construct(Project $project)
+    {
         if (! $project->isPublic()) {
-            $this->mapping = array(
+            $this->mapping = [
                 ProjectUGroup::ANONYMOUS     => ProjectUGroup::PROJECT_MEMBERS,
                 ProjectUGroup::AUTHENTICATED => ProjectUGroup::PROJECT_MEMBERS,
                 ProjectUGroup::REGISTERED    => ProjectUGroup::PROJECT_MEMBERS,
-            );
+            ];
         } else {
             if (! ForgeConfig::areAnonymousAllowed()) {
                 if (ForgeConfig::areRestrictedUsersAllowed() && $project->allowsRestricted()) {
@@ -49,7 +51,8 @@ class PermissionsUGroupMapper {
         }
     }
 
-    public function getUGroupIdAccordingToMapping($ugroup_id) {
+    public function getUGroupIdAccordingToMapping($ugroup_id)
+    {
         if (isset($this->mapping[$ugroup_id])) {
             return $this->mapping[$ugroup_id];
         }

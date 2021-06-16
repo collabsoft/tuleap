@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2015 - 2018. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,105 +18,141 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use Tuleap\AgileDashboard\BacklogItem\RemainingEffortValueRetriever;
 use Tuleap\AgileDashboard\BreadCrumbDropdown\AdministrationCrumbBuilder;
 use Tuleap\AgileDashboard\BreadCrumbDropdown\AgileDashboardCrumbBuilder;
-use Tuleap\AgileDashboard\BreadCrumbDropdown\MilestoneCrumbBuilder;
 use Tuleap\AgileDashboard\BreadCrumbDropdown\VirtualTopMilestoneCrumbBuilder;
-use Tuleap\AgileDashboard\FormElement\BurnupFieldRetriever;
-use Tuleap\AgileDashboard\Milestone\ParentTrackerRetriever;
-use Tuleap\AgileDashboard\MonoMilestone\MonoMilestoneBacklogItemDao;
-use Tuleap\AgileDashboard\MonoMilestone\MonoMilestoneItemsFinder;
+use Tuleap\AgileDashboard\ExplicitBacklog\ArtifactsInExplicitBacklogDao;
+use Tuleap\AgileDashboard\ExplicitBacklog\ExplicitBacklogDao;
+use Tuleap\AgileDashboard\FormElement\Burnup\CountElementsModeChecker;
+use Tuleap\AgileDashboard\FormElement\Burnup\ProjectsCountModeDao;
+use Tuleap\AgileDashboard\Milestone\AllBreadCrumbsForMilestoneBuilder;
+use Tuleap\AgileDashboard\Milestone\HeaderOptionsProvider;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker;
 use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneDao;
 use Tuleap\AgileDashboard\PermissionsPerGroup\AgileDashboardJSONPermissionsRetriever;
 use Tuleap\AgileDashboard\PermissionsPerGroup\AgileDashboardPermissionsRepresentationBuilder;
 use Tuleap\AgileDashboard\PermissionsPerGroup\PlanningPermissionsRepresentationBuilder;
+use Tuleap\AgileDashboard\Planning\HeaderOptionsForPlanningProvider;
+use Tuleap\AgileDashboard\Planning\PlanningDao;
+use Tuleap\AgileDashboard\Planning\PlanningUpdater;
+use Tuleap\AgileDashboard\Planning\RootPlanning\BacklogTrackerRemovalChecker;
+use Tuleap\AgileDashboard\Planning\RootPlanning\UpdateIsAllowedChecker;
 use Tuleap\AgileDashboard\Planning\ScrumPlanningFilter;
-use Tuleap\AgileDashboard\REST\v1\BacklogItemRepresentationFactory;
-use Tuleap\Cardwall\BackgroundColor\BackgroundColorBuilder;
+use Tuleap\AgileDashboard\Scrum\ScrumPresenterBuilder;
+use Tuleap\AgileDashboard\Workflow\AddToTopBacklogPostActionDao;
+use Tuleap\DB\DBFactory;
+use Tuleap\DB\DBTransactionExecutorWithConnection;
+use Tuleap\layout\NewDropdown\CurrentContextSectionToHeaderOptionsInserter;
 use Tuleap\Project\Admin\PermissionsPerGroup\PermissionPerGroupUGroupRepresentationBuilder;
-use Tuleap\Tracker\FormElement\Field\ListFields\Bind\BindDecoratorRetriever;
+use Tuleap\Tracker\Artifact\RecentlyVisited\VisitRecorder;
+use Tuleap\Tracker\NewDropdown\TrackerNewDropdownLinkPresenterBuilder;
+use Tuleap\Tracker\Semantic\Timeframe\SemanticTimeframeBuilder;
+use Tuleap\User\ProvideCurrentUser;
 
-class AgileDashboardRouterBuilder
+class AgileDashboardRouterBuilder // phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace
 {
     /** PluginFactory */
     private $plugin_factory;
+    /**
+     * @var Planning_MilestonePaneFactory
+     */
+    private $pane_factory;
+    /**
+     * @var VisitRecorder
+     */
+    private $visit_recorder;
+    /**
+     * @var AllBreadCrumbsForMilestoneBuilder
+     */
+    private $all_bread_crumbs_for_milestone_builder;
+    /**
+     * @var AgileDashboard_Milestone_Backlog_BacklogFactory
+     */
+    private $backlog_factory;
+    private ProvideCurrentUser $current_user_provider;
 
-    public function __construct()
-    {
-        $this->plugin_factory = PluginFactory::instance();
+    public function __construct(
+        PluginFactory $plugin_factory,
+        Planning_MilestonePaneFactory $pane_factory,
+        VisitRecorder $visit_recorder,
+        AllBreadCrumbsForMilestoneBuilder $all_bread_crumbs_for_milestone_builder,
+        AgileDashboard_Milestone_Backlog_BacklogFactory $backlog_factory,
+        ProvideCurrentUser $current_user_provider
+    ) {
+        $this->plugin_factory                         = $plugin_factory;
+        $this->pane_factory                           = $pane_factory;
+        $this->visit_recorder                         = $visit_recorder;
+        $this->all_bread_crumbs_for_milestone_builder = $all_bread_crumbs_for_milestone_builder;
+        $this->backlog_factory                        = $backlog_factory;
+        $this->current_user_provider                  = $current_user_provider;
     }
 
-    /**
-     * @param Codendi_Request $request
-     *
-     * @return AgileDashboardRouter
-     */
-    public function build(Codendi_Request $request)
+    public function build(Codendi_Request $request): AgileDashboardRouter
     {
         $plugin = $this->plugin_factory->getPluginByName(
             AgileDashboardPlugin::PLUGIN_NAME
         );
 
-        $planning_factory                                = $this->getPlanningFactory();
-        $milestone_factory                               = $this->getMilestoneFactory();
-        $hierarchy_factory                               = $this->getHierarchyFactory();
-        $mono_milestone_checker                          = $this->getMonoMileStoneChecker();
-        $submilestone_finder = new AgileDashboard_Milestone_Pane_Planning_SubmilestoneFinder(
-            $hierarchy_factory,
-            $planning_factory,
-            $mono_milestone_checker,
-            $this->getTrackerFactory()
+        $tracker_dao                  = new TrackerDao();
+        $planning_dao                 = new PlanningDao($tracker_dao);
+        $planning_permissions_manager = new PlanningPermissionsManager();
+        $tracker_factory              = TrackerFactory::instance();
+        $planning_factory             = new PlanningFactory(
+            $planning_dao,
+            $tracker_factory,
+            $planning_permissions_manager
         );
-        $milestone_representation_builder                = $this->getMilestoneRepresentationBuilder();
-        $paginated_backlog_items_representations_builder = $this->getPaginatedBacklogItemsRepresentationsBuilder();
+        $milestone_factory            = $this->getMilestoneFactory();
 
-        $pane_info_factory = new AgileDashboard_PaneInfoFactory(
-            $request->getCurrentUser(),
-            $submilestone_finder,
-            $plugin->getThemePath()
-        );
+        $event_manager = EventManager::instance();
 
-        $pane_presenter_builder_factory = $this->getPanePresenterBuilderFactory($milestone_factory);
-
-        $pane_factory = $this->getPaneFactory(
-            $request,
-            $milestone_factory,
-            $pane_presenter_builder_factory,
-            $submilestone_finder,
-            $pane_info_factory,
-            $plugin,
-            $milestone_representation_builder,
-            $paginated_backlog_items_representations_builder
-        );
         $top_milestone_pane_factory = $this->getTopMilestonePaneFactory(
             $request,
-            $pane_presenter_builder_factory,
-            $plugin,
-            $milestone_representation_builder,
-            $paginated_backlog_items_representations_builder
-        );
-
-        $service_crumb_builder        = new AgileDashboardCrumbBuilder($plugin->getPluginPath());
-        $admin_crumb_builder          = new AdministrationCrumbBuilder($plugin->getPluginPath());
-        $milestone_controller_factory = new Planning_MilestoneControllerFactory(
-            $plugin,
-            ProjectManager::instance(),
-            $milestone_factory,
-            $this->getPlanningFactory(),
-            $hierarchy_factory,
-            $pane_presenter_builder_factory,
-            $pane_factory,
-            $top_milestone_pane_factory,
-            $service_crumb_builder,
-            new VirtualTopMilestoneCrumbBuilder($plugin->getPluginPath()),
-            new MilestoneCrumbBuilder($plugin->getPluginPath(), $pane_factory, $milestone_factory)
+            $event_manager
         );
 
         $mono_milestone_checker = new ScrumForMonoMilestoneChecker(new ScrumForMonoMilestoneDao(), $planning_factory);
 
+        $tracker_new_dropdown_link_presenter_builder = new TrackerNewDropdownLinkPresenterBuilder();
+
+        $service_crumb_builder        = new AgileDashboardCrumbBuilder($plugin->getPluginPath());
+        $admin_crumb_builder          = new AdministrationCrumbBuilder();
+        $header_options_inserter      = new CurrentContextSectionToHeaderOptionsInserter();
+        $milestone_controller_factory = new Planning_MilestoneControllerFactory(
+            ProjectManager::instance(),
+            $milestone_factory,
+            $this->pane_factory,
+            $top_milestone_pane_factory,
+            $service_crumb_builder,
+            new VirtualTopMilestoneCrumbBuilder($plugin->getPluginPath()),
+            $this->visit_recorder,
+            $this->all_bread_crumbs_for_milestone_builder,
+            new HeaderOptionsProvider(
+                $this->backlog_factory,
+                new AgileDashboard_PaneInfoIdentifier(),
+                $tracker_new_dropdown_link_presenter_builder,
+                new HeaderOptionsForPlanningProvider(
+                    new AgileDashboard_Milestone_Pane_Planning_SubmilestoneFinder(
+                        \Tracker_HierarchyFactory::instance(),
+                        $planning_factory,
+                        $mono_milestone_checker,
+                    ),
+                    $tracker_new_dropdown_link_presenter_builder,
+                    $header_options_inserter,
+                ),
+                new \Tuleap\AgileDashboard\Milestone\ParentTrackerRetriever(
+                    $planning_factory,
+                ),
+                $header_options_inserter
+            ),
+        );
+
         $ugroup_manager = new UGroupManager();
+
+        $db_connection         = DBFactory::getMainTuleapDBConnection();
+        $scrum_planning_filter = new ScrumPlanningFilter($mono_milestone_checker, $planning_factory);
+        $form_element_factory  = Tracker_FormElementFactory::instance();
+
         return new AgileDashboardRouter(
             $plugin,
             $milestone_factory,
@@ -124,19 +160,19 @@ class AgileDashboardRouterBuilder
             $milestone_controller_factory,
             ProjectManager::instance(),
             new AgileDashboard_XMLFullStructureExporter(
-                EventManager::instance(),
+                $event_manager,
                 $this
             ),
             $this->getKanbanManager(),
             $this->getConfigurationManager(),
             $this->getKanbanFactory(),
             new PlanningPermissionsManager(),
-            $this->getHierarchyChecker(),
             $mono_milestone_checker,
-            new ScrumPlanningFilter($mono_milestone_checker, $planning_factory),
+            $scrum_planning_filter,
             new AgileDashboardJSONPermissionsRetriever(
                 new AgileDashboardPermissionsRepresentationBuilder(
-                    $ugroup_manager, $planning_factory,
+                    $ugroup_manager,
+                    $planning_factory,
                     new PlanningPermissionsRepresentationBuilder(
                         new PlanningPermissionsManager(),
                         PermissionsManager::instance(),
@@ -147,59 +183,60 @@ class AgileDashboardRouterBuilder
                 )
             ),
             $service_crumb_builder,
-            $admin_crumb_builder
+            $admin_crumb_builder,
+            SemanticTimeframeBuilder::build(),
+            new CountElementsModeChecker(new ProjectsCountModeDao()),
+            new DBTransactionExecutorWithConnection($db_connection),
+            new ArtifactsInExplicitBacklogDao(),
+            new ScrumPresenterBuilder(
+                $this->getConfigurationManager(),
+                $mono_milestone_checker,
+                $event_manager,
+                $this->getPlanningFactory(),
+                new ExplicitBacklogDao(),
+                new AddToTopBacklogPostActionDao()
+            ),
+            $event_manager,
+            new PlanningUpdater(
+                $planning_factory,
+                new ArtifactsInExplicitBacklogDao(),
+                $planning_dao,
+                $planning_permissions_manager,
+                new DBTransactionExecutorWithConnection($db_connection)
+            ),
+            new Planning_RequestValidator($planning_factory, TrackerFactory::instance(), $this->current_user_provider),
+            AgileDashboard_XMLExporter::build(),
+            new UpdateIsAllowedChecker(
+                $planning_factory,
+                new BacklogTrackerRemovalChecker(new AddToTopBacklogPostActionDao()),
+                $tracker_factory
+            ),
+            new \Tuleap\AgileDashboard\Planning\Admin\PlanningEditionPresenterBuilder(
+                $planning_factory,
+                $event_manager,
+                $scrum_planning_filter,
+                $planning_permissions_manager,
+                $form_element_factory
+            ),
+            new \Tuleap\AgileDashboard\Planning\Admin\UpdateRequestValidator(),
+            new \Tuleap\AgileDashboard\Kanban\NewDropdownCurrentContextSectionForKanbanProvider(
+                $this->getKanbanFactory(),
+                $tracker_factory,
+                $tracker_new_dropdown_link_presenter_builder,
+                new AgileDashboard_KanbanActionsChecker(
+                    $tracker_factory,
+                    new AgileDashboard_PermissionsManager(),
+                    Tracker_FormElementFactory::instance()
+                )
+            )
         );
     }
 
-    /** @return Planning_MilestonePaneFactory */
-    private function getPaneFactory(
-        Codendi_Request $request,
-        Planning_MilestoneFactory $milestone_factory,
-        AgileDashboard_Milestone_Pane_PanePresenterBuilderFactory $pane_presenter_builder_factory,
-        AgileDashboard_Milestone_Pane_Planning_SubmilestoneFinder $submilestone_finder,
-        AgileDashboard_PaneInfoFactory $pane_info_factory,
-        Plugin $plugin,
-        AgileDashboard_Milestone_MilestoneRepresentationBuilder $milestone_representation_builder,
-        AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentationsBuilder $paginated_backlog_items_representations_builder
-    ) {
-        return new Planning_MilestonePaneFactory(
-            $request,
-            $milestone_factory,
-            $pane_presenter_builder_factory,
-            $submilestone_finder,
-            $pane_info_factory,
-            $milestone_representation_builder,
-            $paginated_backlog_items_representations_builder
-        );
-    }
-
-    /**
-     * @return Planning_VirtualTopMilestonePaneFactory
-     */
     private function getTopMilestonePaneFactory(
-        $request,
-        $pane_presenter_builder_factory,
-        Plugin $plugin,
-        AgileDashboard_Milestone_MilestoneRepresentationBuilder $milestone_representation_builder,
-        AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentationsBuilder $paginated_backlog_items_representations_builder
-    ) {
-        return new Planning_VirtualTopMilestonePaneFactory(
-            $request,
-            $pane_presenter_builder_factory,
-            $plugin->getThemePath(),
-            $milestone_representation_builder,
-            $paginated_backlog_items_representations_builder
-        );
-    }
-
-    private function getPanePresenterBuilderFactory($milestone_factory)
-    {
-        return new AgileDashboard_Milestone_Pane_PanePresenterBuilderFactory(
-            $this->getBacklogFactory(),
-            $this->getBacklogItemPresenterCollectionFactory($milestone_factory),
-            new BurnupFieldRetriever(Tracker_FormElementFactory::instance()),
-            EventManager::instance()
-        );
+        Codendi_Request $request,
+        EventManager $event_manager
+    ): Planning_VirtualTopMilestonePaneFactory {
+        return new Planning_VirtualTopMilestonePaneFactory($request, new ExplicitBacklogDao(), $event_manager);
     }
 
     /**
@@ -207,7 +244,8 @@ class AgileDashboardRouterBuilder
      *
      * @return PlanningFactory
      */
-    private function getPlanningFactory() {
+    private function getPlanningFactory()
+    {
         return PlanningFactory::build();
     }
 
@@ -215,58 +253,18 @@ class AgileDashboardRouterBuilder
      * Builds a new Planning_MilestoneFactory instance.
      * @return Planning_MilestoneFactory
      */
-    private function getMilestoneFactory() {
-        return new Planning_MilestoneFactory(
-            $this->getPlanningFactory(),
-            $this->getArtifactFactory(),
-            Tracker_FormElementFactory::instance(),
-            $this->getTrackerFactory(),
-            $this->getStatusCounter(),
-            new PlanningPermissionsManager(),
-            new AgileDashboard_Milestone_MilestoneDao(),
-            $this->getMonoMileStoneChecker()
-        );
-    }
-
-    private function getBacklogItemPresenterCollectionFactory($milestone_factory)
+    private function getMilestoneFactory()
     {
-        $form_element_factory = Tracker_FormElementFactory::instance();
-
-        return new AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactory(
-            new AgileDashboard_BacklogItemDao(),
-            $this->getArtifactFactory(),
-            $form_element_factory,
-            $milestone_factory,
-            $this->getPlanningFactory(),
-            new AgileDashboard_Milestone_Backlog_BacklogItemPresenterBuilder(),
-            new RemainingEffortValueRetriever(
-                $form_element_factory
-            )
-        );
-    }
-
-    private function getHierarchyFactory() {
-        return Tracker_HierarchyFactory::instance();
+        return Planning_MilestoneFactory::build();
     }
 
     /**
      * @return AgileDashboard_KanbanManager
      */
-    private function getKanbanManager() {
+    private function getKanbanManager()
+    {
         return new AgileDashboard_KanbanManager(
             new AgileDashboard_KanbanDao(),
-            $this->getTrackerFactory(),
-            $this->getHierarchyChecker()
-        );
-    }
-
-    /**
-     * @return AgileDashboard_HierarchyChecker
-     */
-    private function getHierarchyChecker() {
-        return new AgileDashboard_HierarchyChecker(
-            $this->getPlanningFactory(),
-            $this->getKanbanFactory(),
             $this->getTrackerFactory()
         );
     }
@@ -274,34 +272,40 @@ class AgileDashboardRouterBuilder
     /**
      * @return TrackerFactory
      */
-    private function getTrackerFactory() {
+    private function getTrackerFactory()
+    {
         return TrackerFactory::instance();
     }
 
     /**
      * @return AgileDashboard_ConfigurationManager
      */
-    private function getConfigurationManager() {
+    private function getConfigurationManager()
+    {
         return new AgileDashboard_ConfigurationManager(
-            new AgileDashboard_ConfigurationDao()
+            new AgileDashboard_ConfigurationDao(),
+            EventManager::instance()
         );
     }
 
     /**
      * @return AgileDashboard_KanbanFactory
      */
-    private function getKanbanFactory() {
+    private function getKanbanFactory()
+    {
         return new AgileDashboard_KanbanFactory(
             $this->getTrackerFactory(),
             new AgileDashboard_KanbanDao()
         );
     }
 
-    private function getArtifactFactory() {
+    private function getArtifactFactory()
+    {
         return Tracker_ArtifactFactory::instance();
     }
 
-    private function getStatusCounter() {
+    private function getStatusCounter()
+    {
         return new AgileDashboard_Milestone_MilestoneStatusCounter(
             new AgileDashboard_BacklogItemDao(),
             new Tracker_ArtifactDao(),
@@ -309,69 +313,8 @@ class AgileDashboardRouterBuilder
         );
     }
 
-    private function getMilestoneRepresentationBuilder() {
-        return new AgileDashboard_Milestone_MilestoneRepresentationBuilder(
-            $this->getMilestoneFactory(),
-            $this->getBacklogFactory(),
-            EventManager::instance(),
-            $this->getMonoMileStoneChecker(),
-            new ParentTrackerRetriever($this->getPlanningFactory())
-        );
-    }
-
-    private function getPaginatedBacklogItemsRepresentationsBuilder()
-    {
-        $color_builder = new BackgroundColorBuilder(new BindDecoratorRetriever());
-        $item_factory  = new BacklogItemRepresentationFactory(
-            $color_builder,
-            UserManager::instance(),
-            EventManager::instance()
-        );
-
-        return new AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentationsBuilder(
-            $item_factory,
-            $this->getBacklogItemCollectionFactory(),
-            $this->getBacklogFactory()
-        );
-    }
-
-    private function getBacklogItemCollectionFactory()
-    {
-        $form_element_factory = Tracker_FormElementFactory::instance();
-
-        return new AgileDashboard_Milestone_Backlog_BacklogItemCollectionFactory(
-            new AgileDashboard_BacklogItemDao(),
-            $this->getArtifactFactory(),
-            $form_element_factory,
-            $this->getMilestoneFactory(),
-            $this->getPlanningFactory(),
-            new AgileDashboard_Milestone_Backlog_BacklogItemBuilder(),
-            new RemainingEffortValueRetriever(
-                $form_element_factory
-            )
-        );
-    }
-
-    private function getBacklogFactory() {
-        return new AgileDashboard_Milestone_Backlog_BacklogFactory(
-            new AgileDashboard_BacklogItemDao(),
-            $this->getArtifactFactory(),
-            $this->getPlanningFactory(),
-            $this->getMonoMileStoneChecker(),
-            $this->getMonoMilestoneItemsFinder()
-        );
-    }
-
     private function getMonoMileStoneChecker()
     {
         return new ScrumForMonoMilestoneChecker(new ScrumForMonoMilestoneDao(), $this->getPlanningFactory());
-    }
-
-    private function getMonoMilestoneItemsFinder()
-    {
-        return new MonoMilestoneItemsFinder(
-            new MonoMilestoneBacklogItemDao(),
-            $this->getArtifactFactory()
-        );
     }
 }

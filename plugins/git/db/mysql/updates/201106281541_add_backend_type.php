@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,22 +18,26 @@
  * along with Tuleap; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
-class b201106281541_add_backend_type extends ForgeUpgrade_Bucket {
 
-    public function description() {
+class b201106281541_add_backend_type extends ForgeUpgrade_Bucket
+{
+
+    public function description()
+    {
         return <<<EOT
 Add repository_backend_type column in order to manage gitolite integration
 EOT;
     }
 
-    public function preUp() {
+    public function preUp()
+    {
         $this->db = $this->getApi('ForgeUpgrade_Bucket_Db');
     }
 
-    public function up() {
-        if (!$this->db->columnNameExists('plugin_git', 'repository_backend_type')) {
-            $sql = "ALTER TABLE plugin_git ".
+    public function up()
+    {
+        if (! $this->db->columnNameExists('plugin_git', 'repository_backend_type')) {
+            $sql = "ALTER TABLE plugin_git " .
                " ADD `repository_backend_type` varchar(16) DEFAULT 'gitshell'";
             $res = $this->db->dbh->exec($sql);
             if ($res === false) {
@@ -42,12 +46,10 @@ EOT;
         }
     }
 
-    public function postUp() {
-        if (!$this->db->columnNameExists('plugin_git', 'repository_backend_type')) {
+    public function postUp()
+    {
+        if (! $this->db->columnNameExists('plugin_git', 'repository_backend_type')) {
             throw new ForgeUpgrade_Bucket_Exception_UpgradeNotComplete('Column repository_backend_type in table plugin_git is missing');
         }
     }
-
 }
-
-?>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
-require_once('common/include/Tuleap_Template.class.php');
 
 /**
  * Template class to send beautiful html emails in tuleap
@@ -30,15 +29,14 @@ require_once('common/include/Tuleap_Template.class.php');
  * $mail->send();
  * </pre>
  */
-class Tuleap_Template_Mail extends Tuleap_Template {
-    public function __construct() {
+class Tuleap_Template_Mail extends Tuleap_Template
+{
+    public function __construct()
+    {
         parent::__construct($GLOBALS['Language']->getContent('mail/html_template', 'en_US', null, '.php'));
-        $this->set('txt_display_not_correct', $GLOBALS['Language']->getText('mail_html_template', 'display_not_correct'));
-        $this->set('txt_update_prefs', $GLOBALS['Language']->getText('mail_html_template', 'update_prefs'));
-        $this->set('txt_can_update_prefs', $GLOBALS['Language']->getText('mail_html_template', 'can_update_prefs'));
-        $this->set('http_url', 'http://'. $GLOBALS['sys_default_domain']);
-        $this->set('img_path', 'http://'. $GLOBALS['sys_default_domain'] . $GLOBALS['HTML']->getImagePath(''));
+        $this->set('txt_display_not_correct', _('Is this email not displaying correctly?'));
+        $this->set('txt_can_update_prefs', _('Update your email preferences'));
+        $this->set('http_url', HTTPRequest::instance()->getServerUrl());
         $this->set('title', '');
     }
 }
-?>

@@ -23,18 +23,23 @@
 
 require_once 'LDAP_ProjectDao.class.php';
 
-class LDAP_ProjectManager {
-    private $cacheSVNLDAPById = array();
+class LDAP_ProjectManager
+{
+    /**
+     * @var array
+     */
+    private $cacheSVNLDAP = [];
 
     /**
      * Return true if project uses LDAP for SVN authentication
      *
-     * @param Integer $groupId
+     * @param int $groupId
      *
-     * @return Boolean
+     * @return bool
      */
-    function hasSVNLDAPAuth($groupId) {
-        if (!isset($this->cacheSVNLDAP[$groupId])) {
+    public function hasSVNLDAPAuth($groupId)
+    {
+        if (! isset($this->cacheSVNLDAP[$groupId])) {
             $this->cacheSVNLDAP[$groupId] = $this->getDao()->hasLdapSvn($groupId);
         }
         return $this->cacheSVNLDAP[$groupId];
@@ -45,20 +50,22 @@ class LDAP_ProjectManager {
      *
      * @param String $groupName
      *
-     * @return Boolean
+     * @return bool
      */
-    function hasSVNLDAPAuthByName($groupName) {
+    public function hasSVNLDAPAuthByName($groupName)
+    {
         return $this->getDao()->hasLdapAuthByName($groupName);
     }
 
     /**
      * Enable LDAP based authentication for project SVN repository
      *
-     * @param Integer $groupId
+     * @param int $groupId
      *
      * @return Void
      */
-    function setLDAPAuthForSVN($groupId) {
+    public function setLDAPAuthForSVN($groupId)
+    {
         $this->getDao()->activateLdapAuthForProject($groupId);
     }
 
@@ -67,8 +74,8 @@ class LDAP_ProjectManager {
      *
      * @return LDAP_ProjectDao
      */
-    function getDao() {
+    public function getDao()
+    {
         return new LDAP_ProjectDao(CodendiDataAccess::instance());
     }
 }
-?>

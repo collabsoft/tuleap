@@ -1,85 +1,31 @@
 {
     "name": "agiledashboard",
-    "dependencies": ["tracker"],
-    "themes": {
-        "default": {
-            "files": [
-                "www/themes/default/css/style.scss"
-            ],
-            "target_dir": "www/themes/default/css"
-        },
-        "FlamingParrot": {
-            "files": [
-                "www/themes/FlamingParrot/css/style.scss",
-                "www/themes/FlamingParrot/css/burnup-chart.scss",
-                "www/themes/FlamingParrot/css/planning-admin-colorpicker.scss"
-            ],
-            "includes": [
-                "../../src/www/themes/FlamingParrot/css/utils"
-            ],
-            "target_dir": "www/themes/FlamingParrot/assets",
-            "is_revisioned": true
-        },
-        "BurningParrot": {
-            "files": [
-                "www/themes/BurningParrot/css/burnup-chart.scss",
-                "www/themes/BurningParrot/css/kanban-blue.scss",
-                "www/themes/BurningParrot/css/kanban-blue-condensed.scss",
-                "www/themes/BurningParrot/css/kanban-green.scss",
-                "www/themes/BurningParrot/css/kanban-green-condensed.scss",
-                "www/themes/BurningParrot/css/kanban-grey.scss",
-                "www/themes/BurningParrot/css/kanban-grey-condensed.scss",
-                "www/themes/BurningParrot/css/kanban-orange.scss",
-                "www/themes/BurningParrot/css/kanban-orange-condensed.scss",
-                "www/themes/BurningParrot/css/kanban-purple.scss",
-                "www/themes/BurningParrot/css/kanban-purple-condensed.scss",
-                "www/themes/BurningParrot/css/kanban-red.scss",
-                "www/themes/BurningParrot/css/kanban-red-condensed.scss",
-                "www/themes/BurningParrot/css/scrum-blue.scss",
-                "www/themes/BurningParrot/css/scrum-blue-condensed.scss",
-                "www/themes/BurningParrot/css/scrum-green.scss",
-                "www/themes/BurningParrot/css/scrum-green-condensed.scss",
-                "www/themes/BurningParrot/css/scrum-grey.scss",
-                "www/themes/BurningParrot/css/scrum-grey-condensed.scss",
-                "www/themes/BurningParrot/css/scrum-orange.scss",
-                "www/themes/BurningParrot/css/scrum-orange-condensed.scss",
-                "www/themes/BurningParrot/css/scrum-purple.scss",
-                "www/themes/BurningParrot/css/scrum-purple-condensed.scss",
-                "www/themes/BurningParrot/css/scrum-red.scss",
-                "www/themes/BurningParrot/css/scrum-red-condensed.scss"
-            ],
-            "includes": [
-                "../../src/www/themes/common/tlp/src/scss",
-                "../../src/www/themes/BurningParrot/css/includes",
-                "../tracker/www/scripts",
-                "www/js/kanban/node_modules",
-                "www/js/planning-v2/node_modules"
-            ],
-            "watched_includes": [
-                "www/themes/BurningParrot/css/**/_*.scss",
-                "../tracker/www/scripts/angular-artifact-modal/src/**/*.scss"
-            ],
-            "target_dir": "www/themes/BurningParrot/assets",
-            "is_revisioned": true
-        }
-    },
-    "javascript": [
-        "www/js/display-angular-feedback.js",
-        "www/js/home.js"
-    ],
     "gettext-js": {
         "burnup-chart": {
-            "src": "www/js/burnup-chart/src",
-            "po": "www/js/burnup-chart/po"
-        },
-        "permissions-per-group": {
-            "src": "www/js/permissions-per-group/src",
-            "po": "www/js/permissions-per-group/po"
+            "src": "scripts/burnup-chart/src",
+            "po": "scripts/burnup-chart/po"
         }
     },
-    "components": [
-        "www/js",
-        "www/js/kanban",
-        "www/js/planning-v2"
-    ]
+    "gettext-ts": {
+        "artifact-additional-action": {
+            "src": "scripts/artifact-additional-action/src",
+            "po": "scripts/artifact-additional-action/po"
+        }
+    },
+    "gettext-angularjs": {
+        "planning-v2": {
+            "src": "scripts/planning-v2/src/app",
+            "po": "scripts/planning-v2/po"
+        },
+        "kanban": {
+            "src": "scripts/kanban/src/app",
+            "po": "scripts/kanban/po"
+        }
+    },
+    "gettext-vue": {
+        "permissions-per-group": {
+            "src": "scripts/permissions-per-group/src/",
+            "po": "scripts/permissions-per-group/po"
+        }
+    }
 }

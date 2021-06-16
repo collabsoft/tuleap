@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2014 - 2018. All rights reserved.
+ * Copyright Enalean (c) 2014 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -22,7 +22,10 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-class AgileDashboard_Milestone_Pane_Planning_PlanningV2Presenter {
+use Tuleap\Tracker\Artifact\Renderer\ListPickerIncluder;
+
+class AgileDashboard_Milestone_Pane_Planning_PlanningV2Presenter
+{
 
     /** @var int */
     public $user_id;
@@ -39,39 +42,52 @@ class AgileDashboard_Milestone_Pane_Planning_PlanningV2Presenter {
     /** @var string */
     public $view_mode;
 
-    /** @var MilestoneRepresentation */
-    public $milestone_representation;
-
-    /** @var AgileDashboard_BacklogItem_PaginatedBacklogItemsRepresentations */
-    public $paginated_backlog_items_representations;
-
-    /** @var AgileDashboard_Milestone_PaginatedMilestonesRepresentations */
-    public $paginated_milestones_representations;
-
     /** @var string */
     public $user_accessibility_mode;
+    /**
+     * @var bool
+     */
+    public $is_in_explicit_top_backlog;
+    /**
+     * @var string
+     */
+    public $allowed_additional_panes_to_display;
 
+    /**
+     * @var string
+     */
+    public $is_list_picker_enabled;
+
+    /**
+     * @var string
+     */
+    public $trackers_ids_having_list_picker_disabled;
+
+    /**
+     * @param string[] $allowed_additional_panes_to_display
+     */
     public function __construct(
         PFUser $current_user,
         Project $project,
         $milestone_id,
-        $milestone_representation,
-        $paginated_backlog_items_representations,
-        $paginated_milestones_representations
+        bool $is_in_explicit_top_backlog,
+        array $allowed_additional_panes_to_display
     ) {
-        $this->user_id                                 = $current_user->getId();
-        $this->lang                                    = $this->getLanguageAbbreviation($current_user);
-        $this->project_id                              = $project->getId();
-        $this->milestone_id                            = $milestone_id;
-        $this->view_mode                               = $current_user->getPreference('agiledashboard_planning_item_view_mode_' . $this->project_id);
-        $this->milestone_representation                = json_encode($milestone_representation);
-        $this->paginated_backlog_items_representations = json_encode($paginated_backlog_items_representations);
-        $this->paginated_milestones_representations    = json_encode($paginated_milestones_representations);
-        $this->user_accessibility_mode                 = json_encode((bool) $current_user->getPreference(PFUser::ACCESSIBILITY_MODE));
+        $this->user_id                                  = $current_user->getId();
+        $this->lang                                     = $this->getLanguageAbbreviation($current_user);
+        $this->project_id                               = $project->getId();
+        $this->milestone_id                             = $milestone_id;
+        $this->view_mode                                = (string) $current_user->getPreference('agiledashboard_planning_item_view_mode_' . $this->project_id);
+        $this->is_in_explicit_top_backlog               = $is_in_explicit_top_backlog;
+        $this->user_accessibility_mode                  = json_encode((bool) $current_user->getPreference(PFUser::ACCESSIBILITY_MODE));
+        $this->allowed_additional_panes_to_display      = json_encode($allowed_additional_panes_to_display);
+        $this->trackers_ids_having_list_picker_disabled = json_encode(ListPickerIncluder::getTrackersHavingListPickerDisabled());
+        $this->is_list_picker_enabled                   = json_encode(ListPickerIncluder::isListPickerEnabledOnPlatform());
     }
 
-    private function getLanguageAbbreviation(PFUser $current_user) {
-        list($lang, $country) = explode('_', $current_user->getLocale());
+    private function getLanguageAbbreviation(PFUser $current_user): string
+    {
+        [$lang, $country] = explode('_', $current_user->getLocale());
 
         return $lang;
     }

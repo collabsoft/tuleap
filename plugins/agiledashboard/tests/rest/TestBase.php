@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2017. All rights reserved
+ * Copyright (c) Enalean, 2017 - Present. All rights reserved
  *
  * This file is a part of Tuleap.
  *
@@ -25,16 +25,40 @@ use RestBase;
 
 class TestBase extends RestBase
 {
-    protected $kanban_artifact_ids = array();
+    private const EXPLICIT_BACKLOG_STORY_TRACKER_SHORTNAME   = 'story';
+    private const EXPLICIT_BACKLOG_RELEASE_TRACKER_SHORTNAME = 'rel';
+
+    protected $kanban_artifact_ids = [];
     protected $tracker_report_id   = null;
 
-    public function setUp()
+    protected $explicit_backlog_project_id;
+    protected $explicit_backlog_story_tracker_id;
+    protected $explicit_backlog_release_tracker_id;
+
+    protected $explicit_backlog_artifact_story_ids   = [];
+    protected $explicit_backlog_artifact_release_ids = [];
+
+    public function setUp(): void
     {
         parent::setUp();
 
         $this->getKanbanArtifactIds();
 
         $this->tracker_report_id = $this->getTrackerReportId();
+
+        $this->explicit_backlog_project_id         = $this->getProjectId(DataBuilder::EXPLICIT_BACKLOG_PROJECT_SHORTNAME);
+        $this->explicit_backlog_story_tracker_id   = $this->tracker_ids[$this->explicit_backlog_project_id][self::EXPLICIT_BACKLOG_STORY_TRACKER_SHORTNAME];
+        $this->explicit_backlog_release_tracker_id = $this->tracker_ids[$this->explicit_backlog_project_id][self::EXPLICIT_BACKLOG_RELEASE_TRACKER_SHORTNAME];
+
+        $this->getArtifactIds(
+            $this->explicit_backlog_story_tracker_id,
+            $this->explicit_backlog_artifact_story_ids
+        );
+
+        $this->getArtifactIds(
+            $this->explicit_backlog_release_tracker_id,
+            $this->explicit_backlog_artifact_release_ids
+        );
     }
 
     private function getKanbanArtifactIds()
@@ -54,7 +78,7 @@ class TestBase extends RestBase
         $offset = 0;
         $limit  = 1;
         $query  = http_build_query(
-            array('limit' => $limit, 'offset' => $offset)
+            ['limit' => $limit, 'offset' => $offset]
         );
 
         $response = $this->getResponseByName(

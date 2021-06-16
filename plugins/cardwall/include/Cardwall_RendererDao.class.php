@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2011. All Rights Reserved.
+ * Copyright (c) Enalean, 2011 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -18,54 +18,58 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
-require_once('common/dao/include/DataAccessObject.class.php');
+class Cardwall_RendererDao extends DataAccessObject
+{
 
-class Cardwall_RendererDao extends DataAccessObject {
-    
-    function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         $this->table_name = 'plugin_cardwall_renderer';
     }
-    
-    function searchByRendererId($renderer_id) {
-        $renderer_id  = $this->da->escapeInt($renderer_id);
-        $sql = "SELECT *
+
+    public function searchByRendererId($renderer_id)
+    {
+        $renderer_id = $this->da->escapeInt($renderer_id);
+        $sql         = "SELECT *
                 FROM $this->table_name
                 WHERE renderer_id = $renderer_id ";
         return $this->retrieve($sql);
     }
-    
-    function create($renderer_id, $field_id) {
+
+    public function create($renderer_id, $field_id)
+    {
         $renderer_id = $this->da->escapeInt($renderer_id);
-        $field_id     = $this->da->escapeInt($field_id);
-        $sql = "INSERT INTO $this->table_name
+        $field_id    = $this->da->escapeInt($field_id);
+        $sql         = "INSERT INTO $this->table_name
                 (renderer_id, field_id)
                 VALUES ($renderer_id, $field_id)";
         return $this->update($sql);
     }
-    
-    function save($renderer_id, $field_id) {
+
+    public function save($renderer_id, $field_id)
+    {
         $renderer_id = $this->da->escapeInt($renderer_id);
-        $field_id     = $this->da->escapeInt($field_id);
-        $sql = "REPLACE INTO $this->table_name  
+        $field_id    = $this->da->escapeInt($field_id);
+        $sql         = "REPLACE INTO $this->table_name  
                 (renderer_id, field_id)
                 VALUES ($renderer_id, $field_id)";
         return $this->update($sql);
     }
-    
-    function delete($renderer_id) {
-        $sql = "DELETE FROM $this->table_name WHERE renderer_id = ". $this->da->escapeInt($renderer_id);
+
+    public function delete($renderer_id)
+    {
+        $sql = "DELETE FROM $this->table_name WHERE renderer_id = " . $this->da->escapeInt($renderer_id);
         return $this->update($sql);
     }
-    
-    function duplicate($from_renderer_id, $to_renderer_id) {
+
+    public function duplicate($from_renderer_id, $to_renderer_id)
+    {
         $from_renderer_id = $this->da->escapeInt($from_renderer_id);
         $to_renderer_id   = $this->da->escapeInt($to_renderer_id);
-        $sql = "INSERT INTO $this->table_name (renderer_id, field_id) 
+        $sql              = "INSERT INTO $this->table_name (renderer_id, field_id) 
                 SELECT $to_renderer_id, field_id
                 FROM $this->table_name
                 WHERE renderer_id = $from_renderer_id ";
         return $this->update($sql);
     }
 }
-?>

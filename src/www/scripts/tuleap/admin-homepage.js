@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Enalean, 2015-2017. All Rights Reserved.
+ * Copyright (c) Enalean, 2015 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -17,24 +17,24 @@
  * along with Tuleap. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* global CKEDITOR:readonly tuleap:readonly */
+
 !(function ($) {
-
     $(function () {
-        var selector = $('#admin-headline-select-language');
+        var selector = $("#admin-headline-select-language");
 
-        bindSwitchStandardHomepage();
+        bindSwitchStatisticsOnHomePage();
+        bindSwitchNewsOnHomePage();
         initCKEditor();
         selector.change(switchHeadline);
 
         function initCKEditor() {
-            $('textarea[id^="admin-headline-"]').each(function() {
-                var textarea_id = $(this).attr('id');
+            $('textarea[id^="admin-headline-"]').each(function () {
+                var textarea_id = $(this).attr("id");
 
-                CKEDITOR.replace(textarea_id, {
-                    toolbar: tuleap.ckeditor.toolbar
-                });
+                CKEDITOR.replace(textarea_id, tuleap.ckeditor.config);
 
-                CKEDITOR.on('instanceReady', function() {
+                CKEDITOR.on("instanceReady", function () {
                     switchHeadline();
                 });
             });
@@ -43,10 +43,10 @@
         function switchHeadline() {
             var language_id = selector.val();
 
-            $('div[id^="cke_admin-headline-"]').each(function() {
+            $('div[id^="cke_admin-headline-"]').each(function () {
                 var cke_instance = $(this);
 
-                if (cke_instance.attr('id') === "cke_admin-headline-" + language_id) {
+                if (cke_instance.attr("id") === "cke_admin-headline-" + language_id) {
                     cke_instance.show().focus();
                 } else {
                     cke_instance.hide();
@@ -54,11 +54,15 @@
             });
         }
 
-        function bindSwitchStandardHomepage() {
-            $('#use_standard_homepage').on('change', function() {
-                $('#admin-homepage').submit();
+        function bindSwitchStatisticsOnHomePage() {
+            $("#use_statistics_homepage").on("change", function () {
+                $("#admin-homepage").submit();
+            });
+        }
+        function bindSwitchNewsOnHomePage() {
+            $("#use_news_homepage").on("change", function () {
+                $("#admin-homepage").submit();
             });
         }
     });
-
 })(window.jQuery);

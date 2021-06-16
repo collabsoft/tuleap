@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) Enalean, 2016. All Rights Reserved.
+ * Copyright (c) Enalean, 2016 - Present. All Rights Reserved.
  *
  * This file is a part of Tuleap.
  *
@@ -21,7 +21,7 @@
 use Tuleap\Statistics\DataExportPresenterBuilder;
 use Tuleap\Statistics\DataExportRouter;
 
-require_once 'pre.php';
+require_once __DIR__ . '/../../../src/www/include/pre.php';
 
 $plugin_manager = PluginManager::instance();
 $plugin         = $plugin_manager->getPluginByName('statistics');

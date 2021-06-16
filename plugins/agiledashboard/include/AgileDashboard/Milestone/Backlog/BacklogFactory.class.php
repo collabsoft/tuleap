@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright Enalean (c) 2013 - 2018. All rights reserved.
+ * Copyright Enalean (c) 2013 - Present. All rights reserved.
  *
  * Tuleap and Enalean names and logos are registrated trademarks owned by
  * Enalean SAS. All other trademarks or names are properties of their respective
@@ -28,6 +28,8 @@ use Tuleap\AgileDashboard\MonoMilestone\ScrumForMonoMilestoneChecker;
 /**
  * I build AgileDashboard_Milestone_Backlog_Backlog
  */
+
+//phpcs:ignore PSR1.Classes.ClassDeclaration.MissingNamespace, Squiz.Classes.ValidClassName.NotCamelCaps
 class AgileDashboard_Milestone_Backlog_BacklogFactory
 {
     /** @var AgileDashboard_BacklogItemDao */
@@ -67,8 +69,8 @@ class AgileDashboard_Milestone_Backlog_BacklogFactory
      */
     public function getBacklog(Planning_Milestone $milestone, $limit = null, $offset = null)
     {
-        $backlog_trackers_children_can_manage = array();
-        $first_child_backlog_trackers = $this->getFirstChildBacklogTracker($milestone);
+        $backlog_trackers_children_can_manage = [];
+        $first_child_backlog_trackers         = $this->getFirstChildBacklogTracker($milestone);
         if ($first_child_backlog_trackers) {
             $backlog_trackers_children_can_manage = array_merge($backlog_trackers_children_can_manage, $first_child_backlog_trackers);
         } else {
@@ -77,7 +79,7 @@ class AgileDashboard_Milestone_Backlog_BacklogFactory
         return $this->instantiateBacklog($milestone, $backlog_trackers_children_can_manage, $limit, $offset);
     }
 
-    public function getSelfBacklog(Planning_Milestone $milestone, $limit = null, $offset = null)
+    public function getSelfBacklog(Planning_Milestone $milestone, $limit = null, $offset = null): AgileDashboard_Milestone_Backlog_Backlog
     {
         return $this->instantiateBacklog(
             $milestone,
@@ -92,7 +94,7 @@ class AgileDashboard_Milestone_Backlog_BacklogFactory
         array $backlog_trackers_children_can_manage,
         $limit = null,
         $offset = null
-    ) {
+    ): AgileDashboard_Milestone_Backlog_Backlog {
         return new AgileDashboard_Milestone_Backlog_Backlog(
             $this->artifact_factory,
             $milestone,
@@ -108,7 +110,7 @@ class AgileDashboard_Milestone_Backlog_BacklogFactory
 
     private function getFirstChildBacklogTracker(Planning_Milestone $milestone)
     {
-        $backlog_tracker_children  = $milestone->getPlanning()->getPlanningTracker()->getChildren();
+        $backlog_tracker_children = $milestone->getPlanning()->getPlanningTracker()->getChildren();
         if ($backlog_tracker_children) {
             $first_child_tracker  = current($backlog_tracker_children);
             $first_child_planning = $this->planning_factory->getPlanningByPlanningTracker($first_child_tracker);
